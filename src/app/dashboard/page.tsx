@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -837,7 +838,8 @@ function DashboardContent() {
   );
 
   return (
-    <div className="pw-container py-10 sm:py-14 lg:py-16">
+    <AuthPageFrame>
+      <div className="space-y-6">
       <section className="glass-panel rounded-[30px] px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
@@ -881,7 +883,8 @@ function DashboardContent() {
       </section>
 
       <DashboardWorkspace activeTab={activeTab} onChangeTab={setActiveTab} metrics={metrics} />
-    </div>
+      </div>
+    </AuthPageFrame>
   );
 }
 

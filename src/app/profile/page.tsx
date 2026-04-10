@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -8,7 +10,9 @@ import ProtectedPage, {
 import {
   ensurePilotProfile,
   updatePilotProfile,
+  type PilotProfileRecord,
 } from "@/lib/pilot-profile";
+import { supabase } from "@/lib/supabase/browser";
 
 type ProfileFormState = {
   first_name: string;
@@ -23,222 +27,216 @@ type ProfileFormState = {
   ivao_id: string;
 };
 
-type NavigraphStatus = {
-  configured: boolean;
-  connected: boolean;
-  hasRefreshToken: boolean;
-  expiresAt: string | null;
-  scopes: string[];
-  subscriptions: string[];
-  clientId: string | null;
-  subject: string | null;
-  error: string | null;
+type ProfileView = "perfil" | "datos";
+
+type PilotScoreRow = {
+  pulso_10: number | null;
+  ruta_10: number | null;
+  legado_points: number | null;
 };
 
-type NavigraphDeviceSession = {
-  deviceCode: string;
-  userCode: string;
-  verificationUri: string;
-  verificationUriComplete: string;
-  expiresIn: number;
-  interval: number;
-  startedAt: number;
+const EMPTY_FORM: ProfileFormState = {
+  first_name: "",
+  last_name: "",
+  callsign: "",
+  email: "",
+  country: "Chile",
+  base_hub: "SCEL",
+  simulator: "MSFS 2020",
+  simbrief_username: "",
+  vatsim_id: "",
+  ivao_id: "",
 };
 
-const EMPTY_STATUS: NavigraphStatus = {
-  configured: false,
-  connected: false,
-  hasRefreshToken: false,
-  expiresAt: null,
-  scopes: [],
-  subscriptions: [],
-  clientId: null,
-  subject: null,
-  error: null,
-};
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "—";
+function toNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
   }
 
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "—";
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  return new Intl.DateTimeFormat("es-CL", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(parsed);
+  return 0;
 }
 
-function StatusPill({
-  ok,
-  okLabel,
-  badLabel,
-}: {
-  ok: boolean;
-  okLabel: string;
-  badLabel: string;
-}) {
-  return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${
-        ok
-          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-          : "border-amber-400/20 bg-amber-400/10 text-amber-300"
-      }`}
-    >
-      {ok ? okLabel : badLabel}
-    </span>
-  );
+function formatDecimal(value: number) {
+  return new Intl.NumberFormat("es-CL", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatInteger(value: number) {
+  return new Intl.NumberFormat("es-CL", {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatRankLabel(value: string | null | undefined) {
+  const normalized = (value ?? "CADET").trim();
+  if (!normalized) {
+    return "Cadet";
+  }
+
+  return normalized
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/(^|\s)\w/g, (letter) => letter.toUpperCase());
+}
+
+function getTotalHours(profile: PilotProfileRecord | null) {
+  if (!profile) {
+    return 0;
+  }
+
+  const raw = profile as PilotProfileRecord & {
+    total_hours?: number | string | null;
+    career_hours?: number | string | null;
+    transferred_hours?: number | string | null;
+  };
+
+  const totalHours = toNumber(raw.total_hours);
+  if (totalHours > 0) {
+    return totalHours;
+  }
+
+  return toNumber(raw.career_hours) + toNumber(raw.transferred_hours);
+}
+
+function getPilotName(form: ProfileFormState) {
+  const value = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(" ");
+  return value || form.callsign || "Piloto Patagonia Wings";
+}
+
+function getRankBadge(rank: string | null | undefined) {
+  const code = (rank ?? "CADET").trim().toUpperCase();
+
+  if (code.includes("LEGEND")) {
+    return { symbol: "✦", label: "Leyenda Patagonia" };
+  }
+
+  if (code.includes("INSPECTOR") || code.includes("CHECK") || code.includes("MASTER")) {
+    return { symbol: "★", label: "Inspector de línea" };
+  }
+
+  if (code.includes("COMMANDER")) {
+    return { symbol: "◆", label: "Comandante regional" };
+  }
+
+  if (code.includes("CAPTAIN")) {
+    return { symbol: "▲", label: "Capitán de línea" };
+  }
+
+  if (code.includes("FIRST_OFFICER")) {
+    return { symbol: "■", label: "Primer oficial" };
+  }
+
+  if (code.includes("SECOND_OFFICER")) {
+    return { symbol: "●", label: "Segundo oficial" };
+  }
+
+  return { symbol: "◈", label: "Cadete" };
+}
+
+function readView(value: string | null): ProfileView {
+  return value === "datos" ? "datos" : "perfil";
 }
 
 function ProfileContent() {
   const session = useProtectedSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [connectingAuth, setConnectingAuth] = useState(false);
-  const [disconnectingAuth, setDisconnectingAuth] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
-  const [authStatus, setAuthStatus] = useState<NavigraphStatus>(EMPTY_STATUS);
-  const [deviceSession, setDeviceSession] = useState<NavigraphDeviceSession | null>(null);
+  const [profile, setProfile] = useState<PilotProfileRecord | null>(null);
+  const [activeView, setActiveView] = useState<ProfileView>(readView(searchParams.get("view")));
+  const [score, setScore] = useState({
+    pulso10: 0,
+    ruta10: 0,
+    legado: 0,
+  });
 
   const [form, setForm] = useState<ProfileFormState>({
-    first_name: "",
-    last_name: "",
-    callsign: "",
+    ...EMPTY_FORM,
     email: session.user.email ?? "",
-    country: "Chile",
-    base_hub: "SCEL",
-    simulator: "MSFS 2020",
-    simbrief_username: "",
-    vatsim_id: "",
-    ivao_id: "",
   });
 
   useEffect(() => {
+    setActiveView(readView(searchParams.get("view")));
+  }, [searchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     async function loadProfile() {
-      const profile = await ensurePilotProfile(session.user);
+      setLoading(true);
 
-      if (profile) {
+      try {
+        const currentProfile = await ensurePilotProfile(session.user);
+
+        if (cancelled) {
+          return;
+        }
+
+        setProfile(currentProfile);
         setForm({
-          first_name: profile.first_name ?? "",
-          last_name: profile.last_name ?? "",
-          callsign: profile.callsign ?? "",
-          email: profile.email ?? session.user.email ?? "",
-          country: profile.country ?? "Chile",
-          base_hub: profile.base_hub ?? "SCEL",
-          simulator: profile.simulator ?? "MSFS 2020",
-          simbrief_username: profile.simbrief_username ?? "",
-          vatsim_id: profile.vatsim_id ?? "",
-          ivao_id: profile.ivao_id ?? "",
+          first_name: currentProfile?.first_name ?? "",
+          last_name: currentProfile?.last_name ?? "",
+          callsign: currentProfile?.callsign ?? "",
+          email: currentProfile?.email ?? session.user.email ?? "",
+          country: currentProfile?.country ?? "Chile",
+          base_hub: currentProfile?.base_hub ?? "SCEL",
+          simulator: "MSFS 2020",
+          simbrief_username: currentProfile?.simbrief_username ?? "",
+          vatsim_id: currentProfile?.vatsim_id ?? "",
+          ivao_id: currentProfile?.ivao_id ?? "",
         });
-      }
 
-      setLoading(false);
+        if (currentProfile?.callsign) {
+          const { data } = await supabase
+            .from("pw_pilot_scores")
+            .select("pulso_10, ruta_10, legado_points")
+            .eq("pilot_callsign", currentProfile.callsign)
+            .maybeSingle();
+
+          if (!cancelled) {
+            const row = (data ?? null) as PilotScoreRow | null;
+            setScore({
+              pulso10: toNumber(row?.pulso_10),
+              ruta10: toNumber(row?.ruta_10),
+              legado: toNumber(row?.legado_points),
+            });
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
     void loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
   }, [session.user]);
-
-  async function loadNavigraphStatus(silent = false) {
-    if (!silent) {
-      setCheckingAuth(true);
-    }
-
-    try {
-      const response = await fetch("/api/auth/navigraph/status", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      const data = (await response.json()) as NavigraphStatus;
-      setAuthStatus(data);
-
-      if (!silent && data.error) {
-        setErrorMessage(data.error);
-      }
-    } catch {
-      setAuthStatus(EMPTY_STATUS);
-      if (!silent) {
-        setErrorMessage("No se pudo comprobar el estado de conexión con Navigraph.");
-      }
-    } finally {
-      if (!silent) {
-        setCheckingAuth(false);
-      }
-    }
-  }
-
-  useEffect(() => {
-    void loadNavigraphStatus();
-  }, []);
-
-  useEffect(() => {
-    if (!deviceSession) {
-      return;
-    }
-
-    const expiresAt = deviceSession.startedAt + deviceSession.expiresIn * 1000;
-    if (Date.now() >= expiresAt) {
-      setDeviceSession(null);
-      setErrorMessage("La autorización de Navigraph expiró. Inicia el proceso nuevamente.");
-      return;
-    }
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await fetch("/api/auth/navigraph/device/poll", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            deviceCode: deviceSession.deviceCode,
-            interval: deviceSession.interval,
-          }),
-        });
-
-        const data = (await response.json()) as
-          | { ok: true; status: "authorized"; expiresAt: string }
-          | { ok?: false; status?: string; interval?: number; message?: string; error?: string };
-
-        if (response.ok && "ok" in data && data.ok) {
-          setDeviceSession(null);
-          await loadNavigraphStatus(true);
-          setCheckingAuth(false);
-          setInfoMessage("Navigraph/SimBrief quedó conectado correctamente.");
-          return;
-        }
-
-        if (data.status === "pending") {
-          setDeviceSession((current) =>
-            current ? { ...current, interval: data.interval ?? current.interval } : current
-          );
-          return;
-        }
-
-        setDeviceSession(null);
-        setErrorMessage(data.message || data.error || "No se pudo completar la autorización con Navigraph.");
-      } catch {
-        setDeviceSession(null);
-        setErrorMessage("Falló el polling de Navigraph. Intenta conectar nuevamente.");
-      }
-    }, Math.max(2, deviceSession.interval) * 1000);
-
-    return () => window.clearTimeout(timer);
-  }, [deviceSession]);
 
   function updateField<K extends keyof ProfileFormState>(
     key: K,
     value: ProfileFormState[K]
   ) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function switchView(nextView: ProfileView) {
+    setActiveView(nextView);
+    router.replace(`/profile?view=${nextView}`);
   }
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -248,421 +246,277 @@ function ProfileContent() {
     setInfoMessage("");
 
     try {
-      await updatePilotProfile(session.user.id, {
+      const updated = await updatePilotProfile(session.user.id, {
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
-        callsign: form.callsign.trim().toUpperCase(),
         country: form.country.trim(),
-        base_hub: form.base_hub,
-        simulator: form.simulator,
         simbrief_username: form.simbrief_username.trim() || null,
         vatsim_id: form.vatsim_id.trim() || null,
         ivao_id: form.ivao_id.trim() || null,
       });
 
-      setInfoMessage("Perfil actualizado correctamente.");
+      setProfile(updated);
+      setInfoMessage("Tus datos se guardaron correctamente.");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "No se pudo guardar el perfil.";
-
-      setErrorMessage(message);
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudieron guardar los datos."
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleConnectNavigraph() {
-    setConnectingAuth(true);
-    setErrorMessage("");
-    setInfoMessage("");
+  const rankBadge = useMemo(
+    () => getRankBadge(profile?.career_rank_code ?? profile?.rank_code),
+    [profile?.career_rank_code, profile?.rank_code]
+  );
 
-    try {
-      const response = await fetch("/api/auth/navigraph/device/start", {
-        method: "POST",
-      });
-      const data = (await response.json()) as
-        | ({ ok: true } & Omit<NavigraphDeviceSession, "startedAt">)
-        | { error?: string };
-
-      if (!response.ok || !('ok' in data)) {
-        throw new Error('error' in data ? data.error || 'No se pudo iniciar Navigraph.' : 'No se pudo iniciar Navigraph.');
-      }
-
-      const sessionData: NavigraphDeviceSession = {
-        deviceCode: data.deviceCode,
-        userCode: data.userCode,
-        verificationUri: data.verificationUri,
-        verificationUriComplete: data.verificationUriComplete,
-        expiresIn: data.expiresIn,
-        interval: data.interval,
-        startedAt: Date.now(),
-      };
-
-      setDeviceSession(sessionData);
-      if (typeof window !== "undefined") {
-        window.open(sessionData.verificationUriComplete, "_blank", "noopener,noreferrer");
-      }
-      setInfoMessage(
-        `Autoriza Patagonia Wings en Navigraph con el código ${sessionData.userCode} y luego vuelve para seguir.`
-      );
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo iniciar la conexión con Navigraph."
-      );
-    } finally {
-      setConnectingAuth(false);
-    }
-  }
-
-  async function handleDisconnectNavigraph() {
-    setDisconnectingAuth(true);
-    setErrorMessage("");
-    setInfoMessage("");
-
-    try {
-      const response = await fetch("/api/auth/navigraph/disconnect", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo desconectar Navigraph.");
-      }
-
-      setInfoMessage("La conexión con Navigraph/SimBrief fue eliminada.");
-      await loadNavigraphStatus();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "No se pudo desconectar Navigraph."
-      );
-    } finally {
-      setDisconnectingAuth(false);
-    }
-  }
-
-  const scopesLabel = useMemo(() => {
-    if (!authStatus.scopes.length) {
-      return "—";
-    }
-
-    return authStatus.scopes.join(" · ");
-  }, [authStatus.scopes]);
-
-  const subscriptionsLabel = useMemo(() => {
-    if (!authStatus.subscriptions.length) {
-      return "—";
-    }
-
-    return authStatus.subscriptions.join(" · ");
-  }, [authStatus.subscriptions]);
+  const pilotName = useMemo(() => getPilotName(form), [form]);
+  const rankLabel = useMemo(
+    () => formatRankLabel(profile?.career_rank_code ?? profile?.rank_code),
+    [profile?.career_rank_code, profile?.rank_code]
+  );
 
   return (
-    <div className="pw-container py-12 sm:py-16 lg:py-20">
-      <section className="glass-panel rounded-[34px] p-7 sm:p-9">
-        <span className="parallax-chip mb-6">PERFIL PILOTO</span>
-
-        <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-          Perfil operacional del piloto
-        </h1>
-
-        <p className="mt-5 max-w-3xl text-base leading-8 text-white/80">
-          Esta vista ya queda preparada con conexión real a Navigraph/SimBrief,
-          manteniendo intacta la estética aprobada.
-        </p>
-      </section>
-
-      <form className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]" onSubmit={handleSave}>
-        <div className="glass-panel rounded-[30px] p-7">
-          <span className="section-chip">Datos principales</span>
-
-          {loading ? (
-            <p className="mt-6 text-white/76">Cargando perfil...</p>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Nombre</label>
-                <input
-                  className="input-premium"
-                  value={form.first_name}
-                  onChange={(event) => updateField("first_name", event.target.value)}
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Apellido</label>
-                <input
-                  className="input-premium"
-                  value={form.last_name}
-                  onChange={(event) => updateField("last_name", event.target.value)}
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Callsign</label>
-                <input
-                  className="input-premium"
-                  value={form.callsign}
-                  onChange={(event) =>
-                    updateField("callsign", event.target.value.toUpperCase())
-                  }
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Email</label>
-                <input className="input-premium opacity-80" value={form.email} readOnly />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">País</label>
-                <input
-                  className="input-premium"
-                  value={form.country}
-                  onChange={(event) => updateField("country", event.target.value)}
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Hub base</label>
-                <select
-                  className="input-premium"
-                  value={form.base_hub}
-                  onChange={(event) => updateField("base_hub", event.target.value)}
-                >
-                  <option value="SCEL">SCEL - Santiago</option>
-                  <option value="SCTE">SCTE - Puerto Montt</option>
-                  <option value="SCFA">SCFA - Antofagasta</option>
-                </select>
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Simulador principal</label>
-                <select
-                  className="input-premium"
-                  value={form.simulator}
-                  onChange={(event) => updateField("simulator", event.target.value)}
-                >
-                  <option value="MSFS 2020">MSFS 2020</option>
-                  <option value="MSFS 2024">MSFS 2024</option>
-                  <option value="X-Plane">X-Plane</option>
-                </select>
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">Usuario SimBrief</label>
-                <input
-                  className="input-premium"
-                  value={form.simbrief_username}
-                  onChange={(event) =>
-                    updateField("simbrief_username", event.target.value)
-                  }
-                  placeholder="Ej: claudiolizama"
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">VATSIM ID</label>
-                <input
-                  className="input-premium"
-                  value={form.vatsim_id}
-                  onChange={(event) => updateField("vatsim_id", event.target.value)}
-                />
-              </div>
-
-              <div className="surface-outline rounded-[22px] px-5 py-5">
-                <label className="field-label">IVAO ID</label>
-                <input
-                  className="input-premium"
-                  value={form.ivao_id}
-                  onChange={(event) => updateField("ivao_id", event.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 surface-outline rounded-[24px] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-              Conexión real Navigraph / SimBrief
-            </p>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-4">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
-                  Estado
-                </span>
-                <div className="mt-3">
-                  <StatusPill
-                    ok={authStatus.connected}
-                    okLabel="Conectado"
-                    badLabel={checkingAuth ? "Comprobando..." : "No conectado"}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-4">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
-                  Refresh token
-                </span>
-                <div className="mt-3">
-                  <StatusPill
-                    ok={authStatus.hasRefreshToken}
-                    okLabel="Disponible"
-                    badLabel="No disponible"
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-4 sm:col-span-2">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
-                  Scopes autorizados
-                </span>
-                <p className="mt-3 text-sm leading-7 text-white/82">{scopesLabel}</p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-4 sm:col-span-2">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
-                  Expira access token
-                </span>
-                <p className="mt-3 text-sm leading-7 text-white/82">
-                  {formatDateTime(authStatus.expiresAt)}
-                </p>
-              </div>
-
-              <div className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-4 sm:col-span-2">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
-                  Suscripciones detectadas
-                </span>
-                <p className="mt-3 text-sm leading-7 text-white/82">
-                  {subscriptionsLabel}
-                </p>
-              </div>
+    <AuthPageFrame>
+      <div className="space-y-6">
+        <section className="glass-panel rounded-[30px] p-6 sm:p-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <span className="parallax-chip">Cuenta piloto</span>
+              <h1 className="mt-4 text-3xl font-semibold text-white sm:text-[40px]">
+                Área personal Patagonia Wings
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72 sm:text-base">
+                Aquí dejamos el perfil limpio: datos del piloto por un lado y ficha operacional por otro, sin mezclar Navigraph ni pasos de despacho.
+              </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              {!authStatus.connected ? (
-                <button
-                  type="button"
-                  className="button-primary"
-                  onClick={() => void handleConnectNavigraph()}
-                  disabled={checkingAuth || loading || connectingAuth}
-                >
-                  {connectingAuth ? "Conectando..." : checkingAuth ? "Comprobando..." : "Conectar Navigraph / SimBrief"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="button-ghost"
-                  onClick={() => void handleDisconnectNavigraph()}
-                  disabled={disconnectingAuth}
-                >
-                  {disconnectingAuth ? "Desconectando..." : "Desconectar"}
-                </button>
-              )}
-
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="button-ghost"
-                onClick={() => void loadNavigraphStatus()}
-                disabled={checkingAuth}
+                onClick={() => switchView("perfil")}
+                className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                  activeView === "perfil"
+                    ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                    : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                }`}
               >
-                {checkingAuth ? "Actualizando..." : "Actualizar estado"}
+                Mi perfil
+              </button>
+              <button
+                type="button"
+                onClick={() => switchView("datos")}
+                className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                  activeView === "datos"
+                    ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                    : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                }`}
+              >
+                Mis datos
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="glass-panel rounded-[30px] p-7">
-          <span className="section-chip">Resumen</span>
+        {activeView === "perfil" ? (
+          <section className="glass-panel rounded-[30px] p-6 sm:p-7">
+            <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <div className="surface-outline rounded-[26px] p-6 text-center">
+                <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-[32px] border border-white/12 bg-[radial-gradient(circle_at_top,rgba(103,215,255,0.22),rgba(4,20,40,0.9))] text-4xl font-semibold tracking-[0.16em] text-white shadow-[0_18px_46px_rgba(0,0,0,0.28)]">
+                  {(form.first_name.charAt(0) + form.last_name.charAt(0) || form.callsign.slice(0, 2) || "PW").toUpperCase()}
+                </div>
 
-          <div className="mt-6 space-y-4">
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Status
-              </p>
-              <span className="mt-3 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                Operational
-              </span>
-            </div>
+                <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/56">
+                  {form.callsign || "PWG000"}
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold leading-tight text-white">
+                  {pilotName}
+                </h2>
 
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Callsign actual
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-white">
-                {form.callsign || "PWG000"}
-              </p>
-            </div>
+                <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/16 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base">
+                    {rankBadge.symbol}
+                  </span>
+                  <span className="font-semibold">{rankBadge.label}</span>
+                </div>
 
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Hub base
-              </p>
-              <p className="mt-2 text-xl font-semibold text-white">{form.base_hub}</p>
-            </div>
+                <p className="mt-3 text-sm text-white/66">Foto de piloto pendiente por cargar</p>
+              </div>
 
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Simulador
-              </p>
-              <p className="mt-2 text-xl font-semibold text-white">{form.simulator}</p>
-            </div>
+              <div className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {[
+                    { label: "Rango", value: rankLabel },
+                    { label: "Horas totales", value: formatDecimal(getTotalHours(profile)) },
+                    {
+                      label: "Estado",
+                      value: profile?.status?.trim().toLowerCase() === "inactive" ? "Inactivo" : "Activo",
+                    },
+                    { label: "País", value: form.country || "Chile" },
+                    { label: "Hub base", value: form.base_hub || "SCEL" },
+                    { label: "SimBrief", value: form.simbrief_username || "Pendiente" },
+                    { label: "VATSIM ID", value: form.vatsim_id || "—" },
+                    { label: "IVAO ID", value: form.ivao_id || "—" },
+                    { label: "Simulador", value: "MSFS 2020" },
+                  ].map((item) => (
+                    <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-white">{loading ? "…" : item.value}</p>
+                    </div>
+                  ))}
+                </div>
 
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Usuario SimBrief
-              </p>
-              <p className="mt-2 text-xl font-semibold text-white">
-                {form.simbrief_username || "Pendiente"}
-              </p>
-            </div>
-
-            <div className="surface-outline rounded-[22px] px-5 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
-                Autorización Navigraph
-              </p>
-              <div className="mt-3">
-                <StatusPill
-                  ok={authStatus.connected}
-                  okLabel="Activa"
-                  badLabel="Pendiente"
-                />
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {[
+                    { label: "Pulso 10", value: formatDecimal(score.pulso10) },
+                    { label: "Ruta 10", value: formatDecimal(score.ruta10) },
+                    { label: "Legado", value: formatInteger(score.legado) },
+                  ].map((item) => (
+                    <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 text-[28px] font-semibold text-white">{loading ? "…" : item.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </section>
+        ) : null}
 
-          {errorMessage ? (
-            <div className="mt-5 rounded-[18px] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
-              {errorMessage}
+        {activeView === "datos" ? (
+          <section className="glass-panel rounded-[30px] p-6 sm:p-7">
+            <div className="mb-5">
+              <span className="section-chip">Datos personales</span>
+              <h2 className="mt-4 text-3xl font-semibold text-white">Editar información del piloto</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
+                Dejamos el hub bloqueado porque solo se define al registrarte. El simulador también queda fijo en MSFS 2020 por ahora.
+              </p>
             </div>
-          ) : null}
 
-          {infoMessage ? (
-            <div className="mt-5 rounded-[18px] border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-              {infoMessage}
-            </div>
-          ) : null}
+            <form onSubmit={handleSave}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Nombre</label>
+                  <input
+                    className="input-premium"
+                    value={form.first_name}
+                    onChange={(event) => updateField("first_name", event.target.value)}
+                  />
+                </div>
 
-          <div className="mt-5">
-            <button type="submit" className="button-primary w-full" disabled={saving || loading}>
-              {saving ? "Guardando..." : "Guardar cambios"}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Apellido</label>
+                  <input
+                    className="input-premium"
+                    value={form.last_name}
+                    onChange={(event) => updateField("last_name", event.target.value)}
+                  />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Callsign</label>
+                  <input className="input-premium opacity-70" value={form.callsign} readOnly />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Email</label>
+                  <input className="input-premium opacity-70" value={form.email} readOnly />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">País</label>
+                  <input
+                    className="input-premium"
+                    value={form.country}
+                    onChange={(event) => updateField("country", event.target.value)}
+                  />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Hub base</label>
+                  <input className="input-premium opacity-70" value={`${form.base_hub} · Bloqueado`} readOnly />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Simulador</label>
+                  <input className="input-premium opacity-70" value="MSFS 2020" readOnly />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">Usuario SimBrief</label>
+                  <input
+                    className="input-premium"
+                    value={form.simbrief_username}
+                    onChange={(event) => updateField("simbrief_username", event.target.value)}
+                    placeholder="Ej: candonga5"
+                  />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">VATSIM ID</label>
+                  <input
+                    className="input-premium"
+                    value={form.vatsim_id}
+                    onChange={(event) => updateField("vatsim_id", event.target.value)}
+                  />
+                </div>
+
+                <div className="surface-outline rounded-[22px] px-5 py-5">
+                  <label className="field-label">IVAO ID</label>
+                  <input
+                    className="input-premium"
+                    value={form.ivao_id}
+                    onChange={(event) => updateField("ivao_id", event.target.value)}
+                  />
+                </div>
+              </div>
+
+              {errorMessage ? (
+                <div className="mt-5 rounded-[18px] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+                  {errorMessage}
+                </div>
+              ) : null}
+
+              {infoMessage ? (
+                <div className="mt-5 rounded-[18px] border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+                  {infoMessage}
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button type="submit" className="button-primary" disabled={saving || loading}>
+                  {saving ? "Guardando..." : "Guardar cambios"}
+                </button>
+                <button
+                  type="button"
+                  className="button-ghost"
+                  onClick={() => switchView("perfil")}
+                >
+                  Volver a mi perfil
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+      </div>
+    </AuthPageFrame>
   );
 }
 
 export default function ProfilePage() {
   return (
     <main className="grid-overlay">
-      <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
+      <section className="parallax-hero relative isolate min-h-screen overflow-x-hidden">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
 
         <div className="relative z-10">
-          <header className="pw-container pt-5">
+          <header className="pw-container sticky top-4 z-40 pt-5">
             <PublicHeader />
           </header>
 

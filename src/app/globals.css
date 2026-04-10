@@ -227,3 +227,11 @@ textarea {
     backdrop-filter: blur(10px);
   }
 }
+
+@layer utilities {
+  .parallax-account-button {
+    @apply inline-flex items-center justify-center gap-3 rounded-2xl px-6 py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5;
+    background: linear-gradient(135deg, rgba(28, 198, 198, 0.92) 0%, rgba(15, 169, 109, 0.92) 100%);
+    box-shadow: 0 12px 34px rgba(26, 174, 148, 0.22);
+  }
+}

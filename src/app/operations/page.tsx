@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -1711,8 +1712,9 @@ function OperationsContent() {
   }, [profile, operation]);
 
   return (
-    <div className="pw-container py-12 sm:py-16 lg:py-20">
-      <section className="glass-panel rounded-[34px] p-7 sm:p-9">
+    <AuthPageFrame>
+      <div className="space-y-6">
+        <section className="glass-panel rounded-[34px] p-7 sm:p-9">
         <span className="parallax-chip mb-6">OPERACIONES</span>
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
@@ -1849,7 +1851,7 @@ function OperationsContent() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-[24px] border border-white/10">
+              <div className="overflow-x-hidden rounded-[24px] border border-white/10">
                 <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.7fr_0.8fr] gap-4 bg-white/5 px-5 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/56">
                   <div>Vuelo</div>
                   <div>Origen</div>
@@ -2525,19 +2527,20 @@ function OperationsContent() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </AuthPageFrame>
   );
 }
 
 export default function OperationsPage() {
   return (
     <main className="grid-overlay">
-      <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
+      <section className="parallax-hero relative isolate min-h-screen overflow-x-hidden">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
 
         <div className="relative z-10">
-          <header className="pw-container pt-5">
+          <header className="pw-container sticky top-4 z-40 pt-5">
             <PublicHeader />
           </header>
 

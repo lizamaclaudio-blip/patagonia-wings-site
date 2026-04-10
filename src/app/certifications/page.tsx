@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -55,8 +56,9 @@ function CertificationsContent() {
     profile?.callsign || session.user.email?.split("@")[0]?.toUpperCase() || "PILOTO";
 
   return (
-    <div className="pw-container py-12 sm:py-16 lg:py-20">
-      <section className="glass-panel rounded-[34px] p-7 sm:p-9">
+    <AuthPageFrame>
+      <div className="space-y-6">
+        <section className="glass-panel rounded-[34px] p-7 sm:p-9">
         <span className="parallax-chip mb-6">CERTIFICACIONES</span>
 
         <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
@@ -145,20 +147,21 @@ function CertificationsContent() {
             ))}
           </div>
         </div>
-      </section>
-    </div>
+        </section>
+      </div>
+    </AuthPageFrame>
   );
 }
 
 export default function CertificationsPage() {
   return (
     <main className="grid-overlay">
-      <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
+      <section className="parallax-hero relative isolate min-h-screen overflow-x-hidden">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
 
         <div className="relative z-10">
-          <header className="pw-container pt-5">
+          <header className="pw-container sticky top-4 z-40 pt-5">
             <PublicHeader />
           </header>
 
