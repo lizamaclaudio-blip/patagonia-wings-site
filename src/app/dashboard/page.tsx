@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -30,6 +29,8 @@ type DashboardMetrics = {
 type ScoreLedgerRow = {
   pilot_callsign: string | null;
   flight_hours: number | null;
+  procedure_score?: number | null;
+  mission_score?: number | null;
   created_at: string | null;
 };
 
@@ -55,6 +56,75 @@ type MetricDisplayItem = {
   type: "text" | "number" | "currency";
   value: string | number;
   decimals?: number;
+};
+
+type AirportRow = {
+  ident: string | null;
+  name: string | null;
+  municipality: string | null;
+  iso_country: string | null;
+};
+
+type AirportHeroResponse = {
+  imageUrl: string;
+  source: "local" | "pexels" | "fallback";
+  photographerName?: string | null;
+  photographerUrl?: string | null;
+  providerName?: string | null;
+  providerUrl?: string | null;
+  photoPageUrl?: string | null;
+};
+
+type FlightReservationRow = {
+  pilot_callsign: string | null;
+  route_code?: string | null;
+  aircraft_type_code?: string | null;
+  aircraft_registration?: string | null;
+  origin_ident?: string | null;
+  destination_ident?: string | null;
+  status?: string | null;
+  flight_mode_code?: string | null;
+  procedure_score?: number | null;
+  mission_score?: number | null;
+  completed_at?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
+
+type RankingCard = {
+  title: string;
+  entries: Array<{ label: string; value: string }>;
+};
+
+type TransferOption = {
+  title: string;
+  subtitle: string;
+  eta: string;
+  priceLabel: string;
+  accent: "emerald" | "cyan" | "amber";
+};
+
+type NewsItem = {
+  title: string;
+  body: string;
+  tag: string;
+};
+
+type CentralOverview = {
+  airportCode: string;
+  airportName: string;
+  municipality: string;
+  countryCode: string;
+  countryName: string;
+  pilotsOnField: number;
+  metarText: string;
+  imagePath: string;
+  transferOptions: TransferOption[];
+  monthlyRankingCards: RankingCard[];
+  yearlyRankingCards: RankingCard[];
+  activeFlights: FlightReservationRow[];
+  recentFlights: FlightReservationRow[];
+  newsItems: NewsItem[];
 };
 
 const EMPTY_METRICS: DashboardMetrics = {
@@ -85,6 +155,15 @@ const DISPATCH_STEPS: Array<{ key: DispatchStepKey; label: string; shortLabel: s
   { key: "summary", label: "4. Resumen", shortLabel: "Resumen" },
 ];
 
+const COUNTRY_NAME_MAP: Record<string, string> = {
+  AR: "Argentina",
+  BR: "Brasil",
+  CL: "Chile",
+  ES: "España",
+  PE: "Perú",
+  UK: "Reino Unido",
+  US: "Estados Unidos",
+};
 
 function toSafeNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -189,6 +268,252 @@ function buildMonthLabel() {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+function getCountryName(countryCode?: string | null) {
+  const normalized = countryCode?.trim().toUpperCase() ?? "";
+  return COUNTRY_NAME_MAP[normalized] || normalized || "Ubicación actual";
+}
+
+function getFlagUrl(countryCode?: string | null) {
+  const normalized = countryCode?.trim().toLowerCase() ?? "";
+  return normalized ? `https://flagcdn.com/24x18/${normalized}.png` : "";
+}
+
+function getAirportImagePath(airportCode: string) {
+  return `/airports/${airportCode.toUpperCase()}.jpg`;
+}
+
+function buildAirportHeroRequestUrl(central: Pick<CentralOverview, "airportCode" | "airportName" | "municipality" | "countryName">) {
+  const params = new URLSearchParams({
+    icao: central.airportCode,
+    airportName: central.airportName,
+    city: central.municipality,
+    country: central.countryName,
+  });
+
+  return `/api/airport-hero?${params.toString()}`;
+}
+
+function buildTransferOptions(countryCode: string, airportCode: string): TransferOption[] {
+  const isChile = countryCode === "CL";
+
+  return [
+    {
+      title: "Traslado terrestre",
+      subtitle: isChile
+        ? `Moverte por tierra desde ${airportCode} hacia otro punto nacional cuando la economía quede activa.`
+        : `Moverte por tierra desde ${airportCode} hacia otro punto doméstico cuando la economía quede activa.`,
+      eta: isChile ? "2h a 8h" : "3h a 10h",
+      priceLabel: isChile ? "$18.000 CLP" : "$24.000 ARS",
+      accent: "emerald",
+    },
+    {
+      title: "Ticket aéreo regular",
+      subtitle: "Reservado para saltos rápidos entre hubs y aeropuertos de red sin romper la ubicación real del piloto.",
+      eta: "45m a 3h",
+      priceLabel: "Economía piloto",
+      accent: "cyan",
+    },
+    {
+      title: "Reposicionamiento prioritario",
+      subtitle: "Opción futura para mover al piloto con prioridad operacional cuando la red o un evento lo requieran.",
+      eta: "Prioridad alta",
+      priceLabel: "Tarifa dinámica",
+      accent: "amber",
+    },
+  ];
+}
+
+function buildNewsItems(
+  airportCode: string,
+  pilotsOnField: number,
+  activeFlights: FlightReservationRow[],
+  recentFlights: FlightReservationRow[],
+): NewsItem[] {
+  const latestFlight = recentFlights[0] ?? null;
+  const latestFlightTag = latestFlight ? formatRouteTag(latestFlight) : `${airportCode} → ---`;
+  const latestFlightScore = latestFlight ? toSafeNumber(latestFlight.procedure_score) : 0;
+  const activeCount = activeFlights.length;
+
+  return [
+    {
+      tag: "NOTAM",
+      title: `Centro informativo ${airportCode}`,
+      body: `Este panel queda listo para eventos, avisos operativos, récords del mes y publicaciones internas sin salir de la Central del hub.`,
+    },
+    {
+      tag: "OPERACIÓN",
+      title: activeCount > 0 ? `${activeCount} vuelo(s) activos ahora` : "Operación tranquila en este momento",
+      body:
+        activeCount > 0
+          ? `Ya puedes usar esta ventana para destacar la operación viva del día y luego enchufar alertas reales según salida, taxi, crucero o llegada.`
+          : `Cuando haya pilotos volando, aquí podrás destacar movimientos activos, eventos del día y tráfico relevante del hub actual.`,
+    },
+    {
+      tag: "ÚLTIMO CIERRE",
+      title: latestFlight ? latestFlightTag : "Esperando vuelos recientes",
+      body: latestFlight
+        ? `Último cierre registrado con ${formatDecimal(latestFlightScore)} pts de procedimiento. Este bloque queda listo para convertirlo luego en noticia, récord o destacado.`
+        : `Aún no hay cierres recientes para convertir en noticia. Cuando entren más vuelos, esta tarjeta podrá resaltar el último PIREP destacado.`,
+    },
+    {
+      tag: "MOVIMIENTO HUB",
+      title: `${formatInteger(pilotsOnField)} piloto(s) en ${airportCode}`,
+      body: `La Central ya puede mostrar el pulso del hub actual. Más adelante podremos usar este mismo bloque para avisos de traslados, slots o saturación operativa.`,
+    },
+  ];
+}
+
+function formatFlightModeLabel(mode?: string | null) {
+  const normalized = (mode ?? "").trim().toUpperCase();
+  if (!normalized) {
+    return "Operación";
+  }
+
+  const map: Record<string, string> = {
+    ASSIGNMENT: "Asignación",
+    CAREER: "Itinerario",
+    CHARTER: "Chárter",
+    EVENT: "Evento",
+    TRAINING: "Entrenamiento",
+    TOUR: "Tour",
+  };
+
+  return map[normalized] ?? normalized.replace(/_/g, " ");
+}
+
+function formatFlightStatusLabel(status?: string | null) {
+  const normalized = (status ?? "").trim().toLowerCase();
+  const map: Record<string, string> = {
+    cancelled: "Cancelado",
+    completed: "Completado",
+    dispatched: "Despacho",
+    in_flight: "En vuelo",
+    reserved: "Reservado",
+  };
+
+  return map[normalized] ?? "Operación";
+}
+
+function formatRouteTag(row: FlightReservationRow) {
+  const origin = row.origin_ident?.trim().toUpperCase() ?? "---";
+  const destination = row.destination_ident?.trim().toUpperCase() ?? "---";
+  return `${origin} → ${destination}`;
+}
+
+function topEntries(
+  values: Array<{ label: string; rawValue: number }>,
+  formatter: (value: number) => string,
+) {
+  return values
+    .filter((entry) => Number.isFinite(entry.rawValue) && entry.rawValue > 0)
+    .sort((a, b) => b.rawValue - a.rawValue || a.label.localeCompare(b.label))
+    .slice(0, 3)
+    .map((entry) => ({
+      label: entry.label,
+      value: formatter(entry.rawValue),
+    }));
+}
+
+function buildRankingCards(
+  ledgerRows: ScoreLedgerRow[],
+  scoredFlights: FlightReservationRow[],
+  variant: "month" | "year",
+): RankingCard[] {
+  const grouped = new Map<
+    string,
+    {
+      hours: number;
+      procedureTotal: number;
+      procedureCount: number;
+      missionTotal: number;
+      missionCount: number;
+    }
+  >();
+
+  for (const row of ledgerRows) {
+    const callsign = row.pilot_callsign?.trim().toUpperCase();
+    if (!callsign) {
+      continue;
+    }
+
+    const current = grouped.get(callsign) ?? {
+      hours: 0,
+      procedureTotal: 0,
+      procedureCount: 0,
+      missionTotal: 0,
+      missionCount: 0,
+    };
+
+    current.hours += toSafeNumber(row.flight_hours);
+
+    const procedure = toSafeNumber(row.procedure_score);
+    if (procedure > 0) {
+      current.procedureTotal += procedure;
+      current.procedureCount += 1;
+    }
+
+    const mission = toSafeNumber(row.mission_score);
+    if (mission > 0) {
+      current.missionTotal += mission;
+      current.missionCount += 1;
+    }
+
+    grouped.set(callsign, current);
+  }
+
+  const bestProcedure = topEntries(
+    Array.from(grouped.entries()).map(([label, stats]) => ({
+      label,
+      rawValue:
+        stats.procedureCount > 0 ? stats.procedureTotal / stats.procedureCount : 0,
+    })),
+    (value) => `${formatDecimal(value)} pts`,
+  );
+
+  const bestMission = topEntries(
+    Array.from(grouped.entries()).map(([label, stats]) => ({
+      label,
+      rawValue: stats.missionCount > 0 ? stats.missionTotal / stats.missionCount : 0,
+    })),
+    (value) => `${formatDecimal(value)} pts`,
+  );
+
+  const bestHours = topEntries(
+    Array.from(grouped.entries()).map(([label, stats]) => ({
+      label,
+      rawValue: stats.hours,
+    })),
+    (value) => `${formatDecimal(value)} h`,
+  );
+
+  const bestPirep = topEntries(
+    scoredFlights.map((flight) => ({
+      label: flight.pilot_callsign?.trim().toUpperCase() ?? "PWG",
+      rawValue: toSafeNumber(flight.procedure_score),
+    })),
+    (value) => `${formatDecimal(value)} pts`,
+  );
+
+  const prefix = variant === "month" ? "Mes" : "Año";
+
+  return [
+    {
+      title: `Mejores puntajes ${prefix.toLowerCase()}`,
+      entries: bestProcedure.length
+        ? bestProcedure
+        : [{ label: "Sin datos", value: "Pendiente" }],
+    },
+    {
+      title: `Ranking de horas ${prefix.toLowerCase()}`,
+      entries: bestHours.length ? bestHours : [{ label: "Sin datos", value: "Pendiente" }],
+    },
+    {
+      title: `Mejores PIREP ${prefix.toLowerCase()}`,
+      entries: bestPirep.length ? bestPirep : [{ label: "Sin datos", value: "Pendiente" }],
+    },
+  ];
+}
+
 async function loadDashboardMetrics(profile: PilotProfileRecord) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -284,6 +609,140 @@ async function loadDashboardMetrics(profile: PilotProfileRecord) {
   } satisfies DashboardMetrics;
 }
 
+async function loadCentralOverview(profile: PilotProfileRecord): Promise<CentralOverview> {
+  const currentAirport = (
+    profile.current_airport_code ??
+    profile.base_hub_code ??
+    "SCEL"
+  )
+    .trim()
+    .toUpperCase();
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+  const [
+    airportRes,
+    pilotsOnFieldRes,
+    activeFlightsRes,
+    recentFlightsRes,
+    monthLedgerRes,
+    yearLedgerRes,
+    monthScoredRes,
+    yearScoredRes,
+  ] = await Promise.all([
+    supabase
+      .from("airports")
+      .select("ident, name, municipality, iso_country")
+      .eq("ident", currentAirport)
+      .maybeSingle(),
+    supabase
+      .from("pilot_profiles")
+      .select("callsign", { count: "exact", head: true })
+      .eq("current_airport_code", currentAirport),
+    supabase
+      .from("flight_reservations")
+      .select(
+        "pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at",
+      )
+      .in("status", ["dispatched", "in_flight"])
+      .order("updated_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("flight_reservations")
+      .select(
+        "pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, procedure_score, mission_score, completed_at, created_at",
+      )
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(20),
+    supabase
+      .from("pw_pilot_score_ledger")
+      .select("pilot_callsign, flight_hours, procedure_score, mission_score, created_at")
+      .gte("created_at", monthStart),
+    supabase
+      .from("pw_pilot_score_ledger")
+      .select("pilot_callsign, flight_hours, procedure_score, mission_score, created_at")
+      .gte("created_at", yearStart),
+    supabase
+      .from("flight_reservations")
+      .select(
+        "pilot_callsign, route_code, procedure_score, mission_score, completed_at, created_at, origin_ident, destination_ident",
+      )
+      .eq("status", "completed")
+      .eq("scoring_status", "scored")
+      .gte("completed_at", monthStart)
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(200),
+    supabase
+      .from("flight_reservations")
+      .select(
+        "pilot_callsign, route_code, procedure_score, mission_score, completed_at, created_at, origin_ident, destination_ident",
+      )
+      .eq("status", "completed")
+      .eq("scoring_status", "scored")
+      .gte("completed_at", yearStart)
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(500),
+  ]);
+
+  const airport = (airportRes.data ?? null) as AirportRow | null;
+
+  let metarText = `METAR ${currentAirport} — pendiente de actualización`;
+
+  try {
+    const metarResponse = await fetch(`/api/weather/metar?ids=${currentAirport}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (metarResponse.ok) {
+      const metarPayload = await metarResponse.json().catch(() => null) as {
+        metar?: { raw?: string | null } | null;
+      } | null;
+
+      const rawMetar = metarPayload?.metar?.raw?.trim();
+      if (rawMetar) {
+        metarText = rawMetar;
+      }
+    }
+  } catch {
+    metarText = `METAR ${currentAirport} — pendiente de actualización`;
+  }
+
+  const airportCode = airport?.ident?.trim().toUpperCase() ?? currentAirport;
+  const countryCode = airport?.iso_country?.trim().toUpperCase() ?? "CL";
+  const activeFlights = ((activeFlightsRes.data ?? []) as FlightReservationRow[]).slice(0, 10);
+  const recentFlights = ((recentFlightsRes.data ?? []) as FlightReservationRow[]).slice(0, 20);
+  const pilotsOnField = pilotsOnFieldRes.count ?? 0;
+
+  return {
+    airportCode,
+    airportName: airport?.name?.trim() ?? "Aeropuerto actual del piloto",
+    municipality: airport?.municipality?.trim() ?? "Ubicación operativa",
+    countryCode,
+    countryName: getCountryName(airport?.iso_country),
+    pilotsOnField,
+    metarText,
+    imagePath: getAirportImagePath(currentAirport),
+    transferOptions: buildTransferOptions(countryCode, airportCode),
+    monthlyRankingCards: buildRankingCards(
+      (monthLedgerRes.data ?? []) as ScoreLedgerRow[],
+      (monthScoredRes.data ?? []) as FlightReservationRow[],
+      "month",
+    ),
+    yearlyRankingCards: buildRankingCards(
+      (yearLedgerRes.data ?? []) as ScoreLedgerRow[],
+      (yearScoredRes.data ?? []) as FlightReservationRow[],
+      "year",
+    ),
+    activeFlights,
+    recentFlights,
+    newsItems: buildNewsItems(airportCode, pilotsOnField, activeFlights, recentFlights),
+  };
+}
+
 function AnimatedMetricValue({
   item,
   animateKey,
@@ -337,14 +796,665 @@ function AnimatedMetricValue({
   return <>{formatInteger(displayValue)}</>;
 }
 
+function CentralSectionDivider() {
+  return <div className="my-6 h-px w-full bg-white/10" />;
+}
+
+function CentralRankingGrid({ cards }: { cards: RankingCard[] }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      {cards.map((card) => (
+        <div
+          key={card.title}
+          className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))]"
+        >
+          <div className="border-b border-white/8 px-4 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+              Ranking
+            </p>
+            <h4 className="mt-2 text-base font-semibold text-white">{card.title}</h4>
+          </div>
+
+          <div className="space-y-3 p-4">
+            {card.entries.map((entry, index) => (
+              <div
+                key={`${card.title}-${index}-${entry.label}`}
+                className="flex items-center gap-3 rounded-[20px] border border-white/8 bg-[#031428]/62 px-3 py-3"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-400/18 bg-emerald-500/[0.09] text-sm font-semibold text-emerald-300">
+                  {index + 1}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{entry.label}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/42">
+                    Posición destacada
+                  </p>
+                </div>
+
+                <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-sm font-semibold text-white">
+                  {entry.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CentralAirportHero({ central }: { central: CentralOverview }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const [heroImage, setHeroImage] = useState<AirportHeroResponse | null>(null);
+  const [isResolvingImage, setIsResolvingImage] = useState(true);
+  const flagUrl = getFlagUrl(central.countryCode);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveAirportHero() {
+      setImageFailed(false);
+      setIsResolvingImage(true);
+      setHeroImage(null);
+
+      try {
+        const response = await fetch(buildAirportHeroRequestUrl(central), {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          const payload = (await response.json().catch(() => null)) as AirportHeroResponse | null;
+
+          if (!cancelled && payload?.imageUrl) {
+            setHeroImage(payload);
+            setIsResolvingImage(false);
+            return;
+          }
+        }
+      } catch {
+        // fallback handled below
+      }
+
+      if (!cancelled) {
+        setHeroImage({
+          imageUrl: central.imagePath,
+          source: "fallback",
+        });
+        setIsResolvingImage(false);
+      }
+    }
+
+    void resolveAirportHero();
+
+    return () => {
+      cancelled = true
+    };
+  }, [central]);
+
+  const displayImageUrl = !imageFailed ? (heroImage?.imageUrl ?? central.imagePath) : null;
+  const showPexelsAttribution =
+    !imageFailed &&
+    heroImage?.source === "pexels" &&
+    Boolean(heroImage.photographerName || heroImage.providerName);
+
+  return (
+    <section className="overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.9),rgba(4,15,30,0.94))]">
+      <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-7">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Central del hub actual
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                {central.countryName}
+              </h2>
+              {flagUrl ? (
+                <img
+                  src={flagUrl}
+                  alt={`Bandera de ${central.countryName}`}
+                  className="h-[18px] w-auto rounded-[2px] object-cover shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
+                />
+              ) : null}
+            </div>
+            <p className="mt-2 text-base text-white/78">
+              {central.airportCode} · {central.airportName}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+              Pilotos en esta ubicación
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-white">
+              {formatInteger(central.pilotsOnField)}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch">
+          <div className="overflow-hidden rounded-[24px] bg-[#07131f] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+            {displayImageUrl ? (
+              <div className="relative h-full min-h-[220px] w-full overflow-hidden rounded-[24px] bg-[#07131f]">
+                <img
+                  src={displayImageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover object-center blur-2xl scale-110 opacity-55"
+                />
+
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_24%,rgba(2,10,18,0.28)_100%)]" />
+
+                <img
+                  src={displayImageUrl}
+                  alt={`${central.airportCode} banner`}
+                  className="absolute inset-0 h-full w-full object-contain object-center"
+                  onError={() => setImageFailed(true)}
+                />
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent,rgba(3,10,20,0.94))] px-5 pb-4 pt-12">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/55">
+                        Marco dinámico del hub
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {central.municipality} · {central.countryName}
+                      </p>
+                    </div>
+
+                    <div className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/68">
+                      {heroImage?.source === "local"
+                        ? "Imagen manual"
+                        : heroImage?.source === "pexels"
+                          ? "Fallback API"
+                          : isResolvingImage
+                            ? "Buscando foto"
+                            : "Sin imagen local"}
+                    </div>
+                  </div>
+
+                  {showPexelsAttribution ? (
+                    <p className="pointer-events-auto mt-3 text-[11px] leading-5 text-white/60">
+                      Foto por{" "}
+                      {heroImage?.photographerUrl ? (
+                        <a
+                          href={heroImage.photographerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-cyan-200/90 transition hover:text-cyan-100"
+                        >
+                          {heroImage.photographerName}
+                        </a>
+                      ) : (
+                        <span className="text-white/74">{heroImage?.photographerName}</span>
+                      )}
+                      {" "}vía{" "}
+                      {heroImage?.providerUrl ? (
+                        <a
+                          href={heroImage.providerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-cyan-200/90 transition hover:text-cyan-100"
+                        >
+                          {heroImage?.providerName ?? "Pexels"}
+                        </a>
+                      ) : (
+                        <span className="text-white/74">{heroImage?.providerName ?? "Pexels"}</span>
+                      )}
+                      {heroImage?.photoPageUrl ? (
+                        <>
+                          {" "}·{" "}
+                          <a
+                            href={heroImage.photoPageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-cyan-200/90 transition hover:text-cyan-100"
+                          >
+                            ver foto
+                          </a>
+                        </>
+                      ) : null}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[220px] h-full w-full items-end overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(30,144,255,0.24),transparent_38%),linear-gradient(135deg,rgba(3,20,40,1),rgba(7,35,66,0.86))] p-5">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
+                    Marco dinámico del aeropuerto
+                  </p>
+                  <h3 className="mt-2 text-2xl font-semibold text-white">
+                    {central.airportCode}
+                  </h3>
+                  <p className="mt-2 max-w-md text-sm leading-7 text-white/74">
+                    Si subes una imagen manual en{" "}
+                    <span className="font-semibold text-white">public/airports/{central.airportCode}.jpg</span>,
+                    la tomará primero. Si no existe, quedará listo para buscar una foto automática por ciudad.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-4">
+            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                Aeropuerto actual
+              </p>
+              <h3 className="mt-3 text-2xl font-semibold text-white">{central.airportName}</h3>
+              <p className="mt-2 text-sm leading-7 text-white/74">
+                {central.municipality} · {central.countryName}
+              </p>
+            </div>
+
+            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                METAR
+              </p>
+              <p className="mt-3 text-sm leading-7 text-white/78">{central.metarText}</p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                  ICAO actual
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-white">{central.airportCode}</p>
+              </div>
+
+              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                  País / bandera
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  {flagUrl ? (
+                    <img
+                      src={flagUrl}
+                      alt={`Bandera de ${central.countryName}`}
+                      className="h-[18px] w-auto rounded-[2px] object-cover"
+                    />
+                  ) : null}
+                  <span className="text-lg font-semibold text-white">{central.countryName}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CentralTransfersSection({
+  airportCode,
+  options,
+}: {
+  airportCode: string;
+  options: TransferOption[];
+}) {
+  const accentMap: Record<TransferOption["accent"], string> = {
+    emerald: "border-emerald-400/14 bg-emerald-500/[0.05] text-emerald-200",
+    cyan: "border-cyan-400/14 bg-cyan-500/[0.05] text-cyan-200",
+    amber: "border-amber-400/14 bg-amber-500/[0.05] text-amber-200",
+  };
+
+  return (
+    <section>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            Traslados
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">Movimiento entre ubicaciones</h3>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
+            Este bloque ya queda listo para la futura economía del piloto. Desde aquí podrás pagar un
+            movimiento controlado desde <span className="font-semibold text-white">{airportCode}</span> sin romper la
+            ubicación real ni el flujo operativo del hub.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+            Estado del módulo
+          </p>
+          <p className="mt-2 text-sm font-semibold text-white">Preparado para economía</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        {options.map((option) => (
+          <article
+            key={option.title}
+            className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4"
+          >
+            <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
+              Próximamente
+            </div>
+            <h4 className="mt-4 text-lg font-semibold text-white">{option.title}</h4>
+            <p className="mt-3 text-sm leading-7 text-white/72">{option.subtitle}</p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">Tiempo</p>
+                <p className="mt-2 text-sm font-semibold text-white">{option.eta}</p>
+              </div>
+              <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">Costo base</p>
+                <p className="mt-2 text-sm font-semibold text-white">{option.priceLabel}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CentralNewsSection({ items }: { items: CentralOverview["newsItems"] }) {
+  return (
+    <section>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+        Noticias / NOTAM
+      </p>
+      <h3 className="mt-2 text-2xl font-semibold text-white">Panel informativo</h3>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => (
+          <article
+            key={`${item.tag}-${item.title}`}
+            className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4"
+          >
+            <div className="inline-flex rounded-full border border-white/10 bg-[#031428]/65 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">
+              {item.tag}
+            </div>
+            <p className="mt-4 text-base font-semibold text-white">{item.title}</p>
+            <p className="mt-3 text-sm leading-7 text-white/72">{item.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CentralFlightsTable({
+  rows,
+  emptyLabel,
+  variant,
+}: {
+  rows: FlightReservationRow[];
+  emptyLabel: string;
+  variant: "active" | "recent";
+}) {
+  const headers =
+    variant === "active"
+      ? ["Piloto", "Vuelo", "Aeronave", "Origen", "Destino", "Estado", "Tipo"]
+      : ["Piloto", "Vuelo", "Aeronave", "Origen", "Destino", "Score", "Tipo"];
+
+  const statusTone = (status?: string | null) => {
+    const normalized = (status ?? "").trim().toLowerCase();
+
+    if (normalized === "in_flight") {
+      return "border-cyan-400/18 bg-cyan-500/[0.08] text-cyan-200";
+    }
+
+    if (normalized === "dispatched") {
+      return "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200";
+    }
+
+    if (normalized === "completed") {
+      return "border-white/12 bg-white/[0.06] text-white";
+    }
+
+    return "border-white/10 bg-white/[0.04] text-white/78";
+  };
+
+  const modeTone = (mode?: string | null) => {
+    const normalized = (mode ?? "").trim().toUpperCase();
+
+    if (normalized === "CAREER") {
+      return "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200";
+    }
+
+    if (normalized === "TRAINING") {
+      return "border-amber-400/18 bg-amber-500/[0.08] text-amber-200";
+    }
+
+    if (normalized === "EVENT") {
+      return "border-fuchsia-400/18 bg-fuchsia-500/[0.08] text-fuchsia-200";
+    }
+
+    if (normalized === "CHARTER") {
+      return "border-cyan-400/18 bg-cyan-500/[0.08] text-cyan-200";
+    }
+
+    return "border-white/10 bg-white/[0.04] text-white/78";
+  };
+
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-white/8 bg-white/[0.03]">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm text-white/78">
+          <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
+            <tr>
+              {headers.map((header) => (
+                <th key={header} className="px-4 py-3 font-semibold">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.length ? (
+              rows.map((row, index) => {
+                const routeLabel = row.route_code?.trim() || formatRouteTag(row);
+                const aircraftPrimary =
+                  row.aircraft_type_code?.trim() || row.aircraft_registration?.trim() || "---";
+                const aircraftSecondary =
+                  row.aircraft_registration?.trim() && row.aircraft_registration?.trim() !== aircraftPrimary
+                    ? row.aircraft_registration?.trim()
+                    : null;
+
+                return (
+                  <tr
+                    key={`${row.pilot_callsign ?? "pwg"}-${index}`}
+                    className="border-t border-white/8 align-top"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-white">
+                        {row.pilot_callsign?.trim().toUpperCase() ?? "PWG"}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-white">{routeLabel}</div>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-white">{aircraftPrimary}</div>
+                      {aircraftSecondary ? (
+                        <div className="mt-1 text-xs uppercase tracking-[0.14em] text-white/42">
+                          {aircraftSecondary}
+                        </div>
+                      ) : null}
+                    </td>
+
+                    <td className="px-4 py-3 font-medium text-white/84">
+                      {row.origin_ident?.trim().toUpperCase() ?? "---"}
+                    </td>
+
+                    <td className="px-4 py-3 font-medium text-white/84">
+                      {row.destination_ident?.trim().toUpperCase() ?? "---"}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      {variant === "active" ? (
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusTone(row.status)}`}
+                        >
+                          {formatFlightStatusLabel(row.status)}
+                        </span>
+                      ) : (
+                        <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
+                          {toSafeNumber(row.procedure_score) > 0
+                            ? `${formatDecimal(toSafeNumber(row.procedure_score))} pts`
+                            : "Pendiente"}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${modeTone(row.flight_mode_code)}`}
+                      >
+                        {formatFlightModeLabel(row.flight_mode_code)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-white/54">
+                  {emptyLabel}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CentralWorkspace({ central }: { central: CentralOverview }) {
+  return (
+    <div className="space-y-6">
+      <CentralAirportHero central={central} />
+
+      <CentralSectionDivider />
+      <CentralTransfersSection airportCode={central.airportCode} options={central.transferOptions} />
+
+      <CentralSectionDivider />
+      <CentralNewsSection items={central.newsItems} />
+
+      <CentralSectionDivider />
+      <section>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Rankings mensuales
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del mes</h3>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              Corte
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">Promedios y horas del mes</p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <CentralRankingGrid cards={central.monthlyRankingCards} />
+        </div>
+      </section>
+
+      <CentralSectionDivider />
+      <section>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Rankings anuales
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del año</h3>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              Corte
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">Acumulado anual</p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <CentralRankingGrid cards={central.yearlyRankingCards} />
+        </div>
+      </section>
+
+      <CentralSectionDivider />
+      <section>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Pilotos volando
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Operación viva</h3>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              Tráfico activo
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.activeFlights.length)} movimiento(s)</p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <CentralFlightsTable
+            rows={central.activeFlights}
+            emptyLabel="Aún no hay pilotos volando en esta lectura del panel."
+            variant="active"
+          />
+        </div>
+      </section>
+
+      <CentralSectionDivider />
+      <section>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Últimos 20 vuelos
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              Últimos cierres
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.recentFlights.length)} registro(s)</p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <CentralFlightsTable
+            rows={central.recentFlights}
+            emptyLabel="Todavía no hay vuelos recientes para mostrar."
+            variant="recent"
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function DashboardWorkspace({
   activeTab,
   onChangeTab,
   metrics,
+  central,
 }: {
   activeTab: DashboardTabKey;
   onChangeTab: (tab: DashboardTabKey) => void;
   metrics: DashboardMetrics;
+  central: CentralOverview;
 }) {
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("aircraft");
 
@@ -374,37 +1484,8 @@ function DashboardWorkspace({
 
       <div className="pt-5">
         {activeTab === "central" ? (
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="surface-outline rounded-[24px] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Central operativa
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white">Centro de control del piloto</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                Aquí irá el panel principal del piloto con accesos directos, estado de carrera,
-                recordatorios de operación y el resumen rápido del día, sin salir del dashboard.
-              </p>
-            </div>
-
-            <div className="surface-outline rounded-[24px] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Estado actual
-              </p>
-              <div className="mt-4 grid gap-3 text-sm text-white/76">
-                <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                  <span>Rango vigente</span>
-                  <strong className="text-white">{metrics.careerRank}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                  <span>Estado del piloto</span>
-                  <strong className="text-white">{metrics.pilotStatus}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                  <span>Billetera actual</span>
-                  <strong className="text-white">{formatCurrency(metrics.walletBalance)}</strong>
-                </div>
-              </div>
-            </div>
+          <div className="surface-outline rounded-[28px] p-4 sm:p-5 lg:p-6">
+            <CentralWorkspace central={central} />
           </div>
         ) : null}
 
@@ -756,6 +1837,30 @@ function DashboardContent() {
   const session = useProtectedSession();
   const [profile, setProfile] = useState<PilotProfileRecord | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics>(EMPTY_METRICS);
+  const [central, setCentral] = useState<CentralOverview>({
+    airportCode: "SCEL",
+    airportName: "Aeropuerto actual del piloto",
+    municipality: "Ubicación operativa",
+    countryCode: "CL",
+    countryName: "Chile",
+    pilotsOnField: 0,
+    metarText: "METAR preparado para conectar en el siguiente bloque.",
+    imagePath: getAirportImagePath("SCEL"),
+    transferOptions: buildTransferOptions("CL", "SCEL"),
+    monthlyRankingCards: [
+      { title: "Mejores puntajes mes", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Ranking de horas mes", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores PIREP mes", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+    ],
+    yearlyRankingCards: [
+      { title: "Mejores puntajes año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Ranking de horas año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores PIREP año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+    ],
+    activeFlights: [],
+    recentFlights: [],
+    newsItems: buildNewsItems("SCEL", 0, [], []),
+  });
   const [activeTab, setActiveTab] = useState<DashboardTabKey>("central");
 
   useEffect(() => {
@@ -771,12 +1876,17 @@ function DashboardContent() {
       setProfile(nextProfile);
 
       try {
-        const nextMetrics = await loadDashboardMetrics(nextProfile);
+        const [nextMetrics, nextCentral] = await Promise.all([
+          loadDashboardMetrics(nextProfile),
+          loadCentralOverview(nextProfile),
+        ]);
+
         if (isMounted) {
           setMetrics(nextMetrics);
+          setCentral(nextCentral);
         }
       } catch (error) {
-        console.error("No se pudieron cargar las métricas del dashboard:", error);
+        console.error("No se pudieron cargar todas las métricas del dashboard:", error);
         if (isMounted) {
           setMetrics((current) => ({
             ...current,
@@ -786,6 +1896,19 @@ function DashboardContent() {
             totalHours: getProfileTotalHours(nextProfile),
             walletBalance: getProfileWallet(nextProfile),
             careerRank: formatRankLabel(nextProfile.career_rank_code ?? nextProfile.rank_code),
+          }));
+
+          setCentral((current) => ({
+            ...current,
+            airportCode:
+              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+                .trim()
+                .toUpperCase(),
+            imagePath: getAirportImagePath(
+              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+                .trim()
+                .toUpperCase(),
+            ),
           }));
         }
       }
@@ -838,8 +1961,7 @@ function DashboardContent() {
   );
 
   return (
-    <AuthPageFrame>
-      <div className="space-y-6">
+    <div className="pw-container py-10 sm:py-14 lg:py-16">
       <section className="glass-panel rounded-[30px] px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
@@ -882,9 +2004,13 @@ function DashboardContent() {
         </div>
       </section>
 
-      <DashboardWorkspace activeTab={activeTab} onChangeTab={setActiveTab} metrics={metrics} />
-      </div>
-    </AuthPageFrame>
+      <DashboardWorkspace
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+        metrics={metrics}
+        central={central}
+      />
+    </div>
   );
 }
 
