@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import {
-  NAVIGRAPH_COOKIE_VERIFIER,
+  NAVIGRAPH_COOKIE_DEVICE_CODE,
+  NAVIGRAPH_COOKIE_DEVICE_EXPIRES_AT,
+  NAVIGRAPH_COOKIE_DEVICE_INTERVAL,
+  NAVIGRAPH_COOKIE_DEVICE_USER_CODE,
+  NAVIGRAPH_COOKIE_DEVICE_VERIFIER,
   getCookieBaseOptions,
+  getTokenExpiryIso,
   startDeviceAuthorization,
 } from "@/lib/navigraph-auth";
 
 export async function POST() {
   try {
     const session = await startDeviceAuthorization();
+    const expiresAt = getTokenExpiryIso(session.expiresIn);
 
     const response = NextResponse.json({
       ok: true,
@@ -20,8 +26,32 @@ export async function POST() {
     });
 
     response.cookies.set(
-      NAVIGRAPH_COOKIE_VERIFIER,
+      NAVIGRAPH_COOKIE_DEVICE_CODE,
+      session.deviceCode,
+      getCookieBaseOptions(Math.max(60, session.expiresIn))
+    );
+
+    response.cookies.set(
+      NAVIGRAPH_COOKIE_DEVICE_USER_CODE,
+      session.userCode,
+      getCookieBaseOptions(Math.max(60, session.expiresIn))
+    );
+
+    response.cookies.set(
+      NAVIGRAPH_COOKIE_DEVICE_VERIFIER,
       session.codeVerifier,
+      getCookieBaseOptions(Math.max(60, session.expiresIn))
+    );
+
+    response.cookies.set(
+      NAVIGRAPH_COOKIE_DEVICE_INTERVAL,
+      String(session.interval),
+      getCookieBaseOptions(Math.max(60, session.expiresIn))
+    );
+
+    response.cookies.set(
+      NAVIGRAPH_COOKIE_DEVICE_EXPIRES_AT,
+      expiresAt,
       getCookieBaseOptions(Math.max(60, session.expiresIn))
     );
 

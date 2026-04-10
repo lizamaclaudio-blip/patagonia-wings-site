@@ -17,7 +17,7 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -28,8 +28,13 @@ function buildHtml(params: {
   userCode: string;
   interval: number;
 }) {
-  const { nextPath, verificationUriComplete, verificationUri, userCode, interval } =
-    params;
+  const {
+    nextPath,
+    verificationUriComplete,
+    verificationUri,
+    userCode,
+    interval,
+  } = params;
 
   return `<!doctype html>
 <html lang="es">
@@ -192,7 +197,7 @@ function buildHtml(params: {
                 credentials: "same-origin",
                 cache: "no-store",
                 headers: {
-                  "Accept": "application/json"
+                  Accept: "application/json"
                 }
               });
 
@@ -322,9 +327,6 @@ export async function GET(request: NextRequest) {
       expiresAt,
       getCookieBaseOptions(device.expiresIn)
     );
-
-    response.cookies.delete(NAVIGRAPH_COOKIE_STATE);
-    response.cookies.delete(NAVIGRAPH_COOKIE_VERIFIER);
 
     return response;
   } catch (error) {
