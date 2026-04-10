@@ -13,7 +13,10 @@ import {
 } from "@/lib/pilot-profile";
 import {
   listAvailableAircraft,
+  listAvailableItineraries,
   type AvailableAircraftOption,
+  type AvailableItineraryOption,
+  type FlightMode,
 } from "@/lib/flight-ops";
 import { supabase } from "@/lib/supabase/browser";
 
@@ -1803,18 +1806,126 @@ function DispatchAircraftTable({
   );
 }
 
+function normalizeDispatchAircraftCode(value: string | null | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+}
+
+function mapDispatchFlightTypeToMode(value: DispatchFlightTypeId | null): FlightMode | null {
+  switch (value) {
+    case "career":
+      return "itinerary";
+    case "charter":
+      return "charter";
+    case "training":
+      return "training";
+    case "event":
+    case "special_mission":
+      return "event";
+    case "free_flight":
+      return "charter";
+    default:
+      return null;
+  }
+}
+
+function DispatchItineraryTable({
+  rows,
+  selectedItineraryId,
+  onSelect,
+}: {
+  rows: AvailableItineraryOption[];
+  selectedItineraryId: string | null;
+  onSelect: (itineraryId: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm text-white/78">
+          <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
+            <tr>
+              <th className="px-4 py-3 font-semibold">Ruta</th>
+              <th className="px-4 py-3 font-semibold">Origen</th>
+              <th className="px-4 py-3 font-semibold">Destino</th>
+              <th className="px-4 py-3 font-semibold">Flota</th>
+              <th className="px-4 py-3 font-semibold">Disp.</th>
+              <th className="px-4 py-3 font-semibold text-right">Accion</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row) => {
+              const isSelected = selectedItineraryId === row.itinerary_id;
+              const fleetLabel =
+                row.compatible_aircraft_types?.length
+                  ? row.compatible_aircraft_types.join(", ")
+                  : row.aircraft_type_code || row.aircraft_type_name || "Multi-fleet";
+
+              return (
+                <tr
+                  key={row.itinerary_id}
+                  className={`border-t border-white/8 align-top transition ${
+                    isSelected ? "bg-emerald-500/[0.08]" : ""
+                  }`}
+                >
+                  <td className="px-4 py-4">
+                    <div className="font-semibold text-white">{row.itinerary_code}</div>
+                    <div className="mt-1 text-sm text-white/68">{row.itinerary_name}</div>
+                  </td>
+                  <td className="px-4 py-4 text-white/84">{row.origin_icao || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{row.destination_icao || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{fleetLabel}</td>
+                  <td className="px-4 py-4 text-white/84">
+                    {typeof row.available_aircraft_count === "number" ? row.available_aircraft_count : 0}
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(row.itinerary_id)}
+                      className={`inline-flex rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                        isSelected
+                          ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
+                          : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      {isSelected ? "Seleccionado" : "Seleccionar"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
+                  No hay itinerarios disponibles para la aeronave y modo de vuelo seleccionados.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function DashboardWorkspace({
   activeTab,
   onChangeTab,
   metrics,
   central,
   availableAircraft,
+  availableItineraries,
 }: {
   activeTab: DashboardTabKey;
   onChangeTab: (tab: DashboardTabKey) => void;
   metrics: DashboardMetrics;
   central: CentralOverview;
   availableAircraft: AvailableAircraftOption[];
+  availableItineraries: AvailableItineraryOption[];
 }) {
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
@@ -1866,9 +1977,43 @@ function DashboardWorkspace({
     () => buildDispatchMetarSummary(central.metarText),
     [central.metarText],
   );
+  const dispatchFlightMode = useMemo(
+    () => mapDispatchFlightTypeToMode(selectedFlightType),
+    [selectedFlightType],
+  );
   const selectedAircraftRecord = useMemo(
     () => availableAircraft.find((option) => option.aircraft_id === selectedAircraft) ?? null,
     [availableAircraft, selectedAircraft],
+  );
+  const filteredItineraries = useMemo(() => {
+    const modeFiltered = dispatchFlightMode
+      ? availableItineraries.filter((item) => item.flight_mode === dispatchFlightMode)
+      : [];
+
+    if (!selectedAircraftRecord) {
+      return modeFiltered;
+    }
+
+    const selectedCode = normalizeDispatchAircraftCode(selectedAircraftRecord.aircraft_code);
+
+    return modeFiltered.filter((item) => {
+      const compatibleTypes = item.compatible_aircraft_types ?? [];
+      if (compatibleTypes.length > 0) {
+        return compatibleTypes.some(
+          (type) => normalizeDispatchAircraftCode(type) === selectedCode,
+        );
+      }
+
+      if (item.aircraft_type_code) {
+        return normalizeDispatchAircraftCode(item.aircraft_type_code) === selectedCode;
+      }
+
+      return (item.available_aircraft_count ?? 0) > 0;
+    });
+  }, [availableItineraries, dispatchFlightMode, selectedAircraftRecord]);
+  const selectedItineraryRecord = useMemo(
+    () => filteredItineraries.find((option) => option.itinerary_id === selectedItinerary) ?? null,
+    [filteredItineraries, selectedItinerary],
   );
 
   useEffect(() => {
@@ -1878,6 +2023,13 @@ function DashboardWorkspace({
       setDispatchReady(false);
     }
   }, [selectedAircraft, selectedAircraftRecord]);
+
+  useEffect(() => {
+    if (selectedItinerary && !selectedItineraryRecord) {
+      setSelectedItinerary(null);
+      setDispatchReady(false);
+    }
+  }, [selectedItinerary, selectedItineraryRecord]);
 
   const isStepEnabled = (step: DispatchStepKey) => {
     switch (step) {
@@ -1903,8 +2055,8 @@ function DashboardWorkspace({
     aircraft: selectedAircraftRecord
       ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_code}`
       : "Pendiente",
-    itinerary: selectedItinerary
-      ? itineraryOptions.find((option) => option.id === selectedItinerary)?.title ?? "Listo"
+    itinerary: selectedItineraryRecord
+      ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
     dispatch: dispatchReady ? "Despacho marcado como listo" : "Pendiente",
   };
@@ -2249,38 +2401,47 @@ function DashboardWorkspace({
                   ) : null}
 
                   {dispatchStep === "itinerary" ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                    <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 3</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de itinerario</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Seleccion de itinerario</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Aquí escoges la pierna real disponible según tipo de vuelo y aeronave. Sin itinerario elegido,
-                          Despacho seguirá bloqueado.
+                          Aqui eliges los itinerarios reales disponibles segun el tipo de vuelo y la aeronave que ya
+                          seleccionaste. Sin una ruta confirmada, el paso de Despacho sigue bloqueado.
                         </p>
 
-                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          {itineraryOptions.map((option) => {
-                            const isSelected = selectedItinerary === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => resetAfterItinerary(option.id)}
-                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
-                                  isSelected
-                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
-                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
-                                }`}
-                              >
-                                <span className="block text-base font-semibold text-white">{option.title}</span>
-                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
-                              </button>
-                            );
-                          })}
+                        <div className="mt-5">
+                          <DispatchItineraryTable
+                            rows={filteredItineraries}
+                            selectedItineraryId={selectedItinerary}
+                            onSelect={resetAfterItinerary}
+                          />
+                        </div>
+
+                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
+                          {selectedItineraryRecord
+                            ? `Itinerario activo: ${selectedItineraryRecord.itinerary_code} ${selectedItineraryRecord.origin_icao}-${selectedItineraryRecord.destination_icao}.`
+                            : filteredItineraries.length > 0
+                              ? `${filteredItineraries.length} itinerario(s) disponibles para esta combinacion.`
+                              : "No hay itinerarios compatibles para la combinacion actual."}
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => handleStepChange("aircraft")} className="button-secondary py-3">
+                            Volver a aeronave
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("dispatch_flow")}
+                            disabled={!canOpenDispatch}
+                            className={`py-3 ${canOpenDispatch ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
+                            Continuar a despacho
+                          </button>
                         </div>
                       </div>
 
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                      <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Secuencia vigente</p>
@@ -2297,7 +2458,7 @@ function DashboardWorkspace({
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          El paso de Despacho se habilita recién cuando una ruta queda confirmada.
+                          El paso de Despacho se habilita recien cuando una ruta queda confirmada.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
@@ -2540,6 +2701,7 @@ function DashboardContent() {
   });
   const [activeTab, setActiveTab] = useState<DashboardTabKey>("central");
   const [availableAircraft, setAvailableAircraft] = useState<AvailableAircraftOption[]>([]);
+  const [availableItineraries, setAvailableItineraries] = useState<AvailableItineraryOption[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2554,16 +2716,18 @@ function DashboardContent() {
       setProfile(nextProfile);
 
       try {
-        const [nextMetrics, nextCentral, nextAvailableAircraft] = await Promise.all([
+        const [nextMetrics, nextCentral, nextAvailableAircraft, nextAvailableItineraries] = await Promise.all([
           loadDashboardMetrics(nextProfile),
           loadCentralOverview(nextProfile),
           listAvailableAircraft(nextProfile),
+          listAvailableItineraries(nextProfile),
         ]);
 
         if (isMounted) {
           setMetrics(nextMetrics);
           setCentral(nextCentral);
           setAvailableAircraft(nextAvailableAircraft);
+          setAvailableItineraries(nextAvailableItineraries);
         }
       } catch (error) {
         console.error("No se pudieron cargar todas las métricas del dashboard:", error);
@@ -2591,6 +2755,7 @@ function DashboardContent() {
             ),
           }));
           setAvailableAircraft([]);
+          setAvailableItineraries([]);
         }
       }
     }
@@ -2691,6 +2856,7 @@ function DashboardContent() {
         metrics={metrics}
         central={central}
         availableAircraft={availableAircraft}
+        availableItineraries={availableItineraries}
       />
     </div>
   );
