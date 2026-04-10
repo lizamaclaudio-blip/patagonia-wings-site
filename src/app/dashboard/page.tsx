@@ -49,7 +49,7 @@ type PilotHoursRow = {
 };
 
 type DashboardTabKey = "central" | "dispatch" | "office" | "training";
-type DispatchStepKey = "aircraft" | "itinerary" | "dispatch_flow" | "summary";
+type DispatchStepKey = "flight_type" | "aircraft" | "itinerary" | "dispatch_flow" | "summary";
 
 type MetricDisplayItem = {
   label: string;
@@ -149,10 +149,11 @@ const DASHBOARD_TABS: Array<{ key: DashboardTabKey; label: string }> = [
 ];
 
 const DISPATCH_STEPS: Array<{ key: DispatchStepKey; label: string; shortLabel: string }> = [
-  { key: "aircraft", label: "1. Aeronave", shortLabel: "Aeronave" },
-  { key: "itinerary", label: "2. Itinerario", shortLabel: "Itinerario" },
-  { key: "dispatch_flow", label: "3. Despacho", shortLabel: "Despacho" },
-  { key: "summary", label: "4. Resumen", shortLabel: "Resumen" },
+  { key: "flight_type", label: "1. Tipo de vuelo", shortLabel: "Tipo de vuelo" },
+  { key: "aircraft", label: "2. Aeronave", shortLabel: "Aeronave" },
+  { key: "itinerary", label: "3. Itinerario", shortLabel: "Itinerario" },
+  { key: "dispatch_flow", label: "4. Despacho", shortLabel: "Despacho" },
+  { key: "summary", label: "5. Resumen", shortLabel: "Resumen" },
 ];
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -1456,7 +1457,7 @@ function DashboardWorkspace({
   metrics: DashboardMetrics;
   central: CentralOverview;
 }) {
-  const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("aircraft");
+  const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
 
   return (
     <section className="mt-6 glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
@@ -1503,7 +1504,7 @@ function DashboardWorkspace({
                     </h3>
                     <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
                       No eliminamos nada de lo ya construido. Esta ventana pasa a ser el frente visual del flujo
-                      operativo que ya veníamos usando: primero la aeronave, luego el itinerario, después el
+                      operativo que ya veníamos usando: primero el tipo de vuelo, luego la aeronave, después el
                       despacho y al final el resumen validado para ACARS.
                     </p>
                   </div>
@@ -1534,16 +1535,128 @@ function DashboardWorkspace({
                 </div>
 
                 <div className="mt-5 min-h-[620px] rounded-[22px] border border-cyan-400/14 bg-[radial-gradient(circle_at_top,rgba(22,168,255,0.08),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 sm:min-h-[700px] lg:min-h-[820px] lg:p-5">
-                  {dispatchStep === "aircraft" ? (
+                  {dispatchStep === "flight_type" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                           Paso 1
                         </p>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Antes de tomar aeronave, aquí definiremos el modo operativo del vuelo. Este primer selector
+                          ordenará el resto del flujo y luego permitirá filtrar mejor la lógica real del despacho.
+                        </p>
+
+                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Carrera / itinerario regular de la red
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Chárter / operación libre bajo reglas futuras
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Entrenamiento / evento / misión especial
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Qué define este paso</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              El tipo de vuelo será la puerta de entrada del despacho. Desde aquí podrás decidir si el
+                              flujo se comporta como itinerario real, chárter, entrenamiento o evento.
+                            </p>
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              Primero dejamos armado el menú correcto. En el siguiente ajuste fino enchufamos aquí las
+                              tarjetas reales del tipo de vuelo sin romper el resto del dashboard.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
+                          Zona preparada para incrustar la selección real de tipo de vuelo como nuevo paso inicial del despacho.
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => setDispatchStep("aircraft")} className="button-primary py-3">
+                            Continuar a aeronave
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {dispatchStep === "itinerary" ? (
+                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                          Paso 3
+                        </p>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de itinerario</h4>
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Después de definir la aeronave, aquí escogeremos el itinerario real disponible según la lógica de la red, el aeropuerto actual del piloto y el modo operativo seleccionado.
+                        </p>
+
+                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Itinerarios visibles según aeropuerto actual y tipo de vuelo
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Filtro por red real, estado de la ruta y disponibilidad operativa
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Preparado para conectar luego con horarios, block y validaciones
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Qué se define aquí</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              Este paso servirá para elegir la ruta específica después de definir la aeronave, dejando el flujo más ordenado y coherente con la operación real que quieres para Patagonia Wings.
+                            </p>
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              Dejamos el paso del itinerario montado dentro del dashboard para que luego puedas avanzar o
+                              retroceder sin salir de esta misma ventana principal.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
+                          Zona preparada para incrustar el catálogo real de itinerarios del despacho.
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => setDispatchStep("aircraft")} className="button-secondary py-3">
+                            Volver a aeronave
+                          </button>
+                          <button type="button" onClick={() => setDispatchStep("dispatch_flow")} className="button-primary py-3">
+                            Continuar a despacho
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {dispatchStep === "aircraft" ? (
+                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                          Paso 2
+                        </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          El flujo arranca aquí. Primero tomamos una aeronave disponible en el aeropuerto actual del
-                          piloto, respetando rango, permisos y estado operativo de la flota.
+                          Después de definir el tipo de vuelo, aquí tomamos la aeronave disponible en el aeropuerto actual del piloto, respetando rango, permisos y estado operativo de la flota.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -1551,7 +1664,7 @@ function DashboardWorkspace({
                             Flota disponible en el aeropuerto actual
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Validación por rango y habilitación del piloto
+                            Validación por rango, modo de vuelo y habilitación del piloto
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
                             Estado de aeronave, matrícula y posición real
@@ -1585,67 +1698,11 @@ function DashboardWorkspace({
                           <Link href="/operations" className="button-primary py-3">
                             Abrir flujo real de aeronaves
                           </Link>
+                          <button type="button" onClick={() => setDispatchStep("flight_type")} className="button-secondary py-3">
+                            Volver a tipo de vuelo
+                          </button>
                           <button type="button" onClick={() => setDispatchStep("itinerary")} className="button-secondary py-3">
                             Continuar a itinerario
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {dispatchStep === "itinerary" ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 2
-                        </p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Elegir itinerario</h4>
-                        <p className="mt-3 text-sm leading-7 text-white/72">
-                          Una vez definida la aeronave, aquí se muestran solo los itinerarios que esa aeronave puede
-                          volar, según la red, el rango del piloto y el reglaje operativo que ya construimos.
-                        </p>
-
-                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Filtrado por compatibilidad aeronave / ruta
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Solo rutas visibles desde el aeropuerto actual
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Numeración de vuelo, banderas y block real preservados
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué mostrará aquí</p>
-                            <p className="mt-2 text-sm leading-7 text-white/70">
-                              El itinerario elegido, origen y destino con banderas, designador de vuelo tipo PWG### y
-                              duración tomada desde la red real cuando exista en base.
-                            </p>
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué no se pierde</p>
-                            <p className="mt-2 text-sm leading-7 text-white/70">
-                              Se mantiene la misma lógica de reservas y compatibilidad que veníamos usando en el
-                              despacho anterior. Solo cambiamos el contenedor visual.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar la selección real de itinerarios filtrados por aeronave.
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          <button type="button" onClick={() => setDispatchStep("aircraft")} className="button-secondary py-3">
-                            Volver a aeronave
-                          </button>
-                          <button type="button" onClick={() => setDispatchStep("dispatch_flow")} className="button-primary py-3">
-                            Continuar a despacho
                           </button>
                         </div>
                       </div>
@@ -1656,12 +1713,13 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 3
+                          Paso 4
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Aquí queda el bloque OFP / SimBrief / Navigraph que ya teníamos antes, solo que ahora vive
-                          dentro de este panel. La idea es conservar la lógica real y usar este dashboard como shell.
+                          dentro de este panel. Después del tipo de vuelo y la aeronave, este paso conserva la lógica real
+                          y usa el dashboard como shell visual.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -1715,7 +1773,7 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 4
+                          Paso 5
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
