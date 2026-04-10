@@ -14,6 +14,12 @@ export const NAVIGRAPH_COOKIE_STATE = "pwg_ng_state";
 export const NAVIGRAPH_COOKIE_VERIFIER = "pwg_ng_verifier";
 export const NAVIGRAPH_COOKIE_NEXT = "pwg_ng_next";
 
+export const NAVIGRAPH_COOKIE_DEVICE_CODE = "pwg_ng_device_code";
+export const NAVIGRAPH_COOKIE_DEVICE_USER_CODE = "pwg_ng_device_user_code";
+export const NAVIGRAPH_COOKIE_DEVICE_VERIFIER = "pwg_ng_device_verifier";
+export const NAVIGRAPH_COOKIE_DEVICE_INTERVAL = "pwg_ng_device_interval";
+export const NAVIGRAPH_COOKIE_DEVICE_EXPIRES_AT = "pwg_ng_device_expires_at";
+
 export type NavigraphTokenResponse = {
   accessToken: string;
   refreshToken: string | null;
@@ -34,7 +40,11 @@ export type NavigraphDeviceAuthorizationResponse = {
 
 export type NavigraphDeviceTokenPollResult =
   | { status: "authorized"; token: NavigraphTokenResponse }
-  | { status: "pending"; interval: number; error: "authorization_pending" | "slow_down" }
+  | {
+      status: "pending";
+      interval: number;
+      error: "authorization_pending" | "slow_down";
+    }
   | { status: "denied"; error: "access_denied"; message: string }
   | { status: "expired"; error: "expired_token"; message: string };
 
@@ -77,7 +87,9 @@ function createCodeVerifier() {
 }
 
 function createCodeChallenge(codeVerifier: string) {
-  return base64UrlEncode(createHash("sha256").update(codeVerifier).digest());
+  return base64UrlEncode(
+    createHash("sha256").update(codeVerifier).digest()
+  );
 }
 
 function parseNavigraphScopes() {
@@ -101,7 +113,11 @@ function parseNavigraphScopes() {
   return raw.replace(/[\[\]",]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function createOauthError(message: string, oauthError?: string, oauthDescription?: string) {
+function createOauthError(
+  message: string,
+  oauthError?: string,
+  oauthDescription?: string
+) {
   const error = new Error(message) as NavigraphOAuthError;
   error.oauthError = oauthError;
   error.oauthDescription = oauthDescription;
@@ -114,16 +130,21 @@ function parseTokenPayload(payload: unknown): NavigraphTokenResponse {
   }
 
   const record = payload as Record<string, unknown>;
-  const accessToken = typeof record.access_token === "string" ? record.access_token : null;
-  const refreshToken = typeof record.refresh_token === "string" ? record.refresh_token : null;
+  const accessToken =
+    typeof record.access_token === "string" ? record.access_token : null;
+  const refreshToken =
+    typeof record.refresh_token === "string" ? record.refresh_token : null;
   const expiresIn =
     typeof record.expires_in === "number"
       ? record.expires_in
       : Number(record.expires_in ?? 0);
-  const tokenType = typeof record.token_type === "string" ? record.token_type : "Bearer";
+  const tokenType =
+    typeof record.token_type === "string" ? record.token_type : "Bearer";
 
   if (!accessToken || !Number.isFinite(expiresIn) || expiresIn <= 0) {
-    throw new Error("Navigraph no entregó access_token o expires_in válidos.");
+    throw new Error(
+      "Navigraph no entregó access_token o expires_in válidos."
+    );
   }
 
   return {
@@ -171,7 +192,9 @@ async function requestNavigraphToken(body: URLSearchParams) {
         : undefined;
     const description =
       parsed && typeof parsed === "object" && "error_description" in parsed
-        ? String((parsed as Record<string, unknown>).error_description)
+        ? String(
+            (parsed as Record<string, unknown>).error_description
+          )
         : rawText || `Navigraph respondió ${response.status}.`;
 
     throw createOauthError(description, oauthError, description);
@@ -205,10 +228,15 @@ export function getCookieBaseOptions(maxAge: number) {
 }
 
 export function getTokenExpiryIso(expiresIn: number) {
-  return new Date(Date.now() + Math.max(1, expiresIn) * 1000).toISOString();
+  return new Date(
+    Date.now() + Math.max(1, expiresIn) * 1000
+  ).toISOString();
 }
 
-export function isExpiringSoon(expiresAt?: string | null, thresholdSeconds = 90) {
+export function isExpiringSoon(
+  expiresAt?: string | null,
+  thresholdSeconds = 90
+) {
   if (!expiresAt) {
     return true;
   }
@@ -238,7 +266,9 @@ export function decodeJwtPayload(token: string) {
   }
 }
 
-export function buildAuthorizationUrl(nextPath?: string | null): AuthorizationUrlResult {
+export function buildAuthorizationUrl(
+  nextPath?: string | null
+): AuthorizationUrlResult {
   void nextPath;
 
   const clientId = getRequiredEnv("NAVIGRAPH_CLIENT_ID");
@@ -313,8 +343,11 @@ export async function startDeviceAuthorization(): Promise<NavigraphDeviceAuthori
   if (!response.ok) {
     const message =
       parsed && typeof parsed === "object" && "error_description" in parsed
-        ? String((parsed as Record<string, unknown>).error_description)
-        : rawText || "No se pudo iniciar Device Authorization en Navigraph.";
+        ? String(
+            (parsed as Record<string, unknown>).error_description
+          )
+        : rawText ||
+          "No se pudo iniciar Device Authorization en Navigraph.";
     const oauthError =
       parsed && typeof parsed === "object" && "error" in parsed
         ? String((parsed as Record<string, unknown>).error)
@@ -324,13 +357,20 @@ export async function startDeviceAuthorization(): Promise<NavigraphDeviceAuthori
   }
 
   if (!parsed || typeof parsed !== "object") {
-    throw new Error("Navigraph devolvió una respuesta inválida al iniciar Device Authorization.");
+    throw new Error(
+      "Navigraph devolvió una respuesta inválida al iniciar Device Authorization."
+    );
   }
 
   const record = parsed as Record<string, unknown>;
-  const deviceCode = typeof record.device_code === "string" ? record.device_code : null;
-  const userCode = typeof record.user_code === "string" ? record.user_code : null;
-  const verificationUri = typeof record.verification_uri === "string" ? record.verification_uri : null;
+  const deviceCode =
+    typeof record.device_code === "string" ? record.device_code : null;
+  const userCode =
+    typeof record.user_code === "string" ? record.user_code : null;
+  const verificationUri =
+    typeof record.verification_uri === "string"
+      ? record.verification_uri
+      : null;
   const verificationUriComplete =
     typeof record.verification_uri_complete === "string"
       ? record.verification_uri_complete
@@ -352,7 +392,9 @@ export async function startDeviceAuthorization(): Promise<NavigraphDeviceAuthori
     !Number.isFinite(expiresIn) ||
     expiresIn <= 0
   ) {
-    throw new Error("Navigraph no entregó todos los datos requeridos para el flujo device.");
+    throw new Error(
+      "Navigraph no entregó todos los datos requeridos para el flujo device."
+    );
   }
 
   return {
@@ -390,14 +432,24 @@ export async function pollDeviceAuthorization(
   } catch (error) {
     const oauthError = (error as NavigraphOAuthError | undefined)?.oauthError;
     const message =
-      error instanceof Error ? error.message : "No se pudo consultar el estado de autorización con Navigraph.";
+      error instanceof Error
+        ? error.message
+        : "No se pudo consultar el estado de autorización con Navigraph.";
 
     if (oauthError === "authorization_pending") {
-      return { status: "pending", interval: intervalSeconds, error: "authorization_pending" };
+      return {
+        status: "pending",
+        interval: intervalSeconds,
+        error: "authorization_pending",
+      };
     }
 
     if (oauthError === "slow_down") {
-      return { status: "pending", interval: intervalSeconds + 5, error: "slow_down" };
+      return {
+        status: "pending",
+        interval: intervalSeconds + 5,
+        error: "slow_down",
+      };
     }
 
     if (oauthError === "access_denied") {
