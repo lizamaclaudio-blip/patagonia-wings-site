@@ -83,6 +83,15 @@ type AirportHeroResponse = {
   photoPageUrl?: string | null;
 };
 
+type DispatchMetarSummary = {
+  condition: string;
+  temperature: string;
+  qnh: string;
+  wind: string;
+  visibility: string;
+  raw: string;
+};
+
 type FlightReservationRow = {
   pilot_callsign: string | null;
   route_code?: string | null;
@@ -374,6 +383,133 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
       accent: "amber",
     },
   ];
+}
+
+function formatMetarTemperature(token?: string | null) {
+  if (!token) {
+    return "Pendiente";
+  }
+
+  const normalized = token.trim().toUpperCase();
+  const sign = normalized.startsWith("M") ? "-" : "";
+  const numeric = Number.parseInt(normalized.replace("M", ""), 10);
+
+  if (!Number.isFinite(numeric)) {
+    return "Pendiente";
+  }
+
+  return `${sign}${numeric} °C`;
+}
+
+function formatMetarWind(rawMetar: string) {
+  const match = rawMetar.match(/\b(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT\b/i);
+
+  if (!match) {
+    return "Pendiente";
+  }
+
+  const direction = match[1].toUpperCase() === "VRB" ? "VRB" : `${match[1]}°`;
+  const speed = `${Number.parseInt(match[2], 10)} kt`;
+  const gust = match[4] ? ` G${Number.parseInt(match[4], 10)}` : "";
+
+  return `${direction} ${speed}${gust}`;
+}
+
+function formatMetarVisibility(rawMetar: string) {
+  const match = rawMetar.match(
+    /\b(?:\d{3}|VRB)\d{2,3}(?:G\d{2,3})?KT\s+(CAVOK|\d{4}|M?\d+\/\d+SM|\d+SM)\b/i,
+  );
+  const token = match?.[1]?.toUpperCase();
+
+  if (!token) {
+    return "Pendiente";
+  }
+
+  if (token === "CAVOK" || token === "9999") {
+    return "10 km+";
+  }
+
+  if (/^\d{4}$/.test(token)) {
+    return `${Number.parseInt(token, 10)} m`;
+  }
+
+  return token.replace("SM", " sm");
+}
+
+function formatMetarQnh(rawMetar: string) {
+  const qnhMatch = rawMetar.match(/\bQ(\d{4})\b/i);
+  if (qnhMatch) {
+    return `${qnhMatch[1]} hPa`;
+  }
+
+  const altimeterMatch = rawMetar.match(/\bA(\d{4})\b/i);
+  if (!altimeterMatch) {
+    return "Pendiente";
+  }
+
+  const inches = Number.parseInt(altimeterMatch[1], 10) / 100;
+  const hPa = Math.round(inches * 33.8639);
+  return `${hPa} hPa`;
+}
+
+function formatMetarCondition(rawMetar: string) {
+  const normalized = rawMetar.toUpperCase();
+
+  if (normalized.includes("TS")) {
+    return "Tormenta";
+  }
+
+  if (normalized.includes("SN")) {
+    return "Nieve";
+  }
+
+  if (/(RA|DZ|SHRA|VCSH)/.test(normalized)) {
+    return "Lluvia";
+  }
+
+  if (/(FG|BR|HZ)/.test(normalized)) {
+    return "Niebla";
+  }
+
+  if (normalized.includes("CAVOK")) {
+    return "Estable";
+  }
+
+  if (/(OVC|BKN)/.test(normalized)) {
+    return "Cubierto";
+  }
+
+  if (/(FEW|SCT|SKC|CLR|NSC)/.test(normalized)) {
+    return "Parcial";
+  }
+
+  return "Variable";
+}
+
+function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSummary {
+  const normalized = rawMetar?.trim() ?? "";
+
+  if (!normalized || normalized.toUpperCase().includes("PENDIENTE")) {
+    return {
+      condition: "Pendiente",
+      temperature: "Pendiente",
+      qnh: "Pendiente",
+      wind: "Pendiente",
+      visibility: "Pendiente",
+      raw: normalized || "METAR pendiente de actualización",
+    };
+  }
+
+  const temperatureMatch = normalized.match(/\b(M?\d{2})\/(M?\d{2})\b/i);
+
+  return {
+    condition: formatMetarCondition(normalized),
+    temperature: formatMetarTemperature(temperatureMatch?.[1]),
+    qnh: formatMetarQnh(normalized),
+    wind: formatMetarWind(normalized),
+    visibility: formatMetarVisibility(normalized),
+    raw: normalized,
+  };
 }
 
 function buildNewsItems(
@@ -1498,6 +1634,96 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
   );
 }
 
+function DispatchAirportBannerCard({
+  central,
+  metar,
+}: {
+  central: CentralOverview;
+  metar: DispatchMetarSummary;
+}) {
+  const flagUrl = getFlagUrl(central.countryCode);
+
+  return (
+    <aside className="overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,22,44,0.92),rgba(4,15,30,0.96))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]">
+      <div className="relative min-h-[280px] overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center opacity-45"
+          style={{ backgroundImage: `url(${central.imagePath})` }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,35,0.26),rgba(5,12,24,0.94))]" />
+
+        <div className="relative z-10 flex h-full min-h-[280px] flex-col justify-between p-5">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h4 className="text-[32px] font-semibold tracking-tight text-white">
+                {central.municipality}
+              </h4>
+              {flagUrl ? (
+                <img
+                  src={flagUrl}
+                  alt={`Bandera de ${central.countryName}`}
+                  className="h-[18px] w-auto rounded-[2px] object-cover"
+                />
+              ) : null}
+            </div>
+
+            <p className="mt-3 text-lg text-white/80">
+              {central.airportCode} - {central.airportName}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="overflow-hidden rounded-[20px] border border-white/10 bg-black/18">
+              <div className="grid gap-px bg-white/10 sm:grid-cols-2">
+                <div className="bg-[#071526]/86 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    Estado
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.condition}</p>
+                </div>
+                <div className="bg-[#071526]/86 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    Temp
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.temperature}</p>
+                </div>
+                <div className="bg-[#071526]/86 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    QNH
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.qnh}</p>
+                </div>
+                <div className="bg-[#071526]/86 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    Viento
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.wind}</p>
+                </div>
+                <div className="bg-[#071526]/86 px-4 py-3 sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    Visibilidad
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.visibility}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[16px] border border-white/10 bg-black/16 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                Hub actual
+              </p>
+              <p className="mt-2 text-sm leading-7 text-white/80">
+                {formatInteger(central.pilotsOnField)} piloto(s) en esta ubicacion
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 function DashboardWorkspace({
   activeTab,
   onChangeTab,
@@ -1555,6 +1781,10 @@ function DashboardWorkspace({
   const canOpenItinerary = canOpenAircraft && Boolean(selectedAircraft);
   const canOpenDispatch = canOpenItinerary && Boolean(selectedItinerary);
   const canOpenSummary = canOpenDispatch && dispatchReady;
+  const dispatchMetar = useMemo(
+    () => buildDispatchMetarSummary(central.metarText),
+    [central.metarText],
+  );
 
   const isStepEnabled = (step: DispatchStepKey) => {
     switch (step) {
@@ -1647,8 +1877,33 @@ function DashboardWorkspace({
           <div className="space-y-4">
             <div className="surface-outline rounded-[26px] p-4 sm:p-5 lg:p-6">
               <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.92))] p-4 sm:p-5">
-                <div className="flex flex-col gap-4 border-b border-white/8 pb-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
+                <div className="grid gap-5 border-b border-white/8 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+                  <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.96))] px-6 py-8 text-center sm:px-8 sm:py-10">
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-0 bg-cover bg-center opacity-20"
+                      style={{ backgroundImage: `url(${central.imagePath})` }}
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.18),rgba(4,12,24,0.86))]" />
+
+                    <div className="relative z-10">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                        Workspace Dispatch
+                      </p>
+                      <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-[52px]">
+                        Centro de Despachos
+                      </h3>
+                      <p className="mx-auto mt-5 max-w-4xl text-base leading-8 text-white/76 sm:text-[18px]">
+                        Elige tu tipo de vuelo, escoge la aeronave para la cual estas habilitado y, si corresponde,
+                        confirma itinerario y despacho. Prepara el despacho en SimBrief y revisa que coincida con la web
+                        antes de enviarlo al ACARS.
+                      </p>
+                    </div>
+                  </div>
+
+                  <DispatchAirportBannerCard central={central} metar={dispatchMetar} />
+
+                  <div className="hidden">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                       Workspace Dispatch
                     </p>
@@ -1661,7 +1916,7 @@ function DashboardWorkspace({
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-emerald-400/16 bg-emerald-500/[0.08] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  <div className="hidden rounded-2xl border border-emerald-400/16 bg-emerald-500/[0.08] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
                     Flujo base preservado
                   </div>
                 </div>
@@ -1693,15 +1948,20 @@ function DashboardWorkspace({
 
                 <div className="mt-5 min-h-[620px] rounded-[22px] border border-cyan-400/14 bg-[radial-gradient(circle_at_top,rgba(22,168,255,0.08),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 sm:min-h-[700px] lg:min-h-[820px] lg:p-5">
                   {dispatchStep === "flight_type" ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                    <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                           Paso 1
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
-                        <p className="mt-3 text-sm leading-7 text-white/72">
+                        <p className="hidden mt-3 text-sm leading-7 text-white/72">
                           Antes de tomar aeronave, aquí defines el perfil operativo del vuelo. Hasta que no elijas una
                           modalidad, Aeronave seguirá bloqueado.
+                        </p>
+
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Antes de tomar aeronave, define el modo operativo de tu vuelo. Solo puedes escoger una opcion
+                          para habilitar el paso de aeronave.
                         </p>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1756,9 +2016,28 @@ function DashboardWorkspace({
                             );
                           })}
                         </div>
+
+                        <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
+                          <p className="text-sm leading-7 text-white/70">
+                            {selectedFlightType
+                              ? `Seleccionado: ${stepStatusLabel.flightType}. Ya puedes pasar a Aeronave.`
+                              : "Debes escoger una opcion para habilitar el paso de aeronave."}
+                          </p>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleStepChange("aircraft")}
+                              disabled={!canOpenAircraft}
+                              className={`py-3 ${canOpenAircraft ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                            >
+                              Continuar a aeronave
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                      <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué define este paso</p>
