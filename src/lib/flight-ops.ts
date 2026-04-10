@@ -92,8 +92,12 @@ export type DbFlightReservationRow = {
   flight_number: string;
   origin_icao: string;
   destination_icao: string;
+  origin?: string;
+  destination?: string;
   scheduled_departure: string | null;
   route_text: string | null;
+  routeText?: string | null;
+  routeCode?: string | null;
   remarks: string | null;
   status: FlightOperationStatus | "in_progress" | "completed" | "cancelled";
   created_at: string;

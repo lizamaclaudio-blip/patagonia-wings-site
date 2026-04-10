@@ -10,6 +10,7 @@ export type PilotProfileRecord = {
   last_name: string | null;
   country: string | null;
   base_hub: string | null;
+  base_hub_code?: string | null;
   current_airport_icao?: string | null;
   current_airport_code?: string | null;
   simulator: string | null;
