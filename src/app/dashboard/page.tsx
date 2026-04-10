@@ -1458,6 +1458,127 @@ function DashboardWorkspace({
   central: CentralOverview;
 }) {
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
+  const [selectedFlightType, setSelectedFlightType] = useState<string | null>(null);
+  const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
+  const [selectedItinerary, setSelectedItinerary] = useState<string | null>(null);
+  const [dispatchReady, setDispatchReady] = useState(false);
+
+  const flightTypeOptions = [
+    {
+      id: "career",
+      title: "Carrera",
+      description: "Itinerario regular de la red, con reglas, rango, flota y progresión real.",
+    },
+    {
+      id: "charter",
+      title: "Chárter",
+      description: "Operación libre para vuelos especiales, sin depender del itinerario estándar.",
+    },
+    {
+      id: "training",
+      title: "Entrenamiento / Evento",
+      description: "Misiones especiales, práctica, vuelos guiados o actividad programada.",
+    },
+  ] as const;
+
+  const aircraftOptions = [
+    {
+      id: "atr72",
+      title: "ATR 72 disponible",
+      description: "Toma una aeronave regional desde la flota activa del aeropuerto actual.",
+    },
+    {
+      id: "e175",
+      title: "E175 disponible",
+      description: "Opción jet regional para saltos medios dentro de la red operativa.",
+    },
+    {
+      id: "a320",
+      title: "A320 disponible",
+      description: "Opción narrowbody para red troncal y rutas con mayor demanda.",
+    },
+  ] as const;
+
+  const itineraryOptions = [
+    {
+      id: "short_leg",
+      title: "Pierna corta disponible",
+      description: "Itinerario corto alineado al aeropuerto actual y a la aeronave elegida.",
+    },
+    {
+      id: "medium_leg",
+      title: "Pierna media disponible",
+      description: "Ruta media compatible con rango, red activa y disponibilidad real.",
+    },
+    {
+      id: "special_leg",
+      title: "Pierna especial / misión",
+      description: "Slot especial para entrenamiento, evento o traslado validado.",
+    },
+  ] as const;
+
+  const canOpenAircraft = Boolean(selectedFlightType);
+  const canOpenItinerary = canOpenAircraft && Boolean(selectedAircraft);
+  const canOpenDispatch = canOpenItinerary && Boolean(selectedItinerary);
+  const canOpenSummary = canOpenDispatch && dispatchReady;
+
+  const isStepEnabled = (step: DispatchStepKey) => {
+    switch (step) {
+      case "flight_type":
+        return true;
+      case "aircraft":
+        return canOpenAircraft;
+      case "itinerary":
+        return canOpenItinerary;
+      case "dispatch_flow":
+        return canOpenDispatch;
+      case "summary":
+        return canOpenSummary;
+      default:
+        return false;
+    }
+  };
+
+  const stepStatusLabel = useMemo(() => {
+    return {
+      flightType: selectedFlightType
+        ? flightTypeOptions.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
+        : "Pendiente",
+      aircraft: selectedAircraft
+        ? aircraftOptions.find((option) => option.id === selectedAircraft)?.title ?? "Listo"
+        : "Pendiente",
+      itinerary: selectedItinerary
+        ? itineraryOptions.find((option) => option.id === selectedItinerary)?.title ?? "Listo"
+        : "Pendiente",
+      dispatch: dispatchReady ? "Despacho marcado como listo" : "Pendiente",
+    };
+  }, [selectedAircraft, selectedFlightType, selectedItinerary, dispatchReady]);
+
+  const handleStepChange = (step: DispatchStepKey) => {
+    if (!isStepEnabled(step)) {
+      return;
+    }
+
+    setDispatchStep(step);
+  };
+
+  const resetAfterFlightType = (nextFlightType: string) => {
+    setSelectedFlightType(nextFlightType);
+    setSelectedAircraft(null);
+    setSelectedItinerary(null);
+    setDispatchReady(false);
+  };
+
+  const resetAfterAircraft = (nextAircraft: string) => {
+    setSelectedAircraft(nextAircraft);
+    setSelectedItinerary(null);
+    setDispatchReady(false);
+  };
+
+  const resetAfterItinerary = (nextItinerary: string) => {
+    setSelectedItinerary(nextItinerary);
+    setDispatchReady(false);
+  };
 
   return (
     <section className="mt-6 glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
@@ -1503,9 +1624,8 @@ function DashboardWorkspace({
                       Flujo central reutilizando la lógica real del despacho
                     </h3>
                     <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
-                      No eliminamos nada de lo ya construido. Esta ventana pasa a ser el frente visual del flujo
-                      operativo que ya veníamos usando: primero el tipo de vuelo, luego la aeronave, después el
-                      despacho y al final el resumen validado para ACARS.
+                      Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no está
+                      elegido o marcado como listo. Así mantenemos orden operativo dentro del dashboard.
                     </p>
                   </div>
 
@@ -1517,16 +1637,21 @@ function DashboardWorkspace({
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2 border-b border-white/8 pb-4">
                   {DISPATCH_STEPS.map((step) => {
                     const isActive = step.key === dispatchStep;
+                    const isEnabled = isStepEnabled(step.key);
                     return (
                       <button
                         key={step.key}
                         type="button"
-                        onClick={() => setDispatchStep(step.key)}
+                        onClick={() => handleStepChange(step.key)}
+                        disabled={!isEnabled}
                         className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                           isActive
                             ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
-                            : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                            : isEnabled
+                            ? "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                            : "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/28 opacity-70"
                         }`}
+                        title={isEnabled ? step.shortLabel : "Completa el paso anterior para habilitarlo"}
                       >
                         {step.label}
                       </button>
@@ -1543,20 +1668,29 @@ function DashboardWorkspace({
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Antes de tomar aeronave, aquí definiremos el modo operativo del vuelo. Este primer selector
-                          ordenará el resto del flujo y luego permitirá filtrar mejor la lógica real del despacho.
+                          Antes de tomar aeronave, aquí definimos el modo operativo del vuelo. Hasta que no elijas uno,
+                          el paso de aeronave seguirá bloqueado.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Carrera / itinerario regular de la red
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Chárter / operación libre bajo reglas futuras
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Entrenamiento / evento / misión especial
-                          </div>
+                          {flightTypeOptions.map((option) => {
+                            const isSelected = selectedFlightType === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => resetAfterFlightType(option.id)}
+                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
+                                  isSelected
+                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
+                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
+                                }`}
+                              >
+                                <span className="block text-base font-semibold text-white">{option.title}</span>
+                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1565,83 +1699,32 @@ function DashboardWorkspace({
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué define este paso</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              El tipo de vuelo será la puerta de entrada del despacho. Desde aquí podrás decidir si el
-                              flujo se comporta como itinerario real, chárter, entrenamiento o evento.
+                              El tipo de vuelo abre la lógica del despacho. Según esta elección, después podrás filtrar mejor aeronave,
+                              itinerario y reglas finales.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
+                            <p className="text-sm font-semibold text-white">Estado actual</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Primero dejamos armado el menú correcto. En el siguiente ajuste fino enchufamos aquí las
-                              tarjetas reales del tipo de vuelo sin romper el resto del dashboard.
+                              {selectedFlightType
+                                ? `Seleccionado: ${stepStatusLabel.flightType}. Ya puedes pasar a Aeronave.`
+                                : "Todavía no eliges un tipo de vuelo. Aeronave seguirá bloqueado hasta seleccionar uno."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar la selección real de tipo de vuelo como nuevo paso inicial del despacho.
+                          Secuencia activa: primero eliges el modo del vuelo; recién después se habilita Aeronave.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
-                          <button type="button" onClick={() => setDispatchStep("aircraft")} className="button-primary py-3">
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("aircraft")}
+                            disabled={!canOpenAircraft}
+                            className={`py-3 ${canOpenAircraft ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
                             Continuar a aeronave
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {dispatchStep === "itinerary" ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 3
-                        </p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de itinerario</h4>
-                        <p className="mt-3 text-sm leading-7 text-white/72">
-                          Después de definir la aeronave, aquí escogeremos el itinerario real disponible según la lógica de la red, el aeropuerto actual del piloto y el modo operativo seleccionado.
-                        </p>
-
-                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Itinerarios visibles según aeropuerto actual y tipo de vuelo
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Filtro por red real, estado de la ruta y disponibilidad operativa
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Preparado para conectar luego con horarios, block y validaciones
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué se define aquí</p>
-                            <p className="mt-2 text-sm leading-7 text-white/70">
-                              Este paso servirá para elegir la ruta específica después de definir la aeronave, dejando el flujo más ordenado y coherente con la operación real que quieres para Patagonia Wings.
-                            </p>
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
-                            <p className="mt-2 text-sm leading-7 text-white/70">
-                              Dejamos el paso del itinerario montado dentro del dashboard para que luego puedas avanzar o
-                              retroceder sin salir de esta misma ventana principal.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar el catálogo real de itinerarios del despacho.
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap gap-3">
-                          <button type="button" onClick={() => setDispatchStep("aircraft")} className="button-secondary py-3">
-                            Volver a aeronave
-                          </button>
-                          <button type="button" onClick={() => setDispatchStep("dispatch_flow")} className="button-primary py-3">
-                            Continuar a despacho
                           </button>
                         </div>
                       </div>
@@ -1651,24 +1734,32 @@ function DashboardWorkspace({
                   {dispatchStep === "aircraft" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 2
-                        </p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Después de definir el tipo de vuelo, aquí tomamos la aeronave disponible en el aeropuerto actual del piloto, respetando rango, permisos y estado operativo de la flota.
+                          Ahora sí puedes tomar aeronave. Al elegir una, se habilitará Itinerario. Si cambias el tipo de vuelo,
+                          este paso se resetea para mantener el orden lógico.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Flota disponible en el aeropuerto actual
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Validación por rango, modo de vuelo y habilitación del piloto
-                          </div>
-                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Estado de aeronave, matrícula y posición real
-                          </div>
+                          {aircraftOptions.map((option) => {
+                            const isSelected = selectedAircraft === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => resetAfterAircraft(option.id)}
+                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
+                                  isSelected
+                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
+                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
+                                }`}
+                              >
+                                <span className="block text-base font-semibold text-white">{option.title}</span>
+                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1677,32 +1768,101 @@ function DashboardWorkspace({
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué se conserva</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Reutilizamos la lógica que ya teníamos en operaciones para no romper reservas, lectura de
-                              flota ni filtros desde Supabase.
+                              Reutilizamos la lógica que ya teníamos para no romper reservas, lectura de flota ni filtros reales.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
+                            <p className="text-sm font-semibold text-white">Estado actual</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Esta ventana será el contenedor del flujo completo, sin sacar al usuario del dashboard y
-                              manteniendo el header principal fijo.
+                              Tipo de vuelo: {stepStatusLabel.flightType}. Aeronave: {stepStatusLabel.aircraft}.
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar la selección real de aeronaves en el siguiente ajuste fino.
+                          El paso de Itinerario solo se habilita cuando una aeronave queda seleccionada.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
-                          <Link href="/operations" className="button-primary py-3">
-                            Abrir flujo real de aeronaves
-                          </Link>
-                          <button type="button" onClick={() => setDispatchStep("flight_type")} className="button-secondary py-3">
+                          <button type="button" onClick={() => handleStepChange("flight_type")} className="button-secondary py-3">
                             Volver a tipo de vuelo
                           </button>
-                          <button type="button" onClick={() => setDispatchStep("itinerary")} className="button-secondary py-3">
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("itinerary")}
+                            disabled={!canOpenItinerary}
+                            className={`py-3 ${canOpenItinerary ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
                             Continuar a itinerario
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {dispatchStep === "itinerary" ? (
+                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 3</p>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de itinerario</h4>
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Aquí escoges la pierna real disponible según tipo de vuelo y aeronave. Sin itinerario elegido,
+                          Despacho seguirá bloqueado.
+                        </p>
+
+                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
+                          {itineraryOptions.map((option) => {
+                            const isSelected = selectedItinerary === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => resetAfterItinerary(option.id)}
+                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
+                                  isSelected
+                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
+                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
+                                }`}
+                              >
+                                <span className="block text-base font-semibold text-white">{option.title}</span>
+                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Secuencia vigente</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              Tipo de vuelo: {stepStatusLabel.flightType}. Aeronave: {stepStatusLabel.aircraft}. Itinerario: {stepStatusLabel.itinerary}.
+                            </p>
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                            <p className="text-sm font-semibold text-white">Objetivo visual</p>
+                            <p className="mt-2 text-sm leading-7 text-white/70">
+                              Dejamos el itinerario montado dentro del dashboard para avanzar o retroceder sin salir de esta ventana principal.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
+                          El paso de Despacho se habilita recién cuando una ruta queda confirmada.
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => handleStepChange("aircraft")} className="button-secondary py-3">
+                            Volver a aeronave
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("dispatch_flow")}
+                            disabled={!canOpenDispatch}
+                            className={`py-3 ${canOpenDispatch ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
+                            Continuar a despacho
                           </button>
                         </div>
                       </div>
@@ -1712,14 +1872,11 @@ function DashboardWorkspace({
                   {dispatchStep === "dispatch_flow" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 4
-                        </p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Aquí queda el bloque OFP / SimBrief / Navigraph que ya teníamos antes, solo que ahora vive
-                          dentro de este panel. Después del tipo de vuelo y la aeronave, este paso conserva la lógica real
-                          y usa el dashboard como shell visual.
+                          Aquí queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
+                          despacho como listo y validado.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -1740,28 +1897,44 @@ function DashboardWorkspace({
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Reutilización</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              El objetivo no es rehacer el despacho desde cero, sino enchufar aquí el flujo real que ya
-                              estaba operativo para reserva, OFP, validación y persistencia.
+                              No rehacemos el despacho desde cero; aquí se enchufa el flujo real que ya estaba operativo.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Scroll permitido</p>
+                            <p className="text-sm font-semibold text-white">Estado actual</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Si este bloque crece, baja toda la página. El header de arriba se mantiene fijo y el mini
-                              menú interno sigue siempre dentro de esta misma ventana.
+                              {dispatchReady ? "Despacho marcado como listo. Resumen ya está habilitado." : "Aún falta marcar este paso como listo para abrir Resumen."}
                             </p>
                           </div>
                         </div>
 
-                        <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar el despacho real con OFP, validaciones y estado listo para ACARS.
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDispatchReady((current) => !current)}
+                          className={`mt-4 w-full rounded-[18px] border px-4 py-4 text-left transition ${
+                            dispatchReady
+                              ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
+                              : "border-white/8 bg-[#031428]/58 text-white/72 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <span className="block text-base font-semibold text-white">
+                            {dispatchReady ? "Despacho listo para pasar a resumen" : "Marcar despacho como listo"}
+                          </span>
+                          <span className="mt-1 block text-sm leading-7 text-white/68">
+                            Usa este estado como puerta de seguridad antes de abrir el resumen final.
+                          </span>
+                        </button>
 
                         <div className="mt-5 flex flex-wrap gap-3">
-                          <Link href="/operations" className="button-primary py-3">
-                            Abrir despacho real actual
-                          </Link>
-                          <button type="button" onClick={() => setDispatchStep("summary")} className="button-secondary py-3">
+                          <button type="button" onClick={() => handleStepChange("itinerary")} className="button-secondary py-3">
+                            Volver a itinerario
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("summary")}
+                            disabled={!canOpenSummary}
+                            className={`py-3 ${canOpenSummary ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
                             Continuar a resumen
                           </button>
                         </div>
@@ -1772,24 +1945,24 @@ function DashboardWorkspace({
                   {dispatchStep === "summary" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                          Paso 5
-                        </p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Última validación del flujo. Aquí se confirma que todo coincida antes de liberar el vuelo hacia
-                          ACARS: aeronave, itinerario, despacho y reglas finales de salida.
+                          Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Coincidencia reserva ↔ aeronave ↔ OFP
+                            Tipo de vuelo: {stepStatusLabel.flightType}
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Validación final de origen, destino y número de vuelo
+                            Aeronave: {stepStatusLabel.aircraft}
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Estado listo para enviar a ACARS
+                            Itinerario: {stepStatusLabel.itinerary}
+                          </div>
+                          <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                            Despacho: {stepStatusLabel.dispatch}
                           </div>
                         </div>
                       </div>
@@ -1799,25 +1972,23 @@ function DashboardWorkspace({
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué se ve aquí</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Un resumen limpio del vuelo listo para salir, con semáforos de validación y el botón final
-                              de envío cuando todo esté correcto.
+                              Un resumen limpio del vuelo listo para salir, con semáforos de validación y el botón final de envío cuando todo esté correcto.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Compatibilidad futura</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Este mismo panel podrá recibir luego economía, score, tolerancias y auditoría sin romper la
-                              estructura que ya dejamos armada hoy.
+                              Este panel podrá recibir después economía, score, tolerancias y auditoría sin romper la estructura ya aprobada.
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Zona preparada para incrustar el resumen final validado y el estado listo para ACARS.
+                          Resumen habilitado de forma progresiva: no se abre si algún paso anterior sigue pendiente.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
-                          <button type="button" onClick={() => setDispatchStep("dispatch_flow")} className="button-secondary py-3">
+                          <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
                             Volver a despacho
                           </button>
                           <Link href="/operations" className="button-primary py-3">
