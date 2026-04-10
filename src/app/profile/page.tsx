@@ -35,6 +35,16 @@ type NavigraphStatus = {
   error: string | null;
 };
 
+type NavigraphDeviceSession = {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete: string;
+  expiresIn: number;
+  interval: number;
+  startedAt: number;
+};
+
 const EMPTY_STATUS: NavigraphStatus = {
   configured: false,
   connected: false,
@@ -91,10 +101,12 @@ function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [connectingAuth, setConnectingAuth] = useState(false);
   const [disconnectingAuth, setDisconnectingAuth] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
   const [authStatus, setAuthStatus] = useState<NavigraphStatus>(EMPTY_STATUS);
+  const [deviceSession, setDeviceSession] = useState<NavigraphDeviceSession | null>(null);
 
   const [form, setForm] = useState<ProfileFormState>({
     first_name: "",
@@ -134,8 +146,10 @@ function ProfileContent() {
     void loadProfile();
   }, [session.user]);
 
-  async function loadNavigraphStatus() {
-    setCheckingAuth(true);
+  async function loadNavigraphStatus(silent = false) {
+    if (!silent) {
+      setCheckingAuth(true);
+    }
 
     try {
       const response = await fetch("/api/auth/navigraph/status", {
@@ -146,14 +160,18 @@ function ProfileContent() {
       const data = (await response.json()) as NavigraphStatus;
       setAuthStatus(data);
 
-      if (data.error) {
+      if (!silent && data.error) {
         setErrorMessage(data.error);
       }
     } catch {
       setAuthStatus(EMPTY_STATUS);
-      setErrorMessage("No se pudo comprobar el estado de conexión con Navigraph.");
+      if (!silent) {
+        setErrorMessage("No se pudo comprobar el estado de conexión con Navigraph.");
+      }
     } finally {
-      setCheckingAuth(false);
+      if (!silent) {
+        setCheckingAuth(false);
+      }
     }
   }
 
@@ -162,27 +180,59 @@ function ProfileContent() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!deviceSession) {
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const ok = params.get("ng");
-    const error = params.get("ng_error");
-
-    if (ok === "connected") {
-      setInfoMessage("Navigraph/SimBrief quedó conectado correctamente.");
-      void loadNavigraphStatus();
-      window.history.replaceState({}, "", window.location.pathname);
+    const expiresAt = deviceSession.startedAt + deviceSession.expiresIn * 1000;
+    if (Date.now() >= expiresAt) {
+      setDeviceSession(null);
+      setErrorMessage("La autorización de Navigraph expiró. Inicia el proceso nuevamente.");
       return;
     }
 
-    if (error) {
-      setErrorMessage(error);
-      void loadNavigraphStatus();
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/auth/navigraph/device/poll", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            deviceCode: deviceSession.deviceCode,
+            interval: deviceSession.interval,
+          }),
+        });
+
+        const data = (await response.json()) as
+          | { ok: true; status: "authorized"; expiresAt: string }
+          | { ok?: false; status?: string; interval?: number; message?: string; error?: string };
+
+        if (response.ok && "ok" in data && data.ok) {
+          setDeviceSession(null);
+          await loadNavigraphStatus(true);
+          setCheckingAuth(false);
+          setInfoMessage("Navigraph/SimBrief quedó conectado correctamente.");
+          return;
+        }
+
+        if (data.status === "pending") {
+          setDeviceSession((current) =>
+            current ? { ...current, interval: data.interval ?? current.interval } : current
+          );
+          return;
+        }
+
+        setDeviceSession(null);
+        setErrorMessage(data.message || data.error || "No se pudo completar la autorización con Navigraph.");
+      } catch {
+        setDeviceSession(null);
+        setErrorMessage("Falló el polling de Navigraph. Intenta conectar nuevamente.");
+      }
+    }, Math.max(2, deviceSession.interval) * 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [deviceSession]);
 
   function updateField<K extends keyof ProfileFormState>(
     key: K,
@@ -221,12 +271,47 @@ function ProfileContent() {
     }
   }
 
-  function handleConnectNavigraph() {
-    if (typeof window === "undefined") {
-      return;
-    }
+  async function handleConnectNavigraph() {
+    setConnectingAuth(true);
+    setErrorMessage("");
+    setInfoMessage("");
 
-    window.location.href = "/api/auth/navigraph/start?next=/profile";
+    try {
+      const response = await fetch("/api/auth/navigraph/device/start", {
+        method: "POST",
+      });
+      const data = (await response.json()) as
+        | ({ ok: true } & Omit<NavigraphDeviceSession, "startedAt">)
+        | { error?: string };
+
+      if (!response.ok || !('ok' in data)) {
+        throw new Error('error' in data ? data.error || 'No se pudo iniciar Navigraph.' : 'No se pudo iniciar Navigraph.');
+      }
+
+      const sessionData: NavigraphDeviceSession = {
+        deviceCode: data.deviceCode,
+        userCode: data.userCode,
+        verificationUri: data.verificationUri,
+        verificationUriComplete: data.verificationUriComplete,
+        expiresIn: data.expiresIn,
+        interval: data.interval,
+        startedAt: Date.now(),
+      };
+
+      setDeviceSession(sessionData);
+      if (typeof window !== "undefined") {
+        window.open(sessionData.verificationUriComplete, "_blank", "noopener,noreferrer");
+      }
+      setInfoMessage(
+        `Autoriza Patagonia Wings en Navigraph con el código ${sessionData.userCode} y luego vuelve para seguir.`
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo iniciar la conexión con Navigraph."
+      );
+    } finally {
+      setConnectingAuth(false);
+    }
   }
 
   async function handleDisconnectNavigraph() {
@@ -459,10 +544,10 @@ function ProfileContent() {
                 <button
                   type="button"
                   className="button-primary"
-                  onClick={handleConnectNavigraph}
-                  disabled={checkingAuth || loading}
+                  onClick={() => void handleConnectNavigraph()}
+                  disabled={checkingAuth || loading || connectingAuth}
                 >
-                  {checkingAuth ? "Comprobando..." : "Conectar Navigraph / SimBrief"}
+                  {connectingAuth ? "Conectando..." : checkingAuth ? "Comprobando..." : "Conectar Navigraph / SimBrief"}
                 </button>
               ) : (
                 <button

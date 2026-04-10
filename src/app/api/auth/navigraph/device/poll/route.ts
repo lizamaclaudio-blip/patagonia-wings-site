@@ -22,7 +22,7 @@ function clearDeviceCookies(response: NextResponse) {
   response.cookies.delete(NAVIGRAPH_COOKIE_DEVICE_EXPIRES_AT);
 }
 
-export async function GET(request: NextRequest) {
+async function handlePoll(request: NextRequest) {
   const deviceCode =
     request.cookies.get(NAVIGRAPH_COOKIE_DEVICE_CODE)?.value ?? null;
   const codeVerifier =
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
   if (!deviceCode || !codeVerifier) {
     const response = NextResponse.json(
       {
+        ok: false,
         status: "error",
         message:
           "No se encontró una autorización device activa para Navigraph.",
@@ -57,7 +58,9 @@ export async function GET(request: NextRequest) {
 
       const response = NextResponse.json(
         {
+          ok: true,
           status: "authorized",
+          expiresAt,
           message: "Navigraph conectado correctamente.",
         },
         { status: 200 }
@@ -86,13 +89,13 @@ export async function GET(request: NextRequest) {
       );
 
       clearDeviceCookies(response);
-
       return response;
     }
 
     if (result.status === "pending") {
       return NextResponse.json(
         {
+          ok: false,
           status: "pending",
           interval: result.interval,
         },
@@ -103,6 +106,7 @@ export async function GET(request: NextRequest) {
     if (result.status === "denied" || result.status === "expired") {
       const response = NextResponse.json(
         {
+          ok: false,
           status: result.status,
           message: result.message,
         },
@@ -113,12 +117,12 @@ export async function GET(request: NextRequest) {
       response.cookies.delete(NAVIGRAPH_COOKIE_ACCESS);
       response.cookies.delete(NAVIGRAPH_COOKIE_REFRESH);
       response.cookies.delete(NAVIGRAPH_COOKIE_EXPIRES_AT);
-
       return response;
     }
 
     const response = NextResponse.json(
       {
+        ok: false,
         status: "error",
         message: "Estado inesperado en el flujo de Navigraph.",
       },
@@ -130,6 +134,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const response = NextResponse.json(
       {
+        ok: false,
         status: "error",
         message:
           error instanceof Error
@@ -141,7 +146,14 @@ export async function GET(request: NextRequest) {
 
     clearDeviceCookies(response);
     response.cookies.delete(NAVIGRAPH_COOKIE_NEXT);
-
     return response;
   }
+}
+
+export async function GET(request: NextRequest) {
+  return handlePoll(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handlePoll(request);
 }
