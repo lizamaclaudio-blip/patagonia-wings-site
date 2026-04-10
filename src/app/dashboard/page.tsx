@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
@@ -50,6 +51,13 @@ type PilotHoursRow = {
 
 type DashboardTabKey = "central" | "dispatch" | "office" | "training";
 type DispatchStepKey = "flight_type" | "aircraft" | "itinerary" | "dispatch_flow" | "summary";
+type DispatchFlightTypeId =
+  | "career"
+  | "charter"
+  | "training"
+  | "event"
+  | "special_mission"
+  | "free_flight";
 
 type MetricDisplayItem = {
   label: string;
@@ -154,6 +162,50 @@ const DISPATCH_STEPS: Array<{ key: DispatchStepKey; label: string; shortLabel: s
   { key: "itinerary", label: "3. Itinerario", shortLabel: "Itinerario" },
   { key: "dispatch_flow", label: "4. Despacho", shortLabel: "Despacho" },
   { key: "summary", label: "5. Resumen", shortLabel: "Resumen" },
+];
+
+const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
+  id: DispatchFlightTypeId;
+  title: string;
+  description: string;
+  imageSrc: string;
+}> = [
+  {
+    id: "career",
+    title: "Carrera",
+    description: "Vuelos regulares de la red con progresión, reglas y continuidad operacional.",
+    imageSrc: "/dispatch/flight-types/career.png",
+  },
+  {
+    id: "charter",
+    title: "Chárter",
+    description: "Operación dedicada para vuelos especiales, flexibles y fuera del patrón regular.",
+    imageSrc: "/dispatch/flight-types/charter.png",
+  },
+  {
+    id: "training",
+    title: "Entrenamiento",
+    description: "Sesiones de práctica, chequeos y preparación operativa antes de salir a línea.",
+    imageSrc: "/dispatch/flight-types/training.png",
+  },
+  {
+    id: "event",
+    title: "Evento",
+    description: "Bloque reservado para vuelos coordinados, convocatoria interna y operación compartida.",
+    imageSrc: "/dispatch/flight-types/event.png",
+  },
+  {
+    id: "special_mission",
+    title: "Misión especial",
+    description: "Misiones puntuales con contexto operacional singular y prioridad específica.",
+    imageSrc: "/dispatch/flight-types/special-mission.png",
+  },
+  {
+    id: "free_flight",
+    title: "Vuelo libre",
+    description: "Salida abierta para explorar, practicar o mover aeronave con libertad visual.",
+    imageSrc: "/dispatch/flight-types/free-flight.png",
+  },
 ];
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -613,7 +665,7 @@ async function loadDashboardMetrics(profile: PilotProfileRecord) {
 async function loadCentralOverview(profile: PilotProfileRecord): Promise<CentralOverview> {
   const currentAirport = (
     profile.current_airport_code ??
-    profile.base_hub_code ??
+    profile.base_hub ??
     "SCEL"
   )
     .trim()
@@ -1458,28 +1510,10 @@ function DashboardWorkspace({
   central: CentralOverview;
 }) {
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
-  const [selectedFlightType, setSelectedFlightType] = useState<string | null>(null);
+  const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
   const [selectedItinerary, setSelectedItinerary] = useState<string | null>(null);
   const [dispatchReady, setDispatchReady] = useState(false);
-
-  const flightTypeOptions = [
-    {
-      id: "career",
-      title: "Carrera",
-      description: "Itinerario regular de la red, con reglas, rango, flota y progresión real.",
-    },
-    {
-      id: "charter",
-      title: "Chárter",
-      description: "Operación libre para vuelos especiales, sin depender del itinerario estándar.",
-    },
-    {
-      id: "training",
-      title: "Entrenamiento / Evento",
-      description: "Misiones especiales, práctica, vuelos guiados o actividad programada.",
-    },
-  ] as const;
 
   const aircraftOptions = [
     {
@@ -1539,20 +1573,18 @@ function DashboardWorkspace({
     }
   };
 
-  const stepStatusLabel = useMemo(() => {
-    return {
-      flightType: selectedFlightType
-        ? flightTypeOptions.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
-        : "Pendiente",
-      aircraft: selectedAircraft
-        ? aircraftOptions.find((option) => option.id === selectedAircraft)?.title ?? "Listo"
-        : "Pendiente",
-      itinerary: selectedItinerary
-        ? itineraryOptions.find((option) => option.id === selectedItinerary)?.title ?? "Listo"
-        : "Pendiente",
-      dispatch: dispatchReady ? "Despacho marcado como listo" : "Pendiente",
-    };
-  }, [selectedAircraft, selectedFlightType, selectedItinerary, dispatchReady]);
+  const stepStatusLabel = {
+    flightType: selectedFlightType
+      ? DISPATCH_FLIGHT_TYPE_OPTIONS.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
+      : "Pendiente",
+    aircraft: selectedAircraft
+      ? aircraftOptions.find((option) => option.id === selectedAircraft)?.title ?? "Listo"
+      : "Pendiente",
+    itinerary: selectedItinerary
+      ? itineraryOptions.find((option) => option.id === selectedItinerary)?.title ?? "Listo"
+      : "Pendiente",
+    dispatch: dispatchReady ? "Despacho marcado como listo" : "Pendiente",
+  };
 
   const handleStepChange = (step: DispatchStepKey) => {
     if (!isStepEnabled(step)) {
@@ -1562,7 +1594,7 @@ function DashboardWorkspace({
     setDispatchStep(step);
   };
 
-  const resetAfterFlightType = (nextFlightType: string) => {
+  const resetAfterFlightType = (nextFlightType: DispatchFlightTypeId) => {
     setSelectedFlightType(nextFlightType);
     setSelectedAircraft(null);
     setSelectedItinerary(null);
@@ -1668,26 +1700,58 @@ function DashboardWorkspace({
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Antes de tomar aeronave, aquí definimos el modo operativo del vuelo. Hasta que no elijas uno,
-                          el paso de aeronave seguirá bloqueado.
+                          Antes de tomar aeronave, aquí defines el perfil operativo del vuelo. Hasta que no elijas una
+                          modalidad, Aeronave seguirá bloqueado.
                         </p>
 
-                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          {flightTypeOptions.map((option) => {
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                          {DISPATCH_FLIGHT_TYPE_OPTIONS.map((option) => {
                             const isSelected = selectedFlightType === option.id;
                             return (
                               <button
                                 key={option.id}
                                 type="button"
+                                aria-pressed={isSelected}
                                 onClick={() => resetAfterFlightType(option.id)}
-                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
+                                className={`group block w-full overflow-hidden rounded-[20px] border text-left transition duration-200 ${
                                   isSelected
-                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
-                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
+                                    ? "border-emerald-400/45 bg-emerald-500/[0.12] text-white shadow-[0_16px_34px_rgba(17,181,110,0.18)]"
+                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.05]"
                                 }`}
                               >
-                                <span className="block text-base font-semibold text-white">{option.title}</span>
-                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
+                                <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-[#07131f]">
+                                  <Image
+                                    src={option.imageSrc}
+                                    alt={option.title}
+                                    fill
+                                    sizes="(min-width: 1280px) 26vw, (min-width: 640px) 42vw, 100vw"
+                                    className={`object-cover object-center transition duration-500 ${
+                                      isSelected ? "scale-[1.03]" : "group-hover:scale-[1.04]"
+                                    }`}
+                                  />
+                                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.08),rgba(4,12,24,0.68))]" />
+                                  <div className="absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-4">
+                                    <span className="panel-chip bg-black/20 text-white/82 backdrop-blur-sm">
+                                      Dispatch
+                                    </span>
+                                    <span
+                                      className={`inline-flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-xs font-semibold ${
+                                        isSelected
+                                          ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
+                                          : "border-white/18 bg-black/18 text-white/74"
+                                      }`}
+                                    >
+                                      {isSelected ? "Activo" : "Elegir"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="px-4 py-4">
+                                  <span className="block text-base font-semibold text-white">{option.title}</span>
+                                  <span className="mt-2 block text-sm leading-7 text-white/68">
+                                    {option.description}
+                                  </span>
+                                </div>
                               </button>
                             );
                           })}
@@ -1699,8 +1763,8 @@ function DashboardWorkspace({
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué define este paso</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              El tipo de vuelo abre la lógica del despacho. Según esta elección, después podrás filtrar mejor aeronave,
-                              itinerario y reglas finales.
+                              La modalidad elegida marca el contexto del despacho. Desde aquí se conserva el flujo
+                              secuencial sin tocar la estructura aprobada del dashboard.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
@@ -1714,7 +1778,8 @@ function DashboardWorkspace({
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Secuencia activa: primero eliges el modo del vuelo; recién después se habilita Aeronave.
+                          Secuencia activa: primero eliges una de las seis tarjetas; recién después se habilita
+                          Aeronave.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
@@ -2130,11 +2195,11 @@ function DashboardContent() {
           setCentral((current) => ({
             ...current,
             airportCode:
-              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+              (nextProfile.current_airport_code ?? nextProfile.base_hub ?? "SCEL")
                 .trim()
                 .toUpperCase(),
             imagePath: getAirportImagePath(
-              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+              (nextProfile.current_airport_code ?? nextProfile.base_hub ?? "SCEL")
                 .trim()
                 .toUpperCase(),
             ),
