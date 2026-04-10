@@ -665,7 +665,7 @@ async function loadDashboardMetrics(profile: PilotProfileRecord) {
 async function loadCentralOverview(profile: PilotProfileRecord): Promise<CentralOverview> {
   const currentAirport = (
     profile.current_airport_code ??
-    profile.base_hub_code ??
+    profile.base_hub ??
     "SCEL"
   )
     .trim()
@@ -2195,11 +2195,11 @@ function DashboardContent() {
           setCentral((current) => ({
             ...current,
             airportCode:
-              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+              (nextProfile.current_airport_code ?? nextProfile.base_hub ?? "SCEL")
                 .trim()
                 .toUpperCase(),
             imagePath: getAirportImagePath(
-              (nextProfile.current_airport_code ?? nextProfile.base_hub_code ?? "SCEL")
+              (nextProfile.current_airport_code ?? nextProfile.base_hub ?? "SCEL")
                 .trim()
                 .toUpperCase(),
             ),
