@@ -64,8 +64,7 @@ type DispatchFlightTypeId =
   | "training"
   | "event"
   | "special_mission"
-  | "free_flight"
-  | "qualification";
+  | "free_flight";
 
 type MetricDisplayItem = {
   label: string;
@@ -1843,8 +1842,6 @@ function mapDispatchFlightTypeToMode(value: DispatchFlightTypeId | null): Flight
       return "event";
     case "free_flight":
       return "charter";
-    case "qualification":
-      return "training";
     default:
       return null;
   }
@@ -2092,6 +2089,7 @@ function DashboardWorkspace({
     setSelectedAircraft(null);
     setSelectedItinerary(null);
     setDispatchReady(false);
+    setDispatchStep("aircraft");
   };
 
   const resetAfterAircraft = (nextAircraft: string) => {
@@ -2224,7 +2222,7 @@ function DashboardWorkspace({
 
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Antes de tomar aeronave, define el modo operativo de tu vuelo. Solo puedes escoger una opcion
-                          para habilitar el paso de aeronave. Cuando subas tus imagenes, estas siete tarjetas las tomaran sin cambiar el diseno del bloque.
+                          para habilitar el paso de aeronave.
                         </p>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -2253,10 +2251,7 @@ function DashboardWorkspace({
                                     }`}
                                   />
                                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.08),rgba(4,12,24,0.68))]" />
-                                  <div className="absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-4">
-                                    <span className="panel-chip bg-black/20 text-white/82 backdrop-blur-sm">
-                                      Dispatch
-                                    </span>
+                                  <div className="absolute inset-x-0 top-0 flex items-start justify-end px-4 pt-4">
                                     <span
                                       className={`inline-flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-xs font-semibold ${
                                         isSelected
@@ -2280,23 +2275,12 @@ function DashboardWorkspace({
                           })}
                         </div>
 
-                        <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="mt-6 border-t border-white/8 pt-5">
                           <p className="text-sm leading-7 text-white/70">
                             {selectedFlightType
-                              ? `Seleccionado: ${stepStatusLabel.flightType}. Ya puedes pasar a Aeronave.`
-                              : "Debes escoger una opcion para habilitar el paso de aeronave."}
+                              ? `Seleccionado: ${stepStatusLabel.flightType}. El flujo avanza automaticamente a Aeronave.`
+                              : "Debes escoger una opcion para habilitar y abrir automaticamente el paso de aeronave."}
                           </p>
-
-                          <div className="flex flex-wrap gap-3">
-                            <button
-                              type="button"
-                              onClick={() => handleStepChange("aircraft")}
-                              disabled={!canOpenAircraft}
-                              className={`py-3 ${canOpenAircraft ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
-                            >
-                              Continuar a aeronave
-                            </button>
-                          </div>
                         </div>
                       </div>
 
@@ -2320,7 +2304,7 @@ function DashboardWorkspace({
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Secuencia activa: primero eliges una de las siete tarjetas; recién después se habilita
+                          Secuencia activa: primero eliges una de las seis tarjetas; recién después se habilita
                           Aeronave.
                         </div>
 
