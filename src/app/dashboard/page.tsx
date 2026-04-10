@@ -64,7 +64,8 @@ type DispatchFlightTypeId =
   | "training"
   | "event"
   | "special_mission"
-  | "free_flight";
+  | "free_flight"
+  | "qualification";
 
 type MetricDisplayItem = {
   label: string;
@@ -222,6 +223,12 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
     description: "Salida abierta para explorar, practicar o mover aeronave con libertad visual.",
     imageSrc: "/dispatch/flight-types/free-flight.png",
   },
+  {
+    id: "qualification",
+    title: "Habilitaciones",
+    description: "Bloque pensado para chequeos, habilitaciones y misiones de progresion especifica.",
+    imageSrc: "/dispatch/flight-types/habilitaciones.png",
+  },
 ];
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -264,7 +271,7 @@ function formatCurrency(value: number) {
   return `$${formatInteger(value)}`;
 }
 
-function getShortPilotName(profile: PilotProfileRecord | null, email?: string | null) {
+function getShortPilotName(profile: PilotProfileRecord | null) {
   const firstName = profile?.first_name?.trim().split(/\s+/)[0] ?? "";
   const firstLastName = profile?.last_name?.trim().split(/\s+/)[0] ?? "";
   const shortName = [firstName, firstLastName].filter(Boolean).join(" ").trim();
@@ -277,14 +284,11 @@ function getShortPilotName(profile: PilotProfileRecord | null, email?: string | 
     return firstName;
   }
 
-  if (email) {
-    const localPart = email.split("@")[0]?.trim();
-    if (localPart) {
-      return localPart;
-    }
+  if (profile?.callsign?.trim()) {
+    return profile.callsign.trim();
   }
 
-  return profile?.callsign ?? "Piloto";
+  return "Piloto";
 }
 
 function getProfileTotalHours(profile: PilotProfileRecord | null) {
@@ -348,7 +352,17 @@ function getFlagUrl(countryCode?: string | null) {
 }
 
 function getAirportImagePath(airportCode: string) {
-  return `/airports/${airportCode.toUpperCase()}.jpg`;
+  return `/airports/${airportCode.toUpperCase()}.png`;
+}
+
+function getPreferredAirportCode(profile?: PilotProfileRecord | null) {
+  return (
+    profile?.current_airport_code ??
+    profile?.base_hub ??
+    "SCEL"
+  )
+    .trim()
+    .toUpperCase();
 }
 
 function buildAirportHeroRequestUrl(central: Pick<CentralOverview, "airportCode" | "airportName" | "municipality" | "countryName">) {
@@ -1147,6 +1161,8 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                   src={displayImageUrl}
                   alt={`${central.airportCode} banner`}
                   className="absolute inset-0 h-full w-full object-contain object-center"
+                  loading="eager"
+                  fetchPriority="high"
                   onError={() => setImageFailed(true)}
                 />
 
@@ -1827,6 +1843,8 @@ function mapDispatchFlightTypeToMode(value: DispatchFlightTypeId | null): Flight
       return "event";
     case "free_flight":
       return "charter";
+    case "qualification":
+      return "training";
     default:
       return null;
   }
@@ -2206,7 +2224,7 @@ function DashboardWorkspace({
 
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Antes de tomar aeronave, define el modo operativo de tu vuelo. Solo puedes escoger una opcion
-                          para habilitar el paso de aeronave.
+                          para habilitar el paso de aeronave. Cuando subas tus imagenes, estas siete tarjetas las tomaran sin cambiar el diseno del bloque.
                         </p>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -2302,7 +2320,7 @@ function DashboardWorkspace({
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Secuencia activa: primero eliges una de las seis tarjetas; recién después se habilita
+                          Secuencia activa: primero eliges una de las siete tarjetas; recién después se habilita
                           Aeronave.
                         </div>
 
@@ -2715,6 +2733,22 @@ function DashboardContent() {
 
       setProfile(nextProfile);
 
+      const currentAirport = getPreferredAirportCode(nextProfile);
+      setMetrics((current) => ({
+        ...current,
+        pilotStatus:
+          nextProfile.status?.trim().toLowerCase() === "inactive" ? "INACTIVO" : "ACTIVO",
+        monthLabel: buildMonthLabel(),
+        totalHours: getProfileTotalHours(nextProfile),
+        walletBalance: getProfileWallet(nextProfile),
+        careerRank: formatRankLabel(nextProfile.career_rank_code ?? nextProfile.rank_code),
+      }));
+      setCentral((current) => ({
+        ...current,
+        airportCode: currentAirport,
+        imagePath: getAirportImagePath(currentAirport),
+      }));
+
       try {
         const [nextMetrics, nextCentral, nextAvailableAircraft, nextAvailableItineraries] = await Promise.all([
           loadDashboardMetrics(nextProfile),
@@ -2768,8 +2802,8 @@ function DashboardContent() {
   }, [session.user]);
 
   const pilotName = useMemo(
-    () => getShortPilotName(profile, session.user.email),
-    [profile, session.user.email],
+    () => getShortPilotName(profile),
+    [profile],
   );
 
   const compactMetrics = useMemo<MetricDisplayItem[]>(
