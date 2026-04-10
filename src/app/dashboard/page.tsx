@@ -11,6 +11,10 @@ import {
   ensurePilotProfile,
   type PilotProfileRecord,
 } from "@/lib/pilot-profile";
+import {
+  listAvailableAircraft,
+  type AvailableAircraftOption,
+} from "@/lib/flight-ops";
 import { supabase } from "@/lib/supabase/browser";
 
 type DashboardMetrics = {
@@ -1724,16 +1728,93 @@ function DispatchAirportBannerCard({
   );
 }
 
+function DispatchAircraftTable({
+  rows,
+  selectedAircraftId,
+  onSelect,
+}: {
+  rows: AvailableAircraftOption[];
+  selectedAircraftId: string | null;
+  onSelect: (aircraftId: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm text-white/78">
+          <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
+            <tr>
+              <th className="px-4 py-3 font-semibold">Registro</th>
+              <th className="px-4 py-3 font-semibold">Tipo</th>
+              <th className="px-4 py-3 font-semibold">Nombre</th>
+              <th className="px-4 py-3 font-semibold">Ubicacion</th>
+              <th className="px-4 py-3 font-semibold">Estado</th>
+              <th className="px-4 py-3 font-semibold text-right">Accion</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row) => {
+              const isSelected = selectedAircraftId === row.aircraft_id;
+
+              return (
+                <tr
+                  key={row.aircraft_id}
+                  className={`border-t border-white/8 align-top transition ${
+                    isSelected ? "bg-emerald-500/[0.08]" : ""
+                  }`}
+                >
+                  <td className="px-4 py-4 font-semibold text-white">{row.tail_number || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{row.aircraft_code || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{row.aircraft_name || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{row.current_airport_icao || "---"}</td>
+                  <td className="px-4 py-4">
+                    <span className="inline-flex rounded-full border border-emerald-400/18 bg-emerald-500/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
+                      {row.status || "available"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(row.aircraft_id)}
+                      className={`inline-flex rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                        isSelected
+                          ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
+                          : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      {isSelected ? "Seleccionada" : "Seleccionar"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
+                  No hay aeronaves disponibles en este aeropuerto para esta etapa.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function DashboardWorkspace({
   activeTab,
   onChangeTab,
   metrics,
   central,
+  availableAircraft,
 }: {
   activeTab: DashboardTabKey;
   onChangeTab: (tab: DashboardTabKey) => void;
   metrics: DashboardMetrics;
   central: CentralOverview;
+  availableAircraft: AvailableAircraftOption[];
 }) {
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
@@ -1785,6 +1866,18 @@ function DashboardWorkspace({
     () => buildDispatchMetarSummary(central.metarText),
     [central.metarText],
   );
+  const selectedAircraftRecord = useMemo(
+    () => availableAircraft.find((option) => option.aircraft_id === selectedAircraft) ?? null,
+    [availableAircraft, selectedAircraft],
+  );
+
+  useEffect(() => {
+    if (selectedAircraft && !selectedAircraftRecord) {
+      setSelectedAircraft(null);
+      setSelectedItinerary(null);
+      setDispatchReady(false);
+    }
+  }, [selectedAircraft, selectedAircraftRecord]);
 
   const isStepEnabled = (step: DispatchStepKey) => {
     switch (step) {
@@ -1807,8 +1900,8 @@ function DashboardWorkspace({
     flightType: selectedFlightType
       ? DISPATCH_FLIGHT_TYPE_OPTIONS.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
       : "Pendiente",
-    aircraft: selectedAircraft
-      ? aircraftOptions.find((option) => option.id === selectedAircraft)?.title ?? "Listo"
+    aircraft: selectedAircraftRecord
+      ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_code}`
       : "Pendiente",
     itinerary: selectedItinerary
       ? itineraryOptions.find((option) => option.id === selectedItinerary)?.title ?? "Listo"
@@ -2076,7 +2169,7 @@ function DashboardWorkspace({
                   ) : null}
 
                   {dispatchStep === "aircraft" ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                    <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
@@ -2085,29 +2178,40 @@ function DashboardWorkspace({
                           este paso se resetea para mantener el orden lógico.
                         </p>
 
-                        <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
-                          {aircraftOptions.map((option) => {
-                            const isSelected = selectedAircraft === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => resetAfterAircraft(option.id)}
-                                className={`block w-full rounded-[18px] border px-4 py-4 text-left transition ${
-                                  isSelected
-                                    ? "border-emerald-400/40 bg-emerald-500/[0.14] text-white shadow-[0_12px_30px_rgba(17,181,110,0.18)]"
-                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.06]"
-                                }`}
-                              >
-                                <span className="block text-base font-semibold text-white">{option.title}</span>
-                                <span className="mt-1 block text-sm leading-7 text-white/68">{option.description}</span>
-                              </button>
-                            );
-                          })}
+                        <div className="mt-5">
+                          <DispatchAircraftTable
+                            rows={availableAircraft}
+                            selectedAircraftId={selectedAircraft}
+                            onSelect={resetAfterAircraft}
+                          />
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
+                          <p className="text-sm leading-7 text-white/70">
+                            {selectedAircraftRecord
+                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_code}.`
+                              : availableAircraft.length > 0
+                                ? "Escoge una aeronave de la tabla para continuar al itinerario."
+                                : `No hay aeronaves disponibles en ${central.airportCode} para esta etapa.`}
+                          </p>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleStepChange("flight_type")} className="button-secondary py-3">
+                              Volver a tipo de vuelo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStepChange("itinerary")}
+                              disabled={!canOpenItinerary}
+                              className={`py-3 ${canOpenItinerary ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                            >
+                              Continuar a itinerario
+                            </button>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                      <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Qué se conserva</p>
@@ -2435,6 +2539,7 @@ function DashboardContent() {
     newsItems: buildNewsItems("SCEL", 0, [], []),
   });
   const [activeTab, setActiveTab] = useState<DashboardTabKey>("central");
+  const [availableAircraft, setAvailableAircraft] = useState<AvailableAircraftOption[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2449,14 +2554,16 @@ function DashboardContent() {
       setProfile(nextProfile);
 
       try {
-        const [nextMetrics, nextCentral] = await Promise.all([
+        const [nextMetrics, nextCentral, nextAvailableAircraft] = await Promise.all([
           loadDashboardMetrics(nextProfile),
           loadCentralOverview(nextProfile),
+          listAvailableAircraft(nextProfile),
         ]);
 
         if (isMounted) {
           setMetrics(nextMetrics);
           setCentral(nextCentral);
+          setAvailableAircraft(nextAvailableAircraft);
         }
       } catch (error) {
         console.error("No se pudieron cargar todas las métricas del dashboard:", error);
@@ -2483,6 +2590,7 @@ function DashboardContent() {
                 .toUpperCase(),
             ),
           }));
+          setAvailableAircraft([]);
         }
       }
     }
@@ -2582,6 +2690,7 @@ function DashboardContent() {
         onChangeTab={setActiveTab}
         metrics={metrics}
         central={central}
+        availableAircraft={availableAircraft}
       />
     </div>
   );
