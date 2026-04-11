@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandLogo } from "@/components/ui/BrandLogo";
+import PublicHeader from "@/components/site/PublicHeader";
 
 const stats = [
   { value: "15+", label: "Años" },
@@ -35,27 +35,7 @@ export default function HomePage() {
 
         <div className="relative z-20 flex min-h-screen flex-col">
           <header className="pw-container pt-5">
-            <div className="parallax-nav flex items-center justify-between gap-6 rounded-[26px] px-5 py-4">
-              <Link href="#inicio" className="shrink-0">
-                <BrandLogo compact />
-              </Link>
-
-              <nav className="hidden items-center gap-10 text-[15px] font-semibold tracking-[0.02em] text-white/92 lg:flex">
-                <a href="#inicio" className="parallax-link active">Inicio</a>
-                <a href="#nosotros" className="parallax-link">Nosotros</a>
-                <a href="#servicios" className="parallax-link">Servicios</a>
-                <a href="#flota" className="parallax-link">Flota</a>
-                <a href="#certificaciones" className="parallax-link">Certificaciones</a>
-                <a href="#descargas" className="parallax-link">Descargas</a>
-                <a href="#contacto" className="parallax-link">Contacto</a>
-              </nav>
-
-              <div className="hidden lg:block">
-                <Link href="/login" className="parallax-login-button">
-                  Iniciar sesión
-                </Link>
-              </div>
-            </div>
+            <PublicHeader />
           </header>
 
           <div id="inicio" className="pw-container relative flex flex-1 items-center py-12 sm:py-16 lg:py-20">
@@ -200,13 +180,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── DESCARGAS ─────────────────────────────────────────────────────────── */}
       <section id="descargas" className="border-y border-white/8 bg-[rgba(4,18,38,0.96)] py-20 sm:py-24">
         <div className="pw-container">
           <div className="parallax-chip mb-5">Descargas</div>
           <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
-
-            {/* Left: info + botón */}
             <div>
               <h2 className="text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 ACARS Patagonia Wings
@@ -217,7 +194,6 @@ export default function HomePage() {
                 copiloto de voz integrado.
               </p>
 
-              {/* Download button */}
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <a
                   href="/downloads/PatagoniaWingsACARSSetup.exe"
@@ -231,25 +207,23 @@ export default function HomePage() {
                     <path d="M10 2v10m0 0l-3-3m3 3l3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
                       stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Descargar ACARS v2.0
+                  Descargar ACARS v2.0.1
                 </a>
                 <span className="text-sm text-slate-400">
                   Windows 10/11 · MSFS 2020/2024 · ~48 MB
                 </span>
               </div>
 
-              {/* Versión y changelog */}
               <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 backdrop-blur-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 <span className="text-sm text-white/80">
-                  Versión <span className="font-semibold text-white">2.0.0</span>
+                  Versión <span className="font-semibold text-white">2.0.1</span>
                   <span className="mx-2 text-white/30">·</span>
                   SimConnect + Supabase Direct
                 </span>
               </div>
             </div>
 
-            {/* Right: feature cards */}
             <div className="flex flex-col gap-3">
               {[
                 {
@@ -296,7 +270,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Requisitos del sistema */}
           <div className="mt-12 rounded-[28px] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
             <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
               Requisitos del sistema
