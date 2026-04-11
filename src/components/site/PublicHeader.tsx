@@ -6,25 +6,22 @@ import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase/browser";
 
-const publicNavItems = [
+const navItems = [
   { href: "/#inicio", label: "Inicio" },
   { href: "/#nosotros", label: "Nosotros" },
   { href: "/#servicios", label: "Servicios" },
   { href: "/#flota", label: "Flota" },
+  { href: "/#certificaciones", label: "Certificaciones" },
+  { href: "/#descargas", label: "Descargas" },
   { href: "/#contacto", label: "Contacto" },
 ];
 
-const authenticatedNavItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/operations", label: "Reserva / Dispatch" },
-];
-
-function isInternalActive(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard";
+function isPublicNavActive(pathname: string, href: string) {
+  if (pathname !== "/") {
+    return false;
   }
 
-  return pathname.startsWith(href);
+  return href === "/#inicio";
 }
 
 export default function PublicHeader() {
@@ -34,9 +31,6 @@ export default function PublicHeader() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isAppArea = pathname.startsWith("/dashboard") || pathname.startsWith("/operations") || pathname.startsWith("/profile") || pathname.startsWith("/certifications");
-  const navItems = isAuthenticated && isAppArea ? authenticatedNavItems : publicNavItems;
-
   useEffect(() => {
     let isMounted = true;
 
@@ -44,6 +38,7 @@ export default function PublicHeader() {
       if (!isMounted) {
         return;
       }
+
       setIsAuthenticated(Boolean(data.session));
     });
 
@@ -51,6 +46,7 @@ export default function PublicHeader() {
       if (!isMounted) {
         return;
       }
+
       setIsAuthenticated(Boolean(session));
     });
 
@@ -59,6 +55,10 @@ export default function PublicHeader() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -78,17 +78,18 @@ export default function PublicHeader() {
     router.refresh();
   }
 
+  const showLandingLogin = !isAuthenticated && pathname === "/";
+  const showAccountMenu = isAuthenticated;
+
   return (
     <header className="parallax-nav flex items-center justify-between gap-5 overflow-visible rounded-[30px] px-5 py-5 lg:px-8 lg:py-6">
-      <Link href={isAuthenticated ? "/dashboard" : "/#inicio"} className="relative z-10 -my-4 shrink-0 py-1">
+      <Link href={showAccountMenu ? "/dashboard" : "/"} className="relative z-10 -my-4 shrink-0 py-1">
         <BrandLogo />
       </Link>
 
       <nav className="hidden items-center gap-7 text-sm font-semibold tracking-[0.01em] text-white/94 lg:flex xl:gap-9 xl:text-[15px]">
         {navItems.map((item) => {
-          const active = isAuthenticated && isAppArea
-            ? isInternalActive(pathname, item.href)
-            : pathname === "/" && item.href.startsWith("/#");
+          const active = isPublicNavActive(pathname, item.href);
 
           return (
             <Link
@@ -102,16 +103,8 @@ export default function PublicHeader() {
         })}
       </nav>
 
-      <div className="hidden lg:flex lg:items-center lg:gap-3">
-        {pathname === "/login" ? (
-          <Link href="/register" className="parallax-login-button px-7 py-3 text-sm">
-            Crear cuenta
-          </Link>
-        ) : pathname === "/register" ? (
-          <Link href="/login" className="parallax-login-button px-7 py-3 text-sm">
-            Iniciar sesión
-          </Link>
-        ) : isAuthenticated ? (
+      <div className="hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[192px] lg:gap-3">
+        {showAccountMenu ? (
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
@@ -119,7 +112,7 @@ export default function PublicHeader() {
               onClick={() => setMenuOpen((current) => !current)}
             >
               Mi cuenta
-              <span className={`text-xs transition ${menuOpen ? "rotate-180" : ""}`}>▼</span>
+              <span className={`text-xs transition ${menuOpen ? "rotate-180" : ""}`}>▲</span>
             </button>
 
             {menuOpen ? (
@@ -162,11 +155,11 @@ export default function PublicHeader() {
               </div>
             ) : null}
           </div>
-        ) : (
+        ) : showLandingLogin ? (
           <Link href="/login" className="parallax-login-button px-7 py-3 text-sm">
             Iniciar sesión
           </Link>
-        )}
+        ) : null}
       </div>
     </header>
   );
