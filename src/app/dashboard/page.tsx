@@ -3052,6 +3052,9 @@ function DashboardWorkspace({
         aircraftName: selectedAircraftRecord.aircraft_name,
         aircraftTailNumber:
           selectedAircraftRecord.tail_number || simbriefSummary.aircraftRegistration?.trim() || "",
+        aircraftVariantCode: selectedAircraftRecord.aircraft_variant_code ?? "",
+        aircraftAddonProvider: selectedAircraftRecord.addon_provider ?? "",
+        aircraftVariantLabel: selectedAircraftRecord.variant_name ?? selectedAircraftRecord.aircraft_variant_code ?? "",
         routeText: simbriefSummary.routeText?.trim() || selectedItineraryRecord.itinerary_code,
         scheduledDeparture: "",
         remarks,
@@ -3061,7 +3064,20 @@ function DashboardWorkspace({
       };
 
       const saved = await saveFlightOperation(profile, finalOperation, "dispatch_ready");
-      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign);
+      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign, {
+        routeText: simbriefSummary.routeText ?? undefined,
+        cruiseLevel: simbriefSummary.cruiseAltitude ?? undefined,
+        alternateIcao: simbriefSummary.alternate ?? undefined,
+        passengerCount: simbriefSummary.pax ?? undefined,
+        cargoKg: simbriefSummary.cargoKg ?? undefined,
+        tripFuelKg: simbriefSummary.tripFuelKg ?? undefined,
+        reserveFuelKg: simbriefSummary.reserveFuelKg ?? undefined,
+        taxiFuelKg: simbriefSummary.taxiFuelKg ?? undefined,
+        blockFuelKg: simbriefSummary.blockFuelKg ?? undefined,
+        payloadKg: simbriefSummary.payloadKg ?? undefined,
+        zfwKg: simbriefSummary.zfwKg ?? undefined,
+        staticId: simbriefSummary.staticId ?? undefined,
+      });
       setPreparedReservationId(saved.id);
       setSummaryErrorMessage("");
       setSummaryInfoMessage(

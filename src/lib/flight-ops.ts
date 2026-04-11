@@ -18,6 +18,9 @@ export type FlightOperationRecord = {
   aircraftCode: string;
   aircraftName: string;
   aircraftTailNumber: string;
+  aircraftVariantCode?: string;
+  aircraftAddonProvider?: string;
+  aircraftVariantLabel?: string;
   routeText: string;
   scheduledDeparture: string;
   remarks: string;
@@ -49,6 +52,9 @@ export type AvailableAircraftOption = {
   tail_number: string;
   aircraft_code: string;
   aircraft_name: string;
+  aircraft_variant_code?: string;
+  addon_provider?: string;
+  variant_name?: string;
   current_airport_icao: string;
   status: string;
   display_category?: string;
@@ -94,6 +100,9 @@ export type DbFlightReservationRow = {
   aircraft_id: string | null;
   aircraft_registration?: string | null;
   aircraft_type_code?: string | null;
+  aircraft_variant_code?: string | null;
+  addon_provider?: string | null;
+  variant_name?: string | null;
   itinerary_id: string | null;
   route_code?: string | null;
   flight_mode: FlightMode;
@@ -149,6 +158,20 @@ function toFlightMode(value: unknown): FlightMode {
 function normalizeAircraftDisplayName(code: string) {
   const normalized = code.replace(/_/g, " ").replace(/-/g, " ");
   return normalized;
+}
+
+function buildAircraftVariantLabel(record: {
+  aircraft_variant_code?: string | null;
+  addon_provider?: string | null;
+  variant_name?: string | null;
+}) {
+  return [
+    record.variant_name?.trim(),
+    record.aircraft_variant_code?.trim(),
+    record.addon_provider?.trim(),
+  ]
+    .filter((item): item is string => Boolean(item))
+    .join(" · ");
 }
 
 function getDisplayCategoryFromCode(code: string) {
@@ -209,6 +232,93 @@ function parseCompatibleAircraftTypes(value: unknown) {
   }
 
   return [] as string[];
+}
+
+function normalizeOperationalToken(value: string) {
+  return value.trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+function parseOperationalTokens(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => parseOperationalTokens(item))
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(/[;,|/]/)
+      .map((item) => normalizeOperationalToken(item))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function buildOperationalTokenSet(...values: unknown[]) {
+  return new Set(
+    values.flatMap((value) => parseOperationalTokens(value))
+  );
+}
+
+function collectRouteRequirementTokens(
+  row: GenericRecord,
+  keywords: string[]
+) {
+  const tokens = new Set<string>();
+
+  for (const [rawKey, value] of Object.entries(row)) {
+    const key = rawKey.trim().toLowerCase();
+    if (!keywords.some((keyword) => key.includes(keyword))) {
+      continue;
+    }
+
+    if (
+      !(
+        key.includes("required") ||
+        key.includes("allowed") ||
+        key.includes("eligible") ||
+        key.endsWith("_codes") ||
+        key.endsWith("_code") ||
+        key.endsWith("_tags") ||
+        key.endsWith("_list")
+      )
+    ) {
+      continue;
+    }
+
+    for (const token of parseOperationalTokens(value)) {
+      tokens.add(token);
+    }
+  }
+
+  return Array.from(tokens);
+}
+
+function routeMatchesOperationalRequirements(
+  row: GenericRecord,
+  pilotQualifications: Set<string>,
+  pilotCertifications: Set<string>
+) {
+  const requiredQualifications = collectRouteRequirementTokens(row, [
+    "qualification",
+    "habilit",
+    "rating",
+  ]);
+  const requiredCertifications = collectRouteRequirementTokens(row, [
+    "certification",
+    "certif",
+    "checkout",
+  ]);
+
+  const qualificationsOk =
+    requiredQualifications.length === 0 ||
+    requiredQualifications.every((token) => pilotQualifications.has(token));
+  const certificationsOk =
+    requiredCertifications.length === 0 ||
+    requiredCertifications.every((token) => pilotCertifications.has(token));
+
+  return qualificationsOk && certificationsOk;
 }
 
 const FLIGHT_NUMBER_PAIR_OVERRIDES: Record<string, number> = {
@@ -356,6 +466,20 @@ function mapLegacyReservationFromRpc(
         : typeof row.aircraft_code === "string"
           ? row.aircraft_code
           : null,
+    aircraft_variant_code:
+      typeof row.aircraft_variant_code === "string"
+        ? row.aircraft_variant_code
+        : typeof row.variant_code === "string"
+          ? row.variant_code
+          : null,
+    addon_provider:
+      typeof row.addon_provider === "string" ? row.addon_provider : null,
+    variant_name:
+      typeof row.variant_name === "string"
+        ? row.variant_name
+        : typeof row.variant_label === "string"
+          ? row.variant_label
+          : null,
     itinerary_id:
       typeof row.route_id === "string"
         ? row.route_id
@@ -472,6 +596,9 @@ export function getDefaultFlightOperation(
     aircraftCode: "",
     aircraftName: "",
     aircraftTailNumber: "",
+    aircraftVariantCode: "",
+    aircraftAddonProvider: "",
+    aircraftVariantLabel: "",
     routeText: "",
     scheduledDeparture: "",
     remarks: "",
@@ -521,6 +648,19 @@ export function mapReservationToOperation(
         ? normalizeAircraftDisplayName(row.aircraft_type_code)
         : matchedItinerary?.aircraft_type_name ?? ""),
     aircraftTailNumber: matchedAircraft?.tail_number ?? row.aircraft_registration ?? "",
+    aircraftVariantCode:
+      matchedAircraft?.aircraft_variant_code ?? row.aircraft_variant_code ?? "",
+    aircraftAddonProvider:
+      matchedAircraft?.addon_provider ?? row.addon_provider ?? "",
+    aircraftVariantLabel:
+      buildAircraftVariantLabel({
+        aircraft_variant_code:
+          matchedAircraft?.aircraft_variant_code ?? row.aircraft_variant_code ?? "",
+        addon_provider:
+          matchedAircraft?.addon_provider ?? row.addon_provider ?? "",
+        variant_name:
+          matchedAircraft?.variant_name ?? row.variant_name ?? "",
+      }) || "",
     routeText: row.route_text ?? "",
     scheduledDeparture: row.scheduled_departure
       ? toDateTimeLocalValue(row.scheduled_departure)
@@ -557,6 +697,9 @@ export function applyItineraryToOperation(
     destination: itinerary.destination_icao,
     aircraftCode: itinerary.aircraft_type_code ?? current.aircraftCode,
     aircraftName: itinerary.aircraft_type_name ?? current.aircraftName,
+    aircraftVariantCode: current.aircraftVariantCode,
+    aircraftAddonProvider: current.aircraftAddonProvider,
+    aircraftVariantLabel: current.aircraftVariantLabel,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -571,6 +714,9 @@ export function applyAircraftToOperation(
     aircraftCode: aircraft.aircraft_code,
     aircraftName: aircraft.aircraft_name,
     aircraftTailNumber: aircraft.tail_number,
+    aircraftVariantCode: aircraft.aircraft_variant_code ?? "",
+    aircraftAddonProvider: aircraft.addon_provider ?? "",
+    aircraftVariantLabel: buildAircraftVariantLabel(aircraft),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -757,6 +903,20 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
               : "",
         aircraft_code: aircraftCode,
         aircraft_name: aircraftName,
+        aircraft_variant_code:
+          typeof row.aircraft_variant_code === "string"
+            ? row.aircraft_variant_code
+            : typeof row.variant_code === "string"
+              ? row.variant_code
+              : "",
+        addon_provider:
+          typeof row.addon_provider === "string" ? row.addon_provider : "",
+        variant_name:
+          typeof row.variant_name === "string"
+            ? row.variant_name
+            : typeof row.variant_label === "string"
+              ? row.variant_label
+              : "",
         current_airport_icao:
           typeof row.current_airport_code === "string"
             ? row.current_airport_code
@@ -810,6 +970,20 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
         aircraft_name: normalizeAircraftDisplayName(
           typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
         ),
+        aircraft_variant_code:
+          typeof row.aircraft_variant_code === "string"
+            ? row.aircraft_variant_code
+            : typeof row.variant_code === "string"
+              ? row.variant_code
+              : "",
+        addon_provider:
+          typeof row.addon_provider === "string" ? row.addon_provider : "",
+        variant_name:
+          typeof row.variant_name === "string"
+            ? row.variant_name
+            : typeof row.variant_label === "string"
+              ? row.variant_label
+              : "",
         current_airport_icao:
           typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
         status: typeof row.status === "string" ? row.status : "available",
@@ -860,6 +1034,20 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                         ? row.aircraft_code
                         : ""
                   ),
+            aircraft_variant_code:
+              typeof row.aircraft_variant_code === "string"
+                ? row.aircraft_variant_code
+                : typeof row.variant_code === "string"
+                  ? row.variant_code
+                  : "",
+            addon_provider:
+              typeof row.addon_provider === "string" ? row.addon_provider : "",
+            variant_name:
+              typeof row.variant_name === "string"
+                ? row.variant_name
+                : typeof row.variant_label === "string"
+                  ? row.variant_label
+                  : "",
             current_airport_icao:
               typeof row.current_airport_icao === "string"
                 ? row.current_airport_icao
@@ -891,6 +1079,18 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
 export async function listAvailableItineraries(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
   const rankCode = normalizeRankCode(profile.rank_code ?? profile.career_rank_code);
+  const rawProfile = profile as PilotProfileRecord & {
+    qualifications?: string | null;
+    certifications?: string | null;
+  };
+  const pilotQualifications = buildOperationalTokenSet(
+    profile.active_qualifications,
+    rawProfile.qualifications
+  );
+  const pilotCertifications = buildOperationalTokenSet(
+    profile.active_certifications,
+    rawProfile.certifications
+  );
 
   const mapItineraryRows = (rows: GenericRecord[]) =>
     rows
@@ -909,6 +1109,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         );
 
         if (!routeCode || !origin || !destination) return null;
+        if (!routeMatchesOperationalRequirements(row, pilotQualifications, pilotCertifications)) return null;
 
         return {
           itinerary_id: typeof row.route_id === "string" ? row.route_id : routeCode,
@@ -953,7 +1154,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
     await Promise.all([
       supabase
         .from("network_routes")
-        .select("id, route_code, origin_ident, destination_ident, route_group, service_profile, service_level, priority, distance_nm, is_active, flight_number, flight_designator")
+        .select("*")
         .eq("origin_ident", airport)
         .eq("is_active", true)
         .order("priority")
@@ -1006,6 +1207,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         destination
       );
       if (!routeId || !routeCode || !destination || compatibleAircraftTypes.length === 0) return null;
+      if (!routeMatchesOperationalRequirements(row, pilotQualifications, pilotCertifications)) return null;
       return {
         itinerary_id: routeId,
         itinerary_code: routeCode,
@@ -1148,8 +1350,14 @@ export async function saveFlightOperation(
     }
   }
 
+  // Si no hay reservationId para dispatch_ready, crear la reserva automáticamente
   if (!operation.reservationId) {
-    throw new Error("No existe una reserva activa para emitir el despacho final.");
+    const reserved = (await saveFlightOperation(profile, operation, "reserved")) as DbFlightReservationRow;
+    if (!reserved?.id) {
+      throw new Error("No se pudo crear la reserva base para el despacho.");
+    }
+    // eslint-disable-next-line no-param-reassign
+    operation = { ...operation, reservationId: reserved.id };
   }
 
   // Para dispatch_ready y otros estados: UPDATE con las columnas que existen
@@ -1161,6 +1369,9 @@ export async function saveFlightOperation(
     aircraft_type_code: operation.aircraftCode.trim() || null,
     aircraft_registration: operation.aircraftTailNumber.trim() || null,
     route_code: operation.routeCode.trim() || null,
+    origin_ident: normalizeUpper(operation.origin),
+    destination_ident: normalizeUpper(operation.destination),
+    flight_mode_code: operation.flightMode,
     updated_at: new Date().toISOString(),
   };
 
