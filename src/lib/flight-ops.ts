@@ -106,7 +106,7 @@ export type DbFlightReservationRow = {
   routeText?: string | null;
   routeCode?: string | null;
   remarks: string | null;
-  status: FlightOperationStatus | "in_progress" | "completed" | "cancelled";
+  status: FlightOperationStatus | "dispatched" | "in_progress" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
 };
@@ -393,6 +393,62 @@ function mapLegacyReservationFromRpc(
     created_at: createdAt,
     updated_at: updatedAt,
   };
+}
+
+function toPersistedReservationStatus(status: FlightOperationStatus) {
+  if (status === "dispatch_ready") {
+    return "dispatched";
+  }
+
+  return status;
+}
+
+async function updateReservationStatusLegacy(
+  reservationId: string,
+  status: FlightOperationStatus
+) {
+  const persistedStatus = toPersistedReservationStatus(status);
+  const { data, error } = await supabase
+    .from("flight_reservations")
+    .update({
+      status: persistedStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", reservationId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as DbFlightReservationRow;
+}
+
+function buildDispatchPersistenceError(
+  updateError: unknown,
+  packageError: unknown
+) {
+  const updateMessage =
+    updateError instanceof Error ? updateError.message : String(updateError ?? "");
+  const packageMessage =
+    packageError instanceof Error ? packageError.message : String(packageError ?? "");
+
+  if (updateMessage && packageMessage) {
+    return new Error(
+      `No se pudo emitir el despacho final. Estado reserva: ${updateMessage} | Dispatch package: ${packageMessage}`
+    );
+  }
+
+  if (updateMessage) {
+    return new Error(`No se pudo actualizar la reserva a dispatched: ${updateMessage}`);
+  }
+
+  if (packageMessage) {
+    return new Error(`No se pudo crear el dispatch package: ${packageMessage}`);
+  }
+
+  return new Error("No se pudo emitir el despacho final a Supabase.");
 }
 
 export function getDefaultFlightOperation(
@@ -1017,6 +1073,8 @@ export async function saveFlightOperation(
   status: FlightOperationStatus
 ) {
   if (status === "reserved") {
+    let reservationRpcError: unknown = null;
+
     try {
       const { data, error } = await supabase.rpc("create_flight_reservation", {
         p_callsign: profile.callsign,
@@ -1035,16 +1093,65 @@ export async function saveFlightOperation(
       if (firstRow) {
         return mapLegacyReservationFromRpc(firstRow, profile);
       }
-    } catch {
-      // fallback legacy below
+    } catch (error) {
+      reservationRpcError = error;
+    }
+
+    try {
+      const payload = {
+        airline_id: profile.airline_id,
+        pilot_id: profile.id,
+        aircraft_id: operation.aircraftId,
+        itinerary_id: operation.itineraryId,
+        flight_mode: operation.flightMode,
+        flight_number: normalizeUpper(operation.flightNumber),
+        origin_icao: normalizeUpper(operation.origin),
+        destination_icao: normalizeUpper(operation.destination),
+        scheduled_departure: operation.scheduledDeparture
+          ? fromDateTimeLocalValue(operation.scheduledDeparture)
+          : null,
+        route_text: operation.routeText.trim() || null,
+        remarks: operation.remarks.trim() || null,
+        status: "reserved",
+      };
+
+      const { data, error } = await supabase
+        .from("flight_reservations")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data as DbFlightReservationRow;
+    } catch (fallbackError) {
+      const fallbackMessage =
+        fallbackError instanceof Error ? fallbackError.message : String(fallbackError ?? "");
+      const rpcMessage =
+        reservationRpcError instanceof Error
+          ? reservationRpcError.message
+          : String(reservationRpcError ?? "");
+
+      if (rpcMessage && fallbackMessage) {
+        throw new Error(
+          `No se pudo crear la reserva base. RPC: ${rpcMessage} | Tabla directa: ${fallbackMessage}`
+        );
+      }
+
+      throw fallbackError instanceof Error
+        ? fallbackError
+        : new Error("No se pudo crear la reserva base.");
     }
   }
 
-  if (status === "dispatch_ready" && operation.reservationId) {
-    const activeReservation = await getActiveFlightReservation(profile);
-    if (activeReservation) {
-      return activeReservation;
-    }
+  if (!operation.reservationId) {
+    throw new Error("No existe una reserva activa para emitir el despacho final.");
+  }
+
+  if (status === "dispatch_ready") {
+    return updateReservationStatusLegacy(operation.reservationId, "dispatch_ready");
   }
 
   const payload = {
@@ -1061,27 +1168,13 @@ export async function saveFlightOperation(
       : null,
     route_text: operation.routeText.trim() || null,
     remarks: operation.remarks.trim() || null,
-    status,
+    status: toPersistedReservationStatus(status),
   };
-
-  if (operation.reservationId) {
-    const { data, error } = await supabase
-      .from("flight_reservations")
-      .update(payload)
-      .eq("id", operation.reservationId)
-      .select("*")
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return data as DbFlightReservationRow;
-  }
 
   const { data, error } = await supabase
     .from("flight_reservations")
-    .insert(payload)
+    .update(payload)
+    .eq("id", operation.reservationId)
     .select("*")
     .single();
 
@@ -1097,6 +1190,16 @@ export async function markDispatchPrepared(
   simbriefUsername: string,
   pilotCallsign?: string
 ) {
+  let reservationStatusError: unknown = null;
+
+  try {
+    await updateReservationStatusLegacy(reservationId, "dispatch_ready");
+  } catch (error) {
+    reservationStatusError = error;
+  }
+
+  let rpcPackageError: unknown = null;
+
   if (pilotCallsign) {
     try {
       const { data, error } = await supabase.rpc("pw_create_dispatch_package", {
@@ -1125,29 +1228,33 @@ export async function markDispatchPrepared(
             typeof row.updated_at === "string" ? row.updated_at : now,
         } satisfies DispatchPackageRow;
       }
-    } catch {
-      // fallback legacy below
+    } catch (error) {
+      rpcPackageError = error;
     }
   }
 
-  const payload = {
-    reservation_id: reservationId,
-    simbrief_username: simbriefUsername,
-    status: "prepared",
-    prepared_at: new Date().toISOString(),
-  };
+  try {
+    const payload = {
+      reservation_id: reservationId,
+      simbrief_username: simbriefUsername,
+      status: "prepared",
+      prepared_at: new Date().toISOString(),
+    };
 
-  const { data, error } = await supabase
-    .from("dispatch_packages")
-    .upsert(payload, { onConflict: "reservation_id" })
-    .select("*")
-    .single();
+    const { data, error } = await supabase
+      .from("dispatch_packages")
+      .upsert(payload, { onConflict: "reservation_id" })
+      .select("*")
+      .single();
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    return data as DispatchPackageRow;
+  } catch (fallbackPackageError) {
+    throw buildDispatchPersistenceError(reservationStatusError, rpcPackageError || fallbackPackageError);
   }
-
-  return data as DispatchPackageRow;
 }
 
 export async function cancelFlightOperation(
