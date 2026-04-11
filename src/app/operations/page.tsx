@@ -29,6 +29,7 @@ import {
   flightModeOptions,
   type AvailableAircraftOption,
   type AvailableItineraryOption,
+  type DispatchSimBriefData,
   type FlightMode,
   type FlightOperationRecord,
 } from "@/lib/flight-ops";
@@ -1552,7 +1553,35 @@ function OperationsContent() {
       };
 
       const saved = await saveFlightOperation(profile, finalOperation, "dispatch_ready");
-      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign);
+
+      // Pasar todos los datos de SimBrief al dispatch package para que el ACARS
+      // los lea directamente sin necesidad de llamar a SimBrief por su cuenta.
+      const simBriefDispatchData: DispatchSimBriefData = {
+        routeText:              simbriefPreview.routeText       || null,
+        cruiseLevel:            lastOfpSummary?.cruiseAltitude
+                                  ? lastOfpSummary.cruiseAltitude
+                                  : null,
+        alternateIcao:          simbriefPreview.alternate?.icao  || null,
+        passengerCount:         simbriefPreview.pax              ?? null,
+        cargoKg:                simbriefPreview.cargoKg          ?? null,
+        tripFuelKg:             simbriefPreview.tripFuelKg       ?? null,
+        reserveFuelKg:          simbriefPreview.reserveFuelKg    ?? null,
+        taxiFuelKg:             simbriefPreview.taxiFuelKg       ?? null,
+        blockFuelKg:            simbriefPreview.blockFuelKg      ?? null,
+        payloadKg:              simbriefPreview.payloadKg        ?? null,
+        zfwKg:                  simbriefPreview.zfwKg            ?? null,
+        scheduledBlockMinutes:  simbriefPreview.eteMinutes > 0
+                                  ? Math.round(simbriefPreview.eteMinutes)
+                                  : null,
+        staticId:               simbriefPreview.staticId         ?? null,
+      };
+
+      await markDispatchPrepared(
+        saved.id,
+        profile.simbrief_username ?? "",
+        profile.callsign,
+        simBriefDispatchData
+      );
       setOperation(
         mapReservationToOperation(saved, profile, availableAircraft, availableItineraries)
       );

@@ -46,6 +46,7 @@ export default function HomePage() {
                 <a href="#servicios" className="parallax-link">Servicios</a>
                 <a href="#flota" className="parallax-link">Flota</a>
                 <a href="#certificaciones" className="parallax-link">Certificaciones</a>
+                <a href="#descargas" className="parallax-link">Descargas</a>
                 <a href="#contacto" className="parallax-link">Contacto</a>
               </nav>
 
@@ -195,6 +196,126 @@ export default function HomePage() {
                 <p className="text-lg font-semibold text-white">{item}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── DESCARGAS ─────────────────────────────────────────────────────────── */}
+      <section id="descargas" className="border-y border-white/8 bg-[rgba(4,18,38,0.96)] py-20 sm:py-24">
+        <div className="pw-container">
+          <div className="parallax-chip mb-5">Descargas</div>
+          <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
+
+            {/* Left: info + botón */}
+            <div>
+              <h2 className="text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+                ACARS Patagonia Wings
+              </h2>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/82">
+                El cliente oficial de ACARS para vuelos en MSFS 2020/2024. Sincronización
+                automática con Supabase, telemetría en tiempo real, panel de luces LED y
+                copiloto de voz integrado.
+              </p>
+
+              {/* Download button */}
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <a
+                  href="/downloads/PatagoniaWingsACARSSetup.exe"
+                  className="inline-flex items-center gap-3 rounded-2xl px-8 py-4 text-base font-semibold text-white transition duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: "linear-gradient(135deg, #1a6fb5 0%, #0ca789 100%)",
+                    boxShadow: "0 14px 40px rgba(12, 167, 137, 0.25)",
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 2v10m0 0l-3-3m3 3l3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
+                      stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Descargar ACARS v2.0
+                </a>
+                <span className="text-sm text-slate-400">
+                  Windows 10/11 · MSFS 2020/2024 · ~48 MB
+                </span>
+              </div>
+
+              {/* Versión y changelog */}
+              <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="text-sm text-white/80">
+                  Versión <span className="font-semibold text-white">2.0.0</span>
+                  <span className="mx-2 text-white/30">·</span>
+                  SimConnect + Supabase Direct
+                </span>
+              </div>
+            </div>
+
+            {/* Right: feature cards */}
+            <div className="flex flex-col gap-3">
+              {[
+                {
+                  icon: "✈",
+                  title: "SimConnect nativo",
+                  desc: "Conecta directamente con MSFS 2020 y 2024 via SimConnect. Sin apps intermedias.",
+                  color: "#2D9CDB",
+                },
+                {
+                  icon: "📡",
+                  title: "Telemetría completa",
+                  desc: "Luces, tren, APU, bleed air, transponder, presurización y más de 30 variables en tiempo real.",
+                  color: "#0CA789",
+                },
+                {
+                  icon: "🔊",
+                  title: "Copiloto de voz",
+                  desc: "Anuncios automáticos al cruzar 10.000 ft, aproximación, luces y llegada. Voz ES/CL/BR.",
+                  color: "#FFD700",
+                },
+                {
+                  icon: "☁",
+                  title: "Sincronización Supabase",
+                  desc: "PIREPs automáticos con score, landing rate, g-force y penalizaciones según reglas operacionales.",
+                  color: "#3FB950",
+                },
+              ].map((f) => (
+                <div
+                  key={f.title}
+                  className="flex items-start gap-4 rounded-[22px] border border-white/8 bg-white/[0.04] px-5 py-4 backdrop-blur-sm"
+                >
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
+                    style={{ background: `${f.color}22`, border: `1px solid ${f.color}44` }}
+                  >
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">{f.title}</p>
+                    <p className="mt-0.5 text-sm leading-6 text-slate-300/80">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Requisitos del sistema */}
+          <div className="mt-12 rounded-[28px] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
+            <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+              Requisitos del sistema
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "Sistema operativo", value: "Windows 10/11 (64-bit)" },
+                { label: "Simulador", value: "MSFS 2020 o 2024" },
+                { label: "Runtime", value: ".NET Framework 4.8.1" },
+                { label: "Conexión", value: "Internet (Supabase sync)" },
+              ].map((r) => (
+                <div key={r.label}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {r.label}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-white/90">{r.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

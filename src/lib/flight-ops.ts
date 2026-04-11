@@ -90,6 +90,7 @@ export type DbFlightReservationRow = {
   id: string;
   airline_id: string | null;
   pilot_id: string;
+  pilot_callsign?: string | null;
   aircraft_id: string | null;
   aircraft_registration?: string | null;
   aircraft_type_code?: string | null;
@@ -106,7 +107,7 @@ export type DbFlightReservationRow = {
   routeText?: string | null;
   routeCode?: string | null;
   remarks: string | null;
-  status: FlightOperationStatus | "dispatched" | "in_progress" | "completed" | "cancelled";
+  status: FlightOperationStatus | "dispatched" | "in_progress" | "completed" | "cancelled" | "in_flight";
   created_at: string;
   updated_at: string;
 };
@@ -525,12 +526,13 @@ export function mapReservationToOperation(
       ? toDateTimeLocalValue(row.scheduled_departure)
       : "",
     remarks: row.remarks ?? "",
-    status:
-      row.status === "in_progress" || row.status === "completed"
+    status: (
+      row.status === "in_progress" || row.status === "completed" || row.status === "dispatched"
         ? "dispatch_ready"
-        : row.status === "cancelled"
+        : row.status === "cancelled" || row.status === "in_flight"
           ? "draft"
-          : row.status,
+          : (row.status as FlightOperationStatus)
+    ),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1055,9 +1057,11 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
     if (!firstRow) return null;
     return mapLegacyReservationFromRpc(firstRow, profile);
   } catch (rpcError) {
+    // flight_reservations no tiene columna pilot_id — solo pilot_callsign.
+    // Intentar con callsign exacto y luego con un rango de estados más amplio.
     const attempts = [
-      supabase.from("flight_reservations").select("*").eq("pilot_callsign", profile.callsign).in("status", ["reserved", "dispatched", "in_flight", "draft", "dispatch_ready", "in_progress"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("flight_reservations").select("*").eq("pilot_id", profile.id).in("status", ["draft", "reserved", "dispatch_ready", "in_progress", "dispatched", "in_flight"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("flight_reservations").select("*").eq("pilot_callsign", normalizeUpper(profile.callsign)).in("status", ["reserved", "dispatched", "in_flight", "in_progress"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("flight_reservations").select("*").eq("pilot_callsign", normalizeUpper(profile.callsign)).in("status", ["draft", "reserved", "dispatched", "in_flight", "in_progress", "completed"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
     ];
     for (const attempt of attempts) {
       const { data, error } = await attempt;
@@ -1098,20 +1102,18 @@ export async function saveFlightOperation(
     }
 
     try {
+      // Fallback INSERT: only columns that actually exist in flight_reservations.
+      // The RPC create_flight_reservation is the canonical path; this is only
+      // reached if the RPC fails and the reservation was not yet created.
       const payload = {
-        airline_id: profile.airline_id,
-        pilot_id: profile.id,
+        pilot_callsign: normalizeUpper(profile.callsign),
         aircraft_id: operation.aircraftId,
-        itinerary_id: operation.itineraryId,
-        flight_mode: operation.flightMode,
-        flight_number: normalizeUpper(operation.flightNumber),
-        origin_icao: normalizeUpper(operation.origin),
-        destination_icao: normalizeUpper(operation.destination),
-        scheduled_departure: operation.scheduledDeparture
-          ? fromDateTimeLocalValue(operation.scheduledDeparture)
-          : null,
-        route_text: operation.routeText.trim() || null,
-        remarks: operation.remarks.trim() || null,
+        aircraft_type_code: operation.aircraftCode.trim() || null,
+        aircraft_registration: operation.aircraftTailNumber.trim() || null,
+        route_code: operation.routeCode.trim() || null,
+        origin_ident: normalizeUpper(operation.origin),
+        destination_ident: normalizeUpper(operation.destination),
+        flight_mode_code: operation.flightMode,
         status: "reserved",
       };
 
@@ -1150,30 +1152,21 @@ export async function saveFlightOperation(
     throw new Error("No existe una reserva activa para emitir el despacho final.");
   }
 
-  if (status === "dispatch_ready") {
-    return updateReservationStatusLegacy(operation.reservationId, "dispatch_ready");
-  }
-
-  const payload = {
-    airline_id: profile.airline_id,
-    pilot_id: profile.id,
-    aircraft_id: operation.aircraftId,
-    itinerary_id: operation.itineraryId,
-    flight_mode: operation.flightMode,
-    flight_number: normalizeUpper(operation.flightNumber),
-    origin_icao: normalizeUpper(operation.origin),
-    destination_icao: normalizeUpper(operation.destination),
-    scheduled_departure: operation.scheduledDeparture
-      ? fromDateTimeLocalValue(operation.scheduledDeparture)
-      : null,
-    route_text: operation.routeText.trim() || null,
-    remarks: operation.remarks.trim() || null,
+  // Para dispatch_ready y otros estados: UPDATE con las columnas que existen
+  // en flight_reservations. El despacho SimBrief va en dispatch_packages.
+  const fullPayload = {
     status: toPersistedReservationStatus(status),
+    pilot_callsign: normalizeUpper(profile.callsign),
+    aircraft_id: operation.aircraftId,
+    aircraft_type_code: operation.aircraftCode.trim() || null,
+    aircraft_registration: operation.aircraftTailNumber.trim() || null,
+    route_code: operation.routeCode.trim() || null,
+    updated_at: new Date().toISOString(),
   };
 
   const { data, error } = await supabase
     .from("flight_reservations")
-    .update(payload)
+    .update(fullPayload)
     .eq("id", operation.reservationId)
     .select("*")
     .single();
@@ -1185,20 +1178,80 @@ export async function saveFlightOperation(
   return data as DbFlightReservationRow;
 }
 
+export type DispatchSimBriefData = {
+  routeText?: string | null;
+  cruiseLevel?: string | null;
+  alternateIcao?: string | null;
+  passengerCount?: number | null;
+  cargoKg?: number | null;
+  tripFuelKg?: number | null;
+  reserveFuelKg?: number | null;
+  taxiFuelKg?: number | null;
+  blockFuelKg?: number | null;
+  payloadKg?: number | null;
+  zfwKg?: number | null;
+  scheduledBlockMinutes?: number | null;
+  expectedBlockP50Minutes?: number | null;
+  expectedBlockP80Minutes?: number | null;
+  staticId?: string | null;
+};
+
 export async function markDispatchPrepared(
   reservationId: string,
   simbriefUsername: string,
-  pilotCallsign?: string
+  pilotCallsign?: string,
+  simBriefData?: DispatchSimBriefData
 ) {
-  let reservationStatusError: unknown = null;
-
-  try {
-    await updateReservationStatusLegacy(reservationId, "dispatch_ready");
-  } catch (error) {
-    reservationStatusError = error;
-  }
+  // NOTE: el status de la reserva (dispatch_ready) ya fue actualizado por
+  // saveFlightOperation antes de llamar esta función. No se necesita duplicarlo.
 
   let rpcPackageError: unknown = null;
+
+  const now = new Date().toISOString();
+
+  // Construir el payload del dispatch package usando los nombres de columna
+  // REALES de la tabla dispatch_packages en Supabase.
+  //   - dispatch_status  (no "status")
+  //   - cruise_fl        (no "cruise_level")
+  //   - planned_fuel_kg  (no "fuel_planned_kg")
+  //   - planned_payload_kg (no "payload_kg")
+  //   - simbrief_normalized (jsonb) para el resto de datos SimBrief
+  const packagePayload: Record<string, unknown> = {
+    reservation_id: reservationId,
+    simbrief_username: simbriefUsername,
+    dispatch_status: "prepared",          // columna real: dispatch_status
+    updated_at: now,
+  };
+
+  if (simBriefData) {
+    // Columnas reales de dispatch_packages
+    if (simBriefData.routeText)           packagePayload.route_text           = simBriefData.routeText.trim();
+    if (simBriefData.cruiseLevel)         packagePayload.cruise_fl            = simBriefData.cruiseLevel.trim();  // columna real: cruise_fl
+    if (simBriefData.blockFuelKg != null) packagePayload.planned_fuel_kg      = simBriefData.blockFuelKg;         // columna real: planned_fuel_kg
+    if (simBriefData.payloadKg != null)   packagePayload.planned_payload_kg   = simBriefData.payloadKg;           // columna real: planned_payload_kg
+
+    // El resto de datos SimBrief va en simbrief_normalized (jsonb), que el
+    // ACARS puede leer como sub-objeto para pax, cargo, combustible detallado, etc.
+    const normalized: Record<string, unknown> = {};
+    if (simBriefData.alternateIcao)          normalized.alternate_icao           = simBriefData.alternateIcao.trim().toUpperCase();
+    if (simBriefData.passengerCount != null) normalized.passenger_count          = simBriefData.passengerCount;
+    if (simBriefData.cargoKg != null)        normalized.cargo_kg                 = simBriefData.cargoKg;
+    if (simBriefData.blockFuelKg != null)    normalized.block_fuel_kg            = simBriefData.blockFuelKg;
+    if (simBriefData.tripFuelKg != null)     normalized.trip_fuel_kg             = simBriefData.tripFuelKg;
+    if (simBriefData.reserveFuelKg != null)  normalized.reserve_fuel_kg          = simBriefData.reserveFuelKg;
+    if (simBriefData.taxiFuelKg != null)     normalized.taxi_fuel_kg             = simBriefData.taxiFuelKg;
+    if (simBriefData.payloadKg != null)      normalized.payload_kg               = simBriefData.payloadKg;
+    if (simBriefData.zfwKg != null)          normalized.zero_fuel_weight_kg      = simBriefData.zfwKg;
+    if (simBriefData.scheduledBlockMinutes != null)
+                                             normalized.scheduled_block_minutes  = simBriefData.scheduledBlockMinutes;
+    if (simBriefData.expectedBlockP50Minutes != null)
+                                             normalized.expected_block_p50_minutes = simBriefData.expectedBlockP50Minutes;
+    if (simBriefData.expectedBlockP80Minutes != null)
+                                             normalized.expected_block_p80_minutes = simBriefData.expectedBlockP80Minutes;
+    if (simBriefData.staticId)               normalized.dispatch_token           = simBriefData.staticId;
+    if (simBriefData.cruiseLevel)            normalized.cruise_level             = simBriefData.cruiseLevel.trim();
+    if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
+  }
 
   if (pilotCallsign) {
     try {
@@ -1213,19 +1266,22 @@ export async function markDispatchPrepared(
 
       const row = Array.isArray(data) ? (data[0] as GenericRecord | undefined) : (data as GenericRecord | null);
       if (row) {
-        const now = new Date().toISOString();
+        // RPC creó el package base — ahora hacemos PATCH con los datos de SimBrief
+        if (simBriefData) {
+          await supabase
+            .from("dispatch_packages")
+            .update(packagePayload)
+            .eq("reservation_id", reservationId);
+        }
+
         return {
           reservation_id: reservationId,
           simbrief_username: simbriefUsername,
           status: "prepared",
-          prepared_at:
-            typeof row.prepared_at === "string" ? row.prepared_at : now,
-          released_at:
-            typeof row.released_at === "string" ? row.released_at : null,
-          created_at:
-            typeof row.created_at === "string" ? row.created_at : now,
-          updated_at:
-            typeof row.updated_at === "string" ? row.updated_at : now,
+          prepared_at: typeof row.prepared_at === "string" ? row.prepared_at : now,
+          released_at: typeof row.released_at === "string" ? row.released_at : null,
+          created_at: typeof row.created_at === "string" ? row.created_at : now,
+          updated_at: now,
         } satisfies DispatchPackageRow;
       }
     } catch (error) {
@@ -1234,16 +1290,9 @@ export async function markDispatchPrepared(
   }
 
   try {
-    const payload = {
-      reservation_id: reservationId,
-      simbrief_username: simbriefUsername,
-      status: "prepared",
-      prepared_at: new Date().toISOString(),
-    };
-
     const { data, error } = await supabase
       .from("dispatch_packages")
-      .upsert(payload, { onConflict: "reservation_id" })
+      .upsert(packagePayload, { onConflict: "reservation_id" })
       .select("*")
       .single();
 
@@ -1253,7 +1302,7 @@ export async function markDispatchPrepared(
 
     return data as DispatchPackageRow;
   } catch (fallbackPackageError) {
-    throw buildDispatchPersistenceError(reservationStatusError, rpcPackageError || fallbackPackageError);
+    throw buildDispatchPersistenceError(rpcPackageError, fallbackPackageError);
   }
 }
 
