@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/browser";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
+import { resolveSimbriefType } from "@/lib/simbrief";
 
 export type FlightMode = "itinerary" | "charter" | "training" | "event";
 export type FlightOperationStatus = "draft" | "reserved" | "dispatch_ready";
@@ -50,6 +51,9 @@ export type AvailableAircraftOption = {
   aircraft_name: string;
   current_airport_icao: string;
   status: string;
+  display_category?: string;
+  display_status?: string;
+  selectable?: boolean;
 };
 
 export type AvailableItineraryOption = {
@@ -59,10 +63,13 @@ export type AvailableItineraryOption = {
   flight_mode: FlightMode;
   origin_icao: string;
   destination_icao: string;
+  origin_city?: string | null;
+  destination_city?: string | null;
   aircraft_type_code: string | null;
   aircraft_type_name: string | null;
   compatible_aircraft_types?: string[];
   available_aircraft_count?: number;
+  distance_nm?: number | null;
   route_group?: string | null;
   service_profile?: string | null;
   service_level?: string | null;
@@ -143,6 +150,46 @@ function normalizeAircraftDisplayName(code: string) {
   return normalized;
 }
 
+function getDisplayCategoryFromCode(code: string) {
+  const normalized = normalizeUpper(code);
+
+  if (["C208", "TBM9", "TBM8"].includes(normalized)) {
+    return "Monomotor turbohélice";
+  }
+
+  if (["BE58"].includes(normalized)) {
+    return "Bimotor pistón";
+  }
+
+  if (["B350", "AT76", "ATR72"].includes(normalized)) {
+    return "Bimotor turbohélice";
+  }
+
+  if (normalized.startsWith("E17") || normalized.startsWith("E19")) {
+    return "Jet regional";
+  }
+
+  if (
+    normalized.startsWith("A3") ||
+    normalized.startsWith("A2") ||
+    normalized.startsWith("B73") ||
+    normalized.startsWith("MD8")
+  ) {
+    return "Narrowbody";
+  }
+
+  if (
+    normalized.startsWith("B77") ||
+    normalized.startsWith("B78") ||
+    normalized.startsWith("A33") ||
+    normalized.startsWith("A35")
+  ) {
+    return "Widebody";
+  }
+
+  return "Operación general";
+}
+
 function normalizeRankCode(value: string | null | undefined) {
   const normalized = normalizeUpper(value ?? "");
   return normalized || "CADET";
@@ -211,6 +258,59 @@ function normalizeFlightNumber(
   }
 
   return getOperationalFlightNumber(origin, destination);
+}
+
+function extractOperationalFlightDigits(value: string | null | undefined) {
+  const normalized = normalizeUpper(value ?? "");
+  if (!normalized || normalized.includes("-")) {
+    return "";
+  }
+
+  const digits = normalized.match(/\d{1,4}$/)?.[0] ?? "";
+  return digits ? digits.padStart(3, "0") : "";
+}
+
+function normalizeItineraryFlightIdentity(
+  flightNumber: string | number | null | undefined,
+  flightDesignator: string | null | undefined,
+  origin: string,
+  destination: string
+) {
+  const normalizedNumber =
+    typeof flightNumber === "number"
+      ? String(flightNumber)
+      : typeof flightNumber === "string"
+        ? flightNumber
+        : "";
+  const normalizedDesignator = typeof flightDesignator === "string" ? flightDesignator : "";
+  const generatedDesignator = getOperationalFlightNumber(origin, destination);
+  const generatedDigits = extractOperationalFlightDigits(generatedDesignator);
+
+  const numberDigits = extractOperationalFlightDigits(normalizedNumber);
+  const designatorDigits = extractOperationalFlightDigits(normalizedDesignator);
+  const resolvedDigits = numberDigits || designatorDigits || generatedDigits || null;
+  const resolvedDesignator = (() => {
+    const cleanDesignator = normalizeUpper(normalizedDesignator);
+    if (cleanDesignator && !cleanDesignator.includes("-")) {
+      return cleanDesignator;
+    }
+
+    const cleanNumber = normalizeUpper(normalizedNumber);
+    if (/^[A-Z]{2,4}\d{1,4}$/.test(cleanNumber)) {
+      return cleanNumber;
+    }
+
+    if (resolvedDigits) {
+      return `PWG${resolvedDigits}`;
+    }
+
+    return generatedDesignator || null;
+  })();
+
+  return {
+    flightNumber: resolvedDigits,
+    flightDesignator: resolvedDesignator,
+  };
 }
 
 function mapLegacyReservationFromRpc(
@@ -552,6 +652,81 @@ export function getDispatchBlockingReasons(
 export async function listAvailableAircraft(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
 
+  const mapDisplayRows = (rows: GenericRecord[]) =>
+    rows.map((row) => {
+      const selectable =
+        typeof row.selectable === "boolean"
+          ? row.selectable
+          : typeof row.display_status === "string"
+            ? row.display_status.trim().toLowerCase() === "disponible"
+            : typeof row.status === "string"
+              ? row.status.trim().toLowerCase() === "available"
+              : false;
+
+      const aircraftCode = resolveSimbriefType(
+        typeof row.icao_code === "string"
+          ? row.icao_code
+          : typeof row.aircraft_model_code === "string"
+            ? row.aircraft_model_code
+            : typeof row.airframe_code === "string"
+              ? row.airframe_code
+              : typeof row.aircraft_type_code === "string"
+                ? row.aircraft_type_code
+                : typeof row.aircraft_code === "string"
+                  ? row.aircraft_code
+                  : ""
+      );
+
+      const aircraftName =
+        typeof row.display_name === "string"
+          ? row.display_name
+          : typeof row.aircraft_name === "string"
+            ? row.aircraft_name
+            : normalizeAircraftDisplayName(aircraftCode);
+
+      return {
+        aircraft_id:
+          typeof row.aircraft_id === "string"
+            ? row.aircraft_id
+            : typeof row.id === "string"
+              ? row.id
+              : String(row.id ?? ""),
+        tail_number:
+          typeof row.registration === "string"
+            ? row.registration
+            : typeof row.tail_number === "string"
+              ? row.tail_number
+              : "",
+        aircraft_code: aircraftCode,
+        aircraft_name: aircraftName,
+        current_airport_icao:
+          typeof row.current_airport_code === "string"
+            ? row.current_airport_code
+            : typeof row.current_airport_icao === "string"
+              ? row.current_airport_icao
+              : airport,
+        status: selectable ? "available" : "unavailable",
+        display_category:
+          typeof row.display_category === "string"
+            ? row.display_category
+            : getDisplayCategoryFromCode(aircraftCode),
+        display_status: selectable ? "Disponible" : "No disponible",
+        selectable,
+      } satisfies AvailableAircraftOption;
+    });
+
+  try {
+    const { data, error } = await supabase.rpc("pw_get_available_aircraft_display", {
+      p_callsign: profile.callsign,
+    });
+
+    if (!error) {
+      return mapDisplayRows((data ?? []) as GenericRecord[]);
+    }
+  } catch {
+    // fallback chain below keeps legacy behavior when the new RPC is not available
+  }
+
   try {
     const { data, error } = await supabase
       .from("aircraft")
@@ -564,18 +739,29 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
       throw error;
     }
 
-    return ((data ?? []) as GenericRecord[]).map((row) => ({
-      aircraft_id: String(row.id ?? ""),
-      tail_number: typeof row.registration === "string" ? row.registration : "",
-      aircraft_code:
-        typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : "",
-      aircraft_name: normalizeAircraftDisplayName(
-        typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
-      ),
-      current_airport_icao:
-        typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
-      status: typeof row.status === "string" ? row.status : "available",
-    })) as AvailableAircraftOption[];
+    return ((data ?? []) as GenericRecord[]).map((row) => {
+      const isAvailable =
+        typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
+
+      return {
+        aircraft_id: String(row.id ?? ""),
+        tail_number: typeof row.registration === "string" ? row.registration : "",
+        aircraft_code: resolveSimbriefType(
+          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
+        ),
+        aircraft_name: normalizeAircraftDisplayName(
+          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
+        ),
+        current_airport_icao:
+          typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
+        status: typeof row.status === "string" ? row.status : "available",
+        display_status: isAvailable ? "Disponible" : "No disponible",
+        selectable: isAvailable,
+        display_category: getDisplayCategoryFromCode(
+          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
+        ),
+      } satisfies AvailableAircraftOption;
+    });
   } catch (tableError) {
     const rpcAttempts: Array<Record<string, unknown>> = [
       { p_callsign: profile.callsign, p_route_code: null },
@@ -586,38 +772,57 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     for (const params of rpcAttempts) {
       const { data, error } = await supabase.rpc("get_available_aircraft_for_pilot", params);
       if (!error) {
-        return ((data ?? []) as GenericRecord[]).map((row) => ({
-          aircraft_id: typeof row.aircraft_id === "string" ? row.aircraft_id : String(row.id ?? ""),
-          tail_number:
-            typeof row.registration === "string"
-              ? row.registration
-              : typeof row.tail_number === "string"
-                ? row.tail_number
-                : "",
-          aircraft_code:
-            typeof row.aircraft_type_code === "string"
-              ? row.aircraft_type_code
-              : typeof row.aircraft_code === "string"
-                ? row.aircraft_code
-                : "",
-          aircraft_name:
-            typeof row.aircraft_name === "string"
-              ? row.aircraft_name
-              : normalizeAircraftDisplayName(
-                  typeof row.aircraft_type_code === "string"
-                    ? row.aircraft_type_code
-                    : typeof row.aircraft_code === "string"
-                      ? row.aircraft_code
-                      : ""
-                ),
-          current_airport_icao:
-            typeof row.current_airport_icao === "string"
-              ? row.current_airport_icao
-              : typeof row.current_airport_code === "string"
-                ? row.current_airport_code
-                : airport,
-          status: typeof row.status === "string" ? row.status : "available",
-        })) as AvailableAircraftOption[];
+        return ((data ?? []) as GenericRecord[]).map((row) => {
+          const isAvailable =
+            typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
+
+          return {
+            aircraft_id:
+              typeof row.aircraft_id === "string" ? row.aircraft_id : String(row.id ?? ""),
+            tail_number:
+              typeof row.registration === "string"
+                ? row.registration
+                : typeof row.tail_number === "string"
+                  ? row.tail_number
+                  : "",
+            aircraft_code: resolveSimbriefType(
+              typeof row.aircraft_type_code === "string"
+                ? row.aircraft_type_code
+                : typeof row.aircraft_code === "string"
+                  ? row.aircraft_code
+                  : ""
+            ),
+            aircraft_name:
+              typeof row.aircraft_name === "string"
+                ? row.aircraft_name
+                : normalizeAircraftDisplayName(
+                    typeof row.aircraft_type_code === "string"
+                      ? row.aircraft_type_code
+                      : typeof row.aircraft_code === "string"
+                        ? row.aircraft_code
+                        : ""
+                  ),
+            current_airport_icao:
+              typeof row.current_airport_icao === "string"
+                ? row.current_airport_icao
+                : typeof row.current_airport_code === "string"
+                  ? row.current_airport_code
+                  : airport,
+            status: typeof row.status === "string" ? row.status : "available",
+            display_status: isAvailable ? "Disponible" : "No disponible",
+            selectable: isAvailable,
+            display_category:
+              typeof row.display_category === "string"
+                ? row.display_category
+                : getDisplayCategoryFromCode(
+                    typeof row.aircraft_type_code === "string"
+                      ? row.aircraft_type_code
+                      : typeof row.aircraft_code === "string"
+                        ? row.aircraft_code
+                        : ""
+                  ),
+          } satisfies AvailableAircraftOption;
+        });
       }
     }
 
@@ -638,6 +843,12 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         const routeCode = typeof row.route_code === "string" ? row.route_code : "";
         const destinationCity = typeof row.destination_city === "string" ? row.destination_city : destination;
         const availableCount = typeof row.available_aircraft_count === "number" ? row.available_aircraft_count : Number(row.available_aircraft_count ?? compatibleAircraftTypes.length ?? 0);
+        const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
+          typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
+          typeof row.flight_designator === "string" ? row.flight_designator : null,
+          origin,
+          destination
+        );
 
         if (!routeCode || !origin || !destination) return null;
 
@@ -648,10 +859,13 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
           flight_mode: "itinerary" as FlightMode,
           origin_icao: origin,
           destination_icao: destination,
+          origin_city: typeof row.origin_city === "string" ? row.origin_city : null,
+          destination_city: typeof row.destination_city === "string" ? row.destination_city : null,
           aircraft_type_code: compatibleAircraftTypes.length === 1 ? compatibleAircraftTypes[0] : null,
           aircraft_type_name: compatibleAircraftTypes.length === 1 ? normalizeAircraftDisplayName(compatibleAircraftTypes[0]) : compatibleAircraftTypes.length > 1 ? "Multi-fleet" : null,
           compatible_aircraft_types: compatibleAircraftTypes,
           available_aircraft_count: Number.isFinite(availableCount) ? availableCount : 0,
+          distance_nm: typeof row.distance_nm === "number" ? row.distance_nm : Number(row.distance_nm ?? NaN),
           route_group: typeof row.route_group === "string" ? row.route_group : null,
           service_profile: typeof row.service_profile === "string" ? row.service_profile : null,
           service_level: typeof row.service_level === "string" ? row.service_level : null,
@@ -664,13 +878,8 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
           buffer_departure_min_high: typeof row.buffer_departure_min_high === "number" ? row.buffer_departure_min_high : Number(row.buffer_departure_min_high ?? NaN),
           buffer_arrival_min_low: typeof row.buffer_arrival_min_low === "number" ? row.buffer_arrival_min_low : Number(row.buffer_arrival_min_low ?? NaN),
           buffer_arrival_min_high: typeof row.buffer_arrival_min_high === "number" ? row.buffer_arrival_min_high : Number(row.buffer_arrival_min_high ?? NaN),
-          flight_number:
-            typeof row.flight_number === "string"
-              ? row.flight_number
-              : typeof row.flight_number === "number"
-                ? String(row.flight_number)
-                : null,
-          flight_designator: typeof row.flight_designator === "string" ? row.flight_designator : null,
+          flight_number: normalizedFlightIdentity.flightNumber,
+          flight_designator: normalizedFlightIdentity.flightDesignator,
         } satisfies AvailableItineraryOption;
       })
       .filter(Boolean) as AvailableItineraryOption[];
@@ -684,7 +893,13 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
 
   const [{ data: routes, error: routesError }, { data: routeAircraft, error: routeAircraftError }, { data: rankPermissions, error: rankPermissionsError }, { data: aircraft, error: aircraftError }] =
     await Promise.all([
-      supabase.from("network_routes").select("id, route_code, origin_ident, destination_ident, priority, is_active").eq("origin_ident", airport).eq("is_active", true).order("priority").order("route_code"),
+      supabase
+        .from("network_routes")
+        .select("id, route_code, origin_ident, destination_ident, route_group, service_profile, service_level, priority, distance_nm, is_active, flight_number, flight_designator")
+        .eq("origin_ident", airport)
+        .eq("is_active", true)
+        .order("priority")
+        .order("route_code"),
       supabase.from("network_route_aircraft").select("route_id, aircraft_type_code"),
       supabase.from("pilot_rank_aircraft_permissions").select("aircraft_type_code").eq("rank_code", rankCode),
       supabase.from("aircraft").select("aircraft_type_code").eq("current_airport_code", airport).eq("status", "available"),
@@ -726,6 +941,12 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
       const origin = typeof row.origin_ident === "string" ? row.origin_ident : airport;
       const destination = typeof row.destination_ident === "string" ? row.destination_ident : "";
       const compatibleAircraftTypes = compatibilityMap.get(routeId) ?? [];
+      const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
+        typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
+        typeof row.flight_designator === "string" ? row.flight_designator : null,
+        origin,
+        destination
+      );
       if (!routeId || !routeCode || !destination || compatibleAircraftTypes.length === 0) return null;
       return {
         itinerary_id: routeId,
@@ -734,13 +955,21 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         flight_mode: "itinerary" as FlightMode,
         origin_icao: origin,
         destination_icao: destination,
+        origin_city: null,
+        destination_city: null,
         aircraft_type_code: compatibleAircraftTypes.length === 1 ? compatibleAircraftTypes[0] : null,
         aircraft_type_name: compatibleAircraftTypes.length === 1 ? normalizeAircraftDisplayName(compatibleAircraftTypes[0]) : "Multi-fleet",
         compatible_aircraft_types: compatibleAircraftTypes,
         available_aircraft_count: compatibleAircraftTypes.length,
-        route_group: null,
-        service_profile: null,
-        service_level: null,
+        distance_nm:
+          typeof row.distance_nm === "number"
+            ? row.distance_nm
+            : Number.isFinite(Number(row.distance_nm ?? NaN))
+              ? Number(row.distance_nm)
+              : null,
+        route_group: typeof row.route_group === "string" ? row.route_group : null,
+        service_profile: typeof row.service_profile === "string" ? row.service_profile : null,
+        service_level: typeof row.service_level === "string" ? row.service_level : null,
         origin_country: null,
         destination_country: null,
         scheduled_block_min: null,
@@ -750,8 +979,8 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         buffer_departure_min_high: null,
         buffer_arrival_min_low: null,
         buffer_arrival_min_high: null,
-        flight_number: null,
-        flight_designator: null,
+        flight_number: normalizedFlightIdentity.flightNumber,
+        flight_designator: normalizedFlightIdentity.flightDesignator,
       } satisfies AvailableItineraryOption;
     })
     .filter(Boolean) as AvailableItineraryOption[];

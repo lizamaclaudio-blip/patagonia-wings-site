@@ -12,12 +12,20 @@ import {
   type PilotProfileRecord,
 } from "@/lib/pilot-profile";
 import {
+  markDispatchPrepared,
+  saveFlightOperation,
+  getOperationalFlightNumber,
   listAvailableAircraft,
   listAvailableItineraries,
   type AvailableAircraftOption,
   type AvailableItineraryOption,
+  type FlightOperationRecord,
   type FlightMode,
 } from "@/lib/flight-ops";
+import {
+  resolveSimbriefType,
+  type SimbriefOfpSummary,
+} from "@/lib/simbrief";
 import { supabase } from "@/lib/supabase/browser";
 
 type DashboardMetrics = {
@@ -64,7 +72,8 @@ type DispatchFlightTypeId =
   | "training"
   | "event"
   | "special_mission"
-  | "free_flight";
+  | "free_flight"
+  | "qualification";
 
 type MetricDisplayItem = {
   label: string;
@@ -78,6 +87,23 @@ type AirportRow = {
   name: string | null;
   municipality: string | null;
   iso_country: string | null;
+};
+
+type ItineraryAirportMeta = {
+  ident: string;
+  name: string | null;
+  municipality: string | null;
+  iso_country: string | null;
+  latitude_deg: number | null;
+  longitude_deg: number | null;
+};
+
+type DispatchValidationItem = {
+  key: "flight_number" | "origin" | "destination" | "airframe";
+  label: string;
+  webValue: string;
+  simbriefValue: string;
+  matches: boolean;
 };
 
 type AirportHeroResponse = {
@@ -185,6 +211,7 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
   title: string;
   description: string;
   imageSrc: string;
+  hidden?: boolean;
 }> = [
   {
     id: "career",
@@ -227,8 +254,13 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
     title: "Habilitaciones",
     description: "Bloque pensado para chequeos, habilitaciones y misiones de progresion especifica.",
     imageSrc: "/dispatch/flight-types/habilitaciones.png",
+    hidden: true,
   },
 ];
+
+const DISPATCH_VISIBLE_FLIGHT_TYPE_OPTIONS = DISPATCH_FLIGHT_TYPE_OPTIONS.filter(
+  (option) => !option.hidden
+);
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
   AR: "Argentina",
@@ -348,6 +380,241 @@ function getCountryName(countryCode?: string | null) {
 function getFlagUrl(countryCode?: string | null) {
   const normalized = countryCode?.trim().toLowerCase() ?? "";
   return normalized ? `https://flagcdn.com/24x18/${normalized}.png` : "";
+}
+
+function normalizeCountryCode(value?: string | null) {
+  const normalized = value?.trim().toUpperCase() ?? "";
+
+  if (!normalized) return null;
+  if (normalized.length === 2) return normalized;
+  if (["CHILE"].includes(normalized)) return "CL";
+  if (["ARGENTINA"].includes(normalized)) return "AR";
+  if (["BRASIL", "BRAZIL"].includes(normalized)) return "BR";
+  if (["PERU", "PERU"].includes(normalized)) return "PE";
+  if (["COLOMBIA"].includes(normalized)) return "CO";
+  if (["ECUADOR"].includes(normalized)) return "EC";
+  if (["URUGUAY"].includes(normalized)) return "UY";
+  if (["PARAGUAY"].includes(normalized)) return "PY";
+  if (["BOLIVIA"].includes(normalized)) return "BO";
+  if (["ESTADOS UNIDOS", "UNITED STATES", "USA", "US"].includes(normalized)) return "US";
+  if (["MEXICO", "MEXICO"].includes(normalized)) return "MX";
+  if (["ESPANA", "ESPANA", "SPAIN"].includes(normalized)) return "ES";
+  if (["FRANCIA", "FRANCE"].includes(normalized)) return "FR";
+  if (["REINO UNIDO", "UNITED KINGDOM", "UK", "ENGLAND", "INGLATERRA"].includes(normalized)) return "GB";
+  return null;
+}
+
+function getCountryCodeFromIcao(icao?: string | null) {
+  const normalized = (icao ?? "").trim().toUpperCase();
+  if (normalized.startsWith("SC")) return "CL";
+  if (normalized.startsWith("SA")) return "AR";
+  if (normalized.startsWith("SB")) return "BR";
+  if (normalized.startsWith("SP")) return "PE";
+  if (normalized.startsWith("SK")) return "CO";
+  if (normalized.startsWith("SE")) return "EC";
+  if (normalized.startsWith("SU")) return "UY";
+  if (normalized.startsWith("SG")) return "PY";
+  if (normalized.startsWith("SL")) return "BO";
+  if (normalized.startsWith("KM") || normalized.startsWith("KJ") || normalized.startsWith("KL")) return "US";
+  if (normalized.startsWith("MM")) return "MX";
+  if (normalized.startsWith("LE")) return "ES";
+  if (normalized.startsWith("LF")) return "FR";
+  if (normalized.startsWith("EG")) return "GB";
+  return null;
+}
+
+function resolveCountryCode(value?: string | null, icao?: string | null) {
+  return normalizeCountryCode(value) ?? getCountryCodeFromIcao(icao) ?? null;
+}
+
+function formatDurationMinutes(value: number | null | undefined) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "Pendiente";
+  }
+
+  const safeMinutes = Math.max(1, Math.round(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+}
+
+function formatUtcDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "Pendiente";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Pendiente";
+  }
+
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).format(date).replace(",", "") + " UTC";
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function calculateDistanceNm(
+  originAirport: ItineraryAirportMeta | undefined,
+  destinationAirport: ItineraryAirportMeta | undefined,
+) {
+  const originLat = originAirport?.latitude_deg;
+  const originLon = originAirport?.longitude_deg;
+  const destinationLat = destinationAirport?.latitude_deg;
+  const destinationLon = destinationAirport?.longitude_deg;
+
+  if (
+    !Number.isFinite(originLat) ||
+    !Number.isFinite(originLon) ||
+    !Number.isFinite(destinationLat) ||
+    !Number.isFinite(destinationLon)
+  ) {
+    return null;
+  }
+
+  const dLat = toRadians((destinationLat ?? 0) - (originLat ?? 0));
+  const dLon = toRadians((destinationLon ?? 0) - (originLon ?? 0));
+  const lat1 = toRadians(originLat ?? 0);
+  const lat2 = toRadians(destinationLat ?? 0);
+
+  const haversine =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+
+  const distance = 3440.065 * 2 * Math.asin(Math.sqrt(haversine));
+  return Number.isFinite(distance) ? Math.round(distance) : null;
+}
+
+function getDestinationCityLabel(
+  itinerary: AvailableItineraryOption,
+  destinationAirport: ItineraryAirportMeta | undefined,
+) {
+  if (itinerary.destination_city?.trim()) {
+    return itinerary.destination_city.trim();
+  }
+
+  if (destinationAirport?.municipality?.trim()) {
+    return destinationAirport.municipality.trim();
+  }
+
+  if (destinationAirport?.name?.trim()) {
+    return destinationAirport.name.trim();
+  }
+
+  const splitByArrow = itinerary.itinerary_name.split("→");
+  const parsed = splitByArrow.length > 1 ? splitByArrow[splitByArrow.length - 1].trim() : "";
+  return parsed || itinerary.destination_icao;
+}
+
+function getOriginCityLabel(
+  itinerary: AvailableItineraryOption,
+  originAirport: ItineraryAirportMeta | undefined,
+  currentAirportCode: string,
+  currentAirportCity: string,
+) {
+  if (itinerary.origin_city?.trim()) {
+    return itinerary.origin_city.trim();
+  }
+
+  if (originAirport?.municipality?.trim()) {
+    return originAirport.municipality.trim();
+  }
+
+  if (
+    itinerary.origin_icao.trim().toUpperCase() === currentAirportCode.trim().toUpperCase() &&
+    currentAirportCity.trim()
+  ) {
+    return currentAirportCity.trim();
+  }
+
+  if (originAirport?.name?.trim()) {
+    return originAirport.name.trim();
+  }
+
+  return itinerary.origin_icao;
+}
+
+function buildDispatchFlightNumber(itinerary: AvailableItineraryOption | null) {
+  if (!itinerary) {
+    return "Pendiente";
+  }
+
+  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
+  const designator = itinerary?.flight_designator?.trim().toUpperCase() ?? "";
+  const airlineCode = designator.match(/^[A-Z]+/)?.[0] ?? "PWG";
+  const numberDigits =
+    rawNumber.match(/\d{1,4}$/)?.[0] ??
+    designator.match(/\d{1,4}$/)?.[0] ??
+    "";
+
+  if (numberDigits) {
+    return `${airlineCode} ${numberDigits.padStart(3, "0")}`;
+  }
+
+  const generatedNumber = getOperationalFlightNumber(itinerary.origin_icao, itinerary.destination_icao);
+  const generatedDigits = generatedNumber.match(/\d{1,4}$/)?.[0] ?? "";
+  if (generatedDigits) {
+    return `PWG ${generatedDigits.padStart(3, "0")}`;
+  }
+
+  return designator || rawNumber || "Pendiente";
+}
+
+function getDispatchFlightNumberValidationValue(itinerary: AvailableItineraryOption | null) {
+  if (!itinerary) {
+    return "";
+  }
+
+  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
+  const designator = itinerary?.flight_designator?.trim().toUpperCase() ?? "";
+  const numberDigits =
+    rawNumber.match(/\d{1,4}$/)?.[0] ??
+    designator.match(/\d{1,4}$/)?.[0] ??
+    "";
+
+  if (numberDigits) {
+    return numberDigits.padStart(3, "0");
+  }
+
+  const generatedNumber = getOperationalFlightNumber(itinerary.origin_icao, itinerary.destination_icao);
+  const generatedDigits = generatedNumber.match(/\d{1,4}$/)?.[0] ?? "";
+  if (generatedDigits) {
+    return generatedDigits.padStart(3, "0");
+  }
+
+  return normalizeDispatchComparisonValue(rawNumber || designator);
+}
+
+function formatSimbriefFlightNumber(value: string | null | undefined) {
+  const normalized = normalizeDispatchComparisonValue(value);
+  const airlineCode = normalized.match(/^[A-Z]+/)?.[0] ?? "PWG";
+  const numberDigits = normalized.match(/\d{1,4}$/)?.[0] ?? "";
+
+  if (numberDigits) {
+    return `${airlineCode} ${numberDigits.padStart(3, "0")}`;
+  }
+
+  return normalized || "Pendiente";
+}
+
+function getSimbriefFlightNumberValidationValue(value: string | null | undefined) {
+  const normalized = normalizeDispatchComparisonValue(value);
+  const numberDigits = normalized.match(/\d{1,4}$/)?.[0] ?? "";
+  return numberDigits ? numberDigits.padStart(3, "0") : normalized;
+}
+
+function normalizeDispatchComparisonValue(value: string | null | undefined) {
+  return (value ?? "").trim().toUpperCase();
 }
 
 function getAirportImagePath(airportCode: string) {
@@ -1761,10 +2028,9 @@ function DispatchAircraftTable({
         <table className="min-w-full text-left text-sm text-white/78">
           <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
             <tr>
-              <th className="px-4 py-3 font-semibold">Registro</th>
+              <th className="px-4 py-3 font-semibold">N° registro</th>
               <th className="px-4 py-3 font-semibold">Tipo</th>
-              <th className="px-4 py-3 font-semibold">Nombre</th>
-              <th className="px-4 py-3 font-semibold">Ubicacion</th>
+              <th className="px-4 py-3 font-semibold">Aeronave</th>
               <th className="px-4 py-3 font-semibold">Estado</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
             </tr>
@@ -1773,6 +2039,10 @@ function DispatchAircraftTable({
           <tbody>
             {rows.map((row) => {
               const isSelected = selectedAircraftId === row.aircraft_id;
+              const selectable = row.selectable ?? row.status?.toLowerCase() === "available";
+              const displayStatus = selectable ? "Disponible" : "No disponible";
+              const displayCategory = row.display_category?.trim() || "Operacion general";
+              const displayAircraftName = row.aircraft_name?.trim() || row.aircraft_code || "---";
 
               return (
                 <tr
@@ -1782,25 +2052,37 @@ function DispatchAircraftTable({
                   }`}
                 >
                   <td className="px-4 py-4 font-semibold text-white">{row.tail_number || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{row.aircraft_code || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{row.aircraft_name || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{row.current_airport_icao || "---"}</td>
+                  <td className="px-4 py-4 text-white/84">{displayCategory}</td>
+                  <td className="px-4 py-4 text-white/84">{displayAircraftName}</td>
                   <td className="px-4 py-4">
-                    <span className="inline-flex rounded-full border border-emerald-400/18 bg-emerald-500/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
-                      {row.status || "available"}
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                        selectable
+                          ? "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200"
+                          : "border-white/10 bg-white/[0.04] text-white/66"
+                      }`}
+                    >
+                      {displayStatus}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-right">
                     <button
                       type="button"
-                      onClick={() => onSelect(row.aircraft_id)}
+                      onClick={() => {
+                        if (selectable) {
+                          onSelect(row.aircraft_id);
+                        }
+                      }}
+                      disabled={!selectable}
                       className={`inline-flex rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                         isSelected
                           ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
-                          : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
+                          : selectable
+                            ? "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
+                            : "cursor-not-allowed border-white/10 bg-white/[0.02] text-white/42"
                       }`}
                     >
-                      {isSelected ? "Seleccionada" : "Seleccionar"}
+                      {isSelected ? "Seleccionada" : selectable ? "Seleccionar" : "No disponible"}
                     </button>
                   </td>
                 </tr>
@@ -1809,7 +2091,7 @@ function DispatchAircraftTable({
 
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-white/54">
                   No hay aeronaves disponibles en este aeropuerto para esta etapa.
                 </td>
               </tr>
@@ -1829,6 +2111,53 @@ function normalizeDispatchAircraftCode(value: string | null | undefined) {
     .toUpperCase();
 }
 
+function getDispatchAircraftCompatibilityCode(value: string | null | undefined) {
+  const normalized = normalizeDispatchAircraftCode(value);
+  if (!normalized) {
+    return "";
+  }
+
+  const aliases: Array<[string, string]> = [
+    ["C208", "C208"],
+    ["TBM8", "TBM9"],
+    ["TBM9", "TBM9"],
+    ["BE58", "BE58"],
+    ["B350", "B350"],
+    ["AT76", "ATR72"],
+    ["ATR72", "ATR72"],
+    ["E175", "E175"],
+    ["E190", "E190"],
+    ["E195", "E195"],
+    ["A319", "A319"],
+    ["A20N", "A20N"],
+    ["A320", "A320"],
+    ["A21N", "A21N"],
+    ["A321", "A321"],
+    ["B736", "B737"],
+    ["B737", "B737"],
+    ["B738", "B738"],
+    ["B739", "B739"],
+    ["B38M", "B38M"],
+    ["MD82", "MD82"],
+    ["MD83", "MD83"],
+    ["MD88", "MD88"],
+    ["B78X", "B78X"],
+    ["B789", "B789"],
+    ["A339", "A339"],
+    ["B77W", "B77W"],
+    ["B772", "B772"],
+    ["A359", "A359"],
+  ];
+
+  for (const [prefix, canonical] of aliases) {
+    if (normalized.startsWith(prefix)) {
+      return canonical;
+    }
+  }
+
+  return normalized;
+}
+
 function mapDispatchFlightTypeToMode(value: DispatchFlightTypeId | null): FlightMode | null {
   switch (value) {
     case "career":
@@ -1836,6 +2165,7 @@ function mapDispatchFlightTypeToMode(value: DispatchFlightTypeId | null): Flight
     case "charter":
       return "charter";
     case "training":
+    case "qualification":
       return "training";
     case "event":
     case "special_mission":
@@ -1851,10 +2181,18 @@ function DispatchItineraryTable({
   rows,
   selectedItineraryId,
   onSelect,
+  airportsByIcao,
+  currentAirportCode,
+  currentAirportCity,
+  currentCountryCode,
 }: {
   rows: AvailableItineraryOption[];
   selectedItineraryId: string | null;
   onSelect: (itineraryId: string) => void;
+  airportsByIcao: Record<string, ItineraryAirportMeta>;
+  currentAirportCode: string;
+  currentAirportCity: string;
+  currentCountryCode: string;
 }) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
@@ -1862,11 +2200,10 @@ function DispatchItineraryTable({
         <table className="min-w-full text-left text-sm text-white/78">
           <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
             <tr>
-              <th className="px-4 py-3 font-semibold">Ruta</th>
               <th className="px-4 py-3 font-semibold">Origen</th>
               <th className="px-4 py-3 font-semibold">Destino</th>
-              <th className="px-4 py-3 font-semibold">Flota</th>
-              <th className="px-4 py-3 font-semibold">Disp.</th>
+              <th className="px-4 py-3 font-semibold">Distancia</th>
+              <th className="px-4 py-3 font-semibold">Duracion aprox.</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
             </tr>
           </thead>
@@ -1874,10 +2211,41 @@ function DispatchItineraryTable({
           <tbody>
             {rows.map((row) => {
               const isSelected = selectedItineraryId === row.itinerary_id;
-              const fleetLabel =
-                row.compatible_aircraft_types?.length
-                  ? row.compatible_aircraft_types.join(", ")
-                  : row.aircraft_type_code || row.aircraft_type_name || "Multi-fleet";
+              const originCode = row.origin_icao.trim().toUpperCase();
+              const destinationCode = row.destination_icao.trim().toUpperCase();
+              const originAirport = airportsByIcao[originCode];
+              const destinationAirport = airportsByIcao[destinationCode];
+              const originCity = getOriginCityLabel(
+                row,
+                originAirport,
+                currentAirportCode,
+                currentAirportCity,
+              );
+              const destinationCity = getDestinationCityLabel(row, destinationAirport);
+              const originCountryCode = resolveCountryCode(
+                originAirport?.iso_country ??
+                  row.origin_country ??
+                  (originCode === currentAirportCode.trim().toUpperCase() ? currentCountryCode : null),
+                originCode,
+              );
+              const destinationCountryCode = resolveCountryCode(
+                destinationAirport?.iso_country ?? row.destination_country,
+                destinationCode,
+              );
+              const originFlagUrl = getFlagUrl(originCountryCode);
+              const destinationFlagUrl = getFlagUrl(destinationCountryCode);
+              const rawDistance = Number(row.distance_nm);
+              const distanceNm =
+                Number.isFinite(rawDistance) && rawDistance > 0
+                  ? Math.round(rawDistance)
+                  : calculateDistanceNm(originAirport, destinationAirport);
+              const durationCandidate = [
+                row.scheduled_block_min,
+                row.expected_block_p50,
+                row.expected_block_p80,
+              ]
+                .map((value) => Number(value))
+                .find((value) => Number.isFinite(value) && value > 0);
 
               return (
                 <tr
@@ -1887,20 +2255,64 @@ function DispatchItineraryTable({
                   }`}
                 >
                   <td className="px-4 py-4">
-                    <div className="font-semibold text-white">{row.itinerary_code}</div>
-                    <div className="mt-1 text-sm text-white/68">{row.itinerary_name}</div>
+                    <div className="min-w-[180px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold tracking-[0.1em] text-white">
+                          {originCode || "---"}
+                        </span>
+                        {originFlagUrl ? (
+                          <img
+                            src={originFlagUrl}
+                            alt={`Bandera ${originCountryCode ?? originCode}`}
+                            className="h-[14px] w-[18px] rounded-[2px] object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="mt-2 text-sm text-white/68">{originCity}</div>
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-white/84">{row.origin_icao || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{row.destination_icao || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{fleetLabel}</td>
-                  <td className="px-4 py-4 text-white/84">
-                    {typeof row.available_aircraft_count === "number" ? row.available_aircraft_count : 0}
+                  <td className="px-4 py-4">
+                    <div className="min-w-[180px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold tracking-[0.1em] text-white">
+                          {destinationCode || "---"}
+                        </span>
+                        {destinationFlagUrl ? (
+                          <img
+                            src={destinationFlagUrl}
+                            alt={`Bandera ${destinationCountryCode ?? destinationCode}`}
+                            className="h-[14px] w-[18px] rounded-[2px] object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="mt-2 text-sm text-white/68">{destinationCity}</div>
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-4 py-4">
+                    <div className="min-w-[120px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <div className="text-lg font-semibold text-white">
+                        {distanceNm ? `${distanceNm} NM` : "Pendiente"}
+                      </div>
+                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-white/42">
+                        Distancia
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="min-w-[132px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <div className="text-lg font-semibold text-white">
+                        {formatDurationMinutes(durationCandidate ?? null)}
+                      </div>
+                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-white/42">
+                        Bloque
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 min-w-[210px] text-right">
                     <button
                       type="button"
                       onClick={() => onSelect(row.itinerary_id)}
-                      className={`inline-flex rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                      className={`inline-flex w-full items-center justify-center rounded-2xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                         isSelected
                           ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
                           : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
@@ -1915,7 +2327,7 @@ function DispatchItineraryTable({
 
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-white/54">
                   No hay itinerarios disponibles para la aeronave y modo de vuelo seleccionados.
                 </td>
               </tr>
@@ -1927,7 +2339,86 @@ function DispatchItineraryTable({
   );
 }
 
+function DispatchValueCard({
+  label,
+  value,
+  hint,
+  valueClassName,
+  hintClassName,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  valueClassName?: string;
+  hintClassName?: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-5 py-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
+      <p className={`mt-3 text-[1.7rem] font-semibold leading-none tracking-tight text-white ${valueClassName ?? ""}`}>
+        {value}
+      </p>
+      {hint ? (
+        <p className={`mt-3 text-[15px] leading-6 text-white/62 ${hintClassName ?? ""}`}>{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function DispatchLocationCard({
+  label,
+  icao,
+  city,
+  countryCode,
+}: {
+  label: string;
+  icao: string;
+  city: string;
+  countryCode?: string | null;
+}) {
+  const resolvedCountryCode = resolveCountryCode(countryCode, icao);
+  const flagUrl = getFlagUrl(resolvedCountryCode);
+
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-5 py-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
+      <div className="mt-3 flex items-center gap-3">
+        <span className="text-[1.7rem] font-semibold leading-none tracking-[0.12em] text-white">
+          {icao || "---"}
+        </span>
+        {flagUrl ? (
+          <img
+            src={flagUrl}
+            alt={`Bandera ${resolvedCountryCode ?? icao}`}
+            className="h-[18px] w-[26px] rounded-[3px] object-cover"
+          />
+        ) : null}
+      </div>
+      <p className="mt-3 text-[15px] leading-6 text-white/68">{city || "Pendiente"}</p>
+    </div>
+  );
+}
+
+function DispatchWideValueStrip({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-5 py-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
+      <p className="mt-3 text-[15px] font-medium leading-7 tracking-[0.04em] text-white/88">{value}</p>
+      {hint ? <p className="mt-2 text-sm leading-6 text-white/58">{hint}</p> : null}
+    </div>
+  );
+}
+
 function DashboardWorkspace({
+  profile,
   activeTab,
   onChangeTab,
   metrics,
@@ -1935,6 +2426,7 @@ function DashboardWorkspace({
   availableAircraft,
   availableItineraries,
 }: {
+  profile: PilotProfileRecord | null;
   activeTab: DashboardTabKey;
   onChangeTab: (tab: DashboardTabKey) => void;
   metrics: DashboardMetrics;
@@ -1947,6 +2439,17 @@ function DashboardWorkspace({
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
   const [selectedItinerary, setSelectedItinerary] = useState<string | null>(null);
   const [dispatchReady, setDispatchReady] = useState(false);
+  const [simbriefSummary, setSimbriefSummary] = useState<SimbriefOfpSummary | null>(null);
+  const [syncingSimbrief, setSyncingSimbrief] = useState(false);
+  const [simbriefInfoMessage, setSimbriefInfoMessage] = useState("");
+  const [simbriefErrorMessage, setSimbriefErrorMessage] = useState("");
+  const [finalizingDispatch, setFinalizingDispatch] = useState(false);
+  const [summaryInfoMessage, setSummaryInfoMessage] = useState("");
+  const [summaryErrorMessage, setSummaryErrorMessage] = useState("");
+  const [preparedReservationId, setPreparedReservationId] = useState<string | null>(null);
+  const [itineraryAirportsByIcao, setItineraryAirportsByIcao] = useState<
+    Record<string, ItineraryAirportMeta>
+  >({});
 
   const aircraftOptions = [
     {
@@ -2001,41 +2504,324 @@ function DashboardWorkspace({
     [availableAircraft, selectedAircraft],
   );
   const filteredItineraries = useMemo(() => {
-    const modeFiltered = dispatchFlightMode
-      ? availableItineraries.filter((item) => item.flight_mode === dispatchFlightMode)
-      : [];
+    const activeAirportCode = central.airportCode.trim().toUpperCase();
+    const airportFiltered = availableItineraries.filter(
+      (item) => item.origin_icao.trim().toUpperCase() === activeAirportCode,
+    );
+    const strictModeFiltered = dispatchFlightMode
+      ? airportFiltered.filter((item) => item.flight_mode === dispatchFlightMode)
+      : airportFiltered;
+    const modeFiltered = strictModeFiltered.length > 0 ? strictModeFiltered : airportFiltered;
 
     if (!selectedAircraftRecord) {
       return modeFiltered;
     }
 
-    const selectedCode = normalizeDispatchAircraftCode(selectedAircraftRecord.aircraft_code);
-
-    return modeFiltered.filter((item) => {
+    const selectedCode = getDispatchAircraftCompatibilityCode(selectedAircraftRecord.aircraft_code);
+    const aircraftMatched = modeFiltered.filter((item) => {
       const compatibleTypes = item.compatible_aircraft_types ?? [];
       if (compatibleTypes.length > 0) {
         return compatibleTypes.some(
-          (type) => normalizeDispatchAircraftCode(type) === selectedCode,
+          (type) => getDispatchAircraftCompatibilityCode(type) === selectedCode,
         );
       }
 
       if (item.aircraft_type_code) {
-        return normalizeDispatchAircraftCode(item.aircraft_type_code) === selectedCode;
+        return getDispatchAircraftCompatibilityCode(item.aircraft_type_code) === selectedCode;
       }
 
       return (item.available_aircraft_count ?? 0) > 0;
     });
-  }, [availableItineraries, dispatchFlightMode, selectedAircraftRecord]);
+
+    return aircraftMatched.length > 0 ? aircraftMatched : modeFiltered;
+  }, [availableItineraries, central.airportCode, dispatchFlightMode, selectedAircraftRecord]);
   const selectedItineraryRecord = useMemo(
     () => filteredItineraries.find((option) => option.itinerary_id === selectedItinerary) ?? null,
     [filteredItineraries, selectedItinerary],
   );
+  const webFlightNumber = useMemo(
+    () => buildDispatchFlightNumber(selectedItineraryRecord),
+    [selectedItineraryRecord],
+  );
+  const webFlightNumberValidationValue = useMemo(
+    () => getDispatchFlightNumberValidationValue(selectedItineraryRecord),
+    [selectedItineraryRecord],
+  );
+  const webOriginCode =
+    selectedItineraryRecord?.origin_icao?.trim().toUpperCase() ?? central.airportCode.trim().toUpperCase();
+  const webDestinationCode =
+    selectedItineraryRecord?.destination_icao?.trim().toUpperCase() ?? "Pendiente";
+  const webOriginAirport = itineraryAirportsByIcao[webOriginCode];
+  const webDestinationAirport = itineraryAirportsByIcao[webDestinationCode];
+  const webOriginCity = selectedItineraryRecord
+    ? getOriginCityLabel(
+        selectedItineraryRecord,
+        webOriginAirport,
+        central.airportCode,
+        central.municipality,
+      )
+    : central.municipality;
+  const webDestinationCity = selectedItineraryRecord
+    ? getDestinationCityLabel(selectedItineraryRecord, webDestinationAirport)
+    : "Pendiente";
+  const webOriginCountryCode = resolveCountryCode(
+    webOriginAirport?.iso_country ?? central.countryCode,
+    webOriginCode,
+  );
+  const webDestinationCountryCode = resolveCountryCode(
+    webDestinationAirport?.iso_country ?? selectedItineraryRecord?.destination_country ?? null,
+    webDestinationCode,
+  );
+  const webAirframe = useMemo(() => {
+    const normalized = resolveSimbriefType(selectedAircraftRecord?.aircraft_code ?? "").trim().toUpperCase();
+    return normalized || "Pendiente";
+  }, [selectedAircraftRecord]);
+  const simbriefOriginCode = simbriefSummary?.origin?.trim().toUpperCase() ?? "Pendiente";
+  const simbriefDestinationCode = simbriefSummary?.destination?.trim().toUpperCase() ?? "Pendiente";
+  const simbriefOriginAirport = itineraryAirportsByIcao[simbriefOriginCode];
+  const simbriefDestinationAirport = itineraryAirportsByIcao[simbriefDestinationCode];
+  const simbriefOriginCity =
+    simbriefOriginAirport?.municipality?.trim() ||
+    simbriefOriginAirport?.name?.trim() ||
+    (simbriefSummary?.origin ? simbriefSummary.origin : "Pendiente");
+  const simbriefDestinationCity =
+    simbriefDestinationAirport?.municipality?.trim() ||
+    simbriefDestinationAirport?.name?.trim() ||
+    (simbriefSummary?.destination ? simbriefSummary.destination : "Pendiente");
+  const simbriefOriginCountryCode = resolveCountryCode(
+    simbriefOriginAirport?.iso_country ?? null,
+    simbriefSummary?.origin ?? null,
+  );
+  const simbriefDestinationCountryCode = resolveCountryCode(
+    simbriefDestinationAirport?.iso_country ?? null,
+    simbriefSummary?.destination ?? null,
+  );
+  const simbriefAirframe = useMemo(() => {
+    const normalized = resolveSimbriefType(simbriefSummary?.airframe ?? "").trim().toUpperCase();
+    return normalized || "Pendiente";
+  }, [simbriefSummary]);
+  const simbriefFlightNumberDisplay = useMemo(
+    () => formatSimbriefFlightNumber(simbriefSummary?.flightNumber),
+    [simbriefSummary],
+  );
+  const simbriefFlightNumberValidationValue = useMemo(
+    () => getSimbriefFlightNumberValidationValue(simbriefSummary?.flightNumber),
+    [simbriefSummary],
+  );
+  const dispatchValidationItems = useMemo<DispatchValidationItem[]>(() => {
+    const summary = simbriefSummary;
+    const expectedFlightNumber = webFlightNumberValidationValue;
+    const expectedOrigin = normalizeDispatchComparisonValue(webOriginCode);
+    const expectedDestination = normalizeDispatchComparisonValue(webDestinationCode);
+    const expectedAirframe = normalizeDispatchComparisonValue(webAirframe);
+    const actualFlightNumber = simbriefFlightNumberValidationValue;
+    const actualOrigin = normalizeDispatchComparisonValue(summary?.origin);
+    const actualDestination = normalizeDispatchComparisonValue(summary?.destination);
+    const actualAirframe = normalizeDispatchComparisonValue(
+      resolveSimbriefType(summary?.airframe ?? ""),
+    );
+
+    return [
+      {
+        key: "flight_number",
+        label: "Numero de vuelo",
+        webValue: webFlightNumber,
+        simbriefValue: simbriefFlightNumberDisplay,
+        matches:
+          Boolean(summary) &&
+          Boolean(expectedFlightNumber) &&
+          Boolean(actualFlightNumber) &&
+          expectedFlightNumber === actualFlightNumber,
+      },
+      {
+        key: "origin",
+        label: "Origen",
+        webValue: webOriginCode,
+        simbriefValue: summary?.origin?.trim() || "Pendiente",
+        matches:
+          Boolean(summary) &&
+          Boolean(expectedOrigin) &&
+          Boolean(actualOrigin) &&
+          expectedOrigin === actualOrigin,
+      },
+      {
+        key: "destination",
+        label: "Destino",
+        webValue: webDestinationCode,
+        simbriefValue: summary?.destination?.trim() || "Pendiente",
+        matches:
+          Boolean(summary) &&
+          Boolean(expectedDestination) &&
+          Boolean(actualDestination) &&
+          expectedDestination === actualDestination,
+      },
+      {
+        key: "airframe",
+        label: "Airframe",
+        webValue: webAirframe,
+        simbriefValue: simbriefAirframe,
+        matches:
+          Boolean(summary) &&
+          Boolean(expectedAirframe) &&
+          Boolean(actualAirframe) &&
+          expectedAirframe === actualAirframe,
+      },
+    ];
+  }, [
+    simbriefAirframe,
+    simbriefFlightNumberDisplay,
+    simbriefFlightNumberValidationValue,
+    simbriefSummary,
+    webAirframe,
+    webDestinationCode,
+    webFlightNumber,
+    webFlightNumberValidationValue,
+    webOriginCode,
+  ]);
+  const canValidateDispatch = useMemo(
+    () => Boolean(simbriefSummary) && dispatchValidationItems.every((item) => item.matches),
+    [dispatchValidationItems, simbriefSummary],
+  );
+  const summaryDispatchRoute = simbriefSummary?.routeText?.trim() || "Pendiente";
+  const summaryDispatchDistance =
+    typeof simbriefSummary?.distanceNm === "number"
+      ? `${formatInteger(simbriefSummary.distanceNm)} NM`
+      : typeof selectedItineraryRecord?.distance_nm === "number"
+        ? `${formatInteger(selectedItineraryRecord.distance_nm)} NM`
+        : "Pendiente";
+  const summaryDispatchDuration =
+    typeof simbriefSummary?.eteMinutes === "number"
+      ? formatDurationMinutes(simbriefSummary.eteMinutes)
+      : formatDurationMinutes(
+          selectedItineraryRecord?.scheduled_block_min ??
+            selectedItineraryRecord?.expected_block_p50 ??
+            selectedItineraryRecord?.expected_block_p80 ??
+            null,
+        );
+  const summaryAirframeDisplay = selectedAircraftRecord
+    ? `${selectedAircraftRecord.aircraft_name} · ${webAirframe}`
+    : "Pendiente";
+  const canDispatchFlight =
+    Boolean(profile) &&
+    Boolean(selectedAircraftRecord) &&
+    Boolean(selectedItineraryRecord) &&
+    Boolean(simbriefSummary) &&
+    dispatchReady &&
+    canValidateDispatch;
+
+  useEffect(() => {
+    const currentAirportCode = central.airportCode.trim().toUpperCase();
+    const baseMap: Record<string, ItineraryAirportMeta> = currentAirportCode
+      ? {
+          [currentAirportCode]: {
+            ident: currentAirportCode,
+            name: central.airportName || null,
+            municipality: central.municipality || null,
+            iso_country: central.countryCode || null,
+            latitude_deg: null,
+            longitude_deg: null,
+          },
+        }
+      : {};
+
+    const airportCodes = Array.from(
+      new Set(
+        filteredItineraries
+          .flatMap((item) => [item.origin_icao, item.destination_icao])
+          .map((code) => code?.trim().toUpperCase())
+          .filter((code): code is string => Boolean(code)),
+      ),
+    );
+
+    if (airportCodes.length === 0) {
+      setItineraryAirportsByIcao(baseMap);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const mapRowToAirportMeta = (row: Record<string, unknown>): ItineraryAirportMeta | null => {
+      const ident = typeof row.ident === "string" ? row.ident.trim().toUpperCase() : "";
+      if (!ident) {
+        return null;
+      }
+
+      const latitudeValue =
+        typeof row.latitude_deg === "number" ? row.latitude_deg : Number(row.latitude_deg ?? NaN);
+      const longitudeValue =
+        typeof row.longitude_deg === "number" ? row.longitude_deg : Number(row.longitude_deg ?? NaN);
+
+      return {
+        ident,
+        name: typeof row.name === "string" ? row.name : null,
+        municipality: typeof row.municipality === "string" ? row.municipality : null,
+        iso_country: typeof row.iso_country === "string" ? row.iso_country : null,
+        latitude_deg: Number.isFinite(latitudeValue) ? latitudeValue : null,
+        longitude_deg: Number.isFinite(longitudeValue) ? longitudeValue : null,
+      };
+    };
+
+    const loadItineraryAirports = async () => {
+      try {
+        const withCoords = await supabase
+          .from("airports")
+          .select("ident, name, municipality, iso_country, latitude_deg, longitude_deg")
+          .in("ident", airportCodes);
+
+        const airportRows =
+          withCoords.error || !withCoords.data
+            ? await supabase
+                .from("airports")
+                .select("ident, name, municipality, iso_country")
+                .in("ident", airportCodes)
+            : withCoords;
+
+        if (airportRows.error) {
+          throw airportRows.error;
+        }
+
+        const nextMap = { ...baseMap };
+        for (const rawRow of (airportRows.data ?? []) as Array<Record<string, unknown>>) {
+          const airportMeta = mapRowToAirportMeta(rawRow);
+          if (airportMeta) {
+            nextMap[airportMeta.ident] = airportMeta;
+          }
+        }
+
+        if (!isCancelled) {
+          setItineraryAirportsByIcao(nextMap);
+        }
+      } catch {
+        if (!isCancelled) {
+          setItineraryAirportsByIcao(baseMap);
+        }
+      }
+    };
+
+    void loadItineraryAirports();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    central.airportCode,
+    central.airportName,
+    central.countryCode,
+    central.municipality,
+    filteredItineraries,
+  ]);
 
   useEffect(() => {
     if (selectedAircraft && !selectedAircraftRecord) {
       setSelectedAircraft(null);
       setSelectedItinerary(null);
       setDispatchReady(false);
+      setSimbriefSummary(null);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage("");
+      setPreparedReservationId(null);
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
     }
   }, [selectedAircraft, selectedAircraftRecord]);
 
@@ -2043,6 +2829,12 @@ function DashboardWorkspace({
     if (selectedItinerary && !selectedItineraryRecord) {
       setSelectedItinerary(null);
       setDispatchReady(false);
+      setSimbriefSummary(null);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage("");
+      setPreparedReservationId(null);
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
     }
   }, [selectedItinerary, selectedItineraryRecord]);
 
@@ -2068,12 +2860,16 @@ function DashboardWorkspace({
       ? DISPATCH_FLIGHT_TYPE_OPTIONS.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
       : "Pendiente",
     aircraft: selectedAircraftRecord
-      ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_code}`
+      ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}`
       : "Pendiente",
     itinerary: selectedItineraryRecord
       ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
-    dispatch: dispatchReady ? "Despacho marcado como listo" : "Pendiente",
+    dispatch: dispatchReady
+      ? "Despacho validado con SimBrief"
+      : simbriefSummary
+        ? "OFP cargado pendiente de validacion"
+        : "Pendiente",
   };
 
   const handleStepChange = (step: DispatchStepKey) => {
@@ -2089,6 +2885,12 @@ function DashboardWorkspace({
     setSelectedAircraft(null);
     setSelectedItinerary(null);
     setDispatchReady(false);
+    setSimbriefSummary(null);
+    setSimbriefInfoMessage("");
+    setSimbriefErrorMessage("");
+    setPreparedReservationId(null);
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
     setDispatchStep("aircraft");
   };
 
@@ -2096,12 +2898,184 @@ function DashboardWorkspace({
     setSelectedAircraft(nextAircraft);
     setSelectedItinerary(null);
     setDispatchReady(false);
+    setSimbriefSummary(null);
+    setSimbriefInfoMessage("");
+    setSimbriefErrorMessage("");
+    setPreparedReservationId(null);
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
   };
 
   const resetAfterItinerary = (nextItinerary: string) => {
     setSelectedItinerary(nextItinerary);
     setDispatchReady(false);
+    setSimbriefSummary(null);
+    setSimbriefInfoMessage("");
+    setSimbriefErrorMessage("");
+    setPreparedReservationId(null);
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
   };
+
+  async function handleLoadSimbriefData() {
+    if (!profile?.simbrief_username?.trim()) {
+      setDispatchReady(false);
+      setSimbriefSummary(null);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para traer el OFP.");
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
+      return;
+    }
+
+    setSyncingSimbrief(true);
+    setDispatchReady(false);
+    setSimbriefInfoMessage("");
+    setSimbriefErrorMessage("");
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
+
+    try {
+      const search = new URLSearchParams({
+        username: profile.simbrief_username.trim(),
+      });
+
+      const response = await fetch(`/api/simbrief/ofp?${search.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const data = (await response.json()) as
+        | { ok: true; summary: SimbriefOfpSummary; matchedByStaticId: boolean }
+        | { error?: string };
+
+      if (!response.ok || !("ok" in data)) {
+        throw new Error(
+          data && "error" in data ? data.error || "No se pudo leer el OFP real." : "No se pudo leer el OFP real."
+        );
+      }
+
+      setSimbriefSummary(data.summary);
+      setSimbriefInfoMessage(
+        "Datos de SimBrief cargados. Revisa la validacion antes de habilitar el resumen."
+      );
+      setSimbriefErrorMessage("");
+      setPreparedReservationId(null);
+    } catch (error) {
+      setSimbriefSummary(null);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage(
+        error instanceof Error ? error.message : "No se pudo cargar el OFP desde SimBrief."
+      );
+      setPreparedReservationId(null);
+    } finally {
+      setSyncingSimbrief(false);
+    }
+  }
+
+  function handleValidateDispatch() {
+    if (!simbriefSummary) {
+      setDispatchReady(false);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage("Primero debes traer los datos del OFP desde SimBrief.");
+      setPreparedReservationId(null);
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
+      return;
+    }
+
+    if (!canValidateDispatch) {
+      setDispatchReady(false);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage(
+        "No se puede validar: vuelo, origen, destino o airframe no coinciden entre la web y SimBrief."
+      );
+      setPreparedReservationId(null);
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
+      return;
+    }
+
+    setDispatchReady(true);
+    setSimbriefErrorMessage("");
+    setSimbriefInfoMessage("Despacho validado correctamente. Ya puedes continuar al resumen.");
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
+  }
+
+  async function handleDispatchFlight() {
+    if (!profile) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("No se pudo identificar el perfil del piloto para despachar.");
+      return;
+    }
+
+    if (!selectedAircraftRecord || !selectedItineraryRecord) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("Faltan aeronave o itinerario para dejar el vuelo listo.");
+      return;
+    }
+
+    if (!simbriefSummary || !dispatchReady || !canValidateDispatch) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("Primero valida el despacho con SimBrief antes de guardarlo.");
+      return;
+    }
+
+    setFinalizingDispatch(true);
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
+
+    try {
+      const normalizedFlightNumber =
+        simbriefSummary.flightNumber?.trim().replace(/\s+/g, "").toUpperCase() ||
+        selectedItineraryRecord.flight_designator?.trim().replace(/\s+/g, "").toUpperCase() ||
+        `PWG${webFlightNumberValidationValue || "000"}`;
+      const remarks = [
+        "DISPATCHED_FROM_DASHBOARD",
+        simbriefSummary.staticId ? `STATIC ${simbriefSummary.staticId}` : null,
+        simbriefSummary.aircraftRegistration ? `REG ${simbriefSummary.aircraftRegistration}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const finalOperation: FlightOperationRecord = {
+        reservationId: preparedReservationId,
+        userId: profile.id,
+        itineraryId: selectedItineraryRecord.itinerary_id,
+        aircraftId: selectedAircraftRecord.aircraft_id,
+        flightMode: dispatchFlightMode ?? selectedItineraryRecord.flight_mode ?? "itinerary",
+        routeCode: selectedItineraryRecord.itinerary_code,
+        flightNumber: normalizedFlightNumber,
+        origin: webOriginCode,
+        destination: webDestinationCode,
+        aircraftCode: selectedAircraftRecord.aircraft_code,
+        aircraftName: selectedAircraftRecord.aircraft_name,
+        aircraftTailNumber:
+          selectedAircraftRecord.tail_number || simbriefSummary.aircraftRegistration?.trim() || "",
+        routeText: simbriefSummary.routeText?.trim() || selectedItineraryRecord.itinerary_code,
+        scheduledDeparture: "",
+        remarks,
+        status: "dispatch_ready",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const saved = await saveFlightOperation(profile, finalOperation, "dispatch_ready");
+      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign);
+      setPreparedReservationId(saved.id);
+      setSummaryErrorMessage("");
+      setSummaryInfoMessage(
+        "Vuelo despachado y guardado en la base operativa. ACARS ya puede rescatar esta preparacion desde la web."
+      );
+    } catch (error) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage(
+        error instanceof Error ? error.message : "No se pudo despachar el vuelo a la base operativa."
+      );
+    } finally {
+      setFinalizingDispatch(false);
+    }
+  }
 
   return (
     <section className="mt-6 glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
@@ -2226,7 +3200,7 @@ function DashboardWorkspace({
                         </p>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                          {DISPATCH_FLIGHT_TYPE_OPTIONS.map((option) => {
+                          {DISPATCH_VISIBLE_FLIGHT_TYPE_OPTIONS.map((option) => {
                             const isSelected = selectedFlightType === option.id;
                             return (
                               <button
@@ -2343,7 +3317,7 @@ function DashboardWorkspace({
                         <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
                           <p className="text-sm leading-7 text-white/70">
                             {selectedAircraftRecord
-                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_code}.`
+                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}.`
                               : availableAircraft.length > 0
                                 ? "Escoge una aeronave de la tabla para continuar al itinerario."
                                 : `No hay aeronaves disponibles en ${central.airportCode} para esta etapa.`}
@@ -2417,6 +3391,10 @@ function DashboardWorkspace({
                             rows={filteredItineraries}
                             selectedItineraryId={selectedItinerary}
                             onSelect={resetAfterItinerary}
+                            airportsByIcao={itineraryAirportsByIcao}
+                            currentAirportCode={central.airportCode}
+                            currentAirportCity={central.municipality}
+                            currentCountryCode={central.countryCode}
                           />
                         </div>
 
@@ -2480,7 +3458,7 @@ function DashboardWorkspace({
                     </div>
                   ) : null}
 
-                  {dispatchStep === "dispatch_flow" ? (
+                  {false && dispatchStep === "dispatch_flow" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
@@ -2553,7 +3531,522 @@ function DashboardWorkspace({
                     </div>
                   ) : null}
 
+                  {dispatchStep === "dispatch_flow" ? (
+                    <div className="space-y-4">
+                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Aqui queda la comparacion entre lo elegido en la web y el OFP real de SimBrief. El resumen solo
+                          se habilita cuando numero de vuelo, origen, destino y airframe coinciden.
+                        </p>
+                      </div>
+
+                      <div className="rounded-[22px] border border-cyan-400/14 bg-[#031428]/65 p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              Bloque 1
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Datos confirmados en la web</h5>
+                          </div>
+                          <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                            Flujo actual
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1fr_1fr_0.9fr]">
+                          <DispatchValueCard
+                            label="Numero de vuelo"
+                            value={webFlightNumber}
+                            hint={selectedItineraryRecord?.itinerary_code ?? "Pendiente"}
+                          />
+                          <DispatchLocationCard
+                            label="Origen"
+                            icao={webOriginCode}
+                            city={webOriginCity}
+                            countryCode={webOriginCountryCode}
+                          />
+                          <DispatchLocationCard
+                            label="Destino"
+                            icao={webDestinationCode}
+                            city={webDestinationCity}
+                            countryCode={webDestinationCountryCode}
+                          />
+                          <DispatchValueCard
+                            label="Airframe ICAO"
+                            value={webAirframe}
+                            hint={
+                              selectedAircraftRecord
+                                ? `${selectedAircraftRecord.aircraft_name} · ${selectedAircraftRecord.tail_number}`
+                                : "Pendiente"
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              Bloque 2
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Datos traidos desde SimBrief</h5>
+                            <p className="mt-2 text-sm leading-7 text-white/68">
+                              Crea tu plan en SimBrief y luego vuelve aqui para cargar el OFP mas reciente de tu usuario.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleLoadSimbriefData}
+                            disabled={syncingSimbrief}
+                            className={`rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] transition ${
+                              syncingSimbrief
+                                ? "cursor-wait border-amber-300/40 bg-amber-500/15 text-amber-100"
+                                : simbriefSummary
+                                  ? "border-emerald-300/50 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/25"
+                                  : "border-rose-300/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/22"
+                            }`}
+                          >
+                            {syncingSimbrief
+                              ? "Trayendo OFP..."
+                              : simbriefSummary
+                                ? "SimBrief cargado"
+                                : "Traer datos de SimBrief"}
+                          </button>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1fr_1fr_0.9fr]">
+                          <DispatchValueCard
+                            label="Numero de vuelo"
+                            value={simbriefFlightNumberDisplay}
+                            hint={profile?.simbrief_username?.trim() || "Usuario SimBrief pendiente"}
+                          />
+                          <DispatchLocationCard
+                            label="Origen"
+                            icao={simbriefOriginCode}
+                            city={simbriefOriginCity}
+                            countryCode={simbriefOriginCountryCode}
+                          />
+                          <DispatchLocationCard
+                            label="Destino"
+                            icao={simbriefDestinationCode}
+                            city={simbriefDestinationCity}
+                            countryCode={simbriefDestinationCountryCode}
+                          />
+                          <DispatchValueCard
+                            label="Airframe ICAO"
+                            value={simbriefAirframe}
+                            hint={simbriefSummary?.aircraftRegistration?.trim() || "Matricula no informada"}
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                          <DispatchValueCard
+                            label="Pasajeros"
+                            value={
+                              typeof simbriefSummary?.pax === "number"
+                                ? String(simbriefSummary.pax)
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Payload"
+                            value={
+                              typeof simbriefSummary?.payloadKg === "number"
+                                ? `${simbriefSummary.payloadKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="ZFW"
+                            value={
+                              typeof simbriefSummary?.zfwKg === "number"
+                                ? `${simbriefSummary.zfwKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Crucero"
+                            value={simbriefSummary?.cruiseAltitude?.trim() || "Pendiente"}
+                          />
+                          <DispatchValueCard
+                            label="Comb. bloque"
+                            value={
+                              typeof simbriefSummary?.blockFuelKg === "number"
+                                ? `${simbriefSummary.blockFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                        </div>
+
+                        <div className="mt-4">
+                          <DispatchWideValueStrip
+                            label="Ruta"
+                            value={simbriefSummary?.routeText?.trim() || "Pendiente"}
+                            hint="Datos de ruta cargados desde SimBrief. Revisa la validacion antes de habilitar el resumen."
+                          />
+                        </div>
+
+                        {simbriefInfoMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
+                            {simbriefInfoMessage}
+                          </div>
+                        ) : null}
+
+                        {simbriefErrorMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
+                            {simbriefErrorMessage}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div
+                        className={`rounded-[22px] border p-5 ${
+                          dispatchReady
+                            ? "border-emerald-400/24 bg-emerald-500/[0.08]"
+                            : "border-white/8 bg-white/[0.03]"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              Bloque 3
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Validacion cruzada</h5>
+                            <p className="mt-2 text-sm leading-7 text-white/68">
+                              Solo si los cuatro datos coinciden podras validar el despacho y abrir el resumen.
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                              dispatchReady
+                                ? "border-emerald-300/40 bg-emerald-500/20 text-emerald-100"
+                                : canValidateDispatch
+                                  ? "border-cyan-300/30 bg-cyan-500/12 text-cyan-100"
+                                  : "border-white/10 bg-white/[0.04] text-white/60"
+                            }`}
+                          >
+                            {dispatchReady
+                              ? "Validado"
+                              : canValidateDispatch
+                                ? "Listo para validar"
+                                : "Pendiente"}
+                          </span>
+                        </div>
+
+                        <div className="mt-5 overflow-hidden rounded-[18px] border border-white/8 bg-[#031428]/58">
+                          <div className="grid grid-cols-[0.9fr_1fr_1fr_0.55fr] gap-0 border-b border-white/8 bg-white/[0.04] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                            <span>Campo</span>
+                            <span>Web</span>
+                            <span>SimBrief</span>
+                            <span className="text-right">Estado</span>
+                          </div>
+
+                          {dispatchValidationItems.map((item) => (
+                            <div
+                              key={item.key}
+                              className="grid grid-cols-[0.9fr_1fr_1fr_0.55fr] gap-0 border-b border-white/8 px-4 py-4 text-sm text-white/78 last:border-b-0"
+                            >
+                              <span className="font-semibold text-white">{item.label}</span>
+                              <span>{item.webValue}</span>
+                              <span>{item.simbriefValue}</span>
+                              <div className="flex justify-end">
+                                <span
+                                  className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                                    item.matches
+                                      ? "border-emerald-300/40 bg-emerald-500/18 text-emerald-100"
+                                      : "border-rose-300/35 bg-rose-500/14 text-rose-100"
+                                  }`}
+                                >
+                                  {item.matches ? "Coincide" : "Revisar"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleValidateDispatch}
+                            disabled={!canValidateDispatch}
+                            className={`rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] transition ${
+                              canValidateDispatch
+                                ? "border-emerald-300/50 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/25"
+                                : "cursor-not-allowed border-white/10 bg-white/[0.04] text-white/42 opacity-70"
+                            }`}
+                          >
+                            {dispatchReady ? "Despacho validado" : "Validar despacho"}
+                          </button>
+
+                          <p className="text-sm leading-7 text-white/64">
+                            {dispatchReady
+                              ? "Los datos del OFP coinciden con la web. Ya puedes continuar al resumen."
+                              : canValidateDispatch
+                                ? "Todo coincide. Presiona validar para habilitar el resumen."
+                                : "Si algun dato no coincide, el resumen seguira bloqueado."}
+                          </p>
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => handleStepChange("itinerary")} className="button-secondary py-3">
+                            Volver a itinerario
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStepChange("summary")}
+                            disabled={!canOpenSummary}
+                            className={`py-3 ${canOpenSummary ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
+                          >
+                            Continuar a resumen
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
                   {dispatchStep === "summary" ? (
+                    <div className="space-y-4">
+                      <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final del vuelo</h4>
+                        <p className="mt-3 text-sm leading-7 text-white/72">
+                          Aqui queda el consolidado final del vuelo a despachar. Al confirmar, la web lo deja listo en la base operativa para que ACARS lo rescate.
+                        </p>
+                      </div>
+
+                      <div className="rounded-[22px] border border-cyan-400/14 bg-[#031428]/65 p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              Resumen web
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Datos del vuelo a realizar</h5>
+                          </div>
+                          <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                            Listo para despacho
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.85fr_1fr_1fr_1fr]">
+                          <DispatchValueCard
+                            label="Numero de vuelo"
+                            value={webFlightNumber}
+                            hint={selectedItineraryRecord?.itinerary_code ?? "Pendiente"}
+                          />
+                          <DispatchLocationCard
+                            label="Origen"
+                            icao={webOriginCode}
+                            city={webOriginCity}
+                            countryCode={webOriginCountryCode}
+                          />
+                          <DispatchLocationCard
+                            label="Destino"
+                            icao={webDestinationCode}
+                            city={webDestinationCity}
+                            countryCode={webDestinationCountryCode}
+                          />
+                          <DispatchValueCard
+                            label="Aeronave"
+                            value={summaryAirframeDisplay}
+                            hint={selectedAircraftRecord?.tail_number || "Pendiente"}
+                            valueClassName="text-[1.35rem] leading-tight"
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                          <DispatchValueCard
+                            label="Tipo de vuelo"
+                            value={stepStatusLabel.flightType}
+                            valueClassName="text-[1.3rem]"
+                          />
+                          <DispatchValueCard
+                            label="Distancia"
+                            value={summaryDispatchDistance}
+                          />
+                          <DispatchValueCard
+                            label="Duracion aprox."
+                            value={summaryDispatchDuration}
+                          />
+                          <DispatchValueCard
+                            label="Despacho"
+                            value={stepStatusLabel.dispatch}
+                            valueClassName="text-[1.3rem] leading-tight"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              OFP confirmado
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Datos traidos desde SimBrief</h5>
+                          </div>
+                          <span className="rounded-full border border-emerald-300/25 bg-emerald-500/[0.12] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
+                            {preparedReservationId ? "Despachado" : "Validado"}
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.85fr_1fr_1fr_0.95fr]">
+                          <DispatchValueCard
+                            label="Numero de vuelo"
+                            value={simbriefFlightNumberDisplay}
+                            hint={profile?.simbrief_username?.trim() || "Usuario SimBrief pendiente"}
+                          />
+                          <DispatchLocationCard
+                            label="Origen"
+                            icao={simbriefOriginCode}
+                            city={simbriefOriginCity}
+                            countryCode={simbriefOriginCountryCode}
+                          />
+                          <DispatchLocationCard
+                            label="Destino"
+                            icao={simbriefDestinationCode}
+                            city={simbriefDestinationCity}
+                            countryCode={simbriefDestinationCountryCode}
+                          />
+                          <DispatchValueCard
+                            label="Airframe ICAO"
+                            value={simbriefAirframe}
+                            hint={simbriefSummary?.aircraftRegistration?.trim() || "Matricula no informada"}
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                          <DispatchValueCard
+                            label="Crucero"
+                            value={simbriefSummary?.cruiseAltitude?.trim() || "Pendiente"}
+                          />
+                          <DispatchValueCard
+                            label="Pasajeros"
+                            value={
+                              typeof simbriefSummary?.pax === "number"
+                                ? String(simbriefSummary.pax)
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Payload"
+                            value={
+                              typeof simbriefSummary?.payloadKg === "number"
+                                ? `${simbriefSummary.payloadKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="ZFW"
+                            value={
+                              typeof simbriefSummary?.zfwKg === "number"
+                                ? `${simbriefSummary.zfwKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          <DispatchValueCard
+                            label="Comb. bloque"
+                            value={
+                              typeof simbriefSummary?.blockFuelKg === "number"
+                                ? `${simbriefSummary.blockFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Distancia OFP"
+                            value={
+                              typeof simbriefSummary?.distanceNm === "number"
+                                ? `${formatInteger(simbriefSummary.distanceNm)} NM`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="OFP cargado"
+                            value={formatUtcDateTime(simbriefSummary?.generatedAtIso)}
+                            valueClassName="text-[1.3rem] leading-tight"
+                          />
+                        </div>
+
+                        <div className="mt-4">
+                          <DispatchWideValueStrip
+                            label="Ruta validada"
+                            value={summaryDispatchRoute}
+                            hint="Esta ruta queda asociada al vuelo preparado para que ACARS y la validacion web lean el mismo plan operativo."
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+                          <div className="space-y-4">
+                            <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
+                              <p className="text-sm font-semibold text-white">Salida a base operativa</p>
+                              <p className="mt-2 text-sm leading-7 text-white/72">
+                                Al presionar <span className="font-semibold text-white">Despachar vuelo</span>, la web guarda esta preparacion en la base activa y genera o actualiza el paquete de despacho para el enlace con ACARS.
+                              </p>
+                            </div>
+
+                            <div className="rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/66">
+                              El PIREP invisible y el XML de cierre no aparecen todavia en esta base local del dashboard. Ese enlace queda listo para el siguiente bloque ACARS sobre la misma reserva despachada.
+                            </div>
+
+                            {summaryInfoMessage ? (
+                              <div className="rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
+                                {summaryInfoMessage}
+                              </div>
+                            ) : null}
+
+                            {summaryErrorMessage ? (
+                              <div className="rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
+                                {summaryErrorMessage}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/46">
+                              Estado final
+                            </p>
+                            <div className="mt-4 space-y-3 text-sm leading-7 text-white/78">
+                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                                Reserva activa: {preparedReservationId ? "Preparada" : "Pendiente de envio"}
+                              </div>
+                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                                Dispatch package: {preparedReservationId ? "Generado" : "Pendiente"}
+                              </div>
+                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                                ACARS: {preparedReservationId ? "Puede rescatar el vuelo" : "Aun no habilitado"}
+                              </div>
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap gap-3">
+                              <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
+                                Volver a despacho
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleDispatchFlight}
+                                disabled={!canDispatchFlight || finalizingDispatch || Boolean(preparedReservationId)}
+                                className={`py-3 ${!canDispatchFlight || finalizingDispatch || preparedReservationId ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
+                              >
+                                {finalizingDispatch
+                                  ? "Despachando..."
+                                  : preparedReservationId
+                                    ? "Vuelo despachado"
+                                    : "Despachar vuelo"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {false && dispatchStep === "summary" ? (
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
@@ -2869,6 +4362,7 @@ function DashboardContent() {
       </section>
 
       <DashboardWorkspace
+        profile={profile}
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         metrics={metrics}

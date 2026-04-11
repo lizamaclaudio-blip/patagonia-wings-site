@@ -41,6 +41,7 @@ export type SimbriefOfpSummary = {
   airframe: string | null;
   aircraftRegistration: string | null;
   routeText: string | null;
+  cruiseAltitude: string | null;
   distanceNm: number | null;
   eteMinutes: number | null;
   etaIso: string | null;
@@ -63,10 +64,61 @@ export type SimbriefOfpSummary = {
 };
 
 const SIMBRIEF_TYPE_BY_AIRFRAME: Record<string, string> = {
+  A319: "A319",
+  A320: "A320",
+  A20N: "A20N",
+  A321: "A321",
+  A21N: "A21N",
+  A339: "A339",
+  A359: "A359",
+  AT76: "AT76",
   "B737-700": "B737",
+  B737: "B737",
   "B737-800": "B738",
-  ATR72: "AT72",
+  B738: "B738",
+  B739: "B739",
+  B38M: "B38M",
+  B772: "B772",
+  B77W: "B77W",
+  B789: "B789",
+  B78X: "B78X",
+  B350: "B350",
+  BE58: "BE58",
   C208: "C208",
+  E175: "E175",
+  E190: "E190",
+  E195: "E195",
+  MD82: "MD82",
+  MD83: "MD83",
+  MD88: "MD88",
+  TBM8: "TBM8",
+  TBM9: "TBM9",
+  ATR72: "AT76",
+  "ATR72-600": "AT76",
+  ATR72_MSFS: "AT76",
+  C208_MSFS: "C208",
+  C208_BLACKSQUARE: "C208",
+  B350_MSFS: "B350",
+  B350_BLACKSQUARE: "B350",
+  BE58_MSFS: "BE58",
+  BE58_BLACKSQUARE: "BE58",
+  BE58_BS_PRO: "BE58",
+  E175_FLIGHTSIM: "E175",
+  E190_FLIGHTSIM: "E190",
+  E195_FLIGHTSIM: "E195",
+  A319_FENIX: "A319",
+  A320_FENIX: "A320",
+  A321_FENIX: "A321",
+  A20N_FBW: "A20N",
+  A21N_LATINVFR: "A21N",
+  B736_PMDG: "B737",
+  B737_PMDG: "B737",
+  B738_PMDG: "B738",
+  B739_PMDG: "B739",
+  B38M_IFLY: "B38M",
+  MD82_MADDOG: "MD82",
+  MD83_MADDOG: "MD83",
+  MD88_MADDOG: "MD88",
 };
 
 function normalizeUpper(value: string | null | undefined) {
@@ -176,6 +228,45 @@ function toKg(value: unknown, units: string | null) {
   }
 
   return Math.round(parsed);
+}
+
+function formatCruiseAltitude(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value >= 1000) {
+      return `FL${Math.round(value / 100)}`;
+    }
+
+    return `FL${Math.round(value)}`;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.startsWith("FL")) {
+    return normalized;
+  }
+
+  const digits = normalized.replace(/[^0-9]/g, "");
+  if (!digits) {
+    return normalized;
+  }
+
+  const numericValue = Number(digits);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return normalized;
+  }
+
+  if (numericValue >= 1000) {
+    return `FL${Math.round(numericValue / 100)}`;
+  }
+
+  return `FL${Math.round(numericValue)}`;
 }
 
 export function resolveSimbriefType(aircraftCode: string) {
@@ -357,6 +448,7 @@ export function extractSimbriefOfpSummary(
     airframe: null,
     aircraftRegistration: null,
     routeText: null,
+    cruiseAltitude: null,
     distanceNm: null,
     eteMinutes: null,
     etaIso: null,
@@ -435,6 +527,18 @@ export function extractSimbriefOfpSummary(
     "params.route",
     "api.route",
   ]);
+  const cruiseAltitude = firstDefined(raw, [
+    "general.initial_altitude",
+    "general.initial_alt",
+    "general.cruise_altitude",
+    "general.cruise_alt",
+    "general.crzalt",
+    "general.stepclimb_string",
+    "atc.initial_altitude",
+    "atc.cruise_altitude",
+    "params.initial_altitude",
+    "params.cruise_altitude",
+  ]);
 
   summary.flightNumber = typeof flightNumber === "string" ? normalizeUpper(flightNumber) : null;
   summary.origin = typeof origin === "string" ? normalizeUpper(origin) : null;
@@ -443,6 +547,7 @@ export function extractSimbriefOfpSummary(
   summary.airframe = typeof airframe === "string" ? airframe : null;
   summary.aircraftRegistration = typeof aircraftRegistration === "string" ? normalizeUpper(aircraftRegistration) : null;
   summary.routeText = typeof routeText === "string" ? routeText.trim() : null;
+  summary.cruiseAltitude = formatCruiseAltitude(cruiseAltitude);
 
   summary.distanceNm = toInteger(
     firstDefined(raw, [
@@ -527,7 +632,22 @@ export function extractSimbriefOfpSummary(
     units
   );
   summary.blockFuelKg = toKg(
-    firstDefined(raw, ["fuel.block", "fuel.block_kg", "fuel.ramp"]),
+    firstDefined(raw, [
+      "fuel.block",
+      "fuel.block_kg",
+      "fuel.block_fuel",
+      "fuel.ramp",
+      "fuel.ramp_kg",
+      "fuel.plan_ramp",
+      "fuel.plan_ramp_kg",
+      "fuel.ramp_fuel",
+      "fuel.plan_takeoff",
+      "fuel.plan_takeoff_kg",
+      "fuel.dispatch",
+      "fuel.dispatch_kg",
+      "fuel.totfuel",
+      "fuel.total",
+    ]),
     units
   );
 
