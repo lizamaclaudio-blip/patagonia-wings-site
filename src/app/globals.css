@@ -108,6 +108,12 @@ textarea {
     background: rgba(255, 255, 255, 0.05);
   }
 
+  /* Opciones de select nativo: fondo oscuro + texto blanco para que sean legibles */
+  .input-premium option {
+    background-color: #0d1b2e;
+    color: #ffffff;
+  }
+
   .parallax-hero {
     background: #04162d;
   }
