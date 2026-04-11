@@ -92,32 +92,100 @@ export default function RegisterPage() {
 
           <div className="pw-container flex min-h-[calc(100vh-108px)] items-center py-12 sm:py-16 lg:py-20">
             <div className="grid w-full gap-6 lg:grid-cols-[1fr_1fr]">
-              <section className="glass-panel rounded-[34px] p-7 sm:p-9">
-                <span className="parallax-chip mb-6">REGISTRO PILOTO</span>
+              {/* ── WELCOME PANEL ────────────────────────────────────── */}
+              <section className="relative overflow-hidden rounded-[34px]">
+                {/* Hero photo */}
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: "url('/branding/home-hero-4k.jpg')" }}
+                />
 
-                <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                  Crea tu cuenta Patagonia Wings
-                </h1>
+                {/* Dark gradient overlay — heavier at top/bottom, lighter in middle */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(4,18,40,0.72) 0%, rgba(4,18,40,0.34) 34%, rgba(4,18,40,0.52) 66%, rgba(4,18,40,0.90) 100%)",
+                  }}
+                />
 
-                <p className="mt-5 max-w-2xl text-base leading-8 text-white/82">
-                  El registro crea al piloto dentro de Patagonia Wings y el
-                  sistema asigna automáticamente su callsign oficial PWG.
-                </p>
+                {/* Subtle teal accent glow bottom-left */}
+                <div
+                  className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-20 blur-3xl"
+                  style={{ background: "radial-gradient(circle, #11b56e 0%, transparent 70%)" }}
+                />
 
-                <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  {[
-                    "Callsign PWG autoasignado",
-                    "Hub base inicial fijo",
-                    "Simulador principal",
-                    "Perfil operacional",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="surface-outline rounded-[22px] px-5 py-5 text-sm leading-7 text-white/80"
+                {/* Content */}
+                <div className="relative z-10 flex h-full flex-col justify-between p-7 sm:p-9" style={{ minHeight: "520px" }}>
+
+                  {/* Top badge */}
+                  <div>
+                    <span
+                      className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-white"
+                      style={{ borderColor: "rgba(17,181,110,0.40)", background: "rgba(17,181,110,0.12)" }}
                     >
-                      {item}
+                      <span
+                        className="inline-block h-1.5 w-1.5 rounded-full"
+                        style={{ background: "#11b56e", boxShadow: "0 0 6px #11b56e" }}
+                      />
+                      Patagonia Wings — Virtual Airline
+                    </span>
+                  </div>
+
+                  {/* Centre copy */}
+                  <div className="mt-auto pt-10">
+                    <h1 className="text-4xl font-bold leading-[1.15] tracking-tight text-white sm:text-5xl">
+                      Bienvenido a bordo,<br />
+                      <span
+                        style={{
+                          background: "linear-gradient(90deg, #67d7ff 0%, #11b56e 100%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                        }}
+                      >
+                        comandante.
+                      </span>
+                    </h1>
+
+                    <p className="mt-5 max-w-sm text-[15px] leading-7 text-white/75">
+                      Únete a una aerolínea virtual que nace desde la Patagonia.
+                      Vuelos reales, despacho operacional, ACARS integrado y una
+                      comunidad de pilotos en pleno crecimiento.
+                    </p>
+
+                    {/* Feature badges */}
+                    <div className="mt-7 flex flex-wrap gap-2">
+                      {[
+                        { icon: "✦", label: "Callsign PWG oficial" },
+                        { icon: "✈", label: "ACARS en tiempo real" },
+                        { icon: "📋", label: "Despacho SimBrief" },
+                        { icon: "🌍", label: "Comunidad naciente" },
+                      ].map(({ icon, label }) => (
+                        <span
+                          key={label}
+                          className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold text-white/80"
+                          style={{
+                            borderColor: "rgba(255,255,255,0.14)",
+                            background: "rgba(255,255,255,0.07)",
+                            backdropFilter: "blur(6px)",
+                          }}
+                        >
+                          <span>{icon}</span>
+                          {label}
+                        </span>
+                      ))}
                     </div>
-                  ))}
+
+                    {/* Divider + tagline */}
+                    <div
+                      className="mt-8 flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.22em]"
+                      style={{ color: "rgba(255,255,255,0.38)" }}
+                    >
+                      <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.12)" }} />
+                      Experiencia de vuelo realista desde el sur del mundo
+                      <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.12)" }} />
+                    </div>
+                  </div>
                 </div>
               </section>
 
