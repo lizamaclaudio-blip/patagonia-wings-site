@@ -1,7 +1,7 @@
 {
-    "version":  "2.0.3",
+    "version":  "2.0.4",
     "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "v2.0.3: Score procedural rico (no-smoking, presion de cabina), QNH en reporte, habilitaciones de piloto, fix critico en envio de vuelos a Supabase.",
-    "mandatory":  false,
-    "publishedAtUtc":  "2026-04-11T20:31:00.0000000Z"
+    "notes":  "v2.0.4: Fix critico SimConnect — telemetria ahora llega a la UI correctamente. Fix flood de desconexiones en log. XPlane removido.",
+    "mandatory":  true,
+    "publishedAtUtc":  "2026-04-12T05:30:00.0000000Z"
 }
