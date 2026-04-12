@@ -511,7 +511,7 @@ function ProfileContent() {
 export default function ProfilePage() {
   return (
     <main className="grid-overlay">
-      <section className="parallax-hero relative isolate min-h-screen overflow-x-hidden">
+      <section className="parallax-hero relative isolate min-h-screen">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
 

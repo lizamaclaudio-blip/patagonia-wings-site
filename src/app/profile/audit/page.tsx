@@ -145,7 +145,7 @@ function AuditContent() {
           </div>
           <div className="flex gap-3">
             <Link href="/profile" className="button-ghost">Volver al perfil</Link>
-            <Link href="/operations" className="button-secondary">Ir a operaciones</Link>
+            <Link href="/dashboard?tab=dispatch" className="button-secondary">Ir a despacho</Link>
           </div>
         </div>
       </section>

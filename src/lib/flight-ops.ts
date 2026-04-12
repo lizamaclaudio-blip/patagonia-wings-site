@@ -16,6 +16,7 @@ export type FlightOperationRecord = {
   origin: string;
   destination: string;
   aircraftCode: string;
+  aircraftTypeCode?: string;
   aircraftName: string;
   aircraftTailNumber: string;
   aircraftVariantCode?: string;
@@ -51,6 +52,7 @@ export type AvailableAircraftOption = {
   aircraft_id: string;
   tail_number: string;
   aircraft_code: string;
+  aircraft_type_code?: string;
   aircraft_name: string;
   aircraft_variant_code?: string;
   addon_provider?: string;
@@ -138,6 +140,30 @@ export const flightModeOptions: Array<{ value: FlightMode; label: string }> = [
   { value: "event", label: "Event" },
 ];
 
+function mapDbFlightModeToClient(value: unknown): FlightMode {
+  const normalized = normalizeUpper(typeof value === "string" ? value : "");
+
+  if (normalized === "CHARTER") return "charter";
+  if (normalized === "TRAINING") return "training";
+  if (normalized === "EVENT") return "event";
+  return "itinerary";
+}
+
+function mapClientFlightModeToDb(value: FlightMode) {
+  switch (value) {
+    case "charter":
+      return "CHARTER";
+    case "training":
+      return "TRAINING";
+    case "event":
+      return "EVENT";
+    case "itinerary":
+    default:
+      return "CAREER";
+  }
+}
+
+
 type GenericRecord = Record<string, unknown>;
 
 function normalizeUpper(value: string) {
@@ -149,10 +175,7 @@ function getProfileAirport(profile?: PilotProfileRecord | null) {
 }
 
 function toFlightMode(value: unknown): FlightMode {
-  if (value === "charter" || value === "training" || value === "event") {
-    return value;
-  }
-  return "itinerary";
+  return mapDbFlightModeToClient(value);
 }
 
 function normalizeAircraftDisplayName(code: string) {
@@ -1279,105 +1302,55 @@ export async function saveFlightOperation(
   status: FlightOperationStatus
 ) {
   if (status === "reserved") {
-    let reservationRpcError: unknown = null;
+    const { data, error } = await supabase.rpc("create_flight_reservation", {
+      p_callsign: profile.callsign,
+      p_route_code: normalizeUpper(operation.routeCode || operation.flightNumber),
+      p_aircraft_id: operation.aircraftId,
+      p_hold_minutes: 15,
+    });
 
-    try {
-      const { data, error } = await supabase.rpc("create_flight_reservation", {
-        p_callsign: profile.callsign,
-        p_route_code: normalizeUpper(operation.routeCode || operation.flightNumber),
-        p_aircraft_id: operation.aircraftId,
-        p_hold_minutes: 15,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const rows = (data ?? []) as GenericRecord[];
-      const firstRow = rows[0];
-
-      if (firstRow) {
-        return mapLegacyReservationFromRpc(firstRow, profile);
-      }
-    } catch (error) {
-      reservationRpcError = error;
+    if (error) {
+      throw error;
     }
 
-    try {
-      // Fallback INSERT: only columns that actually exist in flight_reservations.
-      // The RPC create_flight_reservation is the canonical path; this is only
-      // reached if the RPC fails and the reservation was not yet created.
-      const payload = {
-        pilot_callsign: normalizeUpper(profile.callsign),
-        aircraft_id: operation.aircraftId,
-        aircraft_type_code: operation.aircraftCode.trim() || null,
-        aircraft_registration: operation.aircraftTailNumber.trim() || null,
-        route_code: operation.routeCode.trim() || null,
-        origin_ident: normalizeUpper(operation.origin),
-        destination_ident: normalizeUpper(operation.destination),
-        flight_mode_code: operation.flightMode,
-        status: "reserved",
-      };
+    const rows = (data ?? []) as GenericRecord[];
+    const firstRow = rows[0];
 
-      const { data, error } = await supabase
-        .from("flight_reservations")
-        .insert(payload)
-        .select("*")
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      return data as DbFlightReservationRow;
-    } catch (fallbackError) {
-      const fallbackMessage =
-        fallbackError instanceof Error ? fallbackError.message : String(fallbackError ?? "");
-      const rpcMessage =
-        reservationRpcError instanceof Error
-          ? reservationRpcError.message
-          : String(reservationRpcError ?? "");
-
-      if (rpcMessage && fallbackMessage) {
-        throw new Error(
-          `No se pudo crear la reserva base. RPC: ${rpcMessage} | Tabla directa: ${fallbackMessage}`
-        );
-      }
-
-      throw fallbackError instanceof Error
-        ? fallbackError
-        : new Error("No se pudo crear la reserva base.");
+    if (!firstRow) {
+      throw new Error("La RPC create_flight_reservation no devolvió una reserva válida.");
     }
+
+    return mapLegacyReservationFromRpc(firstRow, profile);
   }
 
-  // Si no hay reservationId para dispatch_ready, crear la reserva automáticamente
   if (!operation.reservationId) {
     const reserved = (await saveFlightOperation(profile, operation, "reserved")) as DbFlightReservationRow;
     if (!reserved?.id) {
       throw new Error("No se pudo crear la reserva base para el despacho.");
     }
-    // eslint-disable-next-line no-param-reassign
     operation = { ...operation, reservationId: reserved.id };
   }
 
-  // Para dispatch_ready y otros estados: UPDATE con las columnas que existen
-  // en flight_reservations. El despacho SimBrief va en dispatch_packages.
-  const fullPayload = {
-    status: toPersistedReservationStatus(status),
-    pilot_callsign: normalizeUpper(profile.callsign),
-    aircraft_id: operation.aircraftId,
-    aircraft_type_code: operation.aircraftCode.trim() || null,
-    aircraft_registration: operation.aircraftTailNumber.trim() || null,
-    route_code: operation.routeCode.trim() || null,
-    origin_ident: normalizeUpper(operation.origin),
-    destination_ident: normalizeUpper(operation.destination),
-    flight_mode_code: operation.flightMode,
-    updated_at: new Date().toISOString(),
-  };
+  if (status === "dispatch_ready") {
+    const { data, error } = await supabase
+      .from("flight_reservations")
+      .select("*")
+      .eq("id", operation.reservationId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as DbFlightReservationRow;
+  }
 
   const { data, error } = await supabase
     .from("flight_reservations")
-    .update(fullPayload)
+    .update({
+      updated_at: new Date().toISOString(),
+      flight_mode_code: mapClientFlightModeToDb(operation.flightMode),
+    })
     .eq("id", operation.reservationId)
     .select("*")
     .single();
@@ -1420,6 +1393,32 @@ export async function markDispatchPrepared(
 
   const now = new Date().toISOString();
 
+  const { data: reservationRow } = await supabase
+    .from("flight_reservations")
+    .select("id, pilot_callsign, status, route_id, route_code")
+    .eq("id", reservationId)
+    .maybeSingle();
+
+  let reservationRouteId =
+    typeof reservationRow?.route_id === "string" ? reservationRow.route_id : null;
+
+  if (!reservationRouteId && typeof reservationRow?.route_code === "string") {
+    const { data: routeRow } = await supabase
+      .from("network_routes")
+      .select("id")
+      .eq("route_code", reservationRow.route_code)
+      .maybeSingle();
+
+    reservationRouteId = typeof routeRow?.id === "string" ? routeRow.id : null;
+  }
+
+  const reservationStatus =
+    typeof reservationRow?.status === "string" ? reservationRow.status : null;
+
+  const effectivePilotCallsign =
+    pilotCallsign?.trim() ||
+    (typeof reservationRow?.pilot_callsign === "string" ? reservationRow.pilot_callsign : "");
+
   // Construir el payload del dispatch package usando los nombres de columna
   // REALES de la tabla dispatch_packages en Supabase.
   //   - dispatch_status  (no "status")
@@ -1429,8 +1428,11 @@ export async function markDispatchPrepared(
   //   - simbrief_normalized (jsonb) para el resto de datos SimBrief
   const packagePayload: Record<string, unknown> = {
     reservation_id: reservationId,
+    pilot_callsign: effectivePilotCallsign || null,
+    route_id: reservationRouteId,
     simbrief_username: simbriefUsername,
-    dispatch_status: "prepared",          // columna real: dispatch_status
+    dispatch_status: "prepared",
+    route_code: typeof reservationRow?.route_code === "string" ? reservationRow.route_code : null,
     updated_at: now,
   };
 
@@ -1464,11 +1466,19 @@ export async function markDispatchPrepared(
     if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
   }
 
-  if (pilotCallsign) {
+  if (effectivePilotCallsign && reservationStatus === "reserved") {
     try {
       const { data, error } = await supabase.rpc("pw_create_dispatch_package", {
-        p_callsign: pilotCallsign,
+        p_callsign: normalizeUpper(effectivePilotCallsign),
         p_reservation_id: reservationId,
+        p_dispatch_source: "manual",
+        p_route_text: simBriefData?.routeText ?? null,
+        p_cruise_fl: simBriefData?.cruiseLevel ?? null,
+        p_planned_fuel_kg: simBriefData?.blockFuelKg ?? null,
+        p_planned_payload_kg: simBriefData?.payloadKg ?? null,
+        p_simbrief_username: simbriefUsername || null,
+        p_simbrief_ofp_id: simBriefData?.staticId ?? null,
+        p_simbrief_ofp_json: packagePayload.simbrief_normalized ?? null,
       });
 
       if (error) {
@@ -1481,7 +1491,10 @@ export async function markDispatchPrepared(
         if (simBriefData) {
           await supabase
             .from("dispatch_packages")
-            .update(packagePayload)
+            .update({
+              ...packagePayload,
+              updated_at: now,
+            })
             .eq("reservation_id", reservationId);
         }
 
@@ -1498,6 +1511,13 @@ export async function markDispatchPrepared(
     } catch (error) {
       rpcPackageError = error;
     }
+  }
+
+  if (!reservationRouteId) {
+    throw buildDispatchPersistenceError(
+      rpcPackageError,
+      new Error("No se pudo determinar route_id para el dispatch package desde la reserva activa.")
+    );
   }
 
   try {
@@ -1521,10 +1541,10 @@ export async function cancelFlightOperation(
   reservationId: string,
   pilotCallsign?: string
 ) {
-  if (pilotCallsign) {
+  if (pilotCallsign?.trim()) {
     try {
       const { error } = await supabase.rpc("pw_cancel_active_reservation", {
-        p_callsign: pilotCallsign,
+        p_callsign: normalizeUpper(pilotCallsign),
         p_reason: "manual_cancel_from_web",
       });
 
@@ -1538,7 +1558,10 @@ export async function cancelFlightOperation(
 
   const { error } = await supabase
     .from("flight_reservations")
-    .update({ status: "cancelled" })
+    .update({
+      status: "cancelled",
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", reservationId);
 
   if (error) {

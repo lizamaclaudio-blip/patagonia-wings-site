@@ -1,12 +1,7 @@
 import Link from "next/link";
+import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
+import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
-
-const stats = [
-  { value: "15+", label: "Años" },
-  { value: "50+", label: "Destinos" },
-  { value: "8", label: "Aeronaves" },
-  { value: "100%", label: "Seguridad" },
-];
 
 const services = [
   {
@@ -22,8 +17,6 @@ const services = [
     text: "Gestiona certificaciones, flota habilitada, datos del piloto y estado operacional desde un solo lugar.",
   },
 ];
-
-const fleet = ["B737 Series", "C208 Caravan", "ATR Regional", "A320 Family"];
 
 export default function HomePage() {
   return (
@@ -62,21 +55,7 @@ export default function HomePage() {
           </div>
 
           <div className="pw-container relative z-20 pb-6 sm:pb-8">
-            <div className="parallax-stats grid gap-0 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(4,21,44,0.78)] backdrop-blur-md md:grid-cols-4">
-              {stats.map((item, index) => (
-                <div
-                  key={item.label}
-                  className={`flex min-h-[132px] flex-col items-center justify-center px-6 py-7 text-center ${
-                    index !== stats.length - 1 ? "md:border-r md:border-r-white/16" : ""
-                  }`}
-                >
-                  <span className="text-[52px] font-semibold leading-none tracking-[-0.04em] text-emerald-300 sm:text-[58px]">
-                    {item.value}
-                  </span>
-                  <span className="mt-2 text-[26px] font-medium text-white/90">{item.label}</span>
-                </div>
-              ))}
-            </div>
+            <HomeStatsBar />
           </div>
         </div>
       </section>
@@ -86,21 +65,40 @@ export default function HomePage() {
           <div>
             <div className="parallax-chip">Nosotros</div>
             <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Patagonia Wings con presencia web de aerolínea real
+              Una comunidad que crece con objetivos, inmersión y rol real
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200/88">
-              Esta nueva home toma la lógica del mockup one page parallax y la convierte en una página web real:
-              navegación superior transparente, hero a pantalla completa, identidad de marca y un flujo limpio hacia login,
-              perfil, habilitaciones y despacho.
+              En Patagonia Wings queremos construir una comunidad viva, cercana y ambiciosa: un lugar donde cada
+              piloto tenga un objetivo, una ruta por seguir y una razón real para volver a cabina. Diseñamos
+              operaciones realistas para darte inmersión completa en simuladores de vuelo, desde la planificación
+              hasta el cierre de cada operación.
             </p>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/78">
+              Aquí puedes tomar el rol que quieras vivir dentro de la aerolínea y sentirte piloto de verdad. En
+              Patagonia Wings asumimos el role play de simulación completa incluso en conversaciones y operaciones,
+              y muy pronto habilitaremos Discord para nuestros canales operativos e informativos.
+            </p>
+            <div className="mt-8 inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-5 py-2 text-sm font-semibold text-emerald-100">
+              Sé el piloto que quieres ser en Patagonia Wings
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <img
-              src="/branding/mock-parallax-reference.png"
-              alt="Referencia visual Patagonia Wings"
-              className="h-full w-full rounded-[24px] object-cover"
-            />
+            <div className="relative overflow-hidden rounded-[24px]">
+              <img
+                src="/branding/nosotros-ops-room.svg"
+                alt="Sala de operaciones de Patagonia Wings con pilotos reunidos frente a una pantalla de trafico y briefing"
+                className="h-full w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f] via-[#03162f]/72 to-transparent px-6 pb-5 pt-12">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/78">
+                  Comunidad Patagonia Wings
+                </p>
+                <p className="mt-2 text-lg font-semibold text-white">
+                  Briefing, inmersión y operación compartida
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -140,22 +138,7 @@ export default function HomePage() {
             />
           </div>
 
-          <div>
-            <h2 className="text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Flota con imagen propia de la app
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-slate-200/84">
-              Conservamos el branding real de Patagonia Wings y lo llevamos a una portada más aérea, limpia y de mejor impacto visual.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {fleet.map((item) => (
-                <div key={item} className="rounded-[22px] border border-white/10 bg-white/[0.05] px-5 py-4 text-base font-medium text-white/92 backdrop-blur-sm">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
+          <HomeFleetShowcase />
         </div>
       </section>
 

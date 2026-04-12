@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", tag: "OPS" },
-  { href: "/operations", label: "Reserva / despacho", tag: "FLIGHT" },
+  { href: "/dashboard?tab=dispatch", label: "Despacho", tag: "FLIGHT" },
   { href: "/profile", label: "Perfil piloto", tag: "DATA" },
   { href: "/certifications", label: "Habilitaciones", tag: "QUAL" },
   { href: "/login", label: "Login", tag: "AUTH" },
@@ -15,6 +15,7 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <aside className="glass-panel h-fit rounded-[32px] p-5 sm:p-6 lg:sticky lg:top-6">
@@ -31,7 +32,10 @@ export function SidebarNav() {
 
       <nav className="mt-6 space-y-2">
         {navItems.map((item) => {
-          const active = pathname === item.href;
+          const isDispatchItem = item.href.includes("tab=dispatch");
+          const active = isDispatchItem
+            ? pathname === "/dashboard" && searchParams.get("tab") === "dispatch"
+            : pathname === item.href;
           return (
             <Link
               key={item.href}

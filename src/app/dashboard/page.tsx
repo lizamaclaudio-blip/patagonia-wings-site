@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -1272,6 +1273,40 @@ function AnimatedMetricValue({
   return <>{formatInteger(displayValue)}</>;
 }
 
+function PilotStatsRail({
+  items,
+  animationSeed,
+}: {
+  items: MetricDisplayItem[];
+  animationSeed: string;
+}) {
+  return (
+    <aside className="order-1 xl:order-2">
+      <div className="glass-panel rounded-[30px] p-4 sm:p-5">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+          Estadísticas del piloto
+        </p>
+
+        <div className="mt-4 grid gap-3">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className="flex min-h-[82px] flex-col items-center justify-center rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-4 text-center"
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                {item.label}
+              </span>
+              <span className="mt-2 text-xl font-semibold tracking-tight text-white">
+                <AnimatedMetricValue item={item} animateKey={animationSeed} />
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 function CentralSectionDivider() {
   return <div className="my-6 h-px w-full bg-white/10" />;
 }
@@ -1320,17 +1355,19 @@ function CentralRankingGrid({ cards }: { cards: RankingCard[] }) {
   );
 }
 
-function CentralAirportHero({ central }: { central: CentralOverview }) {
-  const [imageFailed, setImageFailed] = useState(false);
+function useResolvedAirportHero(
+  central: Pick<
+    CentralOverview,
+    "airportCode" | "airportName" | "municipality" | "countryName" | "imagePath"
+  >,
+) {
   const [heroImage, setHeroImage] = useState<AirportHeroResponse | null>(null);
   const [isResolvingImage, setIsResolvingImage] = useState(true);
-  const flagUrl = getFlagUrl(central.countryCode);
 
   useEffect(() => {
     let cancelled = false;
 
     async function resolveAirportHero() {
-      setImageFailed(false);
       setIsResolvingImage(true);
       setHeroImage(null);
 
@@ -1365,13 +1402,31 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
     void resolveAirportHero();
 
     return () => {
-      cancelled = true
+      cancelled = true;
     };
-  }, [central]);
+  }, [
+    central.airportCode,
+    central.airportName,
+    central.countryName,
+    central.imagePath,
+    central.municipality,
+  ]);
 
-  const displayImageUrl = !imageFailed ? (heroImage?.imageUrl ?? central.imagePath) : null;
+  return {
+    heroImage,
+    isResolvingImage,
+    resolvedImageUrl: heroImage?.imageUrl ?? central.imagePath,
+  };
+}
+
+function CentralAirportHero({ central }: { central: CentralOverview }) {
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const { heroImage, isResolvingImage, resolvedImageUrl } = useResolvedAirportHero(central);
+  const flagUrl = getFlagUrl(central.countryCode);
+  const displayImageUrl =
+    resolvedImageUrl && failedImageUrl !== resolvedImageUrl ? resolvedImageUrl : null;
   const showPexelsAttribution =
-    !imageFailed &&
+    Boolean(displayImageUrl) &&
     heroImage?.source === "pexels" &&
     Boolean(heroImage.photographerName || heroImage.providerName);
 
@@ -1429,7 +1484,11 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                   className="absolute inset-0 h-full w-full object-contain object-center"
                   loading="eager"
                   fetchPriority="high"
-                  onError={() => setImageFailed(true)}
+                  onError={() => {
+                    if (resolvedImageUrl) {
+                      setFailedImageUrl(resolvedImageUrl);
+                    }
+                  }}
                 />
 
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent,rgba(3,10,20,0.94))] px-5 pb-4 pt-12">
@@ -1923,23 +1982,89 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
   );
 }
 
-function DispatchAirportBannerCard({
+function DispatchOverviewHeader({
   central,
   metar,
 }: {
   central: CentralOverview;
   metar: DispatchMetarSummary;
 }) {
+  const { resolvedImageUrl } = useResolvedAirportHero(central);
+  const backgroundStyle = resolvedImageUrl
+    ? { backgroundImage: `url(${resolvedImageUrl})` }
+    : undefined;
+
+  return (
+    <div className="grid gap-5 border-b border-white/8 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+      <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.96))] px-6 py-8 text-center sm:px-8 sm:py-10">
+        {backgroundStyle ? (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-center opacity-20"
+            style={backgroundStyle}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.18),rgba(4,12,24,0.86))]" />
+
+        <div className="relative z-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            Workspace Dispatch
+          </p>
+          <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-[52px]">
+            Centro de Despachos
+          </h3>
+          <p className="mx-auto mt-5 max-w-4xl text-base leading-8 text-white/76 sm:text-[18px]">
+            Elige tu tipo de vuelo, escoge la aeronave para la cual estas habilitado y, si corresponde,
+            confirma itinerario y despacho. Prepara el despacho en SimBrief y revisa que coincida con la web
+            antes de enviarlo al ACARS.
+          </p>
+        </div>
+      </div>
+
+      <DispatchAirportBannerCard central={central} metar={metar} imageUrl={resolvedImageUrl} />
+
+      <div className="hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+          Workspace Dispatch
+        </p>
+        <h3 className="mt-2 text-xl font-semibold text-white sm:text-[28px]">
+          Flujo central reutilizando la lógica real del despacho
+        </h3>
+        <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
+          Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no está
+          elegido o marcado como listo. Así mantenemos orden operativo dentro del dashboard.
+        </p>
+      </div>
+
+      <div className="hidden rounded-2xl border border-emerald-400/16 bg-emerald-500/[0.08] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+        Flujo base preservado
+      </div>
+    </div>
+  );
+}
+
+function DispatchAirportBannerCard({
+  central,
+  metar,
+  imageUrl,
+}: {
+  central: CentralOverview;
+  metar: DispatchMetarSummary;
+  imageUrl: string | null;
+}) {
   const flagUrl = getFlagUrl(central.countryCode);
+  const backgroundStyle = imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined;
 
   return (
     <aside className="overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,22,44,0.92),rgba(4,15,30,0.96))] shadow-[0_18px_48px_rgba(0,0,0,0.18)]">
       <div className="relative min-h-[280px] overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-45"
-          style={{ backgroundImage: `url(${central.imagePath})` }}
-        />
+        {backgroundStyle ? (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-center opacity-45"
+            style={backgroundStyle}
+          />
+        ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,35,0.26),rgba(5,12,24,0.94))]" />
 
         <div className="relative z-10 flex h-full min-h-[280px] flex-col justify-between p-5">
@@ -3049,6 +3174,9 @@ function DashboardWorkspace({
         origin: webOriginCode,
         destination: webDestinationCode,
         aircraftCode: selectedAircraftRecord.aircraft_code,
+        aircraftTypeCode:
+          selectedAircraftRecord.aircraft_type_code ??
+          selectedAircraftRecord.aircraft_code,
         aircraftName: selectedAircraftRecord.aircraft_name,
         aircraftTailNumber:
           selectedAircraftRecord.tail_number || simbriefSummary.aircraftRegistration?.trim() || "",
@@ -3086,7 +3214,11 @@ function DashboardWorkspace({
     } catch (error) {
       setSummaryInfoMessage("");
       setSummaryErrorMessage(
-        error instanceof Error ? error.message : "No se pudo despachar el vuelo a la base operativa."
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error
+            ? JSON.stringify(error)
+            : "No se pudo despachar el vuelo a la base operativa."
       );
     } finally {
       setFinalizingDispatch(false);
@@ -3094,7 +3226,7 @@ function DashboardWorkspace({
   }
 
   return (
-    <section className="mt-6 glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
+    <section className="glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
       <div className="border-b border-white/10 pb-4">
         <div className="flex flex-wrap items-center justify-center gap-2">
           {DASHBOARD_TABS.map((tab) => {
@@ -3128,49 +3260,7 @@ function DashboardWorkspace({
           <div className="space-y-4">
             <div className="surface-outline rounded-[26px] p-4 sm:p-5 lg:p-6">
               <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.92))] p-4 sm:p-5">
-                <div className="grid gap-5 border-b border-white/8 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-                  <div className="relative overflow-hidden rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.96))] px-6 py-8 text-center sm:px-8 sm:py-10">
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-0 bg-cover bg-center opacity-20"
-                      style={{ backgroundImage: `url(${central.imagePath})` }}
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.18),rgba(4,12,24,0.86))]" />
-
-                    <div className="relative z-10">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                        Workspace Dispatch
-                      </p>
-                      <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-[52px]">
-                        Centro de Despachos
-                      </h3>
-                      <p className="mx-auto mt-5 max-w-4xl text-base leading-8 text-white/76 sm:text-[18px]">
-                        Elige tu tipo de vuelo, escoge la aeronave para la cual estas habilitado y, si corresponde,
-                        confirma itinerario y despacho. Prepara el despacho en SimBrief y revisa que coincida con la web
-                        antes de enviarlo al ACARS.
-                      </p>
-                    </div>
-                  </div>
-
-                  <DispatchAirportBannerCard central={central} metar={dispatchMetar} />
-
-                  <div className="hidden">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                      Workspace Dispatch
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold text-white sm:text-[28px]">
-                      Flujo central reutilizando la lógica real del despacho
-                    </h3>
-                    <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
-                      Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no está
-                      elegido o marcado como listo. Así mantenemos orden operativo dentro del dashboard.
-                    </p>
-                  </div>
-
-                  <div className="hidden rounded-2xl border border-emerald-400/16 bg-emerald-500/[0.08] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                    Flujo base preservado
-                  </div>
-                </div>
+                <DispatchOverviewHeader central={central} metar={dispatchMetar} />
 
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2 border-b border-white/8 pb-4">
                   {DISPATCH_STEPS.map((step) => {
@@ -4111,7 +4201,7 @@ function DashboardWorkspace({
                           <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
                             Volver a despacho
                           </button>
-                          <Link href="/operations" className="button-primary py-3">
+                          <Link href="/dashboard?tab=dispatch" className="button-primary py-3">
                             Ir al flujo operativo actual
                           </Link>
                         </div>
@@ -4210,9 +4300,22 @@ function DashboardContent() {
     recentFlights: [],
     newsItems: buildNewsItems("SCEL", 0, [], []),
   });
-  const [activeTab, setActiveTab] = useState<DashboardTabKey>("central");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<DashboardTabKey>(initialTab === "dispatch" ? "dispatch" : initialTab === "office" ? "office" : initialTab === "training" ? "training" : "central");
   const [availableAircraft, setAvailableAircraft] = useState<AvailableAircraftOption[]>([]);
   const [availableItineraries, setAvailableItineraries] = useState<AvailableItineraryOption[]>([]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+
+    if (requestedTab === "dispatch" || requestedTab === "office" || requestedTab === "training" || requestedTab === "central") {
+      setActiveTab(requestedTab);
+      return;
+    }
+
+    setActiveTab("central");
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -4334,7 +4437,7 @@ function DashboardContent() {
   );
 
   return (
-    <div className="pw-container py-10 sm:py-14 lg:py-16">
+    <div className="mx-auto w-full max-w-[1680px] px-4 py-10 sm:px-6 sm:py-14 xl:px-10 lg:py-16">
       <section className="glass-panel rounded-[30px] px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
@@ -4346,46 +4449,24 @@ function DashboardContent() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link href="/operations" className="button-primary py-3">
-              Ir a operaciones
-            </Link>
-            <Link href="/profile" className="button-secondary py-3">
-              Abrir perfil
-            </Link>
-          </div>
         </div>
       </section>
 
-      <section className="mt-6">
-        <div className="glass-panel rounded-[30px] px-4 py-4 sm:px-5 lg:px-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10">
-            {compactMetrics.map((item) => (
-              <div
-                key={item.label}
-                className="flex min-h-[82px] flex-col items-center justify-center rounded-[20px] border border-white/8 bg-white/[0.03] px-2 py-3 text-center"
-              >
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                  {item.label}
-                </span>
-                <span className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
-                  <AnimatedMetricValue item={item} animateKey={animationSeed} />
-                </span>
-              </div>
-            ))}
-          </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
+        <div className="order-2 xl:order-1">
+          <DashboardWorkspace
+            profile={profile}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            metrics={metrics}
+            central={central}
+            availableAircraft={availableAircraft}
+            availableItineraries={availableItineraries}
+          />
         </div>
-      </section>
 
-      <DashboardWorkspace
-        profile={profile}
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-        metrics={metrics}
-        central={central}
-        availableAircraft={availableAircraft}
-        availableItineraries={availableItineraries}
-      />
+        <PilotStatsRail items={compactMetrics} animationSeed={animationSeed} />
+      </div>
     </div>
   );
 }
@@ -4393,7 +4474,7 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <main className="grid-overlay">
-      <section className="parallax-hero relative isolate min-h-screen overflow-x-hidden">
+      <section className="parallax-hero relative isolate min-h-screen">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
 

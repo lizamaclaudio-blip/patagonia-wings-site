@@ -123,11 +123,11 @@ export default function PublicHeader() {
                   👤 Mi perfil
                 </Link>
                 <Link
-                  href="/operations"
+                  href="/dashboard?tab=dispatch"
                   className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  ✈ Reserva / Dispatch
+                  ✈ Despacho
                 </Link>
                 <div className="my-2 border-t border-white/[0.07]" />
                 <button

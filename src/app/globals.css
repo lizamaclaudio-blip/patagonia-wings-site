@@ -19,7 +19,10 @@
 
 html,
 body {
+  width: 100%;
+  max-width: 100%;
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 html {
@@ -33,6 +36,13 @@ body {
     radial-gradient(circle at 15% 10%, rgba(80, 175, 255, 0.1), transparent 0 16%),
     radial-gradient(circle at 85% 12%, rgba(17, 181, 110, 0.08), transparent 0 18%),
     linear-gradient(180deg, #041327 0%, #071c36 46%, #041123 100%);
+}
+
+main,
+.grid-overlay,
+.parallax-hero {
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 a {
