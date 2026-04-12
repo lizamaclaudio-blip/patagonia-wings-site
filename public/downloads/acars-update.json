@@ -1,7 +1,7 @@
 {
-    "version":  "2.0.5",
+    "version":  "2.0.6",
     "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "v2.0.5: FSUIPC7 como backend principal de telemetría, SimConnect como fallback. Sin verde falso.",
+    "notes":  "v2.0.6: Token refresh automático, despacho y perfil cargan correctamente al iniciar sesión. Telemetría live sin grabar stats antes de iniciar vuelo.",
     "mandatory":  true,
     "publishedAtUtc":  "2026-04-12T06:00:00.0000000Z"
 }
