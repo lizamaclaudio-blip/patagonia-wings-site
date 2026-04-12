@@ -1,7 +1,7 @@
-﻿{
-    "version":  "2.0.1",
+{
+    "version":  "2.0.3",
     "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "Nueva version disponible de Patagonia Wings ACARS.",
+    "notes":  "v2.0.3: Score procedural rico (no-smoking, presion de cabina), QNH en reporte, habilitaciones de piloto, fix critico en envio de vuelos a Supabase.",
     "mandatory":  false,
-    "publishedAtUtc":  "2026-04-11T19:50:21.0640148Z"
+    "publishedAtUtc":  "2026-04-11T20:31:00.0000000Z"
 }
