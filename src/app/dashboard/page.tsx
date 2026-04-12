@@ -18,6 +18,7 @@ import {
   getOperationalFlightNumber,
   listAvailableAircraft,
   listAvailableItineraries,
+  cancelFlightOperation,
   type AvailableAircraftOption,
   type AvailableItineraryOption,
   type FlightOperationRecord,
@@ -2559,6 +2560,8 @@ function DashboardWorkspace({
   availableAircraft: AvailableAircraftOption[];
   availableItineraries: AvailableItineraryOption[];
 }) {
+  const [activeReservation, setActiveReservation] = useState<(FlightReservationRow & { id: string }) | null>(null);
+  const [cancellingReservation, setCancellingReservation] = useState(false);
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
@@ -2575,6 +2578,31 @@ function DashboardWorkspace({
   const [itineraryAirportsByIcao, setItineraryAirportsByIcao] = useState<
     Record<string, ItineraryAirportMeta>
   >({});
+
+  // Carga reserva activa del piloto al abrir Oficina
+  useEffect(() => {
+    if (activeTab !== "office" || !profile) return;
+    let alive = true;
+
+    async function loadActiveReservation() {
+      if (!profile) return;
+      const { data } = await supabase
+        .from("flight_reservations")
+        .select("id, pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at, created_at")
+        .eq("pilot_callsign", profile.callsign)
+        .in("status", ["reserved", "dispatched", "in_flight"])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (alive) {
+        setActiveReservation(data as (FlightReservationRow & { id: string }) | null);
+      }
+    }
+
+    void loadActiveReservation();
+    return () => { alive = false; };
+  }, [activeTab, profile]);
 
   const aircraftOptions = [
     {
@@ -4343,7 +4371,79 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* ── Fila 4: Historial de vuelos ── */}
+            {/* ── Fila 4: Reserva activa ── */}
+            <div className="surface-outline rounded-[24px] p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                Reserva activa
+              </p>
+              {activeReservation ? (
+                <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+                    {/* Ruta */}
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{formatRouteTag(activeReservation)}</p>
+                    </div>
+                    {/* Aeronave */}
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
+                      <p className="mt-1 text-sm font-medium text-white">
+                        {activeReservation.aircraft_type_code ?? "—"}
+                        {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
+                      </p>
+                    </div>
+                    {/* Estado */}
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</p>
+                      <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
+                        activeReservation.status === "in_flight"
+                          ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30"
+                          : activeReservation.status === "dispatched"
+                            ? "bg-[#67d7ff]/10 text-[#67d7ff] border border-[#67d7ff]/20"
+                            : "bg-white/5 text-white/70 border border-white/10"
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${activeReservation.status === "in_flight" ? "bg-[#49d787]" : activeReservation.status === "dispatched" ? "bg-[#67d7ff]" : "bg-white/40"}`} />
+                        {formatFlightStatusLabel(activeReservation.status)}
+                      </span>
+                    </div>
+                    {/* Modo */}
+                    {activeReservation.flight_mode_code && (
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Modo</p>
+                        <p className="mt-1 text-sm text-white/70">{activeReservation.flight_mode_code}</p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Botón cancelar */}
+                  <button
+                    type="button"
+                    disabled={cancellingReservation}
+                    onClick={async () => {
+                      if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
+                      setCancellingReservation(true);
+                      try {
+                        await cancelFlightOperation(
+                          (activeReservation as FlightReservationRow & { id: string }).id,
+                          profile.callsign
+                        );
+                        setActiveReservation(null);
+                      } catch {
+                        alert("No se pudo cancelar la reserva. Intenta de nuevo.");
+                      } finally {
+                        setCancellingReservation(false);
+                      }
+                    }}
+                    className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-white/38">Sin reserva activa en este momento.</p>
+              )}
+            </div>
+
+            {/* ── Fila 5: Historial de vuelos ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
