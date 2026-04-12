@@ -4214,32 +4214,174 @@ function DashboardWorkspace({
           </div>
         ) : null}
 
-        {activeTab === "office" ? (
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="surface-outline rounded-[24px] p-5 lg:col-span-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Oficina del piloto
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white">Perfil, carrera y administración</h2>
-              <p className="mt-3 text-sm leading-7 text-white/72">
-                Este espacio será la oficina del piloto para revisar rango, progreso, transferencias,
-                billetera, historial y documentos internos, manteniendo todo dentro de la misma base visual.
-              </p>
-            </div>
+        {activeTab === "office" && profile ? (
+          <div className="flex flex-col gap-4">
 
-            <div className="surface-outline rounded-[24px] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Accesos
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                <Link href="/profile" className="button-secondary">
-                  Abrir perfil
-                </Link>
-                <button type="button" className="button-ghost">
-                  Historial
-                </button>
+            {/* ── Fila 1: Perfil + Accesos ── */}
+            <div className="grid gap-4 lg:grid-cols-3">
+
+              {/* Tarjeta de perfil */}
+              <div className="surface-outline rounded-[24px] p-6 lg:col-span-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                  Oficina del piloto
+                </p>
+                <div className="mt-4 flex items-center gap-5">
+                  {/* Avatar initials */}
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "linear-gradient(135deg,#0ca66b,#15b96e)" }}>
+                    <span className="text-xl font-bold text-white">
+                      {((profile.first_name?.[0] ?? "") + (profile.last_name?.[0] ?? "")).toUpperCase() || profile.callsign.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-semibold text-white leading-tight">
+                      {profile.first_name || profile.last_name
+                        ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()
+                        : profile.callsign}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-white/54">{profile.callsign}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-0.5 text-[11px] font-semibold text-white/80">
+                        {metrics.careerRank}
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${metrics.pilotStatus === "ACTIVO" ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${metrics.pilotStatus === "ACTIVO" ? "bg-[#49d787]" : "bg-white/30"}`} />
+                        {metrics.pilotStatus}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Datos operacionales */}
+                <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/8 pt-5 sm:grid-cols-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Hub base</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">País</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Simulador</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">SimBrief</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">VATSIM</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">IVAO</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "—"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accesos rápidos */}
+              <div className="surface-outline rounded-[24px] p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
+                <div className="mt-4 flex flex-col gap-3">
+                  <Link href="/profile" className="button-secondary text-center text-sm">
+                    ✏ Editar perfil
+                  </Link>
+                  <Link href="/certifications" className="button-ghost text-center text-sm">
+                    🎖 Certificaciones
+                  </Link>
+                  <Link href="/operations" className="button-ghost text-center text-sm">
+                    📋 Operaciones
+                  </Link>
+                </div>
+
+                {/* Habilitaciones activas */}
+                {profile.active_qualifications && (
+                  <div className="mt-5 border-t border-white/8 pt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Habilitaciones</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {profile.active_qualifications.split(",").map((q) => q.trim()).filter(Boolean).map((q) => (
+                        <span key={q} className="inline-block rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">
+                          {q}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* ── Fila 2: Métricas de carrera ── */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                { label: "Horas totales", value: formatDecimal(metrics.totalHours), unit: "hs" },
+                { label: "PIREPs", value: formatInteger(metrics.totalPireps), unit: "vuelos" },
+                { label: `Horas ${metrics.monthLabel}`, value: formatDecimal(metrics.monthHours), unit: "hs" },
+                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "—", unit: "" },
+              ].map((m) => (
+                <div key={m.label} className="surface-outline rounded-[20px] p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
+                  <p className="mt-2 text-3xl font-semibold text-white">{m.value}</p>
+                  {m.unit && <p className="mt-0.5 text-[11px] text-white/38">{m.unit}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Fila 3: Scores + Billetera ── */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                { label: "Pulso 10", value: formatDecimal(metrics.pulso10), accent: "#67d7ff" },
+                { label: "Ruta 10", value: formatDecimal(metrics.ruta10), accent: "#67d7ff" },
+                { label: "Legado", value: formatInteger(metrics.legadoPoints), accent: "#0ca66b" },
+                { label: "Billetera", value: formatCurrency(metrics.walletBalance), accent: "#0ca66b" },
+              ].map((m) => (
+                <div key={m.label} className="surface-outline rounded-[20px] p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
+                  <p className="mt-2 text-3xl font-semibold" style={{ color: m.accent }}>{m.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Fila 4: Historial de vuelos ── */}
+            <div className="surface-outline rounded-[24px] p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                Historial de vuelos
+              </p>
+              {central.recentFlights.length === 0 ? (
+                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aún.</p>
+              ) : (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/8">
+                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</th>
+                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</th>
+                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Tipo</th>
+                        <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Score</th>
+                        <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {central.recentFlights.slice(0, 8).map((f, i) => (
+                        <tr key={i} className="border-b border-white/5 last:border-0">
+                          <td className="py-3 font-medium text-white">{formatRouteTag(f)}</td>
+                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
+                          <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
+                          <td className="py-3 text-right font-semibold text-[#67d7ff]">
+                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
+                          </td>
+                          <td className="py-3 text-right text-white/38">
+                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
           </div>
         ) : null}
 
