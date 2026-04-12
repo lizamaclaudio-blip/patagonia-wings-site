@@ -1,7 +1,7 @@
 {
-    "version":  "2.0.4",
+    "version":  "2.0.5",
     "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "v2.0.4: Fix critico SimConnect — telemetria ahora llega a la UI correctamente. Fix flood de desconexiones en log. XPlane removido.",
+    "notes":  "v2.0.5: FSUIPC7 como backend principal de telemetría, SimConnect como fallback. Sin verde falso.",
     "mandatory":  true,
-    "publishedAtUtc":  "2026-04-12T05:30:00.0000000Z"
+    "publishedAtUtc":  "2026-04-12T06:00:00.0000000Z"
 }
