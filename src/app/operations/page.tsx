@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import AuthPageFrame from "@/components/site/AuthPageFrame";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
@@ -446,6 +446,31 @@ function getDestinationStats(
   };
 }
 
+function getAircraftVariantSummary(aircraft: Pick<
+  AvailableAircraftOption,
+  "variant_name" | "aircraft_variant_code" | "addon_provider"
+>) {
+  return [
+    aircraft.variant_name?.trim(),
+    aircraft.aircraft_variant_code?.trim(),
+    aircraft.addon_provider?.trim(),
+  ]
+    .filter((item): item is string => Boolean(item))
+    .join(" · ");
+}
+
+function getOperationAircraftSummary(operation: FlightOperationRecord | null | undefined) {
+  if (!operation) return "";
+
+  return [
+    operation.aircraftCode?.trim(),
+    operation.aircraftTailNumber?.trim(),
+    operation.aircraftVariantLabel?.trim(),
+  ]
+    .filter((item): item is string => Boolean(item))
+    .join(" · ");
+}
+
 function buildSimbriefPreview(params: {
   profile: PilotProfileRecord;
   operation: FlightOperationRecord;
@@ -644,6 +669,7 @@ function OperationsContent() {
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedCatalogAircraftId, setSelectedCatalogAircraftId] = useState("");
 
 
   async function loadNavigraphStatus(silent = false) {
@@ -713,7 +739,7 @@ function OperationsContent() {
     }
   }
 
-  async function loadData(currentUserId: string) {
+  const loadData = useEffectEvent(async (currentUserId: string) => {
     setLoading(true);
     setErrorMessage("");
 
@@ -727,6 +753,7 @@ function OperationsContent() {
         setAvailableItineraries([]);
         setAirports([]);
         setItineraryTiming({});
+        setSelectedCatalogAircraftId("");
         setStage("catalog");
         return;
       }
@@ -905,6 +932,7 @@ function OperationsContent() {
         : getDefaultFlightOperation(currentUserId, currentProfile);
 
       setOperation(nextOperation);
+      setSelectedCatalogAircraftId(nextOperation.aircraftId ?? "");
 
       if (activeReservation?.status === "dispatch_ready") {
         setStage("simbrief");
@@ -923,11 +951,12 @@ function OperationsContent() {
       setAvailableItineraries([]);
       setAirports([]);
       setItineraryTiming({});
+      setSelectedCatalogAircraftId("");
       setStage("catalog");
     } finally {
       setLoading(false);
     }
-  }
+  });
 
   useEffect(() => {
     void loadData(session.user.id);
@@ -936,6 +965,18 @@ function OperationsContent() {
   useEffect(() => {
     void loadNavigraphStatus();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCatalogAircraftId) {
+      return;
+    }
+
+    if (availableAircraft.some((item) => item.aircraft_id === selectedCatalogAircraftId)) {
+      return;
+    }
+
+    setSelectedCatalogAircraftId("");
+  }, [availableAircraft, selectedCatalogAircraftId]);
 
   useEffect(() => {
     if (!deviceSession) {
@@ -1010,6 +1051,12 @@ function OperationsContent() {
     [availableItineraries, currentMode]
   );
 
+  const selectedCatalogAircraft = useMemo(
+    () =>
+      availableAircraft.find((item) => item.aircraft_id === selectedCatalogAircraftId) ?? null,
+    [availableAircraft, selectedCatalogAircraftId]
+  );
+
   const visibleItineraries = useMemo(
     () =>
       filteredItineraries
@@ -1040,8 +1087,15 @@ function OperationsContent() {
               item.flight_designator || getOperationalFlightNumber(item.origin_icao, item.destination_icao),
           };
         })
-        .filter((entry) => entry.compatibleAircraft.length > 0),
-    [airports, availableAircraft, filteredItineraries, itineraryTiming]
+        .filter(
+          (entry) =>
+            entry.compatibleAircraft.length > 0 &&
+            (!selectedCatalogAircraft ||
+              entry.compatibleAircraft.some(
+                (item) => item.aircraft_id === selectedCatalogAircraft.aircraft_id
+              ))
+        ),
+    [airports, availableAircraft, filteredItineraries, itineraryTiming, selectedCatalogAircraft]
   );
 
   const selectedItinerary = useMemo(
@@ -1064,6 +1118,9 @@ function OperationsContent() {
           tail_number: operation.aircraftTailNumber || "",
           aircraft_code: operation.aircraftCode,
           aircraft_name: operation.aircraftName || operation.aircraftCode,
+          aircraft_variant_code: operation.aircraftVariantCode || "",
+          addon_provider: operation.aircraftAddonProvider || "",
+          variant_name: operation.aircraftVariantLabel || "",
           current_airport_icao: operation.origin || profile?.current_airport_icao || profile?.base_hub || "SCEL",
           status: "reserved",
         },
@@ -1074,10 +1131,13 @@ function OperationsContent() {
     return compatible;
   }, [
     availableAircraft,
+    operation?.aircraftAddonProvider,
     operation?.aircraftCode,
     operation?.aircraftId,
     operation?.aircraftName,
     operation?.aircraftTailNumber,
+    operation?.aircraftVariantCode,
+    operation?.aircraftVariantLabel,
     operation?.origin,
     profile?.base_hub,
     profile?.current_airport_icao,
@@ -1200,6 +1260,9 @@ function OperationsContent() {
         aircraftCode: "",
         aircraftName: "",
         aircraftTailNumber: "",
+        aircraftVariantCode: "",
+        aircraftAddonProvider: "",
+        aircraftVariantLabel: "",
         routeText: "",
         remarks: "",
         status: base.reservationId ? base.status : "draft",
@@ -1211,13 +1274,24 @@ function OperationsContent() {
   }
 
   function handleReserveFromCatalog(itinerary: AvailableItineraryOption) {
+    if (!selectedCatalogAircraft) {
+      setErrorMessage("Selecciona primero la aeronave operativa para reservar una ruta.");
+      return;
+    }
+
     const base = operation ?? getDefaultFlightOperation(session.user.id, profile);
     const itineraryOperation = applyItineraryToOperation(base, itinerary);
-    const firstAircraft = getCompatibleAircraft(itinerary, availableAircraft)[0] ?? null;
+    const reservedAircraft =
+      getCompatibleAircraft(itinerary, availableAircraft).find(
+        (item) => item.aircraft_id === selectedCatalogAircraft.aircraft_id
+      ) ?? null;
 
-    const nextOperation = firstAircraft
-      ? applyAircraftToOperation(itineraryOperation, firstAircraft)
-      : itineraryOperation;
+    if (!reservedAircraft) {
+      setErrorMessage("La aeronave elegida no es compatible con esta ruta.");
+      return;
+    }
+
+    const nextOperation = applyAircraftToOperation(itineraryOperation, reservedAircraft);
 
     updateOperation({
       ...nextOperation,
@@ -1235,6 +1309,7 @@ function OperationsContent() {
 
   function handleAircraftChange(aircraftId: string) {
     if (!aircraftId) {
+      setSelectedCatalogAircraftId("");
       setOperation((current) => {
         const base = current ?? getDefaultFlightOperation(session.user.id, profile);
         return {
@@ -1243,6 +1318,9 @@ function OperationsContent() {
           aircraftCode: "",
           aircraftName: "",
           aircraftTailNumber: "",
+          aircraftVariantCode: "",
+          aircraftAddonProvider: "",
+          aircraftVariantLabel: "",
           updatedAt: new Date().toISOString(),
         };
       });
@@ -1252,6 +1330,7 @@ function OperationsContent() {
     const aircraft = compatibleAircraft.find((item) => item.aircraft_id === aircraftId);
     if (!aircraft) return;
 
+    setSelectedCatalogAircraftId(aircraftId);
     setOperation((current) => {
       const base = current ?? getDefaultFlightOperation(session.user.id, profile);
       return applyAircraftToOperation(base, aircraft);
@@ -1602,6 +1681,7 @@ function OperationsContent() {
   async function handleResetOperation() {
     if (!operation?.reservationId) {
       setOperation(getDefaultFlightOperation(session.user.id, profile));
+      setSelectedCatalogAircraftId("");
       setStage("catalog");
       setSelectedAlternate("");
       setSimbriefPreview(null);
@@ -1618,6 +1698,7 @@ function OperationsContent() {
     try {
       await cancelFlightOperation(operation.reservationId, profile?.callsign);
       setOperation(getDefaultFlightOperation(session.user.id, profile));
+      setSelectedCatalogAircraftId("");
       setStage("catalog");
       setSelectedAlternate("");
       setSimbriefPreview(null);
@@ -1722,6 +1803,11 @@ function OperationsContent() {
   const pilotName =
     profile?.callsign || session.user.email?.split("@")[0]?.toUpperCase() || "PILOTO";
 
+  const syncReturnedOfp = useEffectEvent((staticId: string | null) => {
+    void handleSyncLatestOfp(staticId, false).finally(() => {
+      window.history.replaceState({}, "", "/operations");
+    });
+  });
 
   useEffect(() => {
     if (typeof window === "undefined" || !profile || !operation) {
@@ -1735,9 +1821,7 @@ function OperationsContent() {
 
     const staticId = params.get("static_id");
 
-    void handleSyncLatestOfp(staticId, false).finally(() => {
-      window.history.replaceState({}, "", "/operations");
-    });
+    syncReturnedOfp(staticId);
   }, [profile, operation]);
 
   return (
@@ -1867,6 +1951,43 @@ function OperationsContent() {
                   </select>
                 </div>
 
+                <div className="surface-outline w-full rounded-[22px] px-5 py-5 sm:min-w-[320px] sm:flex-1">
+                  <label className="field-label">Aeronave operativa</label>
+                  <select
+                    className="input-premium"
+                    value={selectedCatalogAircraftId}
+                    onChange={(event) => setSelectedCatalogAircraftId(event.target.value)}
+                    disabled={loading || submitting || availableAircraft.length === 0}
+                  >
+                    <option value="">Seleccionar aeronave en campo</option>
+                    {availableAircraft.map((item) => (
+                      <option
+                        key={item.aircraft_id}
+                        value={item.aircraft_id}
+                        style={{ color: "#081321", backgroundColor: "#f8fbff" }}
+                      >
+                        {[item.aircraft_name, item.tail_number, getAircraftVariantSummary(item)]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-3 text-sm text-white/66">
+                    {selectedCatalogAircraft
+                      ? [
+                          selectedCatalogAircraft.aircraft_code,
+                          selectedCatalogAircraft.tail_number,
+                          selectedCatalogAircraft.current_airport_icao,
+                          getAircraftVariantSummary(selectedCatalogAircraft),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : availableAircraft.length > 0
+                        ? "Elige primero la aeronave para filtrar y reservar solo rutas compatibles."
+                        : "No hay aeronaves disponibles en tu aeropuerto operativo."}
+                  </p>
+                </div>
+
                 <div className="surface-outline min-w-[220px] flex-1 rounded-[22px] px-5 py-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">
                     Salen desde
@@ -1911,6 +2032,17 @@ function OperationsContent() {
                         >
                           <div>
                             <p className="text-xl font-semibold text-white">{displayFlightNumber}</p>
+                            <p className="mt-1 text-xs text-white/60">
+                              {selectedCatalogAircraft
+                                ? [
+                                    selectedCatalogAircraft.aircraft_name,
+                                    selectedCatalogAircraft.tail_number,
+                                    getAircraftVariantSummary(selectedCatalogAircraft),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")
+                                : `${compatibleAircraft.length} aeronaves compatibles`}
+                            </p>
                           </div>
                           <div>
                             <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-sm font-semibold text-sky-200">
@@ -1935,7 +2067,12 @@ function OperationsContent() {
                               type="button"
                               className="button-primary"
                               onClick={() => handleReserveFromCatalog(item)}
-                              disabled={compatibleAircraft.length === 0 || loading || submitting}
+                              disabled={
+                                !selectedCatalogAircraft ||
+                                compatibleAircraft.length === 0 ||
+                                loading ||
+                                submitting
+                              }
                             >
                               Reservar
                             </button>
@@ -1977,8 +2114,8 @@ function OperationsContent() {
                 />
                 <SmallInfoCard
                   title="Aeronave seleccionada"
-                  value={operation?.aircraftCode || "Sin asignar"}
-                  subvalue={operation?.aircraftTailNumber || "Selecciona una aeronave disponible"}
+                  value={operation?.aircraftName || operation?.aircraftCode || "Sin asignar"}
+                  subvalue={getOperationAircraftSummary(operation) || "Selecciona una aeronave disponible"}
                 />
               </div>
 
@@ -2018,7 +2155,9 @@ function OperationsContent() {
                     <option value="">Seleccionar aeronave</option>
                     {compatibleAircraft.map((item) => (
                       <option key={item.aircraft_id} value={item.aircraft_id}>
-                        {item.aircraft_code} · {item.tail_number}
+                        {[item.aircraft_name, item.tail_number, getAircraftVariantSummary(item)]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </option>
                     ))}
                   </select>
@@ -2131,8 +2270,8 @@ function OperationsContent() {
                 />
                 <SmallInfoCard
                   title="Aeronave"
-                  value={operation?.aircraftCode || "Sin asignar"}
-                  subvalue={operation?.aircraftTailNumber || "Seleccionada en reserva"}
+                  value={operation?.aircraftName || operation?.aircraftCode || "Sin asignar"}
+                  subvalue={getOperationAircraftSummary(operation) || "Seleccionada en reserva"}
                 />
               </div>
 
@@ -2260,7 +2399,13 @@ function OperationsContent() {
                     <SmallInfoCard
                       title="Ruta"
                       value={simbriefPreview.routeText}
-                      subvalue={`Airframe ${simbriefPreview.airframe}`}
+                      subvalue={
+                        operation?.aircraftName
+                          ? [operation.aircraftName, getOperationAircraftSummary(operation)]
+                              .filter(Boolean)
+                              .join(" · ")
+                          : `Airframe ${simbriefPreview.airframe}`
+                      }
                     />
                   </div>
 

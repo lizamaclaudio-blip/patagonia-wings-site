@@ -16,6 +16,8 @@ export type PilotProfileRecord = {
   simulator: string | null;
   rank_code?: string | null;
   career_rank_code?: string | null;
+  active_qualifications?: string | null;
+  active_certifications?: string | null;
   simbrief_username: string | null;
   vatsim_id: string | null;
   ivao_id: string | null;
@@ -65,6 +67,12 @@ function normalizeProfileRecord(
     simulator:
       data?.simulator ??
       ((metadata.simulator as string | undefined) ?? "MSFS 2020"),
+    active_qualifications:
+      data?.active_qualifications ??
+      ((metadata.active_qualifications as string | undefined) ?? null),
+    active_certifications:
+      data?.active_certifications ??
+      ((metadata.active_certifications as string | undefined) ?? null),
     simbrief_username:
       data?.simbrief_username ??
       ((metadata.simbrief_username as string | undefined) ?? null),
