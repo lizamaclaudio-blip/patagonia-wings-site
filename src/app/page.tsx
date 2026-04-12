@@ -2,6 +2,7 @@ import Link from "next/link";
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
+import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB } from "@/lib/acars-version";
 
 const services = [
   {
@@ -190,7 +191,7 @@ export default function HomePage() {
                     <path d="M10 2v10m0 0l-3-3m3 3l3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
                       stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Descargar ACARS v2.0.1
+                  Descargar ACARS v{ACARS_VERSION}
                 </a>
                 <span className="text-sm text-slate-400">
                   Windows 10/11 · MSFS 2020/2024 · ~48 MB
@@ -200,9 +201,9 @@ export default function HomePage() {
               <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 backdrop-blur-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 <span className="text-sm text-white/80">
-                  Versión <span className="font-semibold text-white">2.0.1</span>
+                  Versión <span className="font-semibold text-white">{ACARS_VERSION}</span>
                   <span className="mx-2 text-white/30">·</span>
-                  SimConnect + Supabase Direct
+                  {ACARS_BACKEND}
                 </span>
               </div>
             </div>
