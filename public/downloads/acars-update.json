@@ -1,7 +1,7 @@
-{
-    "version":  "2.0.6",
+﻿{
+    "version":  "2.0.8",
     "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "v2.0.6: Token refresh automático, despacho y perfil cargan correctamente al iniciar sesión. Telemetría live sin grabar stats antes de iniciar vuelo.",
-    "mandatory":  true,
-    "publishedAtUtc":  "2026-04-12T06:00:00.0000000Z"
+    "notes":  "Nueva version disponible de Patagonia Wings ACARS.",
+    "mandatory":  false,
+    "publishedAtUtc":  "2026-04-12T19:47:15.4729730Z"
 }
