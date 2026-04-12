@@ -19,19 +19,21 @@ namespace PatagoniaWings.Acars.Master.Helpers
         private bool _disposed;
         private bool _hasReceivedData;
 
-        // ── Posición / Actitud (float64 nativo FSUIPC7) ──────────────────────
+        // ── Posición (float64 nativo FSUIPC7) ───────────────────────────────
         private Offset<double>? _lat;
         private Offset<double>? _lon;
         private Offset<double>? _altM;       // metros MSL
-        private Offset<double>? _hdg;
+
+        // ── Actitud (float64 — layout: 0x0578 pitch, 0x0580 heading, 0x0588 bank) ──
         private Offset<double>? _pitch;
-        private Offset<double>? _bank;
+        private Offset<double>? _hdg;
+        private Offset<double>? _bank;       // 0x0588: bank — NO solapar con pitch/hdg
 
         // ── Velocidades (int32 estándar FSUIPC) ──────────────────────────────
         private Offset<int>? _ias;           // knots × 128
         private Offset<int>? _gs;            // m/s × 65536
         private Offset<int>? _vs;            // ft/min × 256
-        private Offset<int>? _groundAltFt;   // ft × 65536 → para calcular AGL
+        private Offset<int>? _groundAltFt;   // ft × 65536
 
         // ── Estado ────────────────────────────────────────────────────────────
         private Offset<short>? _onGround;
@@ -51,15 +53,18 @@ namespace PatagoniaWings.Acars.Master.Helpers
         private Offset<int>?    _n1Eng2;
         private Offset<double>? _fuelKg;
 
-        // ── Ambiente ──────────────────────────────────────────────────────────
+        // ── Ambiente — wind es INT16 (knots / degrees), no float64 ──────────
         private Offset<double>? _oat;
-        private Offset<double>? _windSpeed;
-        private Offset<double>? _windDir;
+        private Offset<short>?  _windSpeed;  // INT16, knots
+        private Offset<short>?  _windDir;    // INT16, degrees
         private Offset<short>?  _qnh;        // mb × 16
 
         // ── Aviónica ──────────────────────────────────────────────────────────
         private Offset<short>? _xpdrCode;
         private Offset<short>? _xpdrMode;
+
+        // ── G-force ───────────────────────────────────────────────────────────
+        private Offset<short>? _gForce;      // 0x11BA: G load × 625 (INT16)
 
         public bool IsConnected { get; private set; }
 
@@ -72,7 +77,7 @@ namespace PatagoniaWings.Acars.Master.Helpers
         public void Connect()
         {
             if (IsConnected) return;
-            FSUIPCConnection.Open();           // lanza FSUIPCException si FSUIPC7 no está disponible
+            FSUIPCConnection.Open();
             InitOffsets();
             _hasReceivedData = false;
             _running = true;
@@ -82,40 +87,52 @@ namespace PatagoniaWings.Acars.Master.Helpers
 
         private void InitOffsets()
         {
-            _lat          = new Offset<double>(0x0560);
-            _lon          = new Offset<double>(0x0568);
-            _altM         = new Offset<double>(0x0570);
-            _hdg          = new Offset<double>(0x0580);
-            _pitch        = new Offset<double>(0x0578);
-            _bank         = new Offset<double>(0x057C);
+            // Posición
+            _lat         = new Offset<double>(0x0560);
+            _lon         = new Offset<double>(0x0568);
+            _altM        = new Offset<double>(0x0570);
 
-            _ias          = new Offset<int>(0x02BC);
-            _gs           = new Offset<int>(0x02B4);
-            _vs           = new Offset<int>(0x02C8);
-            _groundAltFt  = new Offset<int>(0x0B4C);
+            // Actitud — float64 layout: pitch@0578, heading@0580, bank@0588
+            _pitch       = new Offset<double>(0x0578);
+            _hdg         = new Offset<double>(0x0580);
+            _bank        = new Offset<double>(0x0588);   // FIX: era 0x057C (solapaba)
 
-            _onGround     = new Offset<short>(0x0366);
+            // Velocidades
+            _ias         = new Offset<int>(0x02BC);
+            _gs          = new Offset<int>(0x02B4);
+            _vs          = new Offset<int>(0x02C8);
+            _groundAltFt = new Offset<int>(0x0B4C);
+
+            // Estado
+            _onGround    = new Offset<short>(0x0366);
             _parkingBrake = new Offset<int>(0x0BC8);
-            _autopilot    = new Offset<short>(0x07D0);
-            _pause        = new Offset<short>(0x0264);
+            _autopilot   = new Offset<short>(0x07D0);
+            _pause       = new Offset<short>(0x0264);
 
-            _lights       = new Offset<short>(0x0D0C);
-            _gear         = new Offset<int>(0x0BE8);
-            _flaps        = new Offset<int>(0x0BDC);
-            _seatBelt     = new Offset<short>(0x3B62);
-            _noSmoking    = new Offset<short>(0x3B64);
+            // Sistemas
+            _lights      = new Offset<short>(0x0D0C);
+            _gear        = new Offset<int>(0x0BE8);
+            _flaps       = new Offset<int>(0x0BDC);
+            _seatBelt    = new Offset<short>(0x3B62);
+            _noSmoking   = new Offset<short>(0x3B64);
 
-            _n1Eng1       = new Offset<int>(0x0898);
-            _n1Eng2       = new Offset<int>(0x0930);
-            _fuelKg       = new Offset<double>(0x126C);
+            // Motores / Combustible
+            _n1Eng1      = new Offset<int>(0x0898);
+            _n1Eng2      = new Offset<int>(0x0930);
+            _fuelKg      = new Offset<double>(0x126C);
 
-            _oat          = new Offset<double>(0x0E8C);
-            _windSpeed    = new Offset<double>(0x0E90);
-            _windDir      = new Offset<double>(0x0E92);
-            _qnh          = new Offset<short>(0x0330);
+            // Ambiente — FIX: wind es INT16, no float64
+            _oat         = new Offset<double>(0x0E8C);
+            _windSpeed   = new Offset<short>(0x0E90);    // FIX: era Offset<double>
+            _windDir     = new Offset<short>(0x0E92);    // FIX: era Offset<double>
+            _qnh         = new Offset<short>(0x0330);
 
-            _xpdrCode     = new Offset<short>(0x0354);
-            _xpdrMode     = new Offset<short>(0x0C3A);
+            // Aviónica
+            _xpdrCode    = new Offset<short>(0x0354);
+            _xpdrMode    = new Offset<short>(0x0C3A);
+
+            // G-force: 0x11BA = G load actualmente experimentado × 625 (INT16)
+            _gForce      = new Offset<short>(0x11BA);
         }
 
         private void PollLoop()
@@ -165,6 +182,11 @@ namespace PatagoniaWings.Acars.Master.Helpers
             int    gear   = _gear?.Value  ?? 0;
             int    flaps  = _flaps?.Value ?? 0;
 
+            // G-force real: offset 0x11BA = G × 625 (INT16)
+            // En tierra en reposo ≈ 625 (1 G). En aterrizaje duro > 1250.
+            short gRaw = _gForce?.Value ?? 625;
+            double gForce = Math.Max(0, gRaw / 625.0);
+
             return new SimData
             {
                 CapturedAtUtc     = DateTime.UtcNow,
@@ -177,7 +199,7 @@ namespace PatagoniaWings.Acars.Master.Helpers
                 VerticalSpeed     = vs,
                 Heading           = _hdg?.Value   ?? 0,
                 Pitch             = _pitch?.Value ?? 0,
-                Bank              = _bank?.Value  ?? 0,
+                Bank              = _bank?.Value  ?? 0,   // FIX: ahora desde 0x0588
                 OnGround          = (_onGround?.Value    ?? 0) != 0,
                 ParkingBrake      = (_parkingBrake?.Value ?? 0) != 0,
                 AutopilotActive   = (_autopilot?.Value   ?? 0) != 0,
@@ -196,13 +218,15 @@ namespace PatagoniaWings.Acars.Master.Helpers
                 FuelTotalLbs      = fuelLbs,
                 FuelFlowLbsHour   = 0,
                 OutsideTemperature = _oat?.Value       ?? 0,
-                WindSpeed          = _windSpeed?.Value  ?? 0,
-                WindDirection      = _windDir?.Value    ?? 0,
+                WindSpeed          = _windSpeed?.Value  ?? 0,   // FIX: ahora INT16
+                WindDirection      = _windDir?.Value    ?? 0,   // FIX: ahora INT16
                 QNH                = qnh,
                 SeatBeltSign       = (_seatBelt?.Value  ?? 0) != 0,
                 NoSmokingSign      = (_noSmoking?.Value ?? 0) != 0,
                 TransponderCode    = _xpdrCode?.Value   ?? 0,
                 TransponderCharlieMode = (_xpdrMode?.Value ?? 0) >= 3,
+                LandingVS          = vs,
+                LandingG           = gForce,    // FIX: G real desde offset 0x11BA
                 SimulatorType      = SimulatorType.MSFS2020,
                 IsConnected        = true
             };

@@ -38,6 +38,11 @@ namespace PatagoniaWings.Acars.Master.Views
             DataContext = _vm;
             _vm.LoadPilot();
 
+            // Registrar delegados en el runtime central para que cualquier VM pueda
+            // solicitar conexión/desconexión sin depender de MainWindow directamente.
+            AcarsContext.RequestConnect    = () => Dispatcher.Invoke(() => ConnectSim(silent: false));
+            AcarsContext.RequestDisconnect = () => Dispatcher.Invoke(DisconnectCoordinator);
+
             Loaded += OnWindowLoaded;
             Closed += OnWindowClosed;
         }
@@ -66,7 +71,9 @@ namespace PatagoniaWings.Acars.Master.Views
         private void OnWindowClosed(object? sender, EventArgs e)
         {
             _reconnectTimer?.Dispose();
-            _coordinator?.Dispose();
+            DisconnectCoordinator();
+            AcarsContext.RequestConnect    = null;
+            AcarsContext.RequestDisconnect = null;
         }
 
         // ── Conexión ──────────────────────────────────────────────────────────
@@ -85,9 +92,13 @@ namespace PatagoniaWings.Acars.Master.Views
             _vm.SimType       = SimulatorType.None;
             _vm.SimStatusText = "Buscando simulador...";
 
-            _coordinator?.Dispose();
+            DisconnectCoordinator();
 
             _coordinator = new SimulatorCoordinator(_simLogFile);
+
+            // Exponer coordinador en el runtime central (fuente única de verdad)
+            AcarsContext.Coordinator = _coordinator;
+
             var firstFrameLogged = false;
 
             _coordinator.Connected += () =>
@@ -127,7 +138,7 @@ namespace PatagoniaWings.Acars.Master.Views
                         Math.Round(data.AltitudeFeet, 0)));
                 }
 
-                OnSimulatorData(data);
+                AcarsContext.FlightService.UpdateSimData(data);
             };
 
             try
@@ -140,6 +151,7 @@ namespace PatagoniaWings.Acars.Master.Views
                 _vm.SimConnected  = false;
                 _vm.SimType       = SimulatorType.None;
                 _vm.SimStatusText = "Sin simulador";
+                AcarsContext.Coordinator = null;
                 WriteSimLog("Conexión fallida: " + ex.Message);
 
                 if (!silent)
@@ -155,9 +167,11 @@ namespace PatagoniaWings.Acars.Master.Views
             }
         }
 
-        private static void OnSimulatorData(PatagoniaWings.Acars.Core.Models.SimData data)
+        private void DisconnectCoordinator()
         {
-            AcarsContext.FlightService.UpdateSimData(data);
+            _coordinator?.Dispose();
+            _coordinator = null;
+            AcarsContext.Coordinator = null;
         }
 
         // ── Click manual en el indicador de sim ──────────────────────────────

@@ -285,8 +285,11 @@ namespace PatagoniaWings.Acars.Master.ViewModels
             _main.ShowPostFlightReport(report);
         }
 
-        public void TryConnectMsfs() { /* Llamado desde MainWindow con handle */ }
-        public void DisconnectSim() { /* Llamado desde MainWindow */ }
+        /// <summary>Solicita conexión al simulador a través del runtime central.</summary>
+        public void TryConnectMsfs() => AcarsContext.RequestConnect?.Invoke();
+
+        /// <summary>Solicita desconexión del simulador a través del runtime central.</summary>
+        public void DisconnectSim() => AcarsContext.RequestDisconnect?.Invoke();
 
         private void RaiseTelemetryDisplayPropertiesChanged()
         {
