@@ -2858,9 +2858,7 @@ function DashboardWorkspace({
     Boolean(profile) &&
     Boolean(selectedAircraftRecord) &&
     Boolean(selectedItineraryRecord) &&
-    Boolean(simbriefSummary) &&
-    dispatchReady &&
-    canValidateDispatch;
+    dispatchReady;
 
   useEffect(() => {
     const currentAirportCode = central.airportCode.trim().toUpperCase();
@@ -3018,11 +3016,7 @@ function DashboardWorkspace({
     itinerary: selectedItineraryRecord
       ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
-    dispatch: dispatchReady
-      ? "Despacho validado con SimBrief"
-      : simbriefSummary
-        ? "OFP cargado pendiente de validacion"
-        : "Pendiente",
+    dispatch: dispatchReady ? "Despacho listo" : "Pendiente",
   };
 
   const handleStepChange = (step: DispatchStepKey) => {
@@ -3671,8 +3665,7 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Aqui queda la comparacion entre lo elegido en la web y el OFP real de SimBrief. El resumen solo
-                          se habilita cuando numero de vuelo, origen, destino y airframe coinciden.
+                          Confirma los datos del vuelo. Una vez confirmado, el resumen queda habilitado para despachar a la base operativa y que ACARS pueda rescatar la preparacion.
                         </p>
                       </div>
 
@@ -3720,221 +3713,29 @@ function DashboardWorkspace({
                       </div>
 
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Bloque 2
-                            </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Datos traidos desde SimBrief</h5>
-                            <p className="mt-2 text-sm leading-7 text-white/68">
-                              Crea tu plan en SimBrief y luego vuelve aqui para cargar el OFP mas reciente de tu usuario.
-                            </p>
-                          </div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                          Confirmar despacho
+                        </p>
+                        <p className="mt-3 text-sm leading-7 text-white/68">
+                          El plan de vuelo sera generado por ACARS al iniciar el vuelo. Confirma los datos de la web para despachar a la base operativa.
+                        </p>
 
-                          <button
-                            type="button"
-                            onClick={handleLoadSimbriefData}
-                            disabled={syncingSimbrief}
-                            className={`rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] transition ${
-                              syncingSimbrief
-                                ? "cursor-wait border-amber-300/40 bg-amber-500/15 text-amber-100"
-                                : simbriefSummary
-                                  ? "border-emerald-300/50 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/25"
-                                  : "border-rose-300/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/22"
-                            }`}
-                          >
-                            {syncingSimbrief
-                              ? "Trayendo OFP..."
-                              : simbriefSummary
-                                ? "SimBrief cargado"
-                                : "Traer datos de SimBrief"}
-                          </button>
-                        </div>
-
-                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1fr_1fr_0.9fr]">
-                          <DispatchValueCard
-                            label="Numero de vuelo"
-                            value={simbriefFlightNumberDisplay}
-                            hint={profile?.simbrief_username?.trim() || "Usuario SimBrief pendiente"}
-                          />
-                          <DispatchLocationCard
-                            label="Origen"
-                            icao={simbriefOriginCode}
-                            city={simbriefOriginCity}
-                            countryCode={simbriefOriginCountryCode}
-                          />
-                          <DispatchLocationCard
-                            label="Destino"
-                            icao={simbriefDestinationCode}
-                            city={simbriefDestinationCity}
-                            countryCode={simbriefDestinationCountryCode}
-                          />
-                          <DispatchValueCard
-                            label="Airframe ICAO"
-                            value={simbriefAirframe}
-                            hint={simbriefSummary?.aircraftRegistration?.trim() || "Matricula no informada"}
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                          <DispatchValueCard
-                            label="Pasajeros"
-                            value={
-                              typeof simbriefSummary?.pax === "number"
-                                ? String(simbriefSummary.pax)
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Payload"
-                            value={
-                              typeof simbriefSummary?.payloadKg === "number"
-                                ? `${simbriefSummary.payloadKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="ZFW"
-                            value={
-                              typeof simbriefSummary?.zfwKg === "number"
-                                ? `${simbriefSummary.zfwKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Crucero"
-                            value={simbriefSummary?.cruiseAltitude?.trim() || "Pendiente"}
-                          />
-                          <DispatchValueCard
-                            label="Comb. bloque"
-                            value={
-                              typeof simbriefSummary?.blockFuelKg === "number"
-                                ? `${simbriefSummary.blockFuelKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                        </div>
-
-                        <div className="mt-4">
-                          <DispatchWideValueStrip
-                            label="Ruta"
-                            value={simbriefSummary?.routeText?.trim() || "Pendiente"}
-                            hint="Datos de ruta cargados desde SimBrief. Revisa la validacion antes de habilitar el resumen."
-                          />
-                        </div>
-
-                        {simbriefInfoMessage ? (
-                          <div className="mt-4 rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
-                            {simbriefInfoMessage}
-                          </div>
-                        ) : null}
-
-                        {simbriefErrorMessage ? (
-                          <div className="mt-4 rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
-                            {simbriefErrorMessage}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div
-                        className={`rounded-[22px] border p-5 ${
-                          dispatchReady
-                            ? "border-emerald-400/24 bg-emerald-500/[0.08]"
-                            : "border-white/8 bg-white/[0.03]"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Bloque 3
-                            </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Validacion cruzada</h5>
-                            <p className="mt-2 text-sm leading-7 text-white/68">
-                              Solo si los cuatro datos coinciden podras validar el despacho y abrir el resumen.
-                            </p>
-                          </div>
-                          <span
-                            className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-                              dispatchReady
-                                ? "border-emerald-300/40 bg-emerald-500/20 text-emerald-100"
-                                : canValidateDispatch
-                                  ? "border-cyan-300/30 bg-cyan-500/12 text-cyan-100"
-                                  : "border-white/10 bg-white/[0.04] text-white/60"
-                            }`}
-                          >
-                            {dispatchReady
-                              ? "Validado"
-                              : canValidateDispatch
-                                ? "Listo para validar"
-                                : "Pendiente"}
+                        <button
+                          type="button"
+                          onClick={() => { setDispatchReady(true); setDispatchStep("summary"); }}
+                          className="mt-5 w-full rounded-[18px] border border-cyan-400/30 bg-cyan-500/[0.12] px-4 py-4 text-left text-white transition hover:bg-cyan-500/[0.18]"
+                        >
+                          <span className="block text-base font-semibold text-white">
+                            Confirmar despacho y continuar a resumen
                           </span>
-                        </div>
+                          <span className="mt-1 block text-sm leading-7 text-white/68">
+                            Los datos confirmados en la web seran enviados a la base operativa para que ACARS los rescate.
+                          </span>
+                        </button>
 
-                        <div className="mt-5 overflow-hidden rounded-[18px] border border-white/8 bg-[#031428]/58">
-                          <div className="grid grid-cols-[0.9fr_1fr_1fr_0.55fr] gap-0 border-b border-white/8 bg-white/[0.04] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
-                            <span>Campo</span>
-                            <span>Web</span>
-                            <span>SimBrief</span>
-                            <span className="text-right">Estado</span>
-                          </div>
-
-                          {dispatchValidationItems.map((item) => (
-                            <div
-                              key={item.key}
-                              className="grid grid-cols-[0.9fr_1fr_1fr_0.55fr] gap-0 border-b border-white/8 px-4 py-4 text-sm text-white/78 last:border-b-0"
-                            >
-                              <span className="font-semibold text-white">{item.label}</span>
-                              <span>{item.webValue}</span>
-                              <span>{item.simbriefValue}</span>
-                              <div className="flex justify-end">
-                                <span
-                                  className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                                    item.matches
-                                      ? "border-emerald-300/40 bg-emerald-500/18 text-emerald-100"
-                                      : "border-rose-300/35 bg-rose-500/14 text-rose-100"
-                                  }`}
-                                >
-                                  {item.matches ? "Coincide" : "Revisar"}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={handleValidateDispatch}
-                            disabled={!canValidateDispatch}
-                            className={`rounded-2xl border px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] transition ${
-                              canValidateDispatch
-                                ? "border-emerald-300/50 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/25"
-                                : "cursor-not-allowed border-white/10 bg-white/[0.04] text-white/42 opacity-70"
-                            }`}
-                          >
-                            {dispatchReady ? "Despacho validado" : "Validar despacho"}
-                          </button>
-
-                          <p className="text-sm leading-7 text-white/64">
-                            {dispatchReady
-                              ? "Los datos del OFP coinciden con la web. Ya puedes continuar al resumen."
-                              : canValidateDispatch
-                                ? "Todo coincide. Presiona validar para habilitar el resumen."
-                                : "Si algun dato no coincide, el resumen seguira bloqueado."}
-                          </p>
-                        </div>
-
-                        <div className="mt-5 flex flex-wrap gap-3">
+                        <div className="mt-4 flex flex-wrap gap-3">
                           <button type="button" onClick={() => handleStepChange("itinerary")} className="button-secondary py-3">
                             Volver a itinerario
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStepChange("summary")}
-                            disabled={!canOpenSummary}
-                            className={`py-3 ${canOpenSummary ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
-                          >
-                            Continuar a resumen
                           </button>
                         </div>
                       </div>
@@ -4012,6 +3813,7 @@ function DashboardWorkspace({
                         </div>
                       </div>
 
+                      {simbriefSummary ? (
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
@@ -4113,6 +3915,7 @@ function DashboardWorkspace({
                           />
                         </div>
                       </div>
+                      ) : null}
 
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">

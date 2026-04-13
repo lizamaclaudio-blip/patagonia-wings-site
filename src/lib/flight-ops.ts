@@ -1334,7 +1334,7 @@ export async function saveFlightOperation(
   if (status === "dispatch_ready") {
     const { data, error } = await supabase
       .from("flight_reservations")
-      .update({ status: "dispatch_ready", updated_at: new Date().toISOString() })
+      .update({ status: "dispatched", updated_at: new Date().toISOString() })
       .eq("id", operation.reservationId)
       .select("*")
       .single();
@@ -1473,14 +1473,14 @@ export async function markDispatchPrepared(
     try {
       await supabase
         .from("flight_reservations")
-        .update({ status: "dispatch_ready", updated_at: now })
+        .update({ status: "dispatched", updated_at: now })
         .eq("id", reservationId);
     } catch (statusErr) {
       console.warn("[markDispatchPrepared] No se pudo actualizar status reserva a dispatch_ready:", statusErr);
     }
   }
 
-  if (effectivePilotCallsign && (reservationStatus === "reserved" || reservationStatus === "dispatch_ready")) {
+  if (effectivePilotCallsign && (reservationStatus === "reserved" || reservationStatus === "dispatch_ready" || reservationStatus === "dispatched")) {
     try {
       const { data, error } = await supabase.rpc("pw_create_dispatch_package", {
         p_callsign: normalizeUpper(effectivePilotCallsign),
