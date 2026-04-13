@@ -4554,7 +4554,7 @@ function DashboardWorkspace({
               {/* Habilitaciones activas */}
               <div className="surface-outline rounded-[24px] p-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Habilitaciones activas</p>
-                {profile.active_qualifications ? (
+                {profile?.active_qualifications ? (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {profile.active_qualifications.split(",").map((q) => q.trim()).filter(Boolean).map((q) => (
                       <span key={q} className="inline-flex items-center gap-1.5 rounded-full border border-[#0ca66b]/30 bg-[#0ca66b]/10 px-3 py-1 text-[12px] font-semibold text-[#49d787]">
@@ -4566,7 +4566,7 @@ function DashboardWorkspace({
                 ) : (
                   <p className="mt-4 text-sm text-white/38">Sin habilitaciones registradas. Completá un checkride para obtener tu primera habilitación.</p>
                 )}
-                {profile.active_certifications && (
+                {profile?.active_certifications && (
                   <div className="mt-5 border-t border-white/8 pt-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Certificaciones</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
