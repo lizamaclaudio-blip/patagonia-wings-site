@@ -884,6 +884,47 @@ export function getDispatchBlockingReasons(
   return reasons;
 }
 
+// Categorías permitidas por service_profile de ruta.
+// Replicado desde la lógica de la RPC create_flight_reservation en Supabase.
+const ROUTE_PROFILE_ALLOWED_CATEGORIES: Record<string, string[]> = {
+  feeder:    ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
+  regional:  ["twin_turboprop", "regional_jet", "narrowbody_jet"],
+  trunk:     ["narrowbody_jet", "regional_jet", "widebody_jet"],
+  longhaul:  ["widebody_jet"],
+  cargo:     ["single_turboprop", "twin_turboprop", "narrowbody_jet", "widebody_jet"],
+};
+
+export function isAircraftCompatibleWithRoute(
+  aircraftTypeCode: string | null | undefined,
+  routeServiceProfile: string | null | undefined
+): boolean {
+  if (!routeServiceProfile || !aircraftTypeCode) return true; // sin datos: no filtrar
+  const allowed = ROUTE_PROFILE_ALLOWED_CATEGORIES[routeServiceProfile.toLowerCase()];
+  if (!allowed) return true; // profile desconocido: no filtrar
+  // Buscamos la categoría del tipo en la lista estática de aircraft_types
+  const cat = AIRCRAFT_TYPE_CATEGORY[aircraftTypeCode.toUpperCase()] ?? null;
+  if (!cat) return true; // tipo desconocido: no filtrar
+  return allowed.includes(cat);
+}
+
+// Mapa aircraft_type_code → category (sincronizado con tabla aircraft_types de Supabase)
+const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
+  C208_MSFS: "single_turboprop", C208_BLACKSQUARE: "single_turboprop",
+  TBM9_MSFS: "single_turboprop", TBM8_BLACKSQUARE: "single_turboprop",
+  B350_MSFS: "twin_turboprop",   B350_BLACKSQUARE: "twin_turboprop",  ATR72_MSFS: "twin_turboprop",
+  BE58_MSFS: "piston_twin",      BE58_BLACKSQUARE: "piston_twin",     BE58_BS_PRO: "piston_twin",
+  E175_FLIGHTSIM: "regional_jet", E190_FLIGHTSIM: "regional_jet",     E195_FLIGHTSIM: "regional_jet",
+  A319_FENIX: "narrowbody_jet",  A319_LATINVFR: "narrowbody_jet",
+  A320_FENIX: "narrowbody_jet",  A320_LATINVFR: "narrowbody_jet",     A20N_FBW: "narrowbody_jet",
+  A321_FENIX: "narrowbody_jet",  A21N_LATINVFR: "narrowbody_jet",
+  B736_PMDG: "narrowbody_jet",   B737_PMDG: "narrowbody_jet",
+  B738_PMDG: "narrowbody_jet",   B739_PMDG: "narrowbody_jet",         B38M_IFLY: "narrowbody_jet",
+  MD82_MADDOG: "narrowbody_jet", MD83_MADDOG: "narrowbody_jet",        MD88_MADDOG: "narrowbody_jet",
+  A339_HEADWIND: "widebody_jet", A359_INIBUILDS: "widebody_jet",
+  B772_PMDG: "widebody_jet",     B77W_PMDG: "widebody_jet",
+  B789_HORIZONS: "widebody_jet", B78X_MSFS: "widebody_jet",
+};
+
 export async function listAvailableAircraft(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
 
@@ -979,9 +1020,14 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
   try {
     const { data, error } = await supabase
       .from("aircraft")
-      .select("id, registration, aircraft_type_code, current_airport_code, status")
+      .select(
+        "id, registration, aircraft_type_code, aircraft_model_code, aircraft_variant_code, addon_provider, variant_name, aircraft_display_name, current_airport_code, status"
+      )
       .eq("current_airport_code", airport)
       .eq("status", "available")
+      .eq("is_active", true)
+      .order("aircraft_model_code")
+      .order("addon_provider")
       .order("registration");
 
     if (error) {
@@ -998,22 +1044,31 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
         aircraft_code: resolveSimbriefType(
           typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
         ),
-        aircraft_name: normalizeAircraftDisplayName(
-          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
-        ),
+        aircraft_name:
+          typeof row.aircraft_display_name === "string" && row.aircraft_display_name
+            ? row.aircraft_display_name
+            : normalizeAircraftDisplayName(
+                typeof row.aircraft_model_code === "string" && row.aircraft_model_code
+                  ? row.aircraft_model_code
+                  : typeof row.aircraft_type_code === "string"
+                    ? row.aircraft_type_code
+                    : ""
+              ),
+        aircraft_type_code:
+          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : "",
         aircraft_variant_code:
           typeof row.aircraft_variant_code === "string"
             ? row.aircraft_variant_code
-            : typeof row.variant_code === "string"
-              ? row.variant_code
+            : typeof row.aircraft_model_code === "string"
+              ? row.aircraft_model_code
               : "",
         addon_provider:
           typeof row.addon_provider === "string" ? row.addon_provider : "",
         variant_name:
-          typeof row.variant_name === "string"
+          typeof row.variant_name === "string" && row.variant_name
             ? row.variant_name
-            : typeof row.variant_label === "string"
-              ? row.variant_label
+            : typeof row.addon_provider === "string" && row.addon_provider
+              ? `${typeof row.aircraft_model_code === "string" ? row.aircraft_model_code : ""} · ${row.addon_provider}`
               : "",
         current_airport_icao:
           typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
@@ -1578,16 +1633,29 @@ export async function cancelFlightOperation(
     }
   }
 
+  const nowIso = new Date().toISOString();
+
+  // Obtener aircraft_id antes de cancelar para liberar el avión
+  const { data: resRow } = await supabase
+    .from("flight_reservations")
+    .select("aircraft_id")
+    .eq("id", reservationId)
+    .single();
+
   const { error } = await supabase
     .from("flight_reservations")
-    .update({
-      status: "cancelled",
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status: "cancelled", updated_at: nowIso })
     .eq("id", reservationId);
 
-  if (error) {
-    throw error;
+  if (error) throw error;
+
+  // Liberar el avión si existe
+  const aircraftId = (resRow as { aircraft_id?: string } | null)?.aircraft_id;
+  if (aircraftId) {
+    await supabase
+      .from("aircraft")
+      .update({ status: "available", updated_at: nowIso })
+      .eq("id", aircraftId);
   }
 }
 
