@@ -3085,15 +3085,16 @@ function DashboardWorkspace({
   }, [selectedItinerary, selectedItineraryRecord]);
 
   const isStepEnabled = (step: DispatchStepKey) => {
+    const isLocked = Boolean(preparedReservationId);
     switch (step) {
       case "flight_type":
-        return true;
+        return !isLocked;
       case "aircraft":
-        return canOpenAircraft;
+        return !isLocked && canOpenAircraft;
       case "itinerary":
-        return canOpenItinerary;
+        return !isLocked && canOpenItinerary;
       case "dispatch_flow":
-        return canOpenDispatch;
+        return !isLocked && canOpenDispatch;
       case "summary":
         return canOpenSummary;
       default:
@@ -3111,7 +3112,11 @@ function DashboardWorkspace({
     itinerary: selectedItineraryRecord
       ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
-    dispatch: dispatchReady ? "Despacho listo" : "Pendiente",
+    dispatch: preparedReservationId
+      ? "Despachado ✓"
+      : dispatchReady
+        ? "Listo para despachar"
+        : "Pendiente",
   };
 
   const handleStepChange = (step: DispatchStepKey) => {
@@ -3888,9 +3893,10 @@ function DashboardWorkspace({
 
                         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                           <DispatchValueCard
-                            label="Tipo de vuelo"
-                            value={stepStatusLabel.flightType}
-                            valueClassName="text-[1.3rem]"
+                            label="Itinerario"
+                            value={selectedItineraryRecord?.itinerary_name || selectedItineraryRecord?.itinerary_code || "Pendiente"}
+                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} → ${selectedItineraryRecord.destination_icao}` : undefined}
+                            valueClassName="text-[1.3rem] leading-tight"
                           />
                           <DispatchValueCard
                             label="Distancia"
@@ -3903,7 +3909,7 @@ function DashboardWorkspace({
                           <DispatchValueCard
                             label="Despacho"
                             value={stepStatusLabel.dispatch}
-                            valueClassName="text-[1.3rem] leading-tight"
+                            valueClassName={`text-[1.3rem] leading-tight ${preparedReservationId ? "text-emerald-300" : dispatchReady ? "text-sky-300" : ""}`}
                           />
                         </div>
                       </div>
@@ -4325,6 +4331,15 @@ function DashboardWorkspace({
                           profile.callsign
                         );
                         setActiveReservation(null);
+                        setPreparedReservationId(null);
+                        setSelectedFlightType(null);
+                        setSelectedAircraft(null);
+                        setSelectedItinerary(null);
+                        setDispatchReady(false);
+                        setSimbriefSummary(null);
+                        setSummaryInfoMessage("");
+                        setSummaryErrorMessage("");
+                        setDispatchStep("flight_type");
                       } catch {
                         alert("No se pudo cancelar la reserva. Intenta de nuevo.");
                       } finally {

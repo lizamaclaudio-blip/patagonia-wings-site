@@ -573,14 +573,22 @@ async function updateReservationStatusLegacy(
   return data as DbFlightReservationRow;
 }
 
+function extractErrorMessage(e: unknown): string {
+  if (!e) return "";
+  if (e instanceof Error) return e.message;
+  if (typeof e === "object" && e !== null && "message" in e) {
+    const m = (e as Record<string, unknown>).message;
+    if (typeof m === "string") return m;
+  }
+  try { return JSON.stringify(e); } catch { return String(e); }
+}
+
 function buildDispatchPersistenceError(
   updateError: unknown,
   packageError: unknown
 ) {
-  const updateMessage =
-    updateError instanceof Error ? updateError.message : String(updateError ?? "");
-  const packageMessage =
-    packageError instanceof Error ? packageError.message : String(packageError ?? "");
+  const updateMessage = extractErrorMessage(updateError);
+  const packageMessage = extractErrorMessage(packageError);
 
   if (updateMessage && packageMessage) {
     return new Error(
