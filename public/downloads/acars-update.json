@@ -1,7 +1,7 @@
-﻿{
-    "version":  "2.0.10",
-    "downloadUrl":  "https://www.patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-    "notes":  "Nueva version disponible de Patagonia Wings ACARS.",
-    "mandatory":  false,
-    "publishedAtUtc":  "2026-04-12T20:58:15.8971378Z"
+{
+    "version": "3.0.0",
+    "downloadUrl": "https://github.com/lizamaclaudio-blip/patagonia-wings-acars/releases/latest/download/PatagoniaWingsACARSSetup-3.0.0.exe",
+    "notes": "v3.0: Rediseño premium, Pre-Vuelo real con SimBrief, Vuelo en Vivo adaptativo, Perfil desde Supabase.",
+    "mandatory": false,
+    "publishedAtUtc": "2026-04-13T00:00:00.0000000Z"
 }
