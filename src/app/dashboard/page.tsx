@@ -4501,7 +4501,7 @@ function DashboardWorkspace({
                 <div className="mt-4 shrink-0 sm:mt-0">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("dispatch")}
+                    onClick={() => onChangeTab("dispatch")}
                     className="rounded-[12px] bg-[#67d7ff]/10 border border-[#67d7ff]/20 px-5 py-2.5 text-sm font-semibold text-[#67d7ff] transition hover:bg-[#67d7ff]/20"
                   >
                     ✈ Reservar vuelo de entrenamiento
