@@ -180,7 +180,7 @@ export default function HomePage() {
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <a
-                  href="/downloads/PatagoniaWingsACARSSetup.exe"
+                  href={ACARS_DOWNLOAD_URL}
                   className="inline-flex items-center gap-3 rounded-2xl px-8 py-4 text-base font-semibold text-white transition duration-200 hover:-translate-y-0.5"
                   style={{
                     background: "linear-gradient(135deg, #1a6fb5 0%, #0ca789 100%)",
