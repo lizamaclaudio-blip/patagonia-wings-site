@@ -3169,11 +3169,8 @@ function DashboardWorkspace({
       return;
     }
 
-    if (!simbriefSummary || !dispatchReady || !canValidateDispatch) {
-      setSummaryInfoMessage("");
-      setSummaryErrorMessage("Primero valida el despacho con SimBrief antes de guardarlo.");
-      return;
-    }
+    // Nota: SimBrief ahora es opcional - el ACARS generará el plan de vuelo
+    // Si hay datos de SimBrief disponibles, se usan; si no, se usan defaults
 
     setFinalizingDispatch(true);
     setSummaryInfoMessage("");
@@ -3181,13 +3178,13 @@ function DashboardWorkspace({
 
     try {
       const normalizedFlightNumber =
-        simbriefSummary.flightNumber?.trim().replace(/\s+/g, "").toUpperCase() ||
+        simbriefSummary?.flightNumber?.trim().replace(/\s+/g, "").toUpperCase() ||
         selectedItineraryRecord.flight_designator?.trim().replace(/\s+/g, "").toUpperCase() ||
         `PWG${webFlightNumberValidationValue || "000"}`;
       const remarks = [
         "DISPATCHED_FROM_DASHBOARD",
-        simbriefSummary.staticId ? `STATIC ${simbriefSummary.staticId}` : null,
-        simbriefSummary.aircraftRegistration ? `REG ${simbriefSummary.aircraftRegistration}` : null,
+        simbriefSummary?.staticId ? `STATIC ${simbriefSummary.staticId}` : null,
+        simbriefSummary?.aircraftRegistration ? `REG ${simbriefSummary.aircraftRegistration}` : null,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -3207,11 +3204,11 @@ function DashboardWorkspace({
           selectedAircraftRecord.aircraft_code,
         aircraftName: selectedAircraftRecord.aircraft_name,
         aircraftTailNumber:
-          selectedAircraftRecord.tail_number || simbriefSummary.aircraftRegistration?.trim() || "",
+          selectedAircraftRecord.tail_number || simbriefSummary?.aircraftRegistration?.trim() || "",
         aircraftVariantCode: selectedAircraftRecord.aircraft_variant_code ?? "",
         aircraftAddonProvider: selectedAircraftRecord.addon_provider ?? "",
         aircraftVariantLabel: selectedAircraftRecord.variant_name ?? selectedAircraftRecord.aircraft_variant_code ?? "",
-        routeText: simbriefSummary.routeText?.trim() || selectedItineraryRecord.itinerary_code,
+        routeText: simbriefSummary?.routeText?.trim() || selectedItineraryRecord.itinerary_code,
         scheduledDeparture: "",
         remarks,
         status: "dispatch_ready",
@@ -3220,20 +3217,23 @@ function DashboardWorkspace({
       };
 
       const saved = await saveFlightOperation(profile, finalOperation, "dispatch_ready");
-      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign, {
-        routeText: simbriefSummary.routeText ?? undefined,
-        cruiseLevel: simbriefSummary.cruiseAltitude ?? undefined,
-        alternateIcao: simbriefSummary.alternate ?? undefined,
-        passengerCount: simbriefSummary.pax ?? undefined,
-        cargoKg: simbriefSummary.cargoKg ?? undefined,
-        tripFuelKg: simbriefSummary.tripFuelKg ?? undefined,
-        reserveFuelKg: simbriefSummary.reserveFuelKg ?? undefined,
-        taxiFuelKg: simbriefSummary.taxiFuelKg ?? undefined,
-        blockFuelKg: simbriefSummary.blockFuelKg ?? undefined,
-        payloadKg: simbriefSummary.payloadKg ?? undefined,
-        zfwKg: simbriefSummary.zfwKg ?? undefined,
-        staticId: simbriefSummary.staticId ?? undefined,
-      });
+      // SimBrief es opcional - el ACARS generará el plan de vuelo
+      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign, 
+        simbriefSummary ? {
+          routeText: simbriefSummary.routeText ?? undefined,
+          cruiseLevel: simbriefSummary.cruiseAltitude ?? undefined,
+          alternateIcao: simbriefSummary.alternate ?? undefined,
+          passengerCount: simbriefSummary.pax ?? undefined,
+          cargoKg: simbriefSummary.cargoKg ?? undefined,
+          tripFuelKg: simbriefSummary.tripFuelKg ?? undefined,
+          reserveFuelKg: simbriefSummary.reserveFuelKg ?? undefined,
+          taxiFuelKg: simbriefSummary.taxiFuelKg ?? undefined,
+          blockFuelKg: simbriefSummary.blockFuelKg ?? undefined,
+          payloadKg: simbriefSummary.payloadKg ?? undefined,
+          zfwKg: simbriefSummary.zfwKg ?? undefined,
+          staticId: simbriefSummary.staticId ?? undefined,
+        } : undefined
+      );
       setPreparedReservationId(saved.id);
       setSummaryErrorMessage("");
       setSummaryInfoMessage(
