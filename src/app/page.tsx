@@ -2,7 +2,7 @@ import Link from "next/link";
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
-import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB, ACARS_RELEASE_NOTES } from "@/lib/acars-version";
+import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB, ACARS_RELEASE_NOTES, ACARS_DOWNLOAD_URL } from "@/lib/acars-version";
 
 const services = [
   {
