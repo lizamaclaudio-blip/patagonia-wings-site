@@ -1334,8 +1334,9 @@ export async function saveFlightOperation(
   if (status === "dispatch_ready") {
     const { data, error } = await supabase
       .from("flight_reservations")
-      .select("*")
+      .update({ status: "dispatch_ready", updated_at: new Date().toISOString() })
       .eq("id", operation.reservationId)
+      .select("*")
       .single();
 
     if (error) {
@@ -1466,7 +1467,20 @@ export async function markDispatchPrepared(
     if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
   }
 
-  if (effectivePilotCallsign && reservationStatus === "reserved") {
+  // Actualizar el status de la reserva a dispatch_ready para que el ACARS pueda leerla.
+  // El ACARS filtra por: dispatch_ready | dispatched | in_progress | in_flight
+  if (reservationStatus === "reserved" || reservationStatus === "draft") {
+    try {
+      await supabase
+        .from("flight_reservations")
+        .update({ status: "dispatch_ready", updated_at: now })
+        .eq("id", reservationId);
+    } catch (statusErr) {
+      console.warn("[markDispatchPrepared] No se pudo actualizar status reserva a dispatch_ready:", statusErr);
+    }
+  }
+
+  if (effectivePilotCallsign && (reservationStatus === "reserved" || reservationStatus === "dispatch_ready")) {
     try {
       const { data, error } = await supabase.rpc("pw_create_dispatch_package", {
         p_callsign: normalizeUpper(effectivePilotCallsign),

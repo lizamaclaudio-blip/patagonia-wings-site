@@ -4486,27 +4486,201 @@ function DashboardWorkspace({
         ) : null}
 
         {activeTab === "training" ? (
-          <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="surface-outline rounded-[24px] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Entrenamiento
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white">Centro de práctica y preparación</h2>
-              <p className="mt-3 text-sm leading-7 text-white/72">
-                Aquí quedará el acceso a entrenamiento, checkrides y futuras habilitaciones,
-                siempre dentro del mismo panel interno para que el dashboard se sienta como una cabina de control.
-              </p>
-            </div>
+          <div className="flex flex-col gap-5">
 
-            <div className="surface-outline rounded-[24px] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Vista inicial
-              </p>
-              <div className="mt-4 rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-white/76">
-                Más adelante esta pestaña podrá mostrar cursos, pendientes y misiones de entrenamiento
-                sin salir de esta misma ventana central.
+            {/* ── Header ── */}
+            <div className="surface-outline rounded-[24px] p-6">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Entrenamiento</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">Centro de práctica y preparación</h2>
+                  <p className="mt-2 text-sm leading-6 text-white/60">
+                    Progresá como piloto completando entrenamientos, checkrides y habilitaciones. Todo registrado en tu historial operativo.
+                  </p>
+                </div>
+                <div className="mt-4 shrink-0 sm:mt-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("dispatch")}
+                    className="rounded-[12px] bg-[#67d7ff]/10 border border-[#67d7ff]/20 px-5 py-2.5 text-sm font-semibold text-[#67d7ff] transition hover:bg-[#67d7ff]/20"
+                  >
+                    ✈ Reservar vuelo de entrenamiento
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* ── Fila 1: Métricas de entrenamiento ── */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                {
+                  label: "Rango actual",
+                  value: metrics.careerRank,
+                  unit: "",
+                  accent: "#67d7ff",
+                },
+                {
+                  label: "Vuelos entrenamiento",
+                  value: formatInteger(
+                    central.recentFlights.filter((f) => f.flight_mode_code === "TRAINING" || f.flight_mode_code === "training").length
+                  ),
+                  unit: "registrados",
+                  accent: "#ffffff",
+                },
+                {
+                  label: "Pulso 10",
+                  value: formatDecimal(metrics.pulso10),
+                  unit: "procedimiento",
+                  accent: "#67d7ff",
+                },
+                {
+                  label: "Ruta 10",
+                  value: formatDecimal(metrics.ruta10),
+                  unit: "navegación",
+                  accent: "#67d7ff",
+                },
+              ].map((m) => (
+                <div key={m.label} className="surface-outline rounded-[20px] p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
+                  <p className="mt-2 text-3xl font-semibold" style={{ color: m.accent }}>{m.value}</p>
+                  {m.unit && <p className="mt-0.5 text-[11px] text-white/38">{m.unit}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Fila 2: Habilitaciones + Categorías ── */}
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+
+              {/* Habilitaciones activas */}
+              <div className="surface-outline rounded-[24px] p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Habilitaciones activas</p>
+                {profile.active_qualifications ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {profile.active_qualifications.split(",").map((q) => q.trim()).filter(Boolean).map((q) => (
+                      <span key={q} className="inline-flex items-center gap-1.5 rounded-full border border-[#0ca66b]/30 bg-[#0ca66b]/10 px-3 py-1 text-[12px] font-semibold text-[#49d787]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#49d787]" />
+                        {q}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-white/38">Sin habilitaciones registradas. Completá un checkride para obtener tu primera habilitación.</p>
+                )}
+                {profile.active_certifications && (
+                  <div className="mt-5 border-t border-white/8 pt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Certificaciones</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {profile.active_certifications.split(",").map((c) => c.trim()).filter(Boolean).map((c) => (
+                        <span key={c} className="inline-block rounded-md border border-[#67d7ff]/20 bg-[#67d7ff]/5 px-2 py-0.5 text-[11px] text-[#67d7ff]/80">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Categorías de entrenamiento disponibles */}
+              <div className="surface-outline rounded-[24px] p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Tipos de entrenamiento</p>
+                <div className="mt-4 flex flex-col gap-3">
+                  {[
+                    { icon: "🛩", title: "Vuelo de línea de entrenamiento", desc: "Rutas de la red en modo entrenamiento supervisado. Score sin penalización.", badge: "Disponible", badgeColor: "#49d787" },
+                    { icon: "✅", title: "Checkride de tipo", desc: "Habilitación para operar una nueva familia de aeronaves. Requiere completar el perfil.", badge: "Con reserva", badgeColor: "#67d7ff" },
+                    { icon: "🗺", title: "Familiarización de ruta", desc: "Vuelos de baja presión para conocer rutas nuevas, terminales y procedimientos regionales.", badge: "Disponible", badgeColor: "#49d787" },
+                    { icon: "⬆", title: "Solicitar ascenso de rango", desc: "Cuando cumplas los gates de horas y score, podés iniciar el proceso de ascenso.", badge: metrics.pulso10 >= 7 && metrics.ruta10 >= 7 ? "Elegible" : "Pendiente", badgeColor: metrics.pulso10 >= 7 && metrics.ruta10 >= 7 ? "#49d787" : "#ffffff" },
+                  ].map((item) => (
+                    <div key={item.title} className="flex items-start gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
+                      <span className="mt-0.5 text-xl">{item.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-white truncate">{item.title}</p>
+                          <span className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold"
+                            style={{ color: item.badgeColor, borderColor: `${item.badgeColor}40`, background: `${item.badgeColor}15` }}>
+                            {item.badge}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[12px] leading-5 text-white/50">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Fila 3: Historial de vuelos de entrenamiento ── */}
+            <div className="surface-outline rounded-[24px] p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Historial de entrenamiento</p>
+              {(() => {
+                const trainingFlights = central.recentFlights.filter(
+                  (f) => f.flight_mode_code === "TRAINING" || f.flight_mode_code === "training"
+                );
+                if (trainingFlights.length === 0) {
+                  return (
+                    <div className="mt-4 rounded-[16px] border border-white/8 bg-white/[0.02] p-8 text-center">
+                      <p className="text-[28px]">✈</p>
+                      <p className="mt-2 text-sm font-semibold text-white/70">Sin vuelos de entrenamiento registrados</p>
+                      <p className="mt-1 text-xs text-white/38">Reservá un vuelo de entrenamiento desde la pestaña Despacho para empezar a construir tu historial.</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/8">
+                          <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</th>
+                          <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</th>
+                          <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Procedimiento</th>
+                          <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Misión</th>
+                          <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Fecha</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trainingFlights.slice(0, 8).map((f, i) => (
+                          <tr key={i} className="border-b border-white/5 last:border-0">
+                            <td className="py-3 font-medium text-white">{formatRouteTag(f)}</td>
+                            <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
+                            <td className="py-3 text-right font-semibold text-[#67d7ff]">
+                              {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
+                            </td>
+                            <td className="py-3 text-right font-semibold text-[#49d787]">
+                              {f.mission_score != null ? formatDecimal(f.mission_score) : "—"}
+                            </td>
+                            <td className="py-3 text-right text-white/38">
+                              {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ── Fila 4: Próximos pasos ── */}
+            <div className="surface-outline rounded-[24px] p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Ruta de progresión — {metrics.careerRank}</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Pulso 10 ≥ 7.0", done: metrics.pulso10 >= 7, value: `${formatDecimal(metrics.pulso10)} / 7.0` },
+                  { label: "Ruta 10 ≥ 7.0",  done: metrics.ruta10  >= 7, value: `${formatDecimal(metrics.ruta10)} / 7.0` },
+                  { label: "Horas acumuladas",  done: metrics.totalHours >= 10, value: `${formatDecimal(metrics.totalHours)} hs` },
+                ].map((gate) => (
+                  <div key={gate.label} className={`flex items-center gap-3 rounded-[14px] border p-4 ${gate.done ? "border-[#0ca66b]/30 bg-[#0ca66b]/8" : "border-white/8 bg-white/[0.02]"}`}>
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${gate.done ? "bg-[#49d787] text-black" : "bg-white/10 text-white/40"}`}>
+                      {gate.done ? "✓" : "·"}
+                    </span>
+                    <div>
+                      <p className={`text-sm font-semibold ${gate.done ? "text-[#49d787]" : "text-white/60"}`}>{gate.label}</p>
+                      <p className="text-[11px] text-white/38">{gate.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         ) : null}
       </div>
