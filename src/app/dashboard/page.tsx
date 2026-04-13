@@ -2139,7 +2139,7 @@ function DispatchAirportBannerCard({
   );
 }
 
-function DispatchAircraftTable({
+function DispatchAircraftCascadeSelector({
   rows,
   selectedAircraftId,
   onSelect,
@@ -2148,83 +2148,178 @@ function DispatchAircraftTable({
   selectedAircraftId: string | null;
   onSelect: (aircraftId: string) => void;
 }) {
-  return (
-    <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm text-white/78">
-          <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
-            <tr>
-              <th className="px-4 py-3 font-semibold">N° registro</th>
-              <th className="px-4 py-3 font-semibold">Tipo</th>
-              <th className="px-4 py-3 font-semibold">Aeronave</th>
-              <th className="px-4 py-3 font-semibold">Estado</th>
-              <th className="px-4 py-3 font-semibold text-right">Accion</th>
-            </tr>
-          </thead>
+  const available = useMemo(() => rows.filter((r) => r.selectable), [rows]);
 
-          <tbody>
-            {rows.map((row) => {
-              const isSelected = selectedAircraftId === row.aircraft_id;
-              const selectable = row.selectable ?? row.status?.toLowerCase() === "available";
-              const displayStatus = selectable ? "Disponible" : "No disponible";
-              const displayCategory = row.display_category?.trim() || "Operacion general";
-              const displayAircraftName = row.aircraft_name?.trim() || row.aircraft_code || "---";
+  const [selTypeCode, setSelTypeCode] = useState<string>("");
+  const [selAddon, setSelAddon] = useState<string>("");
 
-              return (
-                <tr
-                  key={row.aircraft_id}
-                  className={`border-t border-white/8 align-top transition ${
-                    isSelected ? "bg-emerald-500/[0.08]" : ""
-                  }`}
-                >
-                  <td className="px-4 py-4 font-semibold text-white">{row.tail_number || "---"}</td>
-                  <td className="px-4 py-4 text-white/84">{displayCategory}</td>
-                  <td className="px-4 py-4 text-white/84">{displayAircraftName}</td>
-                  <td className="px-4 py-4">
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                        selectable
-                          ? "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200"
-                          : "border-white/10 bg-white/[0.04] text-white/66"
-                      }`}
-                    >
-                      {displayStatus}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (selectable) {
-                          onSelect(row.aircraft_id);
-                        }
-                      }}
-                      disabled={!selectable}
-                      className={`inline-flex rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
-                        isSelected
-                          ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
-                          : selectable
-                            ? "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
-                            : "cursor-not-allowed border-white/10 bg-white/[0.02] text-white/42"
-                      }`}
-                    >
-                      {isSelected ? "Seleccionada" : selectable ? "Seleccionar" : "No disponible"}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+  // Sync cascade state when external selectedAircraftId changes
+  useEffect(() => {
+    if (!selectedAircraftId) return;
+    const found = available.find((r) => r.aircraft_id === selectedAircraftId);
+    if (found) {
+      setSelTypeCode(found.aircraft_code);
+      setSelAddon(found.addon_provider?.trim() || "__none__");
+    }
+  }, [selectedAircraftId, available]);
 
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-white/54">
-                  No hay aeronaves disponibles en este aeropuerto para esta etapa.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+  // Step 1: unique aircraft types (code → name), sorted by name
+  const uniqueTypes = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of available) {
+      if (r.aircraft_code && !seen.has(r.aircraft_code)) {
+        seen.set(r.aircraft_code, r.aircraft_name || r.aircraft_code);
+      }
+    }
+    return Array.from(seen.entries())
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  }, [available]);
+
+  // Step 2: unique addons for selected type, sorted by label
+  const uniqueAddons = useMemo(() => {
+    if (!selTypeCode) return [];
+    const seen = new Map<string, string>();
+    for (const r of available.filter((r) => r.aircraft_code === selTypeCode)) {
+      const key = r.addon_provider?.trim() || "__none__";
+      const label = r.addon_provider?.trim() || r.variant_name?.trim() || "Estándar";
+      if (!seen.has(key)) seen.set(key, label);
+    }
+    return Array.from(seen.entries())
+      .map(([key, label]) => ({ key, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  }, [available, selTypeCode]);
+
+  // Auto-select addon when only one option available
+  useEffect(() => {
+    if (selTypeCode && uniqueAddons.length === 1 && !selAddon) {
+      setSelAddon(uniqueAddons[0].key);
+    }
+  }, [selTypeCode, uniqueAddons, selAddon]);
+
+  // Step 3: available registrations for selected type + addon
+  const registrations = useMemo(() => {
+    if (!selTypeCode || !selAddon) return [];
+    return available.filter((r) => {
+      const addonKey = r.addon_provider?.trim() || "__none__";
+      return r.aircraft_code === selTypeCode && addonKey === selAddon;
+    });
+  }, [available, selTypeCode, selAddon]);
+
+  // Auto-select registration when only one option available
+  useEffect(() => {
+    if (registrations.length === 1 && selectedAircraftId !== registrations[0].aircraft_id) {
+      onSelect(registrations[0].aircraft_id);
+    }
+  }, [registrations, selectedAircraftId, onSelect]);
+
+  const selectedReg = useMemo(
+    () => available.find((r) => r.aircraft_id === selectedAircraftId) ?? null,
+    [available, selectedAircraftId]
+  );
+
+  const handleTypeChange = (code: string) => {
+    setSelTypeCode(code);
+    setSelAddon("");
+  };
+
+  if (available.length === 0) {
+    return (
+      <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-5 py-8 text-center text-sm text-white/54">
+        No hay aeronaves disponibles en este aeropuerto para esta etapa.
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* 1 · Tipo de aeronave */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">
+            1 · Tipo de aeronave
+          </label>
+          <select
+            value={selTypeCode}
+            onChange={(e) => handleTypeChange(e.target.value)}
+            className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
+          >
+            <option value="">— Elige tipo —</option>
+            {uniqueTypes.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 2 · Variante / Addon */}
+        <div className="flex flex-col gap-2">
+          <label
+            className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
+              selTypeCode ? "text-white/54" : "text-white/24"
+            }`}
+          >
+            2 · Variante / Addon
+          </label>
+          <select
+            value={selAddon}
+            onChange={(e) => setSelAddon(e.target.value)}
+            disabled={!selTypeCode}
+            className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
+          >
+            <option value="">— Elige variante —</option>
+            {uniqueAddons.map((a) => (
+              <option key={a.key} value={a.key}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 3 · N° de registro */}
+        <div className="flex flex-col gap-2">
+          <label
+            className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
+              selAddon ? "text-white/54" : "text-white/24"
+            }`}
+          >
+            3 · N° de registro
+          </label>
+          <select
+            value={selectedAircraftId ?? ""}
+            onChange={(e) => {
+              if (e.target.value) onSelect(e.target.value);
+            }}
+            disabled={!selAddon}
+            className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
+          >
+            <option value="">— Elige matrícula —</option>
+            {registrations.map((r) => (
+              <option key={r.aircraft_id} value={r.aircraft_id}>
+                {r.tail_number}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Resumen de aeronave seleccionada */}
+      {selectedReg ? (
+        <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+          <span className="text-lg text-emerald-300">✓</span>
+          <div>
+            <p className="text-sm font-semibold text-emerald-100">
+              {selectedReg.tail_number} · {selectedReg.aircraft_name}
+            </p>
+            {(selectedReg.addon_provider || selectedReg.variant_name) && (
+              <p className="mt-0.5 text-xs text-emerald-200/70">
+                {selectedReg.addon_provider || selectedReg.variant_name}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -3435,7 +3530,7 @@ function DashboardWorkspace({
                         </p>
 
                         <div className="mt-5">
-                          <DispatchAircraftTable
+                          <DispatchAircraftCascadeSelector
                             rows={availableAircraft}
                             selectedAircraftId={selectedAircraft}
                             onSelect={resetAfterAircraft}
