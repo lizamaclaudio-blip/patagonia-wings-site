@@ -2,7 +2,7 @@ import Link from "next/link";
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
-import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB } from "@/lib/acars-version";
+import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB, ACARS_RELEASE_NOTES } from "@/lib/acars-version";
 
 const services = [
   {
@@ -205,6 +205,20 @@ export default function HomePage() {
                   <span className="mx-2 text-white/30">·</span>
                   {ACARS_BACKEND}
                 </span>
+              </div>
+
+              <div className="mt-5 rounded-[18px] border border-emerald-400/15 bg-emerald-400/5 px-5 py-4">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300/70">
+                  Novedades v{ACARS_VERSION}
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {ACARS_RELEASE_NOTES.map((note) => (
+                    <li key={note} className="flex items-start gap-2 text-sm text-slate-300/85">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                      {note}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
