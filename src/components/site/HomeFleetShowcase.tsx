@@ -137,6 +137,25 @@ async function loadFleetEntries() {
   return entries.length > 0 ? entries : FALLBACK_FLEET;
 }
 
+function devBadgeClass(dev: string): string {
+  const d = dev.toLowerCase();
+  if (d.includes("pmdg"))        return "bg-blue-600/25 text-blue-300 ring-1 ring-blue-500/30";
+  if (d.includes("fenix"))       return "bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/30";
+  if (d.includes("flybywire") || d.includes("fbw"))
+                                  return "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/30";
+  if (d.includes("black square")) return "bg-slate-500/25 text-slate-200 ring-1 ring-slate-400/30";
+  if (d.includes("asobo"))        return "bg-emerald-600/20 text-emerald-300 ring-1 ring-emerald-500/30";
+  if (d.includes("inibuilds"))    return "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30";
+  if (d.includes("headwind"))     return "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30";
+  if (d.includes("flightsim"))    return "bg-teal-500/20 text-teal-300 ring-1 ring-teal-500/30";
+  if (d.includes("ifly"))         return "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30";
+  if (d.includes("leonardo") || d.includes("maddog"))
+                                  return "bg-red-500/20 text-red-300 ring-1 ring-red-500/30";
+  if (d.includes("latinvfr"))     return "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/30";
+  if (d.includes("microsoft"))    return "bg-blue-400/15 text-blue-200 ring-1 ring-blue-400/25";
+  return "bg-white/10 text-white/70 ring-1 ring-white/15";
+}
+
 export default function HomeFleetShowcase() {
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>(FALLBACK_FLEET);
 
@@ -212,18 +231,25 @@ export default function HomeFleetShowcase() {
       </div>
 
       <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
-        <div className="grid max-h-[340px] gap-x-6 gap-y-3 overflow-y-auto pr-1 sm:grid-cols-2">
+        <div className="grid max-h-[380px] gap-x-6 gap-y-2 overflow-y-auto pr-1 sm:grid-cols-2">
           {fleetEntries.map((entry) => (
             <div
               key={entry.aircraftName}
-              className="border-b border-white/8 pb-3 last:border-b-0"
+              className="border-b border-white/8 pb-2.5 pt-0.5 last:border-b-0"
             >
-              <p className="text-[15px] font-semibold leading-6 text-white/94">
+              <p className="text-[14px] font-semibold leading-5 text-white/94">
                 {entry.aircraftName}
               </p>
-              <p className="mt-1 text-sm leading-5 text-slate-300/74">
-                {entry.developers.join(" · ")}
-              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {entry.developers.map((dev) => (
+                  <span
+                    key={dev}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${devBadgeClass(dev)}`}
+                  >
+                    {dev}
+                  </span>
+                ))}
+              </div>
             </div>
           ))}
         </div>
