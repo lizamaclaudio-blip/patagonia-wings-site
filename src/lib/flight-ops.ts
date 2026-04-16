@@ -889,8 +889,9 @@ export function getDispatchBlockingReasons(
 const ROUTE_PROFILE_ALLOWED_CATEGORIES: Record<string, string[]> = {
   feeder:    ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
   regional:  ["twin_turboprop", "regional_jet", "narrowbody_jet"],
-  trunk:     ["narrowbody_jet", "regional_jet", "widebody_jet"],
-  longhaul:  ["widebody_jet"],
+  trunk:     ["narrowbody_jet", "regional_jet"],  // NOT widebody_jet - RPC rejects it
+  longhaul:  ["widebody_jet", "narrowbody_jet"],   //洲际航线接受宽体和窄体
+  heavy:     ["widebody_jet", "narrowbody_jet"],  // SCEL-EGLL, SCEL-KJFK, etc.
   cargo:     ["single_turboprop", "twin_turboprop", "narrowbody_jet", "widebody_jet"],
 };
 
@@ -1442,6 +1443,17 @@ export type DispatchSimBriefData = {
   expectedBlockP50Minutes?: number | null;
   expectedBlockP80Minutes?: number | null;
   staticId?: string | null;
+  flightNumber?: string | null;
+  originIcao?: string | null;
+  destinationIcao?: string | null;
+  airframe?: string | null;
+  aircraftRegistration?: string | null;
+  distanceNm?: number | null;
+  eteMinutes?: number | null;
+  generatedAtIso?: string | null;
+  matchedByStaticId?: boolean | null;
+  rawUnits?: string | null;
+  pdfUrl?: string | null;
 };
 
 export async function markDispatchPrepared(
@@ -1490,6 +1502,8 @@ export async function markDispatchPrepared(
   //   - planned_fuel_kg  (no "fuel_planned_kg")
   //   - planned_payload_kg (no "payload_kg")
   //   - simbrief_normalized (jsonb) para el resto de datos SimBrief
+  const dispatchSource = simBriefData ? "navigraph_web" : "manual";
+
   const packagePayload: Record<string, unknown> = {
     reservation_id: reservationId,
     pilot_callsign: effectivePilotCallsign || null,
@@ -1511,6 +1525,11 @@ export async function markDispatchPrepared(
     // ACARS puede leer como sub-objeto para pax, cargo, combustible detallado, etc.
     const normalized: Record<string, unknown> = {};
     if (simBriefData.alternateIcao)          normalized.alternate_icao           = simBriefData.alternateIcao.trim().toUpperCase();
+    if (simBriefData.flightNumber)           normalized.flight_number            = simBriefData.flightNumber.trim().toUpperCase();
+    if (simBriefData.originIcao)             normalized.origin_icao              = simBriefData.originIcao.trim().toUpperCase();
+    if (simBriefData.destinationIcao)        normalized.destination_icao         = simBriefData.destinationIcao.trim().toUpperCase();
+    if (simBriefData.airframe)               normalized.airframe                 = simBriefData.airframe.trim().toUpperCase();
+    if (simBriefData.aircraftRegistration)   normalized.aircraft_registration    = simBriefData.aircraftRegistration.trim().toUpperCase();
     if (simBriefData.passengerCount != null) normalized.passenger_count          = simBriefData.passengerCount;
     if (simBriefData.cargoKg != null)        normalized.cargo_kg                 = simBriefData.cargoKg;
     if (simBriefData.blockFuelKg != null)    normalized.block_fuel_kg            = simBriefData.blockFuelKg;
@@ -1527,6 +1546,13 @@ export async function markDispatchPrepared(
                                              normalized.expected_block_p80_minutes = simBriefData.expectedBlockP80Minutes;
     if (simBriefData.staticId)               normalized.dispatch_token           = simBriefData.staticId;
     if (simBriefData.cruiseLevel)            normalized.cruise_level             = simBriefData.cruiseLevel.trim();
+    if (simBriefData.distanceNm != null)     normalized.distance_nm              = simBriefData.distanceNm;
+    if (simBriefData.eteMinutes != null)     normalized.ete_minutes              = simBriefData.eteMinutes;
+    if (simBriefData.generatedAtIso)         normalized.generated_at_iso         = simBriefData.generatedAtIso;
+    if (simBriefData.matchedByStaticId != null)
+                                             normalized.matched_by_static_id     = simBriefData.matchedByStaticId;
+    if (simBriefData.rawUnits)               normalized.raw_units                = simBriefData.rawUnits;
+    if (simBriefData.pdfUrl)                 normalized.pdf_url                  = simBriefData.pdfUrl;
     if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
   }
 
@@ -1548,7 +1574,7 @@ export async function markDispatchPrepared(
       const { data, error } = await supabase.rpc("pw_create_dispatch_package", {
         p_callsign: normalizeUpper(effectivePilotCallsign),
         p_reservation_id: reservationId,
-        p_dispatch_source: "manual",
+        p_dispatch_source: dispatchSource,
         p_route_text: simBriefData?.routeText ?? null,
         p_cruise_fl: simBriefData?.cruiseLevel ?? null,
         p_planned_fuel_kg: simBriefData?.blockFuelKg ?? null,
