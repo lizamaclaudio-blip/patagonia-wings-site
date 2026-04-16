@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, {
   useProtectedSession,
@@ -26,6 +26,8 @@ import {
   type FlightMode,
 } from "@/lib/flight-ops";
 import {
+  buildSimbriefEditUrl,
+  buildSimbriefRedirectUrl,
   resolveSimbriefType,
   type SimbriefOfpSummary,
 } from "@/lib/simbrief";
@@ -117,6 +119,18 @@ type AirportHeroResponse = {
   providerName?: string | null;
   providerUrl?: string | null;
   photoPageUrl?: string | null;
+};
+
+type NavigraphStatusResponse = {
+  configured: boolean;
+  connected: boolean;
+  hasRefreshToken: boolean;
+  expiresAt: string | null;
+  scopes: string[];
+  subscriptions: string[];
+  clientId: string | null;
+  subject: string | null;
+  error: string | null;
 };
 
 type DispatchMetarSummary = {
@@ -462,6 +476,23 @@ function formatUtcDateTime(value: string | null | undefined) {
     timeZone: "UTC",
   }).format(date).replace(",", "") + " UTC";
 }
+
+function formatNavigraphExpiry(value: string | null | undefined) {
+  if (!value) {
+    return "Sin sesión activa";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-CL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
+}
+
 
 function toRadians(value: number) {
   return (value * Math.PI) / 180;
@@ -2184,16 +2215,27 @@ function DispatchAircraftCascadeSelector({
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
     if (!selModelCode) return [];
-    const seen = new Map<string, string>(); // aircraft_type_code → label
+    // key → { addonLabel, displayName }
+    const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
       (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      const label = r.variant_name?.trim() || r.addon_provider?.trim() || "Estándar";
-      if (!seen.has(key)) seen.set(key, label);
+      // Preferir addon_provider (ej. "PMDG", "Asobo", "Black Square") sobre variant_name
+      const addonLabel = r.addon_provider?.trim() || r.variant_name?.trim() || "Estándar";
+      const displayName = r.aircraft_name?.trim() || addonLabel;
+      if (!seen.has(key)) seen.set(key, { addonLabel, displayName });
     }
+    // Si hay varias entradas con el mismo addon (ej. B737-600 y B737-700 ambos "PMDG"),
+    // usar el displayName del avión para diferenciarlas
+    const addonCounts = new Map<string, number>();
+    for (const { addonLabel } of seen.values())
+      addonCounts.set(addonLabel, (addonCounts.get(addonLabel) ?? 0) + 1);
     return Array.from(seen.entries())
-      .map(([key, label]) => ({ key, label }))
+      .map(([key, { addonLabel, displayName }]) => ({
+        key,
+        label: (addonCounts.get(addonLabel) ?? 0) > 1 ? displayName : addonLabel,
+      }))
       .sort((a, b) => a.label.localeCompare(b.label, "es"));
   }, [available, selModelCode]);
 
@@ -2681,6 +2723,169 @@ function DashboardWorkspace({
   const [itineraryAirportsByIcao, setItineraryAirportsByIcao] = useState<
     Record<string, ItineraryAirportMeta>
   >({});
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [navigraphStatus, setNavigraphStatus] = useState<NavigraphStatusResponse | null>(null);
+  const [loadingNavigraphStatus, setLoadingNavigraphStatus] = useState(false);
+  const [navigraphInfoMessage, setNavigraphInfoMessage] = useState("");
+  const [navigraphErrorMessage, setNavigraphErrorMessage] = useState("");
+  const [simbriefStaticId, setSimbriefStaticId] = useState<string | null>(null);
+
+  const navigraphConnected = navigraphStatus?.connected === true;
+  const navigraphConfigured = navigraphStatus?.configured === true;
+  const navigraphExpiryLabel = useMemo(
+    () => formatNavigraphExpiry(navigraphStatus?.expiresAt),
+    [navigraphStatus?.expiresAt],
+  );
+
+
+  async function refreshNavigraphStatus(silent = false) {
+    if (!silent) {
+      setLoadingNavigraphStatus(true);
+    }
+
+    try {
+      const response = await fetch("/api/auth/navigraph/status", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const payload = (await response.json()) as NavigraphStatusResponse;
+
+      if (!response.ok) {
+        setNavigraphStatus(null);
+        setNavigraphErrorMessage(payload?.error || "No se pudo consultar el estado de Navigraph.");
+        if (!silent) {
+          setNavigraphInfoMessage("");
+        }
+        return;
+      }
+
+      setNavigraphStatus(payload);
+      if (!payload.connected && payload.error && !silent) {
+        setNavigraphErrorMessage(payload.error);
+      }
+    } catch (error) {
+      setNavigraphStatus(null);
+      setNavigraphErrorMessage(
+        error instanceof Error ? error.message : "No se pudo consultar Navigraph."
+      );
+    } finally {
+      if (!silent) {
+        setLoadingNavigraphStatus(false);
+      }
+    }
+  }
+
+  async function handleDisconnectNavigraph() {
+    setLoadingNavigraphStatus(true);
+    setNavigraphErrorMessage("");
+    setNavigraphInfoMessage("");
+
+    try {
+      const response = await fetch("/api/auth/navigraph/disconnect", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo cerrar la sesión de Navigraph.");
+      }
+
+      setNavigraphInfoMessage("Sesión Navigraph desconectada correctamente.");
+      setSimbriefStaticId(null);
+      await refreshNavigraphStatus(true);
+    } catch (error) {
+      setNavigraphErrorMessage(
+        error instanceof Error ? error.message : "No se pudo desconectar Navigraph."
+      );
+    } finally {
+      setLoadingNavigraphStatus(false);
+    }
+  }
+
+  async function handleOpenSimbriefPlanner() {
+    if (!profile || !selectedAircraftRecord || !selectedItineraryRecord) {
+      setNavigraphErrorMessage("Primero debes confirmar tipo de vuelo, aeronave e itinerario.");
+      return;
+    }
+
+    if (!profile.simbrief_username?.trim()) {
+      setNavigraphErrorMessage("Falta tu usuario SimBrief en Perfil para abrir el OFP.");
+      return;
+    }
+
+    if (!navigraphConnected) {
+      setNavigraphErrorMessage("Primero conecta Navigraph antes de abrir el plan OFP / SimBrief.");
+      return;
+    }
+
+    setSyncingSimbrief(true);
+    setNavigraphErrorMessage("");
+    setNavigraphInfoMessage("");
+
+    try {
+      const flightNumber =
+        selectedItineraryRecord.flight_designator?.trim().replace(/\s+/g, "").toUpperCase() ||
+        `PWG${webFlightNumberValidationValue || "000"}`;
+
+      const payload = {
+        userId: profile.id,
+        reservationId: preparedReservationId,
+        callsign: profile.callsign,
+        simbriefUsername: profile.simbrief_username.trim(),
+        firstName: profile.first_name ?? null,
+        lastName: profile.last_name ?? null,
+        flightNumber,
+        origin: webOriginCode,
+        destination: webDestinationCode,
+        alternate: null,
+        aircraftCode:
+          selectedAircraftRecord.aircraft_type_code ??
+          selectedAircraftRecord.aircraft_code,
+        aircraftTailNumber: selectedAircraftRecord.tail_number || null,
+        routeText: selectedItineraryRecord.itinerary_code,
+        scheduledDeparture: new Date().toISOString(),
+        eteMinutes:
+          selectedItineraryRecord.expected_block_p50 ??
+          selectedItineraryRecord.scheduled_block_min ??
+          60,
+        pax: 0,
+        cargoKg: 0,
+        remarks: "PATAGONIA WINGS WEB DISPATCH",
+      };
+
+      const response = await fetch("/api/simbrief/dispatch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as
+        | { ok: true; staticId: string; generateUrl: string; editUrl: string }
+        | { error?: string };
+
+      if (!response.ok || !("ok" in data)) {
+        throw new Error(
+          data && "error" in data ? data.error || "No se pudo abrir SimBrief." : "No se pudo abrir SimBrief."
+        );
+      }
+
+      setSimbriefStaticId(data.staticId);
+      setNavigraphInfoMessage("Plan OFP preparado. Completa el despacho en SimBrief y luego usa 'Importar OFP'.");
+      window.open(data.generateUrl || data.editUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setNavigraphErrorMessage(
+        error instanceof Error ? error.message : "No se pudo abrir OFP / SimBrief."
+      );
+    } finally {
+      setSyncingSimbrief(false);
+    }
+  }
 
   // Carga reserva activa del piloto al abrir Oficina
   useEffect(() => {
@@ -2706,6 +2911,42 @@ function DashboardWorkspace({
     void loadActiveReservation();
     return () => { alive = false; };
   }, [activeTab, profile]);
+
+
+  useEffect(() => {
+    if (activeTab !== "dispatch") {
+      return;
+    }
+
+    void refreshNavigraphStatus(true);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "dispatch") {
+      return;
+    }
+
+    const ng = searchParams.get("ng");
+    const ngError = searchParams.get("ng_error");
+    const returnedStaticId = searchParams.get("static_id");
+    const simbriefReturn = searchParams.get("simbrief_return");
+
+    if (returnedStaticId) {
+      setSimbriefStaticId(returnedStaticId);
+    }
+
+    if (ng === "connected") {
+      setNavigraphInfoMessage("Navigraph conectado correctamente. Ya puedes abrir OFP / SimBrief.");
+      setNavigraphErrorMessage("");
+      void refreshNavigraphStatus(true);
+    } else if (ngError) {
+      setNavigraphErrorMessage(ngError);
+      setNavigraphInfoMessage("");
+      void refreshNavigraphStatus(true);
+    } else if (simbriefReturn === "1") {
+      setNavigraphInfoMessage("Volviste desde SimBrief. Ahora importa el OFP para validar el despacho.");
+    }
+  }, [activeTab, searchParams]);
 
   const aircraftOptions = [
     {
@@ -3204,6 +3445,14 @@ function DashboardWorkspace({
         username: profile.simbrief_username.trim(),
       });
 
+      if (simbriefStaticId?.trim()) {
+        search.set("static_id", simbriefStaticId.trim());
+      }
+
+      if (simbriefStaticId) {
+        search.set("static_id", simbriefStaticId);
+      }
+
       const response = await fetch(`/api/simbrief/ofp?${search.toString()}`, {
         method: "GET",
         cache: "no-store",
@@ -3221,7 +3470,7 @@ function DashboardWorkspace({
 
       setSimbriefSummary(data.summary);
       setSimbriefInfoMessage(
-        "Datos de SimBrief cargados. Revisa la validacion antes de habilitar el resumen."
+        "Datos de OFP cargados desde SimBrief. Revisa la validación antes de habilitar el resumen."
       );
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
@@ -3242,6 +3491,18 @@ function DashboardWorkspace({
       setDispatchReady(false);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage("Primero debes traer los datos del OFP desde SimBrief.");
+      setPreparedReservationId(null);
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("");
+      return;
+    }
+
+    if (simbriefStaticId?.trim() && !simbriefSummary.matchedByStaticId) {
+      setDispatchReady(false);
+      setSimbriefInfoMessage("");
+      setSimbriefErrorMessage(
+        "El OFP importado no coincide con el static_id del despacho actual. Vuelve a abrir SimBrief desde esta reserva y vuelve a importar."
+      );
       setPreparedReservationId(null);
       setSummaryInfoMessage("");
       setSummaryErrorMessage("");
@@ -3280,8 +3541,29 @@ function DashboardWorkspace({
       return;
     }
 
-    // Nota: SimBrief ahora es opcional - el ACARS generará el plan de vuelo
-    // Si hay datos de SimBrief disponibles, se usan; si no, se usan defaults
+    if (!simbriefSummary) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("Debes importar un OFP desde SimBrief antes de guardar el despacho final para ACARS.");
+      return;
+    }
+
+    if (simbriefStaticId?.trim() && !simbriefSummary.matchedByStaticId) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("El OFP importado no pertenece a esta reserva. Vuelve a abrir SimBrief desde este despacho e importa otra vez.");
+      return;
+    }
+
+    if (!canValidateDispatch) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("El OFP no coincide con la reserva web. Corrige vuelo, origen, destino o aeronave antes de guardar el despacho.");
+      return;
+    }
+
+    if (!dispatchReady) {
+      setSummaryInfoMessage("");
+      setSummaryErrorMessage("Primero debes validar el despacho para dejar el vuelo listo para ACARS.");
+      return;
+    }
 
     setFinalizingDispatch(true);
     setSummaryInfoMessage("");
@@ -3328,9 +3610,8 @@ function DashboardWorkspace({
       };
 
       const saved = await saveFlightOperation(profile, finalOperation, "dispatch_ready");
-      // SimBrief es opcional - el ACARS generará el plan de vuelo
-      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign, 
-        simbriefSummary ? {
+      await markDispatchPrepared(saved.id, profile.simbrief_username ?? "", profile.callsign, {
+
           routeText: simbriefSummary.routeText ?? undefined,
           cruiseLevel: simbriefSummary.cruiseAltitude ?? undefined,
           alternateIcao: simbriefSummary.alternate ?? undefined,
@@ -3343,12 +3624,36 @@ function DashboardWorkspace({
           payloadKg: simbriefSummary.payloadKg ?? undefined,
           zfwKg: simbriefSummary.zfwKg ?? undefined,
           staticId: simbriefSummary.staticId ?? undefined,
-        } : undefined
+          flightNumber: simbriefSummary.flightNumber ?? normalizedFlightNumber,
+          originIcao: simbriefSummary.origin ?? webOriginCode,
+          destinationIcao: simbriefSummary.destination ?? webDestinationCode,
+          airframe: simbriefSummary.airframe ?? selectedAircraftRecord.aircraft_code,
+          aircraftRegistration:
+            simbriefSummary.aircraftRegistration ?? selectedAircraftRecord.tail_number ?? undefined,
+          distanceNm: simbriefSummary.distanceNm ?? undefined,
+          eteMinutes: simbriefSummary.eteMinutes ?? undefined,
+          generatedAtIso: simbriefSummary.generatedAtIso ?? undefined,
+          matchedByStaticId: simbriefSummary.matchedByStaticId,
+          rawUnits: simbriefSummary.rawUnits ?? undefined,
+          pdfUrl: simbriefSummary.pdfUrl ?? undefined,
+          scheduledBlockMinutes:
+            simbriefSummary.eteMinutes ??
+            selectedItineraryRecord.scheduled_block_min ??
+            undefined,
+          expectedBlockP50Minutes:
+            simbriefSummary.eteMinutes ??
+            selectedItineraryRecord.expected_block_p50 ??
+            undefined,
+          expectedBlockP80Minutes:
+            simbriefSummary.eteMinutes ??
+            selectedItineraryRecord.expected_block_p80 ??
+            undefined,
+        }
       );
       setPreparedReservationId(saved.id);
       setSummaryErrorMessage("");
       setSummaryInfoMessage(
-        "Vuelo despachado y guardado en la base operativa. ACARS ya puede rescatar esta preparacion desde la web."
+        "Vuelo validado contra OFP y guardado en la base operativa. ACARS ya puede rescatar este despacho final desde la web."
       );
     } catch (error) {
       setSummaryInfoMessage("");
@@ -3793,6 +4098,129 @@ function DashboardWorkspace({
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Confirma los datos del vuelo. Una vez confirmado, el resumen queda habilitado para despachar a la base operativa y que ACARS pueda rescatar la preparacion.
                         </p>
+                      </div>
+
+
+                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+                              Navigraph · SimBrief
+                            </p>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Conexión web y preparación del OFP</h5>
+                            <p className="mt-3 max-w-3xl text-sm leading-7 text-white/68">
+                              En la web usaremos Authorization Code Flow con Navigraph. Después abrimos SimBrief para generar el OFP, lo importamos, validamos vuelo/origen/destino/aeronave y recién entonces lo dejamos listo para ACARS.
+                            </p>
+                          </div>
+                          <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                            navigraphConnected
+                              ? "border-emerald-300/20 bg-emerald-500/[0.12] text-emerald-100"
+                              : "border-white/10 bg-white/[0.06] text-white/70"
+                          }`}>
+                            {loadingNavigraphStatus
+                              ? "Consultando..."
+                              : navigraphConnected
+                                ? "Navigraph conectado"
+                                : navigraphConfigured
+                                  ? "Navigraph no conectado"
+                                  : "Configuración pendiente"}
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                          <DispatchValueCard
+                            label="Estado web"
+                            value={
+                              loadingNavigraphStatus
+                                ? "Consultando"
+                                : navigraphConnected
+                                  ? "Conectado"
+                                  : navigraphConfigured
+                                    ? "Pendiente"
+                                    : "Sin configurar"
+                            }
+                            hint={navigraphStatus?.subject || "Cuenta Navigraph no enlazada"}
+                          />
+                          <DispatchValueCard
+                            label="Scopes"
+                            value={navigraphStatus?.scopes?.length ? navigraphStatus.scopes.join(", ") : "Pendiente"}
+                          />
+                          <DispatchValueCard
+                            label="Expira"
+                            value={navigraphExpiryLabel}
+                          />
+                          <DispatchValueCard
+                            label="Static ID"
+                            value={simbriefStaticId || simbriefSummary?.staticId || "Pendiente"}
+                            hint="Se usa para reabrir o rescatar el OFP correcto."
+                          />
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNavigraphErrorMessage("");
+                              setNavigraphInfoMessage("");
+                              window.location.href = `/api/auth/navigraph/start?next=${encodeURIComponent("/dashboard?tab=dispatch")}`;
+                            }}
+                            className="button-primary py-3"
+                          >
+                            {navigraphConnected ? "Reconectar Navigraph" : "Conectar Navigraph"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenSimbriefPlanner()}
+                            disabled={!navigraphConnected || syncingSimbrief}
+                            className={`py-3 ${!navigraphConnected || syncingSimbrief ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
+                          >
+                            {simbriefSummary?.staticId || simbriefStaticId ? "Abrir OFP / SimBrief" : "Crear OFP / SimBrief"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleLoadSimbriefData()}
+                            disabled={syncingSimbrief}
+                            className={`py-3 ${syncingSimbrief ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
+                          >
+                            {syncingSimbrief ? "Importando..." : "Importar OFP"}
+                          </button>
+
+                          {navigraphConnected ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleDisconnectNavigraph()}
+                              className="button-ghost py-3"
+                            >
+                              Desconectar
+                            </button>
+                          ) : null}
+                        </div>
+
+                        {navigraphInfoMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
+                            {navigraphInfoMessage}
+                          </div>
+                        ) : null}
+
+                        {navigraphErrorMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
+                            {navigraphErrorMessage}
+                          </div>
+                        ) : null}
+
+                        {simbriefInfoMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-cyan-400/18 bg-cyan-500/[0.08] px-4 py-3 text-sm leading-7 text-cyan-100/90">
+                            {simbriefInfoMessage}
+                          </div>
+                        ) : null}
+
+                        {simbriefErrorMessage ? (
+                          <div className="mt-4 rounded-[18px] border border-amber-400/18 bg-amber-500/[0.08] px-4 py-3 text-sm leading-7 text-amber-100/90">
+                            {simbriefErrorMessage}
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="rounded-[22px] border border-cyan-400/14 bg-[#031428]/65 p-5">
