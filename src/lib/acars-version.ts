@@ -1,19 +1,16 @@
-// ─── Versión del cliente ACARS ──────────────────────────────────────────────
-// Actualizar SOLO este archivo cada vez que se suba una nueva versión del ACARS.
-// El número se propaga automáticamente a toda la web.
+// Version del cliente ACARS.
+// Actualizar solo este archivo al publicar una nueva release del instalador.
 
-export const ACARS_VERSION = "3.1.7";
+export const ACARS_VERSION = "3.1.8";
 export const ACARS_BACKEND = "SimConnect + FSUIPC7 fallback + Supabase Direct";
-export const ACARS_SIZE_MB = "~28 MB";
-export const ACARS_DOWNLOAD_URL = "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.1.7.exe";
+export const ACARS_SIZE_MB = "~24 MB";
+export const ACARS_DOWNLOAD_URL =
+  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.1.8.exe";
 
 export const ACARS_RELEASE_NOTES = [
-  "Fix luces: detección robusta para todos los addons (Asobo, Black Square, PMDG, Fenix…)",
-  "Fix combustible: conversión kg/lbs automática según el backend del simulador",
-  "Fix squawk: código de transponder correcto en todos los aviones via FSUIPC",
-  "Cronómetro arranca desde block-out (antes del despegue)",
-  "Log de procedimientos en tiempo real: luces, fases, AP, cinturones",
-  "UI más grande y premium: fuentes aumentadas, indicadores más visibles",
-  "Panel de pesos SimBrief vs simulador con comparación al arrancar motores (±10%)",
-  "Versión Web 2.0 · ACARS 3.1.7",
+  "Nuevo reglaje SUR Air v5.0 con score dual de Procedimientos y Performance",
+  "Post-vuelo rediseñado con infracciones, bonificaciones y resumen operativo",
+  "PIREP XML con scoring extendido y cierre enriquecido hacia Supabase",
+  "Fix luces robusto para addons, combustible kg/lbs y squawk FSUIPC conservados",
+  "Version Web 2.0 · ACARS 3.1.8",
 ];
