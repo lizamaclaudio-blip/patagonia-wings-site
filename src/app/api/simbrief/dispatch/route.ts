@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const type = resolveSimbriefType(payload.aircraftCode);
     const timestamp = Math.floor(Date.now() / 1000);
-    const outputpage = `${request.nextUrl.origin}/operations?simbrief_return=1&static_id=${encodeURIComponent(
+    const outputpage = `${request.nextUrl.origin}/dashboard?tab=dispatch&simbrief_return=1&static_id=${encodeURIComponent(
       staticId
     )}&username=${encodeURIComponent(payload.simbriefUsername)}`;
 

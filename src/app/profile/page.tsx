@@ -29,6 +29,19 @@ type ProfileFormState = {
 
 type ProfileView = "perfil" | "datos";
 
+type NavigraphStatusResponse = {
+  configured: boolean;
+  connected: boolean;
+  hasRefreshToken: boolean;
+  expiresAt: string | null;
+  scopes: string[];
+  subscriptions: string[];
+  clientId: string | null;
+  subject: string | null;
+  error: string | null;
+};
+
+
 type PilotScoreRow = {
   pulso_10: number | null;
   ruta_10: number | null;
@@ -73,6 +86,23 @@ function formatInteger(value: number) {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+function formatNavigraphExpiry(value: string | null | undefined) {
+  if (!value) {
+    return "Sin sesión activa";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-CL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
+}
+
 
 function formatRankLabel(value: string | null | undefined) {
   const normalized = (value ?? "CADET").trim();
@@ -161,6 +191,9 @@ function ProfileContent() {
     legado: 0,
   });
 
+  const [navigraphStatus, setNavigraphStatus] = useState<NavigraphStatusResponse | null>(null);
+  const [loadingNavigraphStatus, setLoadingNavigraphStatus] = useState(false);
+
   const [form, setForm] = useState<ProfileFormState>({
     ...EMPTY_FORM,
     email: session.user.email ?? "",
@@ -168,6 +201,65 @@ function ProfileContent() {
 
   useEffect(() => {
     setActiveView(readView(searchParams.get("view")));
+  }, [searchParams]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNavigraphStatus() {
+      setLoadingNavigraphStatus(true);
+
+      try {
+        const response = await fetch("/api/auth/navigraph/status", {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        const payload = (await response.json()) as NavigraphStatusResponse;
+
+        if (!cancelled) {
+          if (response.ok) {
+            setNavigraphStatus(payload);
+          } else {
+            setNavigraphStatus(payload);
+            if (payload?.error) {
+              setErrorMessage(payload.error);
+            }
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setNavigraphStatus(null);
+          setErrorMessage(
+            error instanceof Error ? error.message : "No se pudo consultar Navigraph."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingNavigraphStatus(false);
+        }
+      }
+    }
+
+    const ng = searchParams.get("ng");
+    const ngError = searchParams.get("ng_error");
+
+    if (ng === "connected") {
+      setInfoMessage("Navigraph conectado correctamente.");
+      setErrorMessage("");
+    } else if (ngError) {
+      setErrorMessage(ngError);
+    }
+
+    void loadNavigraphStatus();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   useEffect(() => {
@@ -237,6 +329,42 @@ function ProfileContent() {
   function switchView(nextView: ProfileView) {
     setActiveView(nextView);
     router.replace(`/profile?view=${nextView}`);
+  }
+
+
+  async function handleDisconnectNavigraph() {
+    setLoadingNavigraphStatus(true);
+    setErrorMessage("");
+    setInfoMessage("");
+
+    try {
+      const response = await fetch("/api/auth/navigraph/disconnect", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo desconectar Navigraph.");
+      }
+
+      setNavigraphStatus((current) =>
+        current
+          ? {
+              ...current,
+              connected: false,
+              hasRefreshToken: false,
+              expiresAt: null,
+              subject: null,
+            }
+          : null
+      );
+      setInfoMessage("Sesión Navigraph desconectada correctamente.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo desconectar Navigraph."
+      );
+    } finally {
+      setLoadingNavigraphStatus(false);
+    }
   }
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -367,6 +495,70 @@ function ProfileContent() {
                       <p className="mt-2 text-xl font-semibold text-white">{loading ? "…" : item.value}</p>
                     </div>
                   ))}
+                </div>
+
+
+                <div className="surface-outline rounded-[24px] px-5 py-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                        Integración Navigraph
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-white">
+                        {loadingNavigraphStatus
+                          ? "Consultando..."
+                          : navigraphStatus?.connected
+                            ? "Conectado"
+                            : navigraphStatus?.configured
+                              ? "Pendiente"
+                              : "Sin configurar"}
+                      </p>
+                    </div>
+
+                    <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      navigraphStatus?.connected
+                        ? "border border-emerald-300/20 bg-emerald-500/[0.12] text-emerald-100"
+                        : "border border-white/10 bg-white/[0.05] text-white/70"
+                    }`}>
+                      {navigraphStatus?.connected ? "Activo" : "Web auth"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Subject</p>
+                      <p className="mt-2 text-sm font-medium text-white">{navigraphStatus?.subject || "Sin enlazar"}</p>
+                    </div>
+                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Expira</p>
+                      <p className="mt-2 text-sm font-medium text-white">{formatNavigraphExpiry(navigraphStatus?.expiresAt)}</p>
+                    </div>
+                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Scopes</p>
+                      <p className="mt-2 text-sm font-medium text-white">
+                        {navigraphStatus?.scopes?.length ? navigraphStatus.scopes.join(", ") : "Pendiente"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <a
+                      href="/api/auth/navigraph/start?next=%2Fprofile%3Fview%3Dperfil"
+                      className="button-primary"
+                    >
+                      {navigraphStatus?.connected ? "Reconectar Navigraph" : "Conectar Navigraph"}
+                    </a>
+
+                    {navigraphStatus?.connected ? (
+                      <button type="button" className="button-secondary" onClick={() => void handleDisconnectNavigraph()}>
+                        Desconectar
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-4 text-sm leading-7 text-white/68">
+                    La conexión web de Navigraph se usará para abrir y validar el flujo OFP / SimBrief desde el despacho de Patagonia Wings.
+                  </p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">

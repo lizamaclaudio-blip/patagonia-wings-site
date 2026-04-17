@@ -456,6 +456,57 @@ function formatDurationMinutes(value: number | null | undefined) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
+/** Estimate block time in minutes from distance and aircraft type code.
+ *  Formula: (distanceNm / cruiseKts) * 60 + climbDescentOverheadMin
+ */
+function estimateBlockMinutes(distanceNm: number, aircraftTypeCode?: string | null): number {
+  if (!distanceNm || distanceNm <= 0) return 0;
+
+  const code = (aircraftTypeCode ?? "").toUpperCase();
+
+  // Wide-body jets ~490 kts
+  const isWidebody = ["A330","A332","A333","A338","A339","A343","A345","A346",
+    "A350","A35K","A359","A380","A388","B744","B747","B748","B762","B763","B764",
+    "B767","B772","B773","B77L","B77W","B777","B778","B779","B787","B788","B789","B78X"].some(t => code.includes(t));
+  if (isWidebody) {
+    const cruiseKts = 490;
+    const overheadMin = distanceNm < 500 ? 25 : 35;
+    return Math.round((distanceNm / cruiseKts) * 60 + overheadMin);
+  }
+
+  // Narrow-body jets ~450 kts
+  const isNarrowbody = ["A318","A319","A320","A321","B735","B736","B737","B738","B739",
+    "B752","B753","B757","MD8","MD9","MD11"].some(t => code.includes(t));
+  if (isNarrowbody) {
+    const cruiseKts = 450;
+    const overheadMin = distanceNm < 300 ? 20 : 30;
+    return Math.round((distanceNm / cruiseKts) * 60 + overheadMin);
+  }
+
+  // Regional jets ~380 kts
+  const isRegionalJet = ["CRJ","E170","E175","E190","E195","ERJ","E170","E175",
+    "E190","E195","RJ1","RJ7","RJ8","RJ9"].some(t => code.includes(t));
+  if (isRegionalJet) {
+    const cruiseKts = 380;
+    const overheadMin = 18;
+    return Math.round((distanceNm / cruiseKts) * 60 + overheadMin);
+  }
+
+  // Turboprops ~280 kts
+  const isTurboprop = ["ATR","AT4","AT7","DH8","Q400","Q300","Q200","DHC","PC12",
+    "C208","C90","B350","BE20","BE30","TBM","SF34","SF50","JS41"].some(t => code.includes(t));
+  if (isTurboprop) {
+    const cruiseKts = 280;
+    const overheadMin = 15;
+    return Math.round((distanceNm / cruiseKts) * 60 + overheadMin);
+  }
+
+  // GA piston ~130 kts
+  const cruiseKts = 130;
+  const overheadMin = 10;
+  return Math.round((distanceNm / cruiseKts) * 60 + overheadMin);
+}
+
 function formatUtcDateTime(value: string | null | undefined) {
   if (!value) {
     return "Pendiente";
@@ -2456,6 +2507,7 @@ function DispatchItineraryTable({
   currentAirportCode,
   currentAirportCity,
   currentCountryCode,
+  selectedAircraftTypeCode,
 }: {
   rows: AvailableItineraryOption[];
   selectedItineraryId: string | null;
@@ -2464,6 +2516,7 @@ function DispatchItineraryTable({
   currentAirportCode: string;
   currentAirportCity: string;
   currentCountryCode: string;
+  selectedAircraftTypeCode?: string | null;
 }) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
@@ -2518,72 +2571,72 @@ function DispatchItineraryTable({
                 .map((value) => Number(value))
                 .find((value) => Number.isFinite(value) && value > 0);
 
+              // Use DB value when available; otherwise estimate from distance + aircraft type
+              const estimatedMinutes = distanceNm
+                ? estimateBlockMinutes(distanceNm, selectedAircraftTypeCode)
+                : 0;
+              const resolvedDuration = durationCandidate ?? (estimatedMinutes > 0 ? estimatedMinutes : null);
+
               return (
                 <tr
                   key={row.itinerary_id}
-                  className={`border-t border-white/8 align-top transition ${
+                  className={`border-t border-white/8 align-middle transition ${
                     isSelected ? "bg-emerald-500/[0.08]" : ""
                   }`}
                 >
-                  <td className="px-4 py-4">
-                    <div className="min-w-[180px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold tracking-[0.1em] text-white">
-                          {originCode || "---"}
-                        </span>
-                        {originFlagUrl ? (
-                          <img
-                            src={originFlagUrl}
-                            alt={`Bandera ${originCountryCode ?? originCode}`}
-                            className="h-[14px] w-[18px] rounded-[2px] object-cover"
-                          />
-                        ) : null}
-                      </div>
-                      <div className="mt-2 text-sm text-white/68">{originCity}</div>
+                  {/* ORIGEN */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-sm font-bold tracking-[0.08em] text-white">
+                        {originCode || "---"}
+                      </span>
+                      {originFlagUrl ? (
+                        <img
+                          src={originFlagUrl}
+                          alt={`Bandera ${originCountryCode ?? originCode}`}
+                          className="h-[13px] w-[17px] rounded-[2px] object-cover"
+                        />
+                      ) : null}
+                      <span className="text-sm text-white/60 truncate max-w-[140px]">{originCity}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="min-w-[180px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold tracking-[0.1em] text-white">
-                          {destinationCode || "---"}
-                        </span>
-                        {destinationFlagUrl ? (
-                          <img
-                            src={destinationFlagUrl}
-                            alt={`Bandera ${destinationCountryCode ?? destinationCode}`}
-                            className="h-[14px] w-[18px] rounded-[2px] object-cover"
-                          />
-                        ) : null}
-                      </div>
-                      <div className="mt-2 text-sm text-white/68">{destinationCity}</div>
+                  {/* DESTINO */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-sm font-bold tracking-[0.08em] text-white">
+                        {destinationCode || "---"}
+                      </span>
+                      {destinationFlagUrl ? (
+                        <img
+                          src={destinationFlagUrl}
+                          alt={`Bandera ${destinationCountryCode ?? destinationCode}`}
+                          className="h-[13px] w-[17px] rounded-[2px] object-cover"
+                        />
+                      ) : null}
+                      <span className="text-sm text-white/60 truncate max-w-[140px]">{destinationCity}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="min-w-[120px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <div className="text-lg font-semibold text-white">
-                        {distanceNm ? `${distanceNm} NM` : "Pendiente"}
-                      </div>
-                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-white/42">
-                        Distancia
-                      </div>
-                    </div>
+                  {/* DISTANCIA */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-white">
+                      {distanceNm ? `${distanceNm} NM` : "—"}
+                    </span>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="min-w-[132px] rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <div className="text-lg font-semibold text-white">
-                        {formatDurationMinutes(durationCandidate ?? null)}
-                      </div>
-                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-white/42">
-                        Bloque
-                      </div>
-                    </div>
+                  {/* DURACION */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-white">
+                      {formatDurationMinutes(resolvedDuration)}
+                    </span>
+                    {!durationCandidate && estimatedMinutes > 0 ? (
+                      <span className="ml-1 text-[11px] text-white/40">~est.</span>
+                    ) : null}
                   </td>
-                  <td className="px-4 py-4 min-w-[210px] text-right">
+                  {/* ACCION */}
+                  <td className="px-4 py-3 min-w-[170px] text-right">
                     <button
                       type="button"
                       onClick={() => onSelect(row.itinerary_id)}
-                      className={`inline-flex w-full items-center justify-center rounded-2xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                      className={`inline-flex w-full items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                         isSelected
                           ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
                           : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
@@ -3039,7 +3092,9 @@ function DashboardWorkspace({
       return true;
     });
 
-    return aircraftMatched.length > 0 ? aircraftMatched : modeFiltered;
+    // Strict filtering: when an aircraft is selected, only show compatible itineraries
+    // (even if the list is empty — don't fall back to all routes)
+    return aircraftMatched;
   }, [availableItineraries, central.airportCode, dispatchFlightMode, selectedAircraftRecord]);
   const selectedItineraryRecord = useMemo(
     () => filteredItineraries.find((option) => option.itinerary_id === selectedItinerary) ?? null,
@@ -3420,6 +3475,7 @@ function DashboardWorkspace({
     setPreparedReservationId(null);
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
+    setDispatchStep("dispatch_flow");
   };
 
   async function handleLoadSimbriefData() {
@@ -3954,6 +4010,11 @@ function DashboardWorkspace({
                             currentAirportCode={central.airportCode}
                             currentAirportCity={central.municipality}
                             currentCountryCode={central.countryCode}
+                            selectedAircraftTypeCode={
+                              selectedAircraftRecord?.aircraft_type_code ??
+                              selectedAircraftRecord?.aircraft_code ??
+                              null
+                            }
                           />
                         </div>
 

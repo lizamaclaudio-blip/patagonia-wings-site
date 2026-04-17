@@ -67,6 +67,19 @@ export async function GET(request: NextRequest) {
     const summary = extractSimbriefOfpSummary(result.parsed, staticId);
     summary.matchedByStaticId = matchedByStaticId || summary.matchedByStaticId;
 
+    if (staticId && !summary.matchedByStaticId) {
+      return NextResponse.json(
+        {
+          error:
+            "El OFP importado no coincide con el static_id de este despacho. Vuelve a abrir SimBrief desde esta reserva y genera/importa el plan correcto.",
+          matchedByStaticId: false,
+          summary,
+          raw: result.parsed,
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       {
         ok: true,
