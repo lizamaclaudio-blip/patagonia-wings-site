@@ -456,6 +456,28 @@ function formatDurationMinutes(value: number | null | undefined) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
+/** Genera lista de horas de 00:00 a 23:45 en intervalos de 15 minutos. */
+function buildDepartureTimeOptions(): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hh = String(h).padStart(2, "0");
+      const mm = String(m).padStart(2, "0");
+      options.push({ value: `${hh}:${mm}`, label: `${hh}:${mm}` });
+    }
+  }
+  return options;
+}
+const DEPARTURE_TIME_OPTIONS = buildDepartureTimeOptions();
+
+/** Convierte HH:MM (hora local del aeropuerto, tratada como UTC para SimBrief) a ISO string. */
+function departureHHMMtoISO(hhMm: string): string {
+  const [hh, mm] = hhMm.split(":").map(Number);
+  const now = new Date();
+  now.setUTCHours(hh ?? 8, mm ?? 0, 0, 0);
+  return now.toISOString();
+}
+
 /** Estimate block time in minutes from distance and aircraft type code.
  *  Formula: (distanceNm / cruiseKts) * 60 + climbDescentOverheadMin
  */
@@ -2508,6 +2530,8 @@ function DispatchItineraryTable({
   currentAirportCity,
   currentCountryCode,
   selectedAircraftTypeCode,
+  departureHHMM,
+  onDepartureTimeChange,
 }: {
   rows: AvailableItineraryOption[];
   selectedItineraryId: string | null;
@@ -2517,6 +2541,8 @@ function DispatchItineraryTable({
   currentAirportCity: string;
   currentCountryCode: string;
   selectedAircraftTypeCode?: string | null;
+  departureHHMM: string;
+  onDepartureTimeChange: (hhmm: string) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.03]">
@@ -2528,6 +2554,7 @@ function DispatchItineraryTable({
               <th className="px-4 py-3 font-semibold">Destino</th>
               <th className="px-4 py-3 font-semibold">Distancia</th>
               <th className="px-4 py-3 font-semibold">Duracion aprox.</th>
+              <th className="px-4 py-3 font-semibold">Salida (local)</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
             </tr>
           </thead>
@@ -2631,6 +2658,22 @@ function DispatchItineraryTable({
                       <span className="ml-1 text-[11px] text-white/40">~est.</span>
                     ) : null}
                   </td>
+                  {/* HORA DE SALIDA */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <select
+                      value={departureHHMM}
+                      onChange={(e) => onDepartureTimeChange(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-xl border border-white/12 bg-white/[0.06] px-3 py-1.5 text-sm font-semibold text-white outline-none focus:border-emerald-400/60 focus:ring-0 cursor-pointer"
+                      aria-label="Hora de salida local"
+                    >
+                      {DEPARTURE_TIME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="bg-[#0a1628] text-white">
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   {/* ACCION */}
                   <td className="px-4 py-3 min-w-[170px] text-right">
                     <button
@@ -2651,7 +2694,7 @@ function DispatchItineraryTable({
 
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
                   No hay itinerarios disponibles para la aeronave y modo de vuelo seleccionados.
                 </td>
               </tr>
@@ -2764,6 +2807,7 @@ function DashboardWorkspace({
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
   const [selectedItinerary, setSelectedItinerary] = useState<string | null>(null);
+  const [selectedDepartureHHMM, setSelectedDepartureHHMM] = useState<string>("08:00");
   const [dispatchReady, setDispatchReady] = useState(false);
   const [simbriefSummary, setSimbriefSummary] = useState<SimbriefOfpSummary | null>(null);
   const [syncingSimbrief, setSyncingSimbrief] = useState(false);
@@ -2900,7 +2944,7 @@ function DashboardWorkspace({
           selectedAircraftRecord.aircraft_code,
         aircraftTailNumber: selectedAircraftRecord.tail_number || null,
         routeText: selectedItineraryRecord.itinerary_code,
-        scheduledDeparture: new Date().toISOString(),
+        scheduledDeparture: departureHHMMtoISO(selectedDepartureHHMM),
         eteMinutes:
           selectedItineraryRecord.expected_block_p50 ??
           selectedItineraryRecord.scheduled_block_min ??
@@ -3658,7 +3702,7 @@ function DashboardWorkspace({
         aircraftAddonProvider: selectedAircraftRecord.addon_provider ?? "",
         aircraftVariantLabel: selectedAircraftRecord.variant_name ?? selectedAircraftRecord.aircraft_variant_code ?? "",
         routeText: simbriefSummary?.routeText?.trim() || selectedItineraryRecord.itinerary_code,
-        scheduledDeparture: "",
+        scheduledDeparture: departureHHMMtoISO(selectedDepartureHHMM),
         remarks,
         status: "dispatch_ready",
         createdAt: new Date().toISOString(),
@@ -4015,6 +4059,8 @@ function DashboardWorkspace({
                               selectedAircraftRecord?.aircraft_code ??
                               null
                             }
+                            departureHHMM={selectedDepartureHHMM}
+                            onDepartureTimeChange={setSelectedDepartureHHMM}
                           />
                         </div>
 
