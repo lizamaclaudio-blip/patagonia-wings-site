@@ -3775,25 +3775,25 @@ function DashboardWorkspace({
         <div className="flex flex-wrap items-center justify-center gap-2">
           {DASHBOARD_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
-            // Bloquear Oficina si hay un vuelo reservado/despachado activo
-            const isOfficeBlocked = tab.key === "office" && Boolean(activeReservation) && !["completed", "cancelled"].includes(activeReservation?.status ?? "");
+            // Bloquear Despacho si hay un vuelo reservado/despachado activo
+            const isDispatchBlocked = tab.key === "dispatch" && Boolean(activeReservation) && !["completed", "cancelled"].includes(activeReservation?.status ?? "");
             return (
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => { if (!isOfficeBlocked) onChangeTab(tab.key); }}
-                disabled={isOfficeBlocked}
-                title={isOfficeBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
+                onClick={() => { if (!isDispatchBlocked) onChangeTab(tab.key); }}
+                disabled={isDispatchBlocked}
+                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
                 className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                   isActive
                     ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
-                    : isOfficeBlocked
+                    : isDispatchBlocked
                     ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/28 opacity-60"
                     : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
                 }`}
               >
                 {tab.label}
-                {isOfficeBlocked ? " 🔒" : ""}
+                {isDispatchBlocked ? " 🔒" : ""}
               </button>
             );
           })}
