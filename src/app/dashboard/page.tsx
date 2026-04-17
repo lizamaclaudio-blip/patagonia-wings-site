@@ -2778,7 +2778,7 @@ function DispatchWideValueStrip({
   return (
     <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-5 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
-      <p className="mt-3 text-[15px] font-medium leading-7 tracking-[0.04em] text-white/88">{value}</p>
+      <p className="mt-3 text-xl font-bold leading-7 tracking-[0.06em] text-white">{value}</p>
       {hint ? <p className="mt-2 text-sm leading-6 text-white/58">{hint}</p> : null}
     </div>
   );
@@ -2984,9 +2984,9 @@ function DashboardWorkspace({
     }
   }
 
-  // Carga reserva activa del piloto al abrir Oficina
+  // Carga reserva activa del piloto — al montar y al cambiar de tab
   useEffect(() => {
-    if (activeTab !== "office" || !profile) return;
+    if (!profile) return;
     let alive = true;
 
     async function loadActiveReservation() {
@@ -3007,7 +3007,7 @@ function DashboardWorkspace({
 
     void loadActiveReservation();
     return () => { alive = false; };
-  }, [activeTab, profile]);
+  }, [profile]);
 
 
   useEffect(() => {
@@ -3775,18 +3775,25 @@ function DashboardWorkspace({
         <div className="flex flex-wrap items-center justify-center gap-2">
           {DASHBOARD_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
+            // Bloquear Oficina si hay un vuelo reservado/despachado activo
+            const isOfficeBlocked = tab.key === "office" && Boolean(activeReservation) && !["completed", "cancelled"].includes(activeReservation?.status ?? "");
             return (
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => onChangeTab(tab.key)}
+                onClick={() => { if (!isOfficeBlocked) onChangeTab(tab.key); }}
+                disabled={isOfficeBlocked}
+                title={isOfficeBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
                 className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                   isActive
                     ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                    : isOfficeBlocked
+                    ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/28 opacity-60"
                     : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
                 }`}
               >
                 {tab.label}
+                {isOfficeBlocked ? " 🔒" : ""}
               </button>
             );
           })}
@@ -4564,8 +4571,8 @@ function DashboardWorkspace({
                           />
                           <DispatchValueCard
                             label="OFP cargado"
-                            value={formatUtcDateTime(simbriefSummary?.generatedAtIso)}
-                            valueClassName="text-[1.3rem] leading-tight"
+                            value={simbriefSummary ? "✓ Listo" : "Pendiente"}
+                            valueClassName={simbriefSummary ? "text-[1.3rem] leading-tight text-emerald-400" : "text-[1.3rem] leading-tight text-white/50"}
                           />
                         </div>
 
@@ -4573,72 +4580,48 @@ function DashboardWorkspace({
                           <DispatchWideValueStrip
                             label="Ruta validada"
                             value={summaryDispatchRoute}
-                            hint="Esta ruta queda asociada al vuelo preparado para que ACARS y la validacion web lean el mismo plan operativo."
                           />
                         </div>
                       </div>
                       ) : null}
 
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-                          <div className="space-y-4">
-                            <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
-                              <p className="text-sm font-semibold text-white">Salida a base operativa</p>
-                              <p className="mt-2 text-sm leading-7 text-white/72">
-                                Al presionar <span className="font-semibold text-white">Despachar vuelo</span>, la web guarda esta preparacion en la base activa y genera o actualiza el paquete de despacho para el enlace con ACARS.
-                              </p>
-                            </div>
-
-                            <div className="rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/66">
-                              El PIREP invisible y el XML de cierre no aparecen todavia en esta base local del dashboard. Ese enlace queda listo para el siguiente bloque ACARS sobre la misma reserva despachada.
-                            </div>
-
-                            {summaryInfoMessage ? (
-                              <div className="rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
-                                {summaryInfoMessage}
-                              </div>
-                            ) : null}
-
-                            {summaryErrorMessage ? (
-                              <div className="rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
-                                {summaryErrorMessage}
-                              </div>
-                            ) : null}
+                        <div className="space-y-4">
+                          <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
+                            <p className="text-sm font-semibold text-white">Salida a base operativa</p>
+                            <p className="mt-2 text-sm leading-7 text-white/72">
+                              Al presionar <span className="font-semibold text-white">Despachar vuelo</span>, la web guarda esta preparacion en la base activa y genera el paquete de despacho para ACARS.
+                            </p>
                           </div>
 
-                          <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/46">
-                              Estado final
-                            </p>
-                            <div className="mt-4 space-y-3 text-sm leading-7 text-white/78">
-                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                                Reserva activa: {preparedReservationId ? "Preparada" : "Pendiente de envio"}
-                              </div>
-                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                                Dispatch package: {preparedReservationId ? "Generado" : "Pendiente"}
-                              </div>
-                              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                                ACARS: {preparedReservationId ? "Puede rescatar el vuelo" : "Aun no habilitado"}
-                              </div>
+                          {summaryInfoMessage ? (
+                            <div className="rounded-[18px] border border-emerald-400/18 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-7 text-emerald-100/88">
+                              {summaryInfoMessage}
                             </div>
+                          ) : null}
 
-                            <div className="mt-5 flex flex-wrap gap-3">
-                              <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
-                                Volver a despacho
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleDispatchFlight}
-                                disabled={!canDispatchFlight || finalizingDispatch || Boolean(preparedReservationId)}
-                                className={`py-3 ${!canDispatchFlight || finalizingDispatch || preparedReservationId ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
-                              >
-                                {finalizingDispatch
-                                  ? "Despachando..."
-                                  : preparedReservationId
-                                    ? "Vuelo despachado"
-                                    : "Despachar vuelo"}
-                              </button>
+                          {summaryErrorMessage ? (
+                            <div className="rounded-[18px] border border-rose-400/18 bg-rose-500/[0.08] px-4 py-3 text-sm leading-7 text-rose-100/90">
+                              {summaryErrorMessage}
                             </div>
+                          ) : null}
+
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
+                              Volver a despacho
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDispatchFlight}
+                              disabled={!canDispatchFlight || finalizingDispatch || Boolean(preparedReservationId)}
+                              className={`py-3 ${!canDispatchFlight || finalizingDispatch || preparedReservationId ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
+                            >
+                              {finalizingDispatch
+                                ? "Despachando..."
+                                : preparedReservationId
+                                  ? "✓ Vuelo despachado — ACARS listo"
+                                  : "Despachar vuelo"}
+                            </button>
                           </div>
                         </div>
                       </div>
