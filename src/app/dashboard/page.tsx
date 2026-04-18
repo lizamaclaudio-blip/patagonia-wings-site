@@ -2429,19 +2429,23 @@ function DispatchAircraftCascadeSelector({
 
       {/* Resumen de aeronave seleccionada */}
       {selectedReg ? (
-        <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-          <span className="text-lg text-emerald-300">✓</span>
-          <div>
-            <p className="text-sm font-semibold text-emerald-100">
-              {selectedReg.tail_number} · {selectedReg.aircraft_name}
-            </p>
-            {(selectedReg.addon_provider || selectedReg.variant_name) && (
-              <p className="mt-0.5 text-xs text-emerald-200/70">
-                {selectedReg.addon_provider || selectedReg.variant_name}
+        <>
+          <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+            <span className="text-lg text-emerald-300">✓</span>
+            <div>
+              <p className="text-sm font-semibold text-emerald-100">
+                {selectedReg.tail_number} · {selectedReg.aircraft_name}
               </p>
-            )}
+              {(selectedReg.addon_provider || selectedReg.variant_name) && (
+                <p className="mt-0.5 text-xs text-emerald-200/70">
+                  {selectedReg.addon_provider || selectedReg.variant_name}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+
+          <AircraftHealthPanel aircraft={selectedReg} />
+        </>
       ) : null}
     </div>
   );
@@ -2783,6 +2787,93 @@ function DispatchWideValueStrip({
     </div>
   );
 }
+
+
+function formatAircraftHealthPercent(value?: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "Sin diagnóstico";
+  }
+  return `${Math.round(value)}%`;
+}
+
+function getAircraftHealthTone(value?: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "var(--health-neutral)";
+  }
+  if (value < 25) return "var(--health-red)";
+  if (value < 50) return "var(--health-amber)";
+  return "var(--health-green)";
+}
+
+function AircraftHealthBar({
+  label,
+  value,
+}: {
+  label: string;
+  value?: number | null;
+}) {
+  const width = typeof value === "number" && !Number.isNaN(value)
+    ? `${Math.max(0, Math.min(100, value))}%`
+    : "0%";
+  const tone = getAircraftHealthTone(value);
+  const hasValue = typeof value === "number" && !Number.isNaN(value);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/56">
+          {label}
+        </span>
+        <span className="text-xs font-semibold text-white/78">{formatAircraftHealthPercent(value)}</span>
+      </div>
+      <div className="aircraft-health-track">
+        <div
+          className="aircraft-health-fill"
+          style={{ width, background: tone, opacity: hasValue ? 1 : 0.35 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AircraftHealthPanel({
+  aircraft,
+}: {
+  aircraft: AvailableAircraftOption;
+}) {
+  const maintenanceLabel =
+    aircraft.maintenance_required
+      ? aircraft.condition_band === "out_of_service"
+        ? "Fuera de servicio"
+        : "Mantenimiento requerido"
+      : aircraft.condition_band === "warning"
+        ? "Revisión sugerida"
+        : "Disponible";
+
+  const maintenanceTone = aircraft.maintenance_required
+    ? "border-amber-300/25 bg-amber-500/[0.08] text-amber-100"
+    : "border-emerald-300/20 bg-emerald-500/[0.08] text-emerald-100";
+
+  return (
+    <div className="mt-4 rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
+          Salud de la aeronave
+        </p>
+        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${maintenanceTone}`}>
+          {maintenanceLabel}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <AircraftHealthBar label="Motor" value={aircraft.engine_health} />
+        <AircraftHealthBar label="Fuselaje" value={aircraft.fuselage_health} />
+        <AircraftHealthBar label="Tren" value={aircraft.gear_health} />
+      </div>
+    </div>
+  );
+}
+
 
 function DashboardWorkspace({
   profile,

@@ -62,6 +62,13 @@ export type AvailableAircraftOption = {
   display_category?: string;
   display_status?: string;
   selectable?: boolean;
+  engine_health?: number | null;
+  fuselage_health?: number | null;
+  gear_health?: number | null;
+  overall_health?: number | null;
+  maintenance_required?: boolean;
+  maintenance_reason?: string | null;
+  condition_band?: string | null;
 };
 
 export type AvailableItineraryOption = {
@@ -168,6 +175,95 @@ type GenericRecord = Record<string, unknown>;
 
 function normalizeUpper(value: string) {
   return value.trim().toUpperCase();
+}
+
+function normalizeHealthValue(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(100, value));
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.min(100, parsed));
+    }
+  }
+
+  return null;
+}
+
+async function attachAircraftCondition(rows: AvailableAircraftOption[]) {
+  if (!rows.length) {
+    return rows;
+  }
+
+  const aircraftIds = rows
+    .map((row) => row.aircraft_id)
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+  if (!aircraftIds.length) {
+    return rows;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("aircraft_condition")
+      .select(
+        "aircraft_id, engine_health, fuselage_health, gear_health, overall_health, maintenance_required, maintenance_reason"
+      )
+      .in("aircraft_id", aircraftIds);
+
+    if (error) {
+      console.error("No se pudo cargar aircraft_condition:", error.message);
+      return rows;
+    }
+
+    const healthByAircraft = new Map<string, Record<string, unknown>>();
+    for (const row of (data ?? []) as GenericRecord[]) {
+      const aircraftId =
+        typeof row.aircraft_id === "string" ? row.aircraft_id : String(row.aircraft_id ?? "");
+      if (aircraftId) {
+        healthByAircraft.set(aircraftId, row);
+      }
+    }
+
+    return rows.map((row) => {
+      const health = healthByAircraft.get(row.aircraft_id);
+      if (!health) {
+        return row;
+      }
+
+      const engineHealth = normalizeHealthValue(health.engine_health);
+      const fuselageHealth = normalizeHealthValue(health.fuselage_health);
+      const gearHealth = normalizeHealthValue(health.gear_health);
+      const overallHealth = normalizeHealthValue(health.overall_health);
+
+      let conditionBand = overallHealth !== null
+        ? overallHealth < 25
+          ? "out_of_service"
+          : overallHealth < 30
+            ? "maintenance_only"
+            : overallHealth < 50
+              ? "warning"
+              : "normal"
+        : null;
+
+      return {
+        ...row,
+        engine_health: engineHealth,
+        fuselage_health: fuselageHealth,
+        gear_health: gearHealth,
+        overall_health: overallHealth,
+        maintenance_required: Boolean(health.maintenance_required),
+        maintenance_reason:
+          typeof health.maintenance_reason === "string" ? health.maintenance_reason : null,
+        condition_band: conditionBand,
+      } satisfies AvailableAircraftOption;
+    }));
+  } catch (error) {
+    console.error("No se pudo anexar salud de aeronaves:", error);
+    return rows;
+  }
 }
 
 function getProfileAirport(profile?: PilotProfileRecord | null) {
@@ -1012,7 +1108,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     });
 
     if (!error) {
-      return mapDisplayRows((data ?? []) as GenericRecord[]);
+      return await attachAircraftCondition(mapDisplayRows((data ?? []) as GenericRecord[]));
     }
   } catch {
     // fallback chain below keeps legacy behavior when the new RPC is not available
@@ -1035,7 +1131,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
       throw error;
     }
 
-    return ((data ?? []) as GenericRecord[]).map((row) => {
+    return await attachAircraftCondition(((data ?? []) as GenericRecord[]).map((row) => {
       const isAvailable =
         typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
 
@@ -1091,7 +1187,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     for (const params of rpcAttempts) {
       const { data, error } = await supabase.rpc("get_available_aircraft_for_pilot", params);
       if (!error) {
-        return ((data ?? []) as GenericRecord[]).map((row) => {
+        return await attachAircraftCondition(((data ?? []) as GenericRecord[]).map((row) => {
           const isAvailable =
             typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
 
