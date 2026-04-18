@@ -47,17 +47,17 @@ export const reglajeSections: ReglajeAuditSection[] = [
     key: "career",
     title: "Carrera y score",
     rules: [
-      "La carrera separa horas, score de procedimiento y score de valor de misión.",
-      "Los nombres vigentes son Pulso 10, Ruta 10 y Legado.",
+      "El núcleo final prioriza daño y mantenimiento, y luego consolida el score estilo SUR.",
+      "Los nombres legacy se mantienen solo como compatibilidad de ledger, no como reglaje maestro.",
       "El ascenso no es automático: el piloto solicita cuando cumple gate.",
-      "Las horas transferidas suman al total pero no otorgan ascenso automático.",
+      "Las horas transferidas suman al total pero no definen por sí solas el score final.",
     ],
     checks: [
       {
         key: "pilot_scores",
         label: "pw_pilot_scores",
-        description: "Resumen vivo de Pulso 10 / Ruta 10 / Legado.",
-        expected: "1 fila para el piloto operativo",
+        description: "Ledger de compatibilidad mientras se consolida el score SUR final.",
+        expected: "1 fila legible para el piloto operativo",
       },
       {
         key: "promotion_requests",
@@ -68,7 +68,7 @@ export const reglajeSections: ReglajeAuditSection[] = [
       {
         key: "score_reports",
         label: "pw_flight_score_reports",
-        description: "Ledger y scoring por vuelo.",
+        description: "Reporte por vuelo con base de scoring consolidable.",
         expected: "tabla accesible",
       },
     ],

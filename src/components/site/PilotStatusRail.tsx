@@ -303,9 +303,9 @@ export default function PilotStatusRail() {
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {[
-            { label: "Pulso 10", value: formatDecimal(score.pulso10) },
-            { label: "Ruta 10", value: formatDecimal(score.ruta10) },
-            { label: "Legado", value: formatInteger(score.legado) },
+            { label: "Procedimiento", value: formatDecimal(score.pulso10) },
+            { label: "Misión", value: formatDecimal(score.ruta10) },
+            { label: "Trayectoria", value: formatInteger(score.legado) },
             { label: "Billetera", value: formatCurrency(score.wallet) },
           ].map((item) => (
             <div

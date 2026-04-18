@@ -16,6 +16,17 @@ type AuditResult = {
   value: string;
 };
 
+type AppealAuditRow = {
+  id: string;
+  route_code?: string | null;
+  origin_ident?: string | null;
+  destination_ident?: string | null;
+  pilot_callsign?: string | null;
+  status?: string | null;
+  completed_at?: string | null;
+  score_payload?: Record<string, unknown> | null;
+};
+
 function StatusBadge({ status }: { status: AuditStatus }) {
   const map = {
     ok: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
@@ -33,6 +44,7 @@ function AuditContent() {
   const [callsign, setCallsign] = useState("");
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState<Record<string, AuditResult>>({});
+  const [appeals, setAppeals] = useState<AppealAuditRow[]>([]);
 
   useEffect(() => {
     async function runAudit() {
@@ -52,7 +64,7 @@ function AuditContent() {
         nextResults[key] = { key, status, value };
       };
 
-      const [routesRes, profilesRes, coverageRes, scoreRes, reservationRpcRes, dispatchRes, flightDesignatorRes, promotionsRes] = await Promise.all([
+      const [routesRes, profilesRes, coverageRes, scoreRes, reservationRpcRes, dispatchRes, flightDesignatorRes, promotionsRes, appealsRes] = await Promise.all([
         supabase.from("network_routes").select("id", { count: "exact", head: true }),
         supabase.from("network_route_block_profiles").select("route_id, scheduled_block_min, expected_block_p50, expected_block_p80, buffer_departure_min_high, buffer_arrival_min_high").limit(1),
         supabase.from("v_hub_rank_route_coverage").select("hub_code, rank_code, visible_route_count").limit(10),
@@ -61,6 +73,12 @@ function AuditContent() {
         supabase.from("dispatch_packages").select("reservation_id", { count: "exact", head: true }),
         supabase.from("network_routes").select("flight_number, flight_designator").limit(1),
         supabase.from("pw_rank_promotion_requests").select("id", { count: "exact", head: true }),
+        supabase
+          .from("flight_reservations")
+          .select("id, route_code, origin_ident, destination_ident, pilot_callsign, status, completed_at, score_payload")
+          .in("status", ["completed", "cancelled", "interrupted", "crashed", "aborted"])
+          .order("completed_at", { ascending: false, nullsFirst: false })
+          .limit(30),
       ]);
 
       mark(
@@ -95,7 +113,11 @@ function AuditContent() {
       mark(
         "pilot_scores",
         scoreRes.error ? "off" : scoreRes.data ? "ok" : "warn",
-        scoreRes.error ? scoreRes.error.message : scoreRes.data ? `Pulso ${scoreRes.data.pulso_10 ?? 0} · Ruta ${scoreRes.data.ruta_10 ?? 0} · Legado ${scoreRes.data.legado_points ?? 0}` : "Sin score aún"
+        scoreRes.error
+          ? scoreRes.error.message
+          : scoreRes.data
+            ? `Procedimiento ${scoreRes.data.pulso_10 ?? 0} · Misión ${scoreRes.data.ruta_10 ?? 0} · Trayectoria ${scoreRes.data.legado_points ?? 0}`
+            : "Sin score legible aún"
       );
 
       mark(
@@ -124,6 +146,16 @@ function AuditContent() {
       );
 
       setResults(nextResults);
+      const pendingAppeals = ((appealsRes.data ?? []) as AppealAuditRow[]).filter((row) => {
+        const payload = row.score_payload && typeof row.score_payload === "object"
+          ? (row.score_payload as Record<string, unknown>)
+          : null;
+        const appeal = payload?.flight_appeal && typeof payload.flight_appeal === "object"
+          ? (payload.flight_appeal as Record<string, unknown>)
+          : null;
+        return (appeal?.status ?? "") === "pending";
+      });
+      setAppeals(pendingAppeals);
       setLoading(false);
     }
 
@@ -158,6 +190,40 @@ function AuditContent() {
 
       {isAllowed ? (
         <div className="mt-6 grid gap-6">
+          <section className="glass-panel rounded-[30px] p-7">
+            <span className="section-chip">Apelaciones pendientes</span>
+            {appeals.length === 0 ? (
+              <p className="mt-4 text-sm text-white/70">Sin apelaciones pendientes.</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/8">
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Vuelo</th>
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Piloto</th>
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</th>
+                      <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appeals.map((row) => (
+                      <tr key={row.id} className="border-b border-white/5 last:border-0">
+                        <td className="py-3 font-medium text-white">{`${row.origin_ident ?? "---"} → ${row.destination_ident ?? "---"}`}</td>
+                        <td className="py-3 text-white/70">{row.pilot_callsign ?? "—"}</td>
+                        <td className="py-3 text-white/54">{row.status ?? "—"}</td>
+                        <td className="py-3 text-right">
+                          <Link href={`/flights/${row.id}`} className="text-sm font-semibold text-[#67d7ff] transition hover:text-white">
+                            Ver vuelo
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           {reglajeSections.map((section) => (
             <section key={section.key} className="glass-panel rounded-[30px] p-7">
               <span className="section-chip">{section.title}</span>

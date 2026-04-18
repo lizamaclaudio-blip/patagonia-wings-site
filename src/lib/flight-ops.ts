@@ -177,6 +177,41 @@ function normalizeUpper(value: string) {
   return value.trim().toUpperCase();
 }
 
+const ACTIVE_RESERVATION_STATUSES = [
+  "reserved",
+  "dispatched",
+  "dispatch_ready",
+  "in_flight",
+  "in_progress",
+] as const;
+
+function normalizeReservationLifecycleStatus(
+  value: unknown
+): DbFlightReservationRow["status"] {
+  const statusValue = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  switch (statusValue) {
+    case "dispatch_ready":
+    case "dispatched":
+      return "dispatch_ready";
+    case "in_flight":
+    case "in_progress":
+      return "in_progress";
+    case "completed":
+      return "completed";
+    case "cancelled":
+    case "canceled":
+    case "aborted":
+    case "interrupted":
+    case "manual":
+      return "cancelled";
+    case "reserved":
+      return "reserved";
+    default:
+      return "reserved";
+  }
+}
+
 function normalizeHealthValue(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.min(100, value));
@@ -547,17 +582,7 @@ function mapLegacyReservationFromRpc(
   row: GenericRecord,
   profile: PilotProfileRecord
 ): DbFlightReservationRow {
-  const statusValue = typeof row.status === "string" ? row.status : "reserved";
-  const mappedStatus: DbFlightReservationRow["status"] =
-    statusValue === "dispatched"
-      ? "dispatch_ready"
-      : statusValue === "in_flight"
-        ? "in_progress"
-        : statusValue === "completed"
-          ? "completed"
-          : statusValue === "cancelled"
-            ? "cancelled"
-            : "reserved";
+  const mappedStatus = normalizeReservationLifecycleStatus(row.status);
 
   const createdAt =
     typeof row.created_at === "string"
@@ -794,9 +819,9 @@ export function mapReservationToOperation(
       : "",
     remarks: row.remarks ?? "",
     status: (
-      row.status === "in_progress" || row.status === "completed" || row.status === "dispatched"
+      row.status === "in_progress" || row.status === "in_flight" || row.status === "dispatched"
         ? "dispatch_ready"
-        : row.status === "cancelled" || row.status === "in_flight"
+        : row.status === "cancelled" || row.status === "completed"
           ? "draft"
           : (row.status as FlightOperationStatus)
     ),
@@ -1443,14 +1468,21 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
     return mapLegacyReservationFromRpc(firstRow, profile);
   } catch (rpcError) {
     // flight_reservations no tiene columna pilot_id — solo pilot_callsign.
-    // Intentar con callsign exacto y luego con un rango de estados más amplio.
     const attempts = [
-      supabase.from("flight_reservations").select("*").eq("pilot_callsign", normalizeUpper(profile.callsign)).in("status", ["reserved", "dispatched", "in_flight", "in_progress"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("flight_reservations").select("*").eq("pilot_callsign", normalizeUpper(profile.callsign)).in("status", ["draft", "reserved", "dispatched", "in_flight", "in_progress", "completed"]).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase
+        .from("flight_reservations")
+        .select("*")
+        .eq("pilot_callsign", normalizeUpper(profile.callsign))
+        .in("status", [...ACTIVE_RESERVATION_STATUSES])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ];
     for (const attempt of attempts) {
       const { data, error } = await attempt;
-      if (!error) return (data ?? null) as DbFlightReservationRow | null;
+      if (!error && data) {
+        return mapLegacyReservationFromRpc(data as GenericRecord, profile);
+      }
     }
     throw rpcError instanceof Error ? rpcError : new Error("No se pudo obtener la reserva activa.");
   }

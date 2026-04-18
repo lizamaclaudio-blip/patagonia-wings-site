@@ -143,6 +143,7 @@ type DispatchMetarSummary = {
 };
 
 type FlightReservationRow = {
+  id?: string | null;
   pilot_callsign: string | null;
   route_code?: string | null;
   aircraft_type_code?: string | null;
@@ -967,6 +968,9 @@ function formatFlightModeLabel(mode?: string | null) {
 function formatFlightStatusLabel(status?: string | null) {
   const normalized = (status ?? "").trim().toLowerCase();
   const map: Record<string, string> = {
+  interrupted: "Interrumpido",
+  crashed: "Accidentado",
+  aborted: "Abortado",
     cancelled: "Cancelado",
     completed: "Completado",
     dispatched: "Despacho",
@@ -1235,10 +1239,11 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
     supabase
       .from("flight_reservations")
       .select(
-        "pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, procedure_score, mission_score, completed_at, created_at",
+        "id, pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, procedure_score, mission_score, completed_at, created_at",
       )
-      .eq("status", "completed")
+      .in("status", ["completed", "cancelled", "interrupted", "crashed", "aborted"])
       .order("completed_at", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(20),
     supabase
       .from("pw_pilot_score_ledger")
@@ -2345,12 +2350,18 @@ function DispatchAircraftCascadeSelector({
   }, [selModelCode, uniqueVariants, selVariantKey]);
 
   // Step 3: matrículas disponibles para modelo + variante seleccionada
+  // Matrículas: filtra por modelo; variante es opcional y solo pre-filtra la lista
   const registrations = useMemo(() => {
-    if (!selModelCode || !selVariantKey) return [];
+    if (!selModelCode) return [];
     return available.filter((r) => {
       const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
-      const varKey = r.aircraft_type_code?.trim() || "__none__";
-      return modelKey === selModelCode && varKey === selVariantKey;
+      if (modelKey !== selModelCode) return false;
+      // Si hay variante elegida, filtra; si no, muestra todas las del modelo
+      if (selVariantKey) {
+        const varKey = r.aircraft_type_code?.trim() || "__none__";
+        return varKey === selVariantKey;
+      }
+      return true;
     });
   }, [available, selModelCode, selVariantKey]);
 
@@ -2358,6 +2369,25 @@ function DispatchAircraftCascadeSelector({
   useEffect(() => {
     if (registrations.length === 1 && selectedAircraftId !== registrations[0].aircraft_id) {
       onSelect(registrations[0].aircraft_id);
+    }
+  }, [registrations, selectedAircraftId, onSelect]);
+
+  // Cuando se selecciona matrícula, sincronizar variante con su aircraft_type_code
+  useEffect(() => {
+    if (!selectedAircraftId) return;
+    const found = available.find((r) => r.aircraft_id === selectedAircraftId);
+    if (found && !selVariantKey) {
+      const key = found.aircraft_type_code?.trim() || "__none__";
+      if (key !== "__none__") setSelVariantKey(key);
+    }
+  }, [selectedAircraftId, available, selVariantKey]);
+
+  // Si cambió el modelo o la variante y la matrícula ya no pertenece a la lista visible, limpiarla.
+  useEffect(() => {
+    if (!selectedAircraftId) return;
+    const stillVisible = registrations.some((r) => r.aircraft_id === selectedAircraftId);
+    if (!stillVisible) {
+      onSelect("");
     }
   }, [registrations, selectedAircraftId, onSelect]);
 
@@ -2369,6 +2399,7 @@ function DispatchAircraftCascadeSelector({
   const handleModelChange = (code: string) => {
     setSelModelCode(code);
     setSelVariantKey("");
+    onSelect("");
   };
 
   if (available.length === 0) {
@@ -2429,7 +2460,7 @@ function DispatchAircraftCascadeSelector({
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
-              selVariantKey ? "text-white/54" : "text-white/24"
+              selModelCode ? "text-white/54" : "text-white/24"
             }`}
           >
             3 · N° de registro
@@ -2439,7 +2470,7 @@ function DispatchAircraftCascadeSelector({
             onChange={(e) => {
               if (e.target.value) onSelect(e.target.value);
             }}
-            disabled={!selVariantKey}
+            disabled={!selModelCode}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
           >
             <option value="">— Elige matrícula —</option>
@@ -5038,7 +5069,15 @@ function DashboardWorkspace({
                     <tbody>
                       {central.recentFlights.slice(0, 8).map((f, i) => (
                         <tr key={i} className="border-b border-white/5 last:border-0">
-                          <td className="py-3 font-medium text-white">{formatRouteTag(f)}</td>
+                          <td className="py-3 font-medium text-white">
+                            {f.id ? (
+                              <Link href={`/flights/${f.id}`} className="transition hover:text-[#67d7ff]">
+                                {formatRouteTag(f)}
+                              </Link>
+                            ) : (
+                              formatRouteTag(f)
+                            )}
+                          </td>
                           <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
                           <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
                           <td className="py-3 text-right font-semibold text-[#67d7ff]">
