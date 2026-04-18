@@ -259,7 +259,7 @@ async function attachAircraftCondition(rows: AvailableAircraftOption[]) {
           typeof health.maintenance_reason === "string" ? health.maintenance_reason : null,
         condition_band: conditionBand,
       } satisfies AvailableAircraftOption;
-    }));
+    });
   } catch (error) {
     console.error("No se pudo anexar salud de aeronaves:", error);
     return rows;
@@ -1176,7 +1176,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
           typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
         ),
       } satisfies AvailableAircraftOption;
-    });
+    }));
   } catch (tableError) {
     const rpcAttempts: Array<Record<string, unknown>> = [
       { p_callsign: profile.callsign, p_route_code: null },
@@ -1251,7 +1251,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                         : ""
                   ),
           } satisfies AvailableAircraftOption;
-        });
+        }));
       }
     }
 
