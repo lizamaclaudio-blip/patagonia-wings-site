@@ -134,30 +134,30 @@ function getRankBadge(rank: string | null | undefined): RankBadge {
   const code = (rank ?? "CADET").trim().toUpperCase();
 
   if (code.includes("LEGEND")) {
-    return { symbol: "âœ¦", label: "Leyenda Patagonia" };
+    return { symbol: "✦", label: "Leyenda Patagonia" };
   }
 
   if (code.includes("INSPECTOR") || code.includes("CHECK") || code.includes("MASTER")) {
-    return { symbol: "â˜…", label: "Inspector de lÃ­nea" };
+    return { symbol: "★", label: "Inspector de línea" };
   }
 
   if (code.includes("COMMANDER")) {
-    return { symbol: "â—†", label: "Comandante regional" };
+    return { symbol: "◆", label: "Comandante regional" };
   }
 
   if (code.includes("CAPTAIN")) {
-    return { symbol: "â–²", label: "CapitÃ¡n de lÃ­nea" };
+    return { symbol: "▲", label: "Capitán de línea" };
   }
 
   if (code.includes("FIRST_OFFICER")) {
-    return { symbol: "â– ", label: "Primer oficial" };
+    return { symbol: "■", label: "Primer oficial" };
   }
 
   if (code.includes("SECOND_OFFICER")) {
-    return { symbol: "â—", label: "Segundo oficial" };
+    return { symbol: "●", label: "Segundo oficial" };
   }
 
-  return { symbol: "â—ˆ", label: "Cadete" };
+  return { symbol: "◈", label: "Cadete" };
 }
 
 export default function PilotStatusRail() {
@@ -276,7 +276,7 @@ export default function PilotStatusRail() {
             </span>
             <div className="text-left">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/70">
-                EscalafÃ³n
+                Escalafón
               </span>
               <strong className="text-sm font-semibold text-white">{rankBadge.label}</strong>
             </div>
@@ -288,7 +288,7 @@ export default function PilotStatusRail() {
         <div className="mt-5 space-y-3">
           {[
             { label: "HUB", value: profile?.base_hub ?? "SCEL" },
-            { label: "UbicaciÃ³n", value: getCurrentAirport(profile) },
+            { label: "Ubicación", value: getCurrentAirport(profile) },
             { label: "Vuelo reservado", value: activeRoute },
           ].map((item) => (
             <div
@@ -298,7 +298,7 @@ export default function PilotStatusRail() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 {item.label}
               </p>
-              <p className="mt-2 text-base font-semibold text-white">{loading ? "â€¦" : item.value}</p>
+              <p className="mt-2 text-base font-semibold text-white">{loading ? "…" : item.value}</p>
             </div>
           ))}
         </div>
@@ -315,7 +315,7 @@ export default function PilotStatusRail() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/54">
                 {item.label}
               </p>
-              <p className="mt-2 text-lg font-semibold text-white">{loading ? "â€¦" : item.value}</p>
+              <p className="mt-2 text-lg font-semibold text-white">{loading ? "…" : item.value}</p>
             </div>
           ))}
         </div>
@@ -325,7 +325,7 @@ export default function PilotStatusRail() {
             Horas totales
           </p>
           <p className="mt-2 text-3xl font-semibold text-white">
-            {loading ? "â€¦" : formatDecimal(getTotalHours(profile))}
+            {loading ? "…" : formatDecimal(getTotalHours(profile))}
           </p>
         </div>
 

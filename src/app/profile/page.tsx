@@ -90,7 +90,7 @@ function formatInteger(value: number) {
 
 function formatNavigraphExpiry(value: string | null | undefined) {
   if (!value) {
-    return "Sin sesiÃ³n activa";
+    return "Sin sesión activa";
   }
 
   const parsed = new Date(value);
@@ -145,30 +145,30 @@ function getRankBadge(rank: string | null | undefined) {
   const code = (rank ?? "CADET").trim().toUpperCase();
 
   if (code.includes("LEGEND")) {
-    return { symbol: "âœ¦", label: "Leyenda Patagonia" };
+    return { symbol: "✦", label: "Leyenda Patagonia" };
   }
 
   if (code.includes("INSPECTOR") || code.includes("CHECK") || code.includes("MASTER")) {
-    return { symbol: "â˜…", label: "Inspector de lÃ­nea" };
+    return { symbol: "★", label: "Inspector de línea" };
   }
 
   if (code.includes("COMMANDER")) {
-    return { symbol: "â—†", label: "Comandante regional" };
+    return { symbol: "◆", label: "Comandante regional" };
   }
 
   if (code.includes("CAPTAIN")) {
-    return { symbol: "â–²", label: "CapitÃ¡n de lÃ­nea" };
+    return { symbol: "▲", label: "Capitán de línea" };
   }
 
   if (code.includes("FIRST_OFFICER")) {
-    return { symbol: "â– ", label: "Primer oficial" };
+    return { symbol: "■", label: "Primer oficial" };
   }
 
   if (code.includes("SECOND_OFFICER")) {
-    return { symbol: "â—", label: "Segundo oficial" };
+    return { symbol: "●", label: "Segundo oficial" };
   }
 
-  return { symbol: "â—ˆ", label: "Cadete" };
+  return { symbol: "◈", label: "Cadete" };
 }
 
 function readView(value: string | null): ProfileView {
@@ -359,7 +359,7 @@ function ProfileContent() {
             }
           : null
       );
-      setInfoMessage("SesiÃ³n Navigraph desconectada correctamente.");
+      setInfoMessage("Sesión Navigraph desconectada correctamente.");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo desconectar Navigraph."
@@ -415,10 +415,10 @@ function ProfileContent() {
             <div>
               <span className="parallax-chip">Cuenta piloto</span>
               <h1 className="mt-4 text-3xl font-semibold text-white sm:text-[40px]">
-                Ãrea personal Patagonia Wings
+                Área personal Patagonia Wings
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72 sm:text-base">
-                AquÃ­ dejamos el perfil limpio: datos del piloto por un lado y ficha operacional por otro, sin mezclar Navigraph ni pasos de despacho.
+                Aquí dejamos el perfil limpio: datos del piloto por un lado y ficha operacional por otro, sin mezclar Navigraph ni pasos de despacho.
               </p>
             </div>
 
@@ -483,18 +483,18 @@ function ProfileContent() {
                       label: "Estado",
                       value: profile?.status?.trim().toLowerCase() === "inactive" ? "Inactivo" : "Activo",
                     },
-                    { label: "PaÃ­s", value: form.country || "Chile" },
+                    { label: "País", value: form.country || "Chile" },
                     { label: "Hub base", value: form.base_hub || "SCEL" },
                     { label: "SimBrief", value: form.simbrief_username || "Pendiente" },
-                    { label: "VATSIM ID", value: form.vatsim_id || "â€”" },
-                    { label: "IVAO ID", value: form.ivao_id || "â€”" },
+                    { label: "VATSIM ID", value: form.vatsim_id || "—" },
+                    { label: "IVAO ID", value: form.ivao_id || "—" },
                     { label: "Simulador", value: "MSFS 2020" },
                   ].map((item) => (
                     <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
                         {item.label}
                       </p>
-                      <p className="mt-2 text-xl font-semibold text-white">{loading ? "â€¦" : item.value}</p>
+                      <p className="mt-2 text-xl font-semibold text-white">{loading ? "…" : item.value}</p>
                     </div>
                   ))}
                 </div>
@@ -504,7 +504,7 @@ function ProfileContent() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
-                        IntegraciÃ³n Navigraph
+                        Integración Navigraph
                       </p>
                       <p className="mt-2 text-xl font-semibold text-white">
                         {loadingNavigraphStatus
@@ -559,7 +559,7 @@ function ProfileContent() {
                   </div>
 
                   <p className="mt-4 text-sm leading-7 text-white/68">
-                    La conexiÃ³n web de Navigraph se usarÃ¡ para abrir y validar el flujo OFP / SimBrief desde el despacho de Patagonia Wings.
+                    La conexión web de Navigraph se usará para abrir y validar el flujo OFP / SimBrief desde el despacho de Patagonia Wings.
                   </p>
                 </div>
 
@@ -571,7 +571,7 @@ function ProfileContent() {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
                         {item.label}
                       </p>
-                      <p className="mt-2 text-[28px] font-semibold text-white">{loading ? "â€¦" : item.value}</p>
+                      <p className="mt-2 text-[28px] font-semibold text-white">{loading ? "…" : item.value}</p>
                     </div>
                   ))}
                 </div>
@@ -584,9 +584,9 @@ function ProfileContent() {
           <section className="glass-panel rounded-[30px] p-6 sm:p-7">
             <div className="mb-5">
               <span className="section-chip">Datos personales</span>
-              <h2 className="mt-4 text-3xl font-semibold text-white">Editar informaciÃ³n del piloto</h2>
+              <h2 className="mt-4 text-3xl font-semibold text-white">Editar información del piloto</h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
-                Dejamos el hub bloqueado porque solo se define al registrarte. El simulador tambiÃ©n queda fijo en MSFS 2020 por ahora.
+                Dejamos el hub bloqueado porque solo se define al registrarte. El simulador también queda fijo en MSFS 2020 por ahora.
               </p>
             </div>
 
@@ -621,7 +621,7 @@ function ProfileContent() {
                 </div>
 
                 <div className="surface-outline rounded-[22px] px-5 py-5">
-                  <label className="field-label">PaÃ­s</label>
+                  <label className="field-label">País</label>
                   <input
                     className="input-premium"
                     value={form.country}
@@ -631,7 +631,7 @@ function ProfileContent() {
 
                 <div className="surface-outline rounded-[22px] px-5 py-5">
                   <label className="field-label">Hub base</label>
-                  <input className="input-premium opacity-70" value={`${form.base_hub} Â· Bloqueado`} readOnly />
+                  <input className="input-premium opacity-70" value={`${form.base_hub} · Bloqueado`} readOnly />
                 </div>
 
                 <div className="surface-outline rounded-[22px] px-5 py-5">

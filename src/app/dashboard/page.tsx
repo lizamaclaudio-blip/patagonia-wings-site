@@ -237,31 +237,31 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
   {
     id: "career",
     title: "Carrera",
-    description: "Vuelos regulares de la red con progresiÃ³n, reglas y continuidad operacional.",
+    description: "Vuelos regulares de la red con progresión, reglas y continuidad operacional.",
     imageSrc: "/dispatch/flight-types/career.png",
   },
   {
     id: "charter",
-    title: "ChÃ¡rter",
-    description: "OperaciÃ³n dedicada para vuelos especiales, flexibles y fuera del patrÃ³n regular.",
+    title: "Chárter",
+    description: "Operación dedicada para vuelos especiales, flexibles y fuera del patrón regular.",
     imageSrc: "/dispatch/flight-types/charter.png",
   },
   {
     id: "training",
     title: "Entrenamiento",
-    description: "Sesiones de prÃ¡ctica, chequeos y preparaciÃ³n operativa antes de salir a lÃ­nea.",
+    description: "Sesiones de práctica, chequeos y preparación operativa antes de salir a línea.",
     imageSrc: "/dispatch/flight-types/training.png",
   },
   {
     id: "event",
     title: "Evento",
-    description: "Bloque reservado para vuelos coordinados, convocatoria interna y operaciÃ³n compartida.",
+    description: "Bloque reservado para vuelos coordinados, convocatoria interna y operación compartida.",
     imageSrc: "/dispatch/flight-types/event.png",
   },
   {
     id: "special_mission",
-    title: "MisiÃ³n especial",
-    description: "Misiones puntuales con contexto operacional singular y prioridad especÃ­fica.",
+    title: "Misión especial",
+    description: "Misiones puntuales con contexto operacional singular y prioridad específica.",
     imageSrc: "/dispatch/flight-types/special-mission.png",
   },
   {
@@ -287,8 +287,8 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
   AR: "Argentina",
   BR: "Brasil",
   CL: "Chile",
-  ES: "EspaÃ±a",
-  PE: "PerÃº",
+  ES: "España",
+  PE: "Perú",
   UK: "Reino Unido",
   US: "Estados Unidos",
 };
@@ -395,7 +395,7 @@ function buildMonthLabel() {
 
 function getCountryName(countryCode?: string | null) {
   const normalized = countryCode?.trim().toUpperCase() ?? "";
-  return COUNTRY_NAME_MAP[normalized] || normalized || "UbicaciÃ³n actual";
+  return COUNTRY_NAME_MAP[normalized] || normalized || "Ubicación actual";
 }
 
 function getFlagUrl(countryCode?: string | null) {
@@ -556,7 +556,7 @@ function formatUtcDateTime(value: string | null | undefined) {
 
 function formatNavigraphExpiry(value: string | null | undefined) {
   if (!value) {
-    return "Sin sesiÃ³n activa";
+    return "Sin sesión activa";
   }
 
   const parsed = new Date(value);
@@ -622,7 +622,7 @@ function getDestinationCityLabel(
     return destinationAirport.name.trim();
   }
 
-  const splitByArrow = itinerary.itinerary_name.split("â†’");
+  const splitByArrow = itinerary.itinerary_name.split("→");
   const parsed = splitByArrow.length > 1 ? splitByArrow[splitByArrow.length - 1].trim() : "";
   return parsed || itinerary.destination_icao;
 }
@@ -760,24 +760,24 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
     {
       title: "Traslado terrestre",
       subtitle: isChile
-        ? `Moverte por tierra desde ${airportCode} hacia otro punto nacional cuando la economÃ­a quede activa.`
-        : `Moverte por tierra desde ${airportCode} hacia otro punto domÃ©stico cuando la economÃ­a quede activa.`,
+        ? `Moverte por tierra desde ${airportCode} hacia otro punto nacional cuando la economía quede activa.`
+        : `Moverte por tierra desde ${airportCode} hacia otro punto doméstico cuando la economía quede activa.`,
       eta: isChile ? "2h a 8h" : "3h a 10h",
       priceLabel: isChile ? "$18.000 CLP" : "$24.000 ARS",
       accent: "emerald",
     },
     {
-      title: "Ticket aÃ©reo regular",
-      subtitle: "Reservado para saltos rÃ¡pidos entre hubs y aeropuertos de red sin romper la ubicaciÃ³n real del piloto.",
+      title: "Ticket aéreo regular",
+      subtitle: "Reservado para saltos rápidos entre hubs y aeropuertos de red sin romper la ubicación real del piloto.",
       eta: "45m a 3h",
-      priceLabel: "EconomÃ­a piloto",
+      priceLabel: "Economía piloto",
       accent: "cyan",
     },
     {
       title: "Reposicionamiento prioritario",
-      subtitle: "OpciÃ³n futura para mover al piloto con prioridad operacional cuando la red o un evento lo requieran.",
+      subtitle: "Opción futura para mover al piloto con prioridad operacional cuando la red o un evento lo requieran.",
       eta: "Prioridad alta",
-      priceLabel: "Tarifa dinÃ¡mica",
+      priceLabel: "Tarifa dinámica",
       accent: "amber",
     },
   ];
@@ -796,7 +796,7 @@ function formatMetarTemperature(token?: string | null) {
     return "Pendiente";
   }
 
-  return `${sign}${numeric} Â°C`;
+  return `${sign}${numeric} °C`;
 }
 
 function formatMetarWind(rawMetar: string) {
@@ -806,7 +806,7 @@ function formatMetarWind(rawMetar: string) {
     return "Pendiente";
   }
 
-  const direction = match[1].toUpperCase() === "VRB" ? "VRB" : `${match[1]}Â°`;
+  const direction = match[1].toUpperCase() === "VRB" ? "VRB" : `${match[1]}°`;
   const speed = `${Number.parseInt(match[2], 10)} kt`;
   const gust = match[4] ? ` G${Number.parseInt(match[4], 10)}` : "";
 
@@ -894,7 +894,7 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
       qnh: "Pendiente",
       wind: "Pendiente",
       visibility: "Pendiente",
-      raw: normalized || "METAR pendiente de actualizaciÃ³n",
+      raw: normalized || "METAR pendiente de actualización",
     };
   }
 
@@ -917,7 +917,7 @@ function buildNewsItems(
   recentFlights: FlightReservationRow[],
 ): NewsItem[] {
   const latestFlight = recentFlights[0] ?? null;
-  const latestFlightTag = latestFlight ? formatRouteTag(latestFlight) : `${airportCode} â†’ ---`;
+  const latestFlightTag = latestFlight ? formatRouteTag(latestFlight) : `${airportCode} → ---`;
   const latestFlightScore = latestFlight ? toSafeNumber(latestFlight.procedure_score) : 0;
   const activeCount = activeFlights.length;
 
@@ -925,27 +925,27 @@ function buildNewsItems(
     {
       tag: "NOTAM",
       title: `Centro informativo ${airportCode}`,
-      body: `Este panel queda listo para eventos, avisos operativos, rÃ©cords del mes y publicaciones internas sin salir de la Central del hub.`,
+      body: `Este panel queda listo para eventos, avisos operativos, récords del mes y publicaciones internas sin salir de la Central del hub.`,
     },
     {
-      tag: "OPERACIÃ“N",
-      title: activeCount > 0 ? `${activeCount} vuelo(s) activos ahora` : "OperaciÃ³n tranquila en este momento",
+      tag: "OPERACIÓN",
+      title: activeCount > 0 ? `${activeCount} vuelo(s) activos ahora` : "Operación tranquila en este momento",
       body:
         activeCount > 0
-          ? `Ya puedes usar esta ventana para destacar la operaciÃ³n viva del dÃ­a y luego enchufar alertas reales segÃºn salida, taxi, crucero o llegada.`
-          : `Cuando haya pilotos volando, aquÃ­ podrÃ¡s destacar movimientos activos, eventos del dÃ­a y trÃ¡fico relevante del hub actual.`,
+          ? `Ya puedes usar esta ventana para destacar la operación viva del día y luego enchufar alertas reales según salida, taxi, crucero o llegada.`
+          : `Cuando haya pilotos volando, aquí podrás destacar movimientos activos, eventos del día y tráfico relevante del hub actual.`,
     },
     {
-      tag: "ÃšLTIMO CIERRE",
+      tag: "ÚLTIMO CIERRE",
       title: latestFlight ? latestFlightTag : "Esperando vuelos recientes",
       body: latestFlight
-        ? `Ãšltimo cierre registrado con ${formatDecimal(latestFlightScore)} pts SUR. Este bloque queda listo para convertirlo luego en noticia, rÃ©cord o destacado.`
-        : `AÃºn no hay cierres recientes para convertir en noticia. Cuando entren mÃ¡s vuelos, esta tarjeta podrÃ¡ resaltar el Ãºltimo PIREP destacado.`,
+        ? `Último cierre registrado con ${formatDecimal(latestFlightScore)} pts SUR. Este bloque queda listo para convertirlo luego en noticia, récord o destacado.`
+        : `Aún no hay cierres recientes para convertir en noticia. Cuando entren más vuelos, esta tarjeta podrá resaltar el último PIREP destacado.`,
     },
     {
       tag: "MOVIMIENTO HUB",
       title: `${formatInteger(pilotsOnField)} piloto(s) en ${airportCode}`,
-      body: `La Central ya puede mostrar el estado operativo del hub actual. MÃ¡s adelante podremos usar este mismo bloque para avisos de traslados, slots o saturaciÃ³n operativa.`,
+      body: `La Central ya puede mostrar el estado operativo del hub actual. Más adelante podremos usar este mismo bloque para avisos de traslados, slots o saturación operativa.`,
     },
   ];
 }
@@ -953,13 +953,13 @@ function buildNewsItems(
 function formatFlightModeLabel(mode?: string | null) {
   const normalized = (mode ?? "").trim().toUpperCase();
   if (!normalized) {
-    return "OperaciÃ³n";
+    return "Operación";
   }
 
   const map: Record<string, string> = {
-    ASSIGNMENT: "AsignaciÃ³n",
+    ASSIGNMENT: "Asignación",
     CAREER: "Itinerario",
-    CHARTER: "ChÃ¡rter",
+    CHARTER: "Chárter",
     EVENT: "Evento",
     TRAINING: "Entrenamiento",
     TOUR: "Tour",
@@ -981,13 +981,13 @@ function formatFlightStatusLabel(status?: string | null) {
     reserved: "Reservado",
   };
 
-  return map[normalized] ?? "OperaciÃ³n";
+  return map[normalized] ?? "Operación";
 }
 
 function formatRouteTag(row: FlightReservationRow) {
   const origin = row.origin_ident?.trim().toUpperCase() ?? "---";
   const destination = row.destination_ident?.trim().toUpperCase() ?? "---";
-  return `${origin} â†’ ${destination}`;
+  return `${origin} → ${destination}`;
 }
 
 function topEntries(
@@ -1084,7 +1084,7 @@ function buildRankingCards(
     (value) => `${formatDecimal(value)} pts`,
   );
 
-  const prefix = variant === "month" ? "Mes" : "AÃ±o";
+  const prefix = variant === "month" ? "Mes" : "Año";
 
   return [
     {
@@ -1284,7 +1284,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
 
   const airport = (airportRes.data ?? null) as AirportRow | null;
 
-  let metarText = `METAR ${currentAirport} â€” pendiente de actualizaciÃ³n`;
+  let metarText = `METAR ${currentAirport} — pendiente de actualización`;
 
   try {
     const metarResponse = await fetch(`/api/weather/metar?ids=${currentAirport}`, {
@@ -1303,7 +1303,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
       }
     }
   } catch {
-    metarText = `METAR ${currentAirport} â€” pendiente de actualizaciÃ³n`;
+    metarText = `METAR ${currentAirport} — pendiente de actualización`;
   }
 
   const airportCode = airport?.ident?.trim().toUpperCase() ?? currentAirport;
@@ -1315,7 +1315,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
   return {
     airportCode,
     airportName: airport?.name?.trim() ?? "Aeropuerto actual del piloto",
-    municipality: airport?.municipality?.trim() ?? "UbicaciÃ³n operativa",
+    municipality: airport?.municipality?.trim() ?? "Ubicación operativa",
     countryCode,
     countryName: getCountryName(airport?.iso_country),
     pilotsOnField,
@@ -1402,7 +1402,7 @@ function PilotStatsRail({
     <aside className="order-1 xl:order-2">
       <div className="glass-panel rounded-[30px] p-4 sm:p-5">
         <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-          EstadÃ­sticas del piloto
+          Estadísticas del piloto
         </p>
 
         <div className="mt-4 grid gap-3">
@@ -1457,7 +1457,7 @@ function CentralRankingGrid({ cards }: { cards: RankingCard[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-white">{entry.label}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/42">
-                    PosiciÃ³n destacada
+                    Posición destacada
                   </p>
                 </div>
 
@@ -1569,13 +1569,13 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               ) : null}
             </div>
             <p className="mt-2 text-base text-white/78">
-              {central.airportCode} Â· {central.airportName}
+              {central.airportCode} · {central.airportName}
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
-              Pilotos en esta ubicaciÃ³n
+              Pilotos en esta ubicación
             </p>
             <p className="mt-2 text-2xl font-semibold text-white">
               {formatInteger(central.pilotsOnField)}
@@ -1613,10 +1613,10 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                   <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                        Marco dinÃ¡mico del hub
+                        Marco dinámico del hub
                       </p>
                       <p className="mt-2 text-lg font-semibold text-white">
-                        {central.municipality} Â· {central.countryName}
+                        {central.municipality} · {central.countryName}
                       </p>
                     </div>
 
@@ -1646,7 +1646,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                       ) : (
                         <span className="text-white/74">{heroImage?.photographerName}</span>
                       )}
-                      {" "}vÃ­a{" "}
+                      {" "}vía{" "}
                       {heroImage?.providerUrl ? (
                         <a
                           href={heroImage.providerUrl}
@@ -1661,7 +1661,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                       )}
                       {heroImage?.photoPageUrl ? (
                         <>
-                          {" "}Â·{" "}
+                          {" "}·{" "}
                           <a
                             href={heroImage.photoPageUrl}
                             target="_blank"
@@ -1680,7 +1680,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               <div className="flex min-h-[220px] h-full w-full items-end overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(30,144,255,0.24),transparent_38%),linear-gradient(135deg,rgba(3,20,40,1),rgba(7,35,66,0.86))] p-5">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
-                    Marco dinÃ¡mico del aeropuerto
+                    Marco dinámico del aeropuerto
                   </p>
                   <h3 className="mt-2 text-2xl font-semibold text-white">
                     {central.airportCode}
@@ -1688,7 +1688,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                   <p className="mt-2 max-w-md text-sm leading-7 text-white/74">
                     Si subes una imagen manual en{" "}
                     <span className="font-semibold text-white">public/airports/{central.airportCode}.jpg</span>,
-                    la tomarÃ¡ primero. Si no existe, quedarÃ¡ listo para buscar una foto automÃ¡tica por ciudad.
+                    la tomará primero. Si no existe, quedará listo para buscar una foto automática por ciudad.
                   </p>
                 </div>
               </div>
@@ -1702,7 +1702,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               </p>
               <h3 className="mt-3 text-2xl font-semibold text-white">{central.airportName}</h3>
               <p className="mt-2 text-sm leading-7 text-white/74">
-                {central.municipality} Â· {central.countryName}
+                {central.municipality} · {central.countryName}
               </p>
             </div>
 
@@ -1723,7 +1723,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
 
               <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                  PaÃ­s / bandera
+                  País / bandera
                 </p>
                 <div className="mt-3 flex items-center gap-3">
                   {flagUrl ? (
@@ -1766,17 +1766,17 @@ function CentralTransfersSection({
           </p>
           <h3 className="mt-2 text-2xl font-semibold text-white">Movimiento entre ubicaciones</h3>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
-            Este bloque ya queda listo para la futura economÃ­a del piloto. Desde aquÃ­ podrÃ¡s pagar un
+            Este bloque ya queda listo para la futura economía del piloto. Desde aquí podrás pagar un
             movimiento controlado desde <span className="font-semibold text-white">{airportCode}</span> sin romper la
-            ubicaciÃ³n real ni el flujo operativo del hub.
+            ubicación real ni el flujo operativo del hub.
           </p>
         </div>
 
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
-            Estado del mÃ³dulo
+            Estado del módulo
           </p>
-          <p className="mt-2 text-sm font-semibold text-white">Preparado para economÃ­a</p>
+          <p className="mt-2 text-sm font-semibold text-white">Preparado para economía</p>
         </div>
       </div>
 
@@ -1787,7 +1787,7 @@ function CentralTransfersSection({
             className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4"
           >
             <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
-              PrÃ³ximamente
+              Próximamente
             </div>
             <h4 className="mt-4 text-lg font-semibold text-white">{option.title}</h4>
             <p className="mt-3 text-sm leading-7 text-white/72">{option.subtitle}</p>
@@ -2027,7 +2027,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Rankings anuales
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del aÃ±o</h3>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del año</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -2050,12 +2050,12 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Pilotos volando
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">OperaciÃ³n viva</h3>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Operación viva</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              TrÃ¡fico activo
+              Tráfico activo
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.activeFlights.length)} movimiento(s)</p>
           </div>
@@ -2064,7 +2064,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="mt-5">
           <CentralFlightsTable
             rows={central.activeFlights}
-            emptyLabel="AÃºn no hay pilotos volando en esta lectura del panel."
+            emptyLabel="Aún no hay pilotos volando en esta lectura del panel."
             variant="active"
           />
         </div>
@@ -2075,14 +2075,14 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-              Ãšltimos 20 vuelos
+              Últimos 20 vuelos
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              Ãšltimos cierres
+              Últimos cierres
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.recentFlights.length)} registro(s)</p>
           </div>
@@ -2091,7 +2091,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="mt-5">
           <CentralFlightsTable
             rows={central.recentFlights}
-            emptyLabel="TodavÃ­a no hay vuelos recientes para mostrar."
+            emptyLabel="Todavía no hay vuelos recientes para mostrar."
             variant="recent"
           />
         </div>
@@ -2146,11 +2146,11 @@ function DispatchOverviewHeader({
           Workspace Dispatch
         </p>
         <h3 className="mt-2 text-xl font-semibold text-white sm:text-[28px]">
-          Flujo central reutilizando la lÃ³gica real del despacho
+          Flujo central reutilizando la lógica real del despacho
         </h3>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
-          Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no estÃ¡
-          elegido o marcado como listo. AsÃ­ mantenemos orden operativo dentro del dashboard.
+          Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no está
+          elegido o marcado como listo. Así mantenemos orden operativo dentro del dashboard.
         </p>
       </div>
 
@@ -2267,8 +2267,8 @@ function DispatchAircraftCascadeSelector({
 }) {
   const available = useMemo(() => rows.filter((r) => r.selectable), [rows]);
 
-  // modelCode = aircraft_model_code (e.g. "C208", "A320") â€” agrupador real del Step 1
-  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") â€” agrupador del Step 2
+  // modelCode = aircraft_model_code (e.g. "C208", "A320") — agrupador real del Step 1
+  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") — agrupador del Step 2
   const [selModelCode, setSelModelCode] = useState<string>("");
   const [selVariantKey, setSelVariantKey] = useState<string>("");
 
@@ -2282,9 +2282,9 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selectedAircraftId, available]);
 
-  // Step 1: modelos Ãºnicos agrupados por aircraft_model_code (B737, C208, A320â€¦)
+  // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320…)
   const uniqueModels = useMemo(() => {
-    const seen = new Map<string, string>(); // modelCode â†’ displayName
+    const seen = new Map<string, string>(); // modelCode → displayName
     for (const r of available) {
       // aircraft_variant_code en la BD contiene el model_code (e.g. "C208")
       const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
@@ -2297,10 +2297,10 @@ function DispatchAircraftCascadeSelector({
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [available]);
 
-  // Deriva el nombre del addon desde aircraft_type_code si addon_provider estÃ¡ vacÃ­o
-  // Ej: "B737_PMDG" â†’ "PMDG" | "C208_BLACKSQUARE" â†’ "Black Square" | "ATR72_MSFS" â†’ "EstÃ¡ndar"
+  // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
+  // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
   const deriveAddonLabel = (typeCode: string | undefined | null): string => {
-    if (!typeCode) return "EstÃ¡ndar";
+    if (!typeCode) return "Estándar";
     const suffix = typeCode.split("_").pop()?.toUpperCase() ?? "";
     const addonMap: Record<string, string> = {
       PMDG: "PMDG",
@@ -2313,22 +2313,22 @@ function DispatchAircraftCascadeSelector({
       HEADWIND: "Headwind",
       FLIGHTSIM: "FlightSim Studio",
       LVFR: "LVFR",
-      MSFS: "EstÃ¡ndar",
-      NATIVE: "EstÃ¡ndar",
+      MSFS: "Estándar",
+      NATIVE: "Estándar",
     };
     return addonMap[suffix] ?? suffix;
   };
 
-  // Step 2: variantes Ãºnicas (aircraft_type_code) para el modelo seleccionado
+  // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
     if (!selModelCode) return [];
-    // key â†’ { addonLabel, displayName }
+    // key → { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
       (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      // Preferir addon_provider â†’ variant_name â†’ derivar de aircraft_type_code
+      // Preferir addon_provider → variant_name → derivar de aircraft_type_code
       const addonLabel =
         r.addon_provider?.trim() ||
         r.variant_name?.trim() ||
@@ -2337,7 +2337,7 @@ function DispatchAircraftCascadeSelector({
       if (!seen.has(key)) seen.set(key, { addonLabel, displayName });
     }
     // Si hay varias entradas con el mismo addon (ej. B737-600 y B737-700 ambos "PMDG"),
-    // usar el displayName del aviÃ³n para diferenciarlas
+    // usar el displayName del avión para diferenciarlas
     const addonCounts = new Map<string, number>();
     for (const { addonLabel } of seen.values())
       addonCounts.set(addonLabel, (addonCounts.get(addonLabel) ?? 0) + 1);
@@ -2356,8 +2356,8 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selModelCode, uniqueVariants, selVariantKey]);
 
-  // Step 3: matrÃ­culas disponibles para modelo + variante seleccionada
-  // MatrÃ­culas: filtra por modelo; variante es opcional y solo pre-filtra la lista
+  // Step 3: matrículas disponibles para modelo + variante seleccionada
+  // Matrículas: filtra por modelo; variante es opcional y solo pre-filtra la lista
   const registrations = useMemo(() => {
     if (!selModelCode) return [];
     return available.filter((r) => {
@@ -2379,7 +2379,7 @@ function DispatchAircraftCascadeSelector({
     }
   }, [registrations, selectedAircraftId, onSelect]);
 
-  // Cuando se selecciona matrÃ­cula, sincronizar variante con su aircraft_type_code
+  // Cuando se selecciona matrícula, sincronizar variante con su aircraft_type_code
   useEffect(() => {
     if (!selectedAircraftId) return;
     const found = available.find((r) => r.aircraft_id === selectedAircraftId);
@@ -2389,7 +2389,7 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selectedAircraftId, available, selVariantKey]);
 
-  // Si cambiÃ³ el modelo o la variante y la matrÃ­cula ya no pertenece a la lista visible, limpiarla.
+  // Si cambió el modelo o la variante y la matrícula ya no pertenece a la lista visible, limpiarla.
   useEffect(() => {
     if (!selectedAircraftId) return;
     const stillVisible = registrations.some((r) => r.aircraft_id === selectedAircraftId);
@@ -2420,17 +2420,17 @@ function DispatchAircraftCascadeSelector({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-3">
-        {/* 1 Â· Tipo de aeronave (modelo) */}
+        {/* 1 · Tipo de aeronave (modelo) */}
         <div className="flex flex-col gap-2">
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">
-            1 Â· Tipo de aeronave
+            1 · Tipo de aeronave
           </label>
           <select
             value={selModelCode}
             onChange={(e) => handleModelChange(e.target.value)}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
           >
-            <option value="">â€” Elige tipo â€”</option>
+            <option value="">— Elige tipo —</option>
             {uniqueModels.map((t) => (
               <option key={t.code} value={t.code}>
                 {t.name}
@@ -2439,14 +2439,14 @@ function DispatchAircraftCascadeSelector({
           </select>
         </div>
 
-        {/* 2 Â· Variante / Addon */}
+        {/* 2 · Variante / Addon */}
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
               selModelCode ? "text-white/54" : "text-white/24"
             }`}
           >
-            2 Â· Variante / Addon
+            2 · Variante / Addon
           </label>
           <select
             value={selVariantKey}
@@ -2454,7 +2454,7 @@ function DispatchAircraftCascadeSelector({
             disabled={!selModelCode}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
           >
-            <option value="">â€” Elige variante â€”</option>
+            <option value="">— Elige variante —</option>
             {uniqueVariants.map((a) => (
               <option key={a.key} value={a.key}>
                 {a.label}
@@ -2463,14 +2463,14 @@ function DispatchAircraftCascadeSelector({
           </select>
         </div>
 
-        {/* 3 Â· NÂ° de registro */}
+        {/* 3 · N° de registro */}
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
               selModelCode ? "text-white/54" : "text-white/24"
             }`}
           >
-            3 Â· NÂ° de registro
+            3 · N° de registro
           </label>
           <select
             value={selectedAircraftId ?? ""}
@@ -2480,7 +2480,7 @@ function DispatchAircraftCascadeSelector({
             disabled={!selModelCode}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
           >
-            <option value="">â€” Elige matrÃ­cula â€”</option>
+            <option value="">— Elige matrícula —</option>
             {registrations.map((r) => (
               <option key={r.aircraft_id} value={r.aircraft_id}>
                 {r.tail_number}
@@ -2494,10 +2494,10 @@ function DispatchAircraftCascadeSelector({
       {selectedReg ? (
         <>
           <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-            <span className="text-lg text-emerald-300">âœ“</span>
+            <span className="text-lg text-emerald-300">✓</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
-                {selectedReg.tail_number} Â· {selectedReg.aircraft_name}
+                {selectedReg.tail_number} · {selectedReg.aircraft_name}
               </p>
               {(selectedReg.addon_provider || selectedReg.variant_name) && (
                 <p className="mt-0.5 text-xs text-emerald-200/70">
@@ -2713,7 +2713,7 @@ function DispatchItineraryTable({
                   {/* DISTANCIA */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm font-semibold text-white">
-                      {distanceNm ? `${distanceNm} NM` : "â€”"}
+                      {distanceNm ? `${distanceNm} NM` : "—"}
                     </span>
                   </td>
                   {/* DURACION */}
@@ -2854,7 +2854,7 @@ function DispatchWideValueStrip({
 
 function formatAircraftHealthPercent(value?: number | null) {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return "Sin diagnÃ³stico";
+    return "Sin diagnóstico";
   }
   return `${Math.round(value)}%`;
 }
@@ -2910,7 +2910,7 @@ function AircraftHealthPanel({
         ? "Fuera de servicio"
         : "Mantenimiento requerido"
       : aircraft.condition_band === "warning"
-        ? "RevisiÃ³n sugerida"
+        ? "Revisión sugerida"
         : "Disponible";
 
   const maintenanceTone = aircraft.maintenance_required
@@ -3042,10 +3042,10 @@ function DashboardWorkspace({
       });
 
       if (!response.ok) {
-        throw new Error("No se pudo cerrar la sesiÃ³n de Navigraph.");
+        throw new Error("No se pudo cerrar la sesión de Navigraph.");
       }
 
-      setNavigraphInfoMessage("SesiÃ³n Navigraph desconectada correctamente.");
+      setNavigraphInfoMessage("Sesión Navigraph desconectada correctamente.");
       setSimbriefStaticId(null);
       await refreshNavigraphStatus(true);
     } catch (error) {
@@ -3138,7 +3138,7 @@ function DashboardWorkspace({
     }
   }
 
-  // Carga reserva activa del piloto â€” al montar y al cambiar de tab
+  // Carga reserva activa del piloto — al montar y al cambiar de tab
   useEffect(() => {
     if (!profile) return;
     let alive = true;
@@ -3208,12 +3208,12 @@ function DashboardWorkspace({
     {
       id: "e175",
       title: "E175 disponible",
-      description: "OpciÃ³n jet regional para saltos medios dentro de la red operativa.",
+      description: "Opción jet regional para saltos medios dentro de la red operativa.",
     },
     {
       id: "a320",
       title: "A320 disponible",
-      description: "OpciÃ³n narrowbody para red troncal y rutas con mayor demanda.",
+      description: "Opción narrowbody para red troncal y rutas con mayor demanda.",
     },
   ] as const;
 
@@ -3230,7 +3230,7 @@ function DashboardWorkspace({
     },
     {
       id: "special_leg",
-      title: "Pierna especial / misiÃ³n",
+      title: "Pierna especial / misión",
       description: "Slot especial para entrenamiento, evento o traslado validado.",
     },
   ] as const;
@@ -3269,12 +3269,12 @@ function DashboardWorkspace({
     const selectedCode = getDispatchAircraftCompatibilityCode(selectedAircraftRecord.aircraft_code);
 
     const aircraftMatched = modeFiltered.filter((item) => {
-      // Prioridad 1: filtrar por service_profile (validaciÃ³n idÃ©ntica a la RPC)
+      // Prioridad 1: filtrar por service_profile (validación idéntica a la RPC)
       if (item.service_profile) {
         return isAircraftCompatibleWithRoute(typeCode, item.service_profile);
       }
 
-      // Prioridad 2: lista explÃ­cita de tipos compatibles
+      // Prioridad 2: lista explícita de tipos compatibles
       const compatibleTypes = item.compatible_aircraft_types ?? [];
       if (compatibleTypes.length > 0) {
         return compatibleTypes.some(
@@ -3291,7 +3291,7 @@ function DashboardWorkspace({
     });
 
     // Strict filtering: when an aircraft is selected, only show compatible itineraries
-    // (even if the list is empty â€” don't fall back to all routes)
+    // (even if the list is empty — don't fall back to all routes)
     return aircraftMatched;
   }, [availableItineraries, central.airportCode, dispatchFlightMode, selectedAircraftRecord]);
   const selectedItineraryRecord = useMemo(
@@ -3458,7 +3458,7 @@ function DashboardWorkspace({
             null,
         );
   const summaryAirframeDisplay = selectedAircraftRecord
-    ? `${selectedAircraftRecord.aircraft_name} Â· ${webAirframe}`
+    ? `${selectedAircraftRecord.aircraft_name} · ${webAirframe}`
     : "Pendiente";
   const canDispatchFlight =
     Boolean(profile) &&
@@ -3618,13 +3618,13 @@ function DashboardWorkspace({
       ? DISPATCH_FLIGHT_TYPE_OPTIONS.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
       : "Pendiente",
     aircraft: selectedAircraftRecord
-      ? `${selectedAircraftRecord.tail_number} Â· ${selectedAircraftRecord.aircraft_name}`
+      ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}`
       : "Pendiente",
     itinerary: selectedItineraryRecord
-      ? `${selectedItineraryRecord.itinerary_code} Â· ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
+      ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
     dispatch: preparedReservationId
-      ? "Despachado âœ“"
+      ? "Despachado ✓"
       : dispatchReady
         ? "Listo para despachar"
         : "Pendiente",
@@ -3724,7 +3724,7 @@ function DashboardWorkspace({
 
       setSimbriefSummary(data.summary);
       setSimbriefInfoMessage(
-        "Datos de OFP cargados desde SimBrief. Revisa la validaciÃ³n antes de habilitar el resumen."
+        "Datos de OFP cargados desde SimBrief. Revisa la validación antes de habilitar el resumen."
       );
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
@@ -3937,7 +3937,7 @@ function DashboardWorkspace({
                 type="button"
                 onClick={() => { if (!isDispatchBlocked) onChangeTab(tab.key); }}
                 disabled={isDispatchBlocked}
-                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso â€” finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
+                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
                 className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                   isActive
                     ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
@@ -3947,7 +3947,7 @@ function DashboardWorkspace({
                 }`}
               >
                 {tab.label}
-                {isDispatchBlocked ? " ðŸ”’" : ""}
+                {isDispatchBlocked ? " 🔒" : ""}
               </button>
             );
           })}
@@ -4001,8 +4001,8 @@ function DashboardWorkspace({
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
                         <p className="hidden mt-3 text-sm leading-7 text-white/72">
-                          Antes de tomar aeronave, aquÃ­ defines el perfil operativo del vuelo. Hasta que no elijas una
-                          modalidad, Aeronave seguirÃ¡ bloqueado.
+                          Antes de tomar aeronave, aquí defines el perfil operativo del vuelo. Hasta que no elijas una
+                          modalidad, Aeronave seguirá bloqueado.
                         </p>
 
                         <p className="mt-3 text-sm leading-7 text-white/72">
@@ -4072,9 +4072,9 @@ function DashboardWorkspace({
                       <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">QuÃ© define este paso</p>
+                            <p className="text-sm font-semibold text-white">Qué define este paso</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              La modalidad elegida marca el contexto del despacho. Desde aquÃ­ se conserva el flujo
+                              La modalidad elegida marca el contexto del despacho. Desde aquí se conserva el flujo
                               secuencial sin tocar la estructura aprobada del dashboard.
                             </p>
                           </div>
@@ -4083,13 +4083,13 @@ function DashboardWorkspace({
                             <p className="mt-2 text-sm leading-7 text-white/70">
                               {selectedFlightType
                                 ? `Seleccionado: ${stepStatusLabel.flightType}. Ya puedes pasar a Aeronave.`
-                                : "TodavÃ­a no eliges un tipo de vuelo. Aeronave seguirÃ¡ bloqueado hasta seleccionar uno."}
+                                : "Todavía no eliges un tipo de vuelo. Aeronave seguirá bloqueado hasta seleccionar uno."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Secuencia activa: primero eliges una de las seis tarjetas; reciÃ©n despuÃ©s se habilita
+                          Secuencia activa: primero eliges una de las seis tarjetas; recién después se habilita
                           Aeronave.
                         </div>
 
@@ -4111,10 +4111,10 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">SelecciÃ³n de aeronave</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Ahora sÃ­ puedes tomar aeronave. Al elegir una, se habilitarÃ¡ Itinerario. Si cambias el tipo de vuelo,
-                          este paso se resetea para mantener el orden lÃ³gico.
+                          Ahora sí puedes tomar aeronave. Al elegir una, se habilitará Itinerario. Si cambias el tipo de vuelo,
+                          este paso se resetea para mantener el orden lógico.
                         </p>
 
                         <div className="mt-5">
@@ -4137,7 +4137,7 @@ function DashboardWorkspace({
                         <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
                           <p className="text-sm leading-7 text-white/70">
                             {selectedAircraftRecord
-                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} Â· ${selectedAircraftRecord.aircraft_name}.`
+                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}.`
                               : availableAircraft.length > 0
                                 ? "Escoge una aeronave de la tabla para continuar al itinerario."
                                 : `No hay aeronaves disponibles en ${central.airportCode} para esta etapa.`}
@@ -4162,9 +4162,9 @@ function DashboardWorkspace({
                       <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">QuÃ© se conserva</p>
+                            <p className="text-sm font-semibold text-white">Qué se conserva</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Reutilizamos la lÃ³gica que ya tenÃ­amos para no romper reservas, lectura de flota ni filtros reales.
+                              Reutilizamos la lógica que ya teníamos para no romper reservas, lectura de flota ni filtros reales.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
@@ -4291,13 +4291,13 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          AquÃ­ queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
+                          Aquí queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
                           despacho como listo y validado.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            ConexiÃ³n y estado de Navigraph
+                            Conexión y estado de Navigraph
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
                             Apertura y recarga de OFP / SimBrief
@@ -4311,15 +4311,15 @@ function DashboardWorkspace({
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">ReutilizaciÃ³n</p>
+                            <p className="text-sm font-semibold text-white">Reutilización</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              No rehacemos el despacho desde cero; aquÃ­ se enchufa el flujo real que ya estaba operativo.
+                              No rehacemos el despacho desde cero; aquí se enchufa el flujo real que ya estaba operativo.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Estado actual</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              {dispatchReady ? "Despacho marcado como listo. Resumen ya estÃ¡ habilitado." : "AÃºn falta marcar este paso como listo para abrir Resumen."}
+                              {dispatchReady ? "Despacho marcado como listo. Resumen ya está habilitado." : "Aún falta marcar este paso como listo para abrir Resumen."}
                             </p>
                           </div>
                         </div>
@@ -4373,11 +4373,11 @@ function DashboardWorkspace({
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Navigraph Â· SimBrief
+                              Navigraph · SimBrief
                             </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">ConexiÃ³n web y preparaciÃ³n del OFP</h5>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Conexión web y preparación del OFP</h5>
                             <p className="mt-3 max-w-3xl text-sm leading-7 text-white/68">
-                              En la web usaremos Authorization Code Flow con Navigraph. DespuÃ©s abrimos SimBrief para generar el OFP, lo importamos, validamos vuelo/origen/destino/aeronave y reciÃ©n entonces lo dejamos listo para ACARS.
+                              En la web usaremos Authorization Code Flow con Navigraph. Después abrimos SimBrief para generar el OFP, lo importamos, validamos vuelo/origen/destino/aeronave y recién entonces lo dejamos listo para ACARS.
                             </p>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
@@ -4391,7 +4391,7 @@ function DashboardWorkspace({
                                 ? "Navigraph conectado"
                                 : navigraphConfigured
                                   ? "Navigraph no conectado"
-                                  : "ConfiguraciÃ³n pendiente"}
+                                  : "Configuración pendiente"}
                           </span>
                         </div>
 
@@ -4527,7 +4527,7 @@ function DashboardWorkspace({
                             value={webAirframe}
                             hint={
                               selectedAircraftRecord
-                                ? `${selectedAircraftRecord.aircraft_name} Â· ${selectedAircraftRecord.tail_number}`
+                                ? `${selectedAircraftRecord.aircraft_name} · ${selectedAircraftRecord.tail_number}`
                                 : "Pendiente"
                             }
                           />
@@ -4617,7 +4617,7 @@ function DashboardWorkspace({
                           <DispatchValueCard
                             label="Itinerario"
                             value={selectedItineraryRecord?.itinerary_name || selectedItineraryRecord?.itinerary_code || "Pendiente"}
-                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} â†’ ${selectedItineraryRecord.destination_icao}` : undefined}
+                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} → ${selectedItineraryRecord.destination_icao}` : undefined}
                             valueClassName="text-[1.3rem] leading-tight"
                           />
                           <DispatchValueCard
@@ -4725,7 +4725,7 @@ function DashboardWorkspace({
                           />
                           <DispatchValueCard
                             label="OFP cargado"
-                            value={simbriefSummary ? "âœ“ Listo" : "Pendiente"}
+                            value={simbriefSummary ? "✓ Listo" : "Pendiente"}
                             valueClassName={simbriefSummary ? "text-[1.3rem] leading-tight text-emerald-400" : "text-[1.3rem] leading-tight text-white/50"}
                           />
                         </div>
@@ -4773,7 +4773,7 @@ function DashboardWorkspace({
                               {finalizingDispatch
                                 ? "Despachando..."
                                 : preparedReservationId
-                                  ? "âœ“ Vuelo despachado â€” ACARS listo"
+                                  ? "✓ Vuelo despachado — ACARS listo"
                                   : "Despachar vuelo"}
                             </button>
                           </div>
@@ -4786,9 +4786,9 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envÃ­o a ACARS</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Ãšltima validaciÃ³n del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
+                          Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -4810,21 +4810,21 @@ function DashboardWorkspace({
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">QuÃ© se ve aquÃ­</p>
+                            <p className="text-sm font-semibold text-white">Qué se ve aquí</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Un resumen limpio del vuelo listo para salir, con semÃ¡foros de validaciÃ³n y el botÃ³n final de envÃ­o cuando todo estÃ© correcto.
+                              Un resumen limpio del vuelo listo para salir, con semáforos de validación y el botón final de envío cuando todo esté correcto.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Compatibilidad futura</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Este panel podrÃ¡ recibir despuÃ©s economÃ­a, score, tolerancias y auditorÃ­a sin romper la estructura ya aprobada.
+                              Este panel podrá recibir después economía, score, tolerancias y auditoría sin romper la estructura ya aprobada.
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Resumen habilitado de forma progresiva: no se abre si algÃºn paso anterior sigue pendiente.
+                          Resumen habilitado de forma progresiva: no se abre si algún paso anterior sigue pendiente.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
@@ -4847,7 +4847,7 @@ function DashboardWorkspace({
         {activeTab === "office" && profile ? (
           <div className="flex flex-col gap-4">
 
-            {/* â”€â”€ Fila 1: Perfil + Accesos â”€â”€ */}
+            {/* ── Fila 1: Perfil + Accesos ── */}
             <div className="grid gap-4 lg:grid-cols-3">
 
               {/* Tarjeta de perfil */}
@@ -4886,43 +4886,43 @@ function DashboardWorkspace({
                 <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/8 pt-5 sm:grid-cols-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Hub base</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "—"}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">PaÃ­s</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "â€”"}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">País</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Simulador</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">SimBrief</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">VATSIM</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">IVAO</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "—"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Accesos rÃ¡pidos */}
+              {/* Accesos rápidos */}
               <div className="surface-outline rounded-[24px] p-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
                 <div className="mt-4 flex flex-col gap-3">
                   <Link href="/profile" className="button-secondary text-center text-sm">
-                    âœ Editar perfil
+                    ✏ Editar perfil
                   </Link>
                   <Link href="/certifications" className="button-ghost text-center text-sm">
-                    ðŸŽ– Certificaciones
+                    🎖 Certificaciones
                   </Link>
                   <Link href="/operations" className="button-ghost text-center text-sm">
-                    ðŸ“‹ Operaciones
+                    📋 Operaciones
                   </Link>
                 </div>
 
@@ -4942,13 +4942,13 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* â”€â”€ Fila 2: MÃ©tricas de carrera â”€â”€ */}
+            {/* ── Fila 2: Métricas de carrera ── */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Horas totales", value: formatDecimal(metrics.totalHours), unit: "hs" },
                 { label: "PIREPs", value: formatInteger(metrics.totalPireps), unit: "vuelos" },
                 { label: `Horas ${metrics.monthLabel}`, value: formatDecimal(metrics.monthHours), unit: "hs" },
-                { label: `PosiciÃ³n ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "â€”", unit: "" },
+                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "—", unit: "" },
               ].map((m) => (
                 <div key={m.label} className="surface-outline rounded-[20px] p-5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
@@ -4958,7 +4958,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 3: Scores + Billetera â”€â”€ */}
+            {/* ── Fila 3: Scores + Billetera ── */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Score SUR", value: formatDecimal(metrics.surScore), accent: "#67d7ff" },
@@ -4973,7 +4973,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 4: Reserva activa â”€â”€ */}
+            {/* ── Fila 4: Reserva activa ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Reserva activa
@@ -4990,8 +4990,8 @@ function DashboardWorkspace({
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
                       <p className="mt-1 text-sm font-medium text-white">
-                        {activeReservation.aircraft_type_code ?? "â€”"}
-                        {activeReservation.aircraft_registration ? ` Â· ${activeReservation.aircraft_registration}` : ""}
+                        {activeReservation.aircraft_type_code ?? "—"}
+                        {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
                       </p>
                     </div>
                     {/* Estado */}
@@ -5016,12 +5016,12 @@ function DashboardWorkspace({
                       </div>
                     )}
                   </div>
-                  {/* BotÃ³n cancelar */}
+                  {/* Botón cancelar */}
                   <button
                     type="button"
                     disabled={cancellingReservation}
                     onClick={async () => {
-                      if (!confirm("Â¿Cancelar esta reserva? No se puede deshacer.")) return;
+                      if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
                       setCancellingReservation(true);
                       try {
                         await cancelFlightOperation(
@@ -5046,7 +5046,7 @@ function DashboardWorkspace({
                     }}
                     className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {cancellingReservation ? "Cancelando..." : "âœ• Cancelar reserva"}
+                    {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
                   </button>
                 </div>
               ) : (
@@ -5054,13 +5054,13 @@ function DashboardWorkspace({
               )}
             </div>
 
-            {/* â”€â”€ Fila 5: Historial de vuelos â”€â”€ */}
+            {/* ── Fila 5: Historial de vuelos ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
               </p>
               {central.recentFlights.length === 0 ? (
-                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aÃºn.</p>
+                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aún.</p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full text-sm">
@@ -5085,13 +5085,13 @@ function DashboardWorkspace({
                               formatRouteTag(f)
                             )}
                           </td>
-                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "â€”"}</td>
+                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
                           <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
                           <td className="py-3 text-right font-semibold text-[#67d7ff]">
-                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "â€”"}
+                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
                           </td>
                           <td className="py-3 text-right text-white/38">
-                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "â€”"}
+                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
                           </td>
                         </tr>
                       ))}
@@ -5107,14 +5107,14 @@ function DashboardWorkspace({
         {activeTab === "training" ? (
           <div className="flex flex-col gap-5">
 
-            {/* â”€â”€ Header â”€â”€ */}
+            {/* ── Header ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Entrenamiento</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Centro de prÃ¡ctica y preparaciÃ³n</h2>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">Centro de práctica y preparación</h2>
                   <p className="mt-2 text-sm leading-6 text-white/60">
-                    ProgresÃ¡ como piloto completando entrenamientos, checkrides y habilitaciones. Todo registrado en tu historial operativo.
+                    Progresá como piloto completando entrenamientos, checkrides y habilitaciones. Todo registrado en tu historial operativo.
                   </p>
                 </div>
                 <div className="mt-4 shrink-0 sm:mt-0">
@@ -5123,13 +5123,13 @@ function DashboardWorkspace({
                     onClick={() => onChangeTab("dispatch")}
                     className="rounded-[12px] bg-[#67d7ff]/10 border border-[#67d7ff]/20 px-5 py-2.5 text-sm font-semibold text-[#67d7ff] transition hover:bg-[#67d7ff]/20"
                   >
-                    âœˆ Reservar vuelo de entrenamiento
+                    ✈ Reservar vuelo de entrenamiento
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* â”€â”€ Fila 1: MÃ©tricas de entrenamiento â”€â”€ */}
+            {/* ── Fila 1: Métricas de entrenamiento ── */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 {
@@ -5167,7 +5167,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 2: Habilitaciones + CategorÃ­as â”€â”€ */}
+            {/* ── Fila 2: Habilitaciones + Categorías ── */}
             <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
 
               {/* Habilitaciones activas */}
@@ -5183,7 +5183,7 @@ function DashboardWorkspace({
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-4 text-sm text-white/38">Sin habilitaciones registradas. CompletÃ¡ un checkride para obtener tu primera habilitaciÃ³n.</p>
+                  <p className="mt-4 text-sm text-white/38">Sin habilitaciones registradas. Completá un checkride para obtener tu primera habilitación.</p>
                 )}
                 {profile?.active_certifications && (
                   <div className="mt-5 border-t border-white/8 pt-4">
@@ -5199,15 +5199,15 @@ function DashboardWorkspace({
                 )}
               </div>
 
-              {/* CategorÃ­as de entrenamiento disponibles */}
+              {/* Categorías de entrenamiento disponibles */}
               <div className="surface-outline rounded-[24px] p-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Tipos de entrenamiento</p>
                 <div className="mt-4 flex flex-col gap-3">
                   {[
-                    { icon: "ðŸ›©", title: "Vuelo de lÃ­nea de entrenamiento", desc: "Rutas de la red en modo entrenamiento supervisado. Score sin penalizaciÃ³n.", badge: "Disponible", badgeColor: "#49d787" },
-                    { icon: "âœ…", title: "Checkride de tipo", desc: "HabilitaciÃ³n para operar una nueva familia de aeronaves. Requiere completar el perfil.", badge: "Con reserva", badgeColor: "#67d7ff" },
-                    { icon: "ðŸ—º", title: "FamiliarizaciÃ³n de ruta", desc: "Vuelos de baja presiÃ³n para conocer rutas nuevas, terminales y procedimientos regionales.", badge: "Disponible", badgeColor: "#49d787" },
-                    { icon: "â¬†", title: "Solicitar ascenso de rango", desc: "Cuando cumplas los gates de horas y score, podÃ©s iniciar el proceso de ascenso.", badge: metrics.surScore >= 7 ? "Elegible" : "Pendiente", badgeColor: metrics.surScore >= 7 ? "#49d787" : "#ffffff" },
+                    { icon: "🛩", title: "Vuelo de línea de entrenamiento", desc: "Rutas de la red en modo entrenamiento supervisado. Score sin penalización.", badge: "Disponible", badgeColor: "#49d787" },
+                    { icon: "✅", title: "Checkride de tipo", desc: "Habilitación para operar una nueva familia de aeronaves. Requiere completar el perfil.", badge: "Con reserva", badgeColor: "#67d7ff" },
+                    { icon: "🗺", title: "Familiarización de ruta", desc: "Vuelos de baja presión para conocer rutas nuevas, terminales y procedimientos regionales.", badge: "Disponible", badgeColor: "#49d787" },
+                    { icon: "⬆", title: "Solicitar ascenso de rango", desc: "Cuando cumplas los gates de horas y score, podés iniciar el proceso de ascenso.", badge: metrics.surScore >= 7 ? "Elegible" : "Pendiente", badgeColor: metrics.surScore >= 7 ? "#49d787" : "#ffffff" },
                   ].map((item) => (
                     <div key={item.title} className="flex items-start gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
                       <span className="mt-0.5 text-xl">{item.icon}</span>
@@ -5227,7 +5227,7 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* â”€â”€ Fila 3: Historial de vuelos de entrenamiento â”€â”€ */}
+            {/* ── Fila 3: Historial de vuelos de entrenamiento ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Historial de entrenamiento</p>
               {(() => {
@@ -5237,9 +5237,9 @@ function DashboardWorkspace({
                 if (trainingFlights.length === 0) {
                   return (
                     <div className="mt-4 rounded-[16px] border border-white/8 bg-white/[0.02] p-8 text-center">
-                      <p className="text-[28px]">âœˆ</p>
+                      <p className="text-[28px]">✈</p>
                       <p className="mt-2 text-sm font-semibold text-white/70">Sin vuelos de entrenamiento registrados</p>
-                      <p className="mt-1 text-xs text-white/38">ReservÃ¡ un vuelo de entrenamiento desde la pestaÃ±a Despacho para empezar a construir tu historial.</p>
+                      <p className="mt-1 text-xs text-white/38">Reservá un vuelo de entrenamiento desde la pestaña Despacho para empezar a construir tu historial.</p>
                     </div>
                   );
                 }
@@ -5259,12 +5259,12 @@ function DashboardWorkspace({
                         {trainingFlights.slice(0, 8).map((f, i) => (
                           <tr key={i} className="border-b border-white/5 last:border-0">
                             <td className="py-3 font-medium text-white">{formatRouteTag(f)}</td>
-                            <td className="py-3 text-white/70">{f.aircraft_type_code ?? "â€”"}</td>
+                            <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
                             <td className="py-3 text-right font-semibold text-[#67d7ff]">
-                              {resolveSurScore({ procedureScore: f.procedure_score, missionScore: f.mission_score }) ? formatDecimal(resolveSurScore({ procedureScore: f.procedure_score, missionScore: f.mission_score })) : "â€”"}
+                              {resolveSurScore({ procedureScore: f.procedure_score, missionScore: f.mission_score }) ? formatDecimal(resolveSurScore({ procedureScore: f.procedure_score, missionScore: f.mission_score })) : "—"}
                             </td>
                             <td className="py-3 text-right text-white/38">
-                              {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "â€”"}
+                              {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
                             </td>
                           </tr>
                         ))}
@@ -5275,9 +5275,9 @@ function DashboardWorkspace({
               })()}
             </div>
 
-            {/* â”€â”€ Fila 4: PrÃ³ximos pasos â”€â”€ */}
+            {/* ── Fila 4: Próximos pasos ── */}
             <div className="surface-outline rounded-[24px] p-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Ruta de progresiÃ³n â€” {metrics.careerRank}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Ruta de progresión — {metrics.careerRank}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {[
                   { label: "Score SUR ≥ 7.0", done: metrics.surScore >= 7, value: `${formatDecimal(metrics.surScore)} / 7.0` },
@@ -5286,7 +5286,7 @@ function DashboardWorkspace({
                 ].map((gate) => (
                   <div key={gate.label} className={`flex items-center gap-3 rounded-[14px] border p-4 ${gate.done ? "border-[#0ca66b]/30 bg-[#0ca66b]/8" : "border-white/8 bg-white/[0.02]"}`}>
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${gate.done ? "bg-[#49d787] text-black" : "bg-white/10 text-white/40"}`}>
-                      {gate.done ? "âœ“" : "Â·"}
+                      {gate.done ? "✓" : "·"}
                     </span>
                     <div>
                       <p className={`text-sm font-semibold ${gate.done ? "text-[#49d787]" : "text-white/60"}`}>{gate.label}</p>
@@ -5311,7 +5311,7 @@ function DashboardContent() {
   const [central, setCentral] = useState<CentralOverview>({
     airportCode: "SCEL",
     airportName: "Aeropuerto actual del piloto",
-    municipality: "UbicaciÃ³n operativa",
+    municipality: "Ubicación operativa",
     countryCode: "CL",
     countryName: "Chile",
     pilotsOnField: 0,
@@ -5324,9 +5324,9 @@ function DashboardContent() {
       { title: "Mejores PIREP mes", entries: [{ label: "Sin datos", value: "Pendiente" }] },
     ],
     yearlyRankingCards: [
-      { title: "Mejores puntajes aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
-      { title: "Ranking de horas aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
-      { title: "Mejores PIREP aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores puntajes año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Ranking de horas año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores PIREP año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
     ],
     activeFlights: [],
     recentFlights: [],
@@ -5392,7 +5392,7 @@ function DashboardContent() {
           setAvailableItineraries(nextAvailableItineraries);
         }
       } catch (error) {
-        console.error("No se pudieron cargar todas las mÃ©tricas del dashboard:", error);
+        console.error("No se pudieron cargar todas las métricas del dashboard:", error);
         if (isMounted) {
           setMetrics((current) => ({
             ...current,
@@ -5440,7 +5440,7 @@ function DashboardContent() {
       { label: "Score SUR", type: "number", value: metrics.surScore, decimals: 1 },
       { label: "Rango", type: "text", value: metrics.careerRank },
       {
-        label: `PosiciÃ³n ${metrics.monthLabel}`,
+        label: `Posición ${metrics.monthLabel}`,
         type: "number",
         value: metrics.monthPosition ?? 0,
       },
@@ -5476,7 +5476,7 @@ function DashboardContent() {
               Bienvenido, {pilotName}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-white/76 sm:text-[15px]">
-              Queremos ser la mejor aerolÃ­nea virtual del sur del mundo. AyÃºdanos a seguir mejorando cada vuelo.
+              Queremos ser la mejor aerolínea virtual del sur del mundo. Ayúdanos a seguir mejorando cada vuelo.
             </p>
           </div>
 

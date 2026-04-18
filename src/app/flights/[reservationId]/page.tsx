@@ -94,9 +94,9 @@ function formatDetailValue(value: unknown) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("es-CL", {
     year: "numeric",
     month: "short",
@@ -108,7 +108,7 @@ function formatDateTime(value?: string | null) {
 
 function formatMinutes(value?: number | null) {
   const total = asNumber(value);
-  if (total <= 0) return "â€”";
+  if (total <= 0) return "—";
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
   return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
@@ -126,7 +126,7 @@ function formatStatus(value?: string | null) {
     dispatched: "Despachado",
     reserved: "Reservado",
   };
-  return labels[normalized] ?? (normalized ? normalized.toUpperCase() : "â€”");
+  return labels[normalized] ?? (normalized ? normalized.toUpperCase() : "—");
 }
 
 function statusTone(value?: string | null) {
@@ -198,7 +198,7 @@ function FlightResultContent() {
       if (cancelled) return;
 
       if (reservationRes.error || !reservationRes.data) {
-        setError(reservationRes.error?.message ?? "No se encontrÃ³ el resultado del vuelo.");
+        setError(reservationRes.error?.message ?? "No se encontró el resultado del vuelo.");
         setLoading(false);
         return;
       }
@@ -321,7 +321,7 @@ function FlightResultContent() {
     }
 
     setReservation((data ?? reservation) as FlightReservationResultRow);
-    setSaveMessage("ApelaciÃ³n guardada. Queda pendiente por 48 horas.");
+    setSaveMessage("Apelación guardada. Queda pendiente por 48 horas.");
     setSaving(false);
   }
   async function handleAppealDecision(nextStatus: "resolved" | "rejected") {
@@ -377,7 +377,7 @@ function FlightResultContent() {
               {flightNumber}
             </h1>
             <p className="mt-4 text-base leading-8 text-white/78">
-              {reservation ? `${asText(reservation.origin_ident) || "---"} â†’ ${asText(reservation.destination_ident) || "---"}` : "Cargando resultado..."}
+              {reservation ? `${asText(reservation.origin_ident) || "---"} → ${asText(reservation.destination_ident) || "---"}` : "Cargando resultado..."}
             </p>
           </div>
           <div className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold ${statusTone(reservation?.status)}`}>
@@ -395,17 +395,17 @@ function FlightResultContent() {
           <section className="glass-panel rounded-[30px] p-7">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: "AviÃ³n", value: asText(reservation.aircraft_type_code) || "â€”" },
-                { label: "MatrÃ­cula", value: asText(reservation.aircraft_registration) || "â€”" },
-                { label: "Variante", value: asText(reservation.aircraft_variant_code) || "â€”" },
-                { label: "Addon", value: asText(reservation.addon_provider) || "â€”" },
+                { label: "Avión", value: asText(reservation.aircraft_type_code) || "—" },
+                { label: "Matrícula", value: asText(reservation.aircraft_registration) || "—" },
+                { label: "Variante", value: asText(reservation.aircraft_variant_code) || "—" },
+                { label: "Addon", value: asText(reservation.addon_provider) || "—" },
                 { label: "Inicio", value: formatDateTime(reservation.created_at) },
                 { label: "Cierre", value: formatDateTime(reservation.completed_at ?? reservation.updated_at) },
                 { label: "Block real", value: formatMinutes(reservation.actual_block_minutes) },
-                { label: "Landing V/S", value: landingVs ? `${Math.round(landingVs)} fpm` : "â€”" },
-                { label: "Score SUR", value: surScore ? String(Math.round(surScore)) : "â€”" },
-                { label: "Comb. inicial", value: fuelStartKg ? `${Math.round(fuelStartKg)} kg` : "â€”" },
-                { label: "Comb. final / usado", value: fuelEndKg || fuelUsedKg ? `${Math.round(fuelEndKg)} kg / ${Math.round(fuelUsedKg)} kg` : "â€”" },
+                { label: "Landing V/S", value: landingVs ? `${Math.round(landingVs)} fpm` : "—" },
+                { label: "Score SUR", value: surScore ? String(Math.round(surScore)) : "—" },
+                { label: "Comb. inicial", value: fuelStartKg ? `${Math.round(fuelStartKg)} kg` : "—" },
+                { label: "Comb. final / usado", value: fuelEndKg || fuelUsedKg ? `${Math.round(fuelEndKg)} kg / ${Math.round(fuelUsedKg)} kg` : "—" },
               ].map((item) => (
                 <div key={item.label} className="surface-outline rounded-[22px] px-5 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">{item.label}</p>
@@ -425,17 +425,17 @@ function FlightResultContent() {
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="surface-outline rounded-[22px] px-5 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Calificación SUR</p>
-                  <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.procedure_grade) || asText(reservation.procedure_grade) || "â€”"}</p>
+                  <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.procedure_grade) || asText(reservation.procedure_grade) || "—"}</p>
                 </div>
                 <div className="surface-outline rounded-[22px] px-5 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Calificación técnica</p>
-                  <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.performance_grade) || asText(reservation.performance_grade) || "â€”"}</p>
+                  <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.performance_grade) || asText(reservation.performance_grade) || "—"}</p>
                 </div>
               </div>
             </div>
 
             <div className="glass-panel rounded-[30px] p-7">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">DaÃ±o aplicado</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Daño aplicado</p>
               {damageEvents.length ? (
                 <div className="mt-4 space-y-3">
                   {damageEvents.slice(0, 6).map((eventItem, index) => (
@@ -447,7 +447,7 @@ function FlightResultContent() {
                   ))}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-white/70">Sin eventos de daÃ±o informados en este cierre.</p>
+                <p className="mt-4 text-sm text-white/70">Sin eventos de daño informados en este cierre.</p>
               )}
             </div>
           </section>
@@ -455,13 +455,13 @@ function FlightResultContent() {
           <section className="glass-panel rounded-[30px] p-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">ApelaciÃ³n de vuelo</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Apelación de vuelo</p>
                 <p className="mt-2 text-sm text-white/70">
                   {currentAppeal.status === "pending"
-                    ? `ApelaciÃ³n pendiente hasta ${formatDateTime(asText(currentAppeal.deadline_at))}.`
+                    ? `Apelación pendiente hasta ${formatDateTime(asText(currentAppeal.deadline_at))}.`
                     : currentAppeal.status
                       ? `Apelacion ${asText(currentAppeal.status)}${asText(currentAppeal.resolved_at) ? ` el ${formatDateTime(asText(currentAppeal.resolved_at))}` : ""}.`
-                      : "Si este cierre requiere revisiÃ³n manual, dÃ©jalo aquÃ­ dentro de 48 horas."}
+                      : "Si este cierre requiere revisión manual, déjalo aquí dentro de 48 horas."}
                 </p>
               </div>
               <Link href="/dashboard" className="button-ghost">Volver al dashboard</Link>
@@ -470,8 +470,8 @@ function FlightResultContent() {
             {currentAppeal.status === "pending" ? (
               <div className="mt-5 space-y-4">
                 <div className="rounded-[22px] border border-amber-400/20 bg-amber-400/10 px-5 py-4 text-sm text-amber-100">
-                  {asText(currentAppeal.category).toUpperCase()} Â· {asText(currentAppeal.reason) || "Sin motivo"}
-                  {asText(currentAppeal.comment) ? ` Â· ${asText(currentAppeal.comment)}` : ""}
+                  {asText(currentAppeal.category).toUpperCase()} · {asText(currentAppeal.reason) || "Sin motivo"}
+                  {asText(currentAppeal.comment) ? ` · ${asText(currentAppeal.comment)}` : ""}
                 </div>
                 {isAdminReviewer ? (
                   <div className="flex flex-wrap justify-end gap-3">
@@ -498,14 +498,14 @@ function FlightResultContent() {
               <form onSubmit={handleAppealSubmit} className="mt-5 grid gap-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="flex flex-col gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">CategorÃ­a</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Categoría</span>
                     <select
                       value={appealCategory}
                       onChange={(event) => setAppealCategory(event.target.value as AppealCategory)}
                       className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
                     >
                       <option value="score">Score</option>
-                      <option value="damage">DaÃ±o</option>
+                      <option value="damage">Daño</option>
                       <option value="dispatch">Despacho</option>
                       <option value="system">Sistema / addon</option>
                       <option value="other">Otro</option>
@@ -531,7 +531,7 @@ function FlightResultContent() {
                     required
                     rows={4}
                     className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
-                    placeholder="Explica quÃ© revisar manualmente"
+                    placeholder="Explica qué revisar manualmente"
                   />
                 </label>
 
