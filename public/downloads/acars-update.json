@@ -1,9 +1,9 @@
 ﻿{
-  "version": "3.2.3",
+  "version": "3.2.4",
   "webVersion": "2.0",
-  "downloadUrl": "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
+  "downloadUrl": "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.4.exe",
   "mandatory": false,
-  "notes": "- Resultado final web, historial y apelaciones revisables\n- Cierre real de reservas completed/cancelled/interrupted/crashed/aborted\n- Redirect ACARS a https://patagoniaw.com tras submit OK\n- Score SUR unico visible en web",
+  "notes": "- Filtro real por rango y aeropuerto para Cadete\n- Itinerarios alineados a aeronaves realmente autorizadas\n- Reapertura estable del ACARS tras update\n- Confirmacion visual al volver a abrir",
   "releaseDate": "2026-04-18",
   "minVersion": "2.0.5",
   "fileSize": "24.7 MB",
