@@ -2285,6 +2285,28 @@ function DispatchAircraftCascadeSelector({
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [available]);
 
+  // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
+  // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
+  const deriveAddonLabel = (typeCode: string | undefined | null): string => {
+    if (!typeCode) return "Estándar";
+    const suffix = typeCode.split("_").pop()?.toUpperCase() ?? "";
+    const addonMap: Record<string, string> = {
+      PMDG: "PMDG",
+      FENIX: "Fenix",
+      BLACKSQUARE: "Black Square",
+      FBW: "FlyByWire (A32NX)",
+      IFLY: "iFly",
+      HORIZONS: "Horizons",
+      MADDOG: "Leonardo MadDog",
+      HEADWIND: "Headwind",
+      FLIGHTSIM: "FlightSim Studio",
+      LVFR: "LVFR",
+      MSFS: "Estándar",
+      NATIVE: "Estándar",
+    };
+    return addonMap[suffix] ?? suffix;
+  };
+
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
     if (!selModelCode) return [];
@@ -2294,8 +2316,11 @@ function DispatchAircraftCascadeSelector({
       (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      // Preferir addon_provider (ej. "PMDG", "Asobo", "Black Square") sobre variant_name
-      const addonLabel = r.addon_provider?.trim() || r.variant_name?.trim() || "Estándar";
+      // Preferir addon_provider → variant_name → derivar de aircraft_type_code
+      const addonLabel =
+        r.addon_provider?.trim() ||
+        r.variant_name?.trim() ||
+        deriveAddonLabel(r.aircraft_type_code);
       const displayName = r.aircraft_name?.trim() || addonLabel;
       if (!seen.has(key)) seen.set(key, { addonLabel, displayName });
     }
