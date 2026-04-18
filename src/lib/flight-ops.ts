@@ -374,9 +374,34 @@ function normalizeRankCode(value: string | null | undefined) {
 }
 
 const AIRCRAFT_PERMISSION_FAMILIES: Record<string, string[]> = {
-  C208: ["C208", "C208_MSFS", "C208_BLACKSQUARE"],
-  BE58: ["BE58", "BE58_MSFS", "BE58_BLACKSQUARE", "BE58_BS_PRO"],
-  B350: ["B350", "B350_MSFS", "B350_BLACKSQUARE"],
+  C208:  ["C208",  "C208_MSFS",  "C208_BLACKSQUARE"],
+  BE58:  ["BE58",  "BE58_MSFS",  "BE58_BLACKSQUARE", "BE58_BS_PRO"],
+  B350:  ["B350",  "B350_MSFS",  "B350_BLACKSQUARE"],
+  TBM9:  ["TBM9",  "TBM9_MSFS",  "TBM8_BLACKSQUARE"],
+  TBM8:  ["TBM8",  "TBM8_BLACKSQUARE", "TBM9_MSFS"],
+  ATR72: ["ATR72", "ATR72_MSFS"],
+  E175:  ["E175",  "E175_FLIGHTSIM"],
+  E190:  ["E190",  "E190_FLIGHTSIM"],
+  E195:  ["E195",  "E195_FLIGHTSIM"],
+  A319:  ["A319",  "A319_FENIX",  "A319_LATINVFR"],
+  A320:  ["A320",  "A320_FENIX",  "A320_LATINVFR"],
+  A20N:  ["A20N",  "A20N_FBW"],
+  A321:  ["A321",  "A321_FENIX"],
+  A21N:  ["A21N",  "A21N_LATINVFR"],
+  A339:  ["A339",  "A339_HEADWIND"],
+  A359:  ["A359",  "A359_INIBUILDS"],
+  B736:  ["B736",  "B736_PMDG"],
+  B737:  ["B737",  "B737_PMDG"],
+  B738:  ["B738",  "B738_PMDG"],
+  B739:  ["B739",  "B739_PMDG"],
+  B38M:  ["B38M",  "B38M_IFLY"],
+  B772:  ["B772",  "B772_PMDG"],
+  B77W:  ["B77W",  "B77W_PMDG"],
+  B789:  ["B789",  "B789_HORIZONS"],
+  B78X:  ["B78X",  "B78X_MSFS"],
+  MD82:  ["MD82",  "MD82_MADDOG"],
+  MD83:  ["MD83",  "MD83_MADDOG"],
+  MD88:  ["MD88",  "MD88_MADDOG"],
 };
 
 function expandAircraftPermissionAliases(value: string | null | undefined) {
@@ -1136,12 +1161,12 @@ export function getDispatchBlockingReasons(
 // Categorías permitidas por service_profile de ruta.
 // Replicado desde la lógica de la RPC create_flight_reservation en Supabase.
 const ROUTE_PROFILE_ALLOWED_CATEGORIES: Record<string, string[]> = {
-  feeder:    ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
-  regional:  ["twin_turboprop", "regional_jet", "narrowbody_jet"],
-  trunk:     ["narrowbody_jet", "regional_jet"],  // NOT widebody_jet - RPC rejects it
-  longhaul:  ["widebody_jet", "narrowbody_jet"],   //洲际航线接受宽体和窄体
-  heavy:     ["widebody_jet", "narrowbody_jet"],  // SCEL-EGLL, SCEL-KJFK, etc.
-  cargo:     ["single_turboprop", "twin_turboprop", "narrowbody_jet", "widebody_jet"],
+  feeder:   ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
+  regional: ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet", "narrowbody_jet"],
+  trunk:    ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet", "narrowbody_jet"],
+  longhaul: ["narrowbody_jet", "widebody_jet"],
+  heavy:    ["narrowbody_jet", "widebody_jet"],
+  cargo:    ["single_turboprop", "twin_turboprop", "piston_twin", "narrowbody_jet", "widebody_jet"],
 };
 
 export function isAircraftCompatibleWithRoute(
