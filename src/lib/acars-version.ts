@@ -5,7 +5,7 @@ export const ACARS_VERSION = "3.2.4";
 export const ACARS_BACKEND = "SimConnect + FSUIPC7 fallback + Supabase Direct";
 export const ACARS_SIZE_MB = "~24.7 MB";
 export const ACARS_DOWNLOAD_URL =
-  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.4.exe";
+  "https://patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe";
 
 export const ACARS_RELEASE_NOTES = [
   "Arquitectura SUR Air: luces FLOAT64 individuales (no bitmask), struct de 53 campos alineado",
@@ -14,3 +14,4 @@ export const ACARS_RELEASE_NOTES = [
   "Vuelos numerados PWG101…PWG113, retornos PWGxxx-2",
   "Version Web 2.0 · ACARS 3.2.4",
 ];
+
