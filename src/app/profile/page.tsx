@@ -565,7 +565,7 @@ function ProfileContent() {
 
                 <div className="grid gap-4 sm:grid-cols-1">
                   {[
-                    { label: "Score SUR", value: formatDecimal(surScore) },
+                    { label: "Patagonia Score", value: formatDecimal(surScore) },
                   ].map((item) => (
                     <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5 text-center">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">

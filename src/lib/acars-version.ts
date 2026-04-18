@@ -1,16 +1,16 @@
 ﻿// Version del cliente ACARS.
 // Actualizar solo este archivo al publicar una nueva release del instalador.
 
-export const ACARS_VERSION = "3.2.3";
+export const ACARS_VERSION = "3.2.4";
 export const ACARS_BACKEND = "SimConnect + FSUIPC7 fallback + Supabase Direct";
 export const ACARS_SIZE_MB = "~24.7 MB";
 export const ACARS_DOWNLOAD_URL =
   "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe";
 
 export const ACARS_RELEASE_NOTES = [
-  "CabinSystemsReliable por perfil: Fenix, FBW, Headwind y MadDog no penalizan sistemas de cabina",
-  "Reservas activas se cierran automaticamente al salir de la app o ante crash (cancelled/interrupted)",
-  "Fotos de aeronave: fallback por familia cuando no existe imagen especifica",
-  "Perfiles actualizados con ImageAsset correcto para todas las aeronaves",
-  "Version Web 2.0 · ACARS 3.2.3",
+  "Arquitectura SUR Air: luces FLOAT64 individuales (no bitmask), struct de 53 campos alineado",
+  "AutopilotHeadingLock, AltitudeLock, Nav1Lock, ApproachHold, WingLeveler añadidos al struct",
+  "Patagonia Score (ex SUR Score): renombrado en toda la interfaz",
+  "Vuelos numerados PWG101…PWG113, retornos PWGxxx-2",
+  "Version Web 2.0 · ACARS 3.2.4",
 ];

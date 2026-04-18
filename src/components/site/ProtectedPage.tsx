@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/lib/supabase/browser";
 
 const ProtectedSessionContext = createContext<Session | null>(null);
+const OptionalSessionContext = createContext<Session | null | undefined>(undefined);
 
 export function useProtectedSession() {
   const session = useContext(ProtectedSessionContext);
@@ -21,6 +22,11 @@ export function useProtectedSession() {
   }
 
   return session;
+}
+
+/** Returns the session (or null) without requiring auth. undefined = still loading. */
+export function useOptionalSession(): Session | null | undefined {
+  return useContext(OptionalSessionContext);
 }
 
 type ProtectedPageProps = {
@@ -93,5 +99,37 @@ export default function ProtectedPage({ children }: ProtectedPageProps) {
     <ProtectedSessionContext.Provider value={session}>
       {children}
     </ProtectedSessionContext.Provider>
+  );
+}
+
+type OptionalAuthPageProps = {
+  children: ReactNode;
+};
+
+/** Renders children regardless of auth state. useOptionalSession() returns the session or null. */
+export function OptionalAuthPage({ children }: OptionalAuthPageProps) {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (isMounted) setSession(data.session ?? null);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (isMounted) setSession(nextSession ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <OptionalSessionContext.Provider value={session}>
+      {children}
+    </OptionalSessionContext.Provider>
   );
 }

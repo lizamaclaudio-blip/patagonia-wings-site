@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
-import ProtectedPage, { useProtectedSession } from "@/components/site/ProtectedPage";
+import { OptionalAuthPage, useOptionalSession } from "@/components/site/ProtectedPage";
 import { ensurePilotProfile } from "@/lib/pilot-profile";
 import { supabase } from "@/lib/supabase/browser";
-import { resolveSurScore } from "@/lib/sur-score";
+import { resolvePatagoniaScore } from "@/lib/sur-score";
 
 type FlightReservationResultRow = {
   id: string;
@@ -141,7 +141,7 @@ function statusTone(value?: string | null) {
 }
 
 function FlightResultContent() {
-  const session = useProtectedSession();
+  const session = useOptionalSession();
   const params = useParams<{ reservationId: string }>();
   const reservationId = Array.isArray(params?.reservationId)
     ? params.reservationId[0]
@@ -159,16 +159,23 @@ function FlightResultContent() {
   const [appealComment, setAppealComment] = useState("");
 
   useEffect(() => {
+    // session === undefined means still resolving — wait
+    if (session === undefined) return;
+
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       setError("");
 
-      const profile = await ensurePilotProfile(session.user);
-      const nextCallsign = asText(profile?.callsign).toUpperCase();
-      setPilotCallsign(nextCallsign);
-      if (!nextCallsign || !reservationId) {
+      // If authenticated, resolve callsign for ownership check
+      if (session) {
+        const profile = await ensurePilotProfile(session.user);
+        const nextCallsign = asText(profile?.callsign).toUpperCase();
+        setPilotCallsign(nextCallsign);
+      }
+
+      if (!reservationId) {
         if (!cancelled) {
           setError("No se pudo validar el vuelo solicitado.");
           setLoading(false);
@@ -203,16 +210,7 @@ function FlightResultContent() {
         return;
       }
 
-      const row = reservationRes.data as FlightReservationResultRow;
-      const rowCallsign = asText(row.pilot_callsign).toUpperCase();
-      const isAdmin = nextCallsign === "PWG001";
-      if (!isAdmin && rowCallsign !== nextCallsign) {
-        setError("Este resultado no pertenece al piloto autenticado.");
-        setLoading(false);
-        return;
-      }
-
-      setReservation(row);
+      setReservation(reservationRes.data as FlightReservationResultRow);
       setScoreReport((scoreRes.data ?? null) as FlightScoreReportRow | null);
       setLoading(false);
     }
@@ -221,7 +219,7 @@ function FlightResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [reservationId, session.user]);
+  }, [reservationId, session]);
 
   const mergedScorePayload = useMemo(() => {
     const reservationPayload = asObject(reservation?.score_payload);
@@ -237,6 +235,10 @@ function FlightResultContent() {
     [mergedScorePayload]
   );
   const isAdminReviewer = pilotCallsign === "PWG001";
+  const isOwner =
+    pilotCallsign.length > 0 &&
+    asText(reservation?.pilot_callsign).toUpperCase() === pilotCallsign;
+  const canSeeAppeal = isOwner || isAdminReviewer;
 
   const damageSummary = useMemo(
     () => asObject(mergedScorePayload.damage_summary),
@@ -252,7 +254,7 @@ function FlightResultContent() {
     asText(reservation?.route_code) ||
     reservationId;
 
-  const surScore = resolveSurScore({
+  const surScore = resolvePatagoniaScore({
     scorePayload: mergedScorePayload,
     procedureScore: scoreReport?.procedure_score ?? reservation?.procedure_score,
     performanceScore: scoreReport?.performance_score ?? reservation?.performance_score,
@@ -403,7 +405,7 @@ function FlightResultContent() {
                 { label: "Cierre", value: formatDateTime(reservation.completed_at ?? reservation.updated_at) },
                 { label: "Block real", value: formatMinutes(reservation.actual_block_minutes) },
                 { label: "Landing V/S", value: landingVs ? `${Math.round(landingVs)} fpm` : "—" },
-                { label: "Score SUR", value: surScore ? String(Math.round(surScore)) : "—" },
+                { label: "Patagonia Score", value: surScore ? String(Math.round(surScore)) : "—" },
                 { label: "Comb. inicial", value: fuelStartKg ? `${Math.round(fuelStartKg)} kg` : "—" },
                 { label: "Comb. final / usado", value: fuelEndKg || fuelUsedKg ? `${Math.round(fuelEndKg)} kg / ${Math.round(fuelUsedKg)} kg` : "—" },
               ].map((item) => (
@@ -452,6 +454,7 @@ function FlightResultContent() {
             </div>
           </section>
 
+          {canSeeAppeal ? (
           <section className="glass-panel rounded-[30px] p-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -549,6 +552,7 @@ function FlightResultContent() {
               </form>
             )}
           </section>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -557,10 +561,10 @@ function FlightResultContent() {
 
 export default function FlightResultPage() {
   return (
-    <ProtectedPage>
+    <OptionalAuthPage>
       <PublicHeader />
       <FlightResultContent />
-    </ProtectedPage>
+    </OptionalAuthPage>
   );
 }
 

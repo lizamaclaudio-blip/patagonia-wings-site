@@ -305,7 +305,7 @@ export default function PilotStatusRail() {
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {[
-            { label: "Score SUR", value: formatDecimal(surScore) },
+            { label: "Patagonia Score", value: formatDecimal(surScore) },
             { label: "Billetera", value: formatCurrency(score.wallet) },
           ].map((item) => (
             <div

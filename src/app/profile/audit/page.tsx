@@ -116,7 +116,7 @@ function AuditContent() {
         scoreRes.error
           ? scoreRes.error.message
           : scoreRes.data
-            ? `Score SUR ${scoreRes.data.pulso_10 ?? 0}`
+            ? `Patagonia Score ${scoreRes.data.pulso_10 ?? 0}`
             : "Sin score legible aún"
       );
 

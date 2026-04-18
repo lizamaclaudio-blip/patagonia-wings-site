@@ -451,7 +451,7 @@ function resolveCountryCode(value?: string | null, icao?: string | null) {
 function formatDurationMinutes(value: number | null | undefined) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) {
-    return "Pendiente";
+    return "—";
   }
 
   const safeMinutes = Math.max(1, Math.round(minutes));
@@ -908,6 +908,95 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
     visibility: formatMetarVisibility(normalized),
     raw: normalized,
   };
+}
+
+/** Returns raw visibility in meters from a METAR string, or null if not parseable. */
+function parseMetarVisibilityMeters(rawMetar: string): number | null {
+  const upper = rawMetar.toUpperCase();
+  if (upper.includes("CAVOK")) return 9999;
+  // SM (statute miles) — approximate
+  const smMatch = rawMetar.match(/\bM?(\d+(?:\/\d+)?)SM\b/i);
+  if (smMatch) {
+    const smVal = smMatch[1].includes("/") ? 0.5 : Number.parseFloat(smMatch[1]);
+    return Math.round(smVal * 1609);
+  }
+  // 4-digit meters (e.g. 0800, 1500, 9999)
+  const mMatch = rawMetar.match(/(?:KT|MPS)\s+(\d{4})\b/);
+  if (mMatch) return Number.parseInt(mMatch[1], 10);
+  return null;
+}
+
+/** Returns wind speed in knots from a METAR string, or null if not parseable. */
+function parseMetarWindKt(rawMetar: string): number | null {
+  const match = rawMetar.match(/\b(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT\b/i);
+  if (!match) return null;
+  const speed = Number.parseInt(match[1], 10);
+  const gust = match[2] ? Number.parseInt(match[2], 10) : 0;
+  return Math.max(speed, gust);
+}
+
+type WeatherWarning = { level: "amber" | "red"; text: string };
+
+/**
+ * Compares current METAR conditions against a pilot's active qualifications.
+ * Returns an array of warnings (empty = no issues detected).
+ */
+function buildWeatherWarnings(rawMetar: string, activeQualifications: string): WeatherWarning[] {
+  const warnings: WeatherWarning[] = [];
+  if (!rawMetar || rawMetar.toUpperCase().includes("PENDIENTE")) return warnings;
+
+  const qualList = activeQualifications
+    .split(",")
+    .map((q) => q.trim().toUpperCase())
+    .filter(Boolean);
+
+  // --- Visibility / precision approach ---
+  const visM = parseMetarVisibilityMeters(rawMetar);
+  if (visM !== null) {
+    let requiredH = 0;
+    if (visM < 300) requiredH = 5;
+    else if (visM < 550) requiredH = 4;
+    else if (visM < 800) requiredH = 3;
+    else if (visM < 1500) requiredH = 2;
+    else if (visM < 5000) requiredH = 1;
+
+    if (requiredH > 0) {
+      const pilotH = qualList.reduce((max, q) => {
+        const m = q.match(/^H(\d)$/);
+        return m ? Math.max(max, Number.parseInt(m[1], 10)) : max;
+      }, 0);
+      if (pilotH < requiredH) {
+        warnings.push({
+          level: requiredH >= 3 ? "red" : "amber",
+          text: `Visibilidad ${visM < 1000 ? `${visM} m` : `${(visM / 1000).toFixed(1)} km`} requiere habilitación H${requiredH} — tienes H${pilotH}.`,
+        });
+      }
+    }
+  }
+
+  // --- Wind speed proxy for crosswind ---
+  const windKt = parseMetarWindKt(rawMetar);
+  if (windKt !== null) {
+    let requiredV = 0;
+    if (windKt > 35) requiredV = 3;
+    else if (windKt > 25) requiredV = 2;
+    else if (windKt > 15) requiredV = 1;
+
+    if (requiredV > 0) {
+      const pilotV = qualList.reduce((max, q) => {
+        const m = q.match(/^V(\d)$/);
+        return m ? Math.max(max, Number.parseInt(m[1], 10)) : max;
+      }, 0);
+      if (pilotV < requiredV) {
+        warnings.push({
+          level: requiredV >= 2 ? "red" : "amber",
+          text: `Viento ${windKt} kt requiere habilitación V${requiredV} — tienes V${pilotV}.`,
+        });
+      }
+    }
+  }
+
+  return warnings;
 }
 
 function buildNewsItems(
@@ -1846,8 +1935,8 @@ function CentralFlightsTable({
 }) {
   const headers =
     variant === "active"
-      ? ["Piloto", "Vuelo", "Aeronave", "Origen", "Destino", "Estado", "Tipo"]
-      : ["Piloto", "Vuelo", "Aeronave", "Origen", "Destino", "Score", "Tipo"];
+      ? ["Piloto", "Vuelo", "Aeronave", "Matrícula", "Origen", "Destino", "Estado", "Tipo"]
+      : ["Piloto", "Vuelo", "Aeronave", "Matrícula", "Origen", "Destino", "Score", "Tipo", ""];
 
   const statusTone = (status?: string | null) => {
     const normalized = (status ?? "").trim().toLowerCase();
@@ -1907,12 +1996,12 @@ function CentralFlightsTable({
             {rows.length ? (
               rows.map((row, index) => {
                 const routeLabel = row.route_code?.trim() || formatRouteTag(row);
-                const aircraftPrimary =
-                  row.aircraft_type_code?.trim() || row.aircraft_registration?.trim() || "---";
-                const aircraftSecondary =
-                  row.aircraft_registration?.trim() && row.aircraft_registration?.trim() !== aircraftPrimary
-                    ? row.aircraft_registration?.trim()
-                    : null;
+                // Show just the ICAO model code, not the addon suffix (A319_FENIX → A319)
+                const rawTypeCode = row.aircraft_type_code?.trim() || "";
+                const aircraftPrimary = rawTypeCode
+                  ? rawTypeCode.split("_")[0]
+                  : row.aircraft_registration?.trim() || "---";
+                const registration = row.aircraft_registration?.trim() || null;
 
                 return (
                   <tr
@@ -1931,11 +2020,12 @@ function CentralFlightsTable({
 
                     <td className="px-4 py-3">
                       <div className="font-semibold text-white">{aircraftPrimary}</div>
-                      {aircraftSecondary ? (
-                        <div className="mt-1 text-xs uppercase tracking-[0.14em] text-white/42">
-                          {aircraftSecondary}
-                        </div>
-                      ) : null}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
+                        {registration ?? "—"}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3 font-medium text-white/84">
@@ -1957,7 +2047,7 @@ function CentralFlightsTable({
                         <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
                           {toSafeNumber(row.procedure_score) > 0
                             ? `${formatDecimal(toSafeNumber(row.procedure_score))} pts`
-                            : "Pendiente"}
+                            : "—"}
                         </span>
                       )}
                     </td>
@@ -1969,12 +2059,26 @@ function CentralFlightsTable({
                         {formatFlightModeLabel(row.flight_mode_code)}
                       </span>
                     </td>
+
+                    {variant === "recent" ? (
+                      <td className="px-4 py-3 text-right">
+                        {row.id ? (
+                          <a
+                            href={`/flights/${row.id}`}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/12 bg-white/[0.05] text-white/54 transition hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-300"
+                            title="Ver resumen de vuelo"
+                          >
+                            <span className="text-sm">👁</span>
+                          </a>
+                        ) : null}
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-white/54">
                   {emptyLabel}
                 </td>
               </tr>
@@ -2439,38 +2543,14 @@ function DispatchAircraftCascadeSelector({
           </select>
         </div>
 
-        {/* 2 · Variante / Addon */}
+        {/* 2 · N° de registro */}
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
               selModelCode ? "text-white/54" : "text-white/24"
             }`}
           >
-            2 · Variante / Addon
-          </label>
-          <select
-            value={selVariantKey}
-            onChange={(e) => setSelVariantKey(e.target.value)}
-            disabled={!selModelCode}
-            className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
-          >
-            <option value="">— Elige variante —</option>
-            {uniqueVariants.map((a) => (
-              <option key={a.key} value={a.key}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 3 · N° de registro */}
-        <div className="flex flex-col gap-2">
-          <label
-            className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
-              selModelCode ? "text-white/54" : "text-white/24"
-            }`}
-          >
-            3 · N° de registro
+            2 · N° de registro
           </label>
           <select
             value={selectedAircraftId ?? ""}
@@ -4542,6 +4622,20 @@ function DashboardWorkspace({
                           El plan de vuelo sera generado por ACARS al iniciar el vuelo. Confirma los datos de la web para despachar a la base operativa.
                         </p>
 
+                        {buildWeatherWarnings(dispatchMetar.raw, profile?.active_qualifications ?? "").map((warn, i) => (
+                          <div
+                            key={i}
+                            className={`mt-4 rounded-[16px] border px-4 py-3 text-sm font-medium leading-6 ${
+                              warn.level === "red"
+                                ? "border-rose-400/25 bg-rose-400/10 text-rose-200"
+                                : "border-amber-400/25 bg-amber-400/10 text-amber-200"
+                            }`}
+                          >
+                            {warn.level === "red" ? "⛔ " : "⚠️ "}
+                            {warn.text}
+                          </div>
+                        ))}
+
                         <button
                           type="button"
                           onClick={() => { setDispatchReady(true); setDispatchStep("summary"); }}
@@ -4961,7 +5055,7 @@ function DashboardWorkspace({
             {/* ── Fila 3: Scores + Billetera ── */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                { label: "Score SUR", value: formatDecimal(metrics.surScore), accent: "#67d7ff" },
+                { label: "Patagonia Score", value: formatDecimal(metrics.surScore), accent: "#67d7ff" },
                 { label: "Rango", value: metrics.careerRank, accent: "#ffffff" },
                 { label: "Estado", value: metrics.pilotStatus, accent: "#0ca66b" },
                 { label: "Billetera", value: formatCurrency(metrics.walletBalance), accent: "#0ca66b" },
@@ -5147,7 +5241,7 @@ function DashboardWorkspace({
                   accent: "#ffffff",
                 },
                 {
-                  label: "Score SUR",
+                  label: "Patagonia Score",
                   value: formatDecimal(metrics.surScore),
                   unit: "operacional",
                   accent: "#67d7ff",
@@ -5250,7 +5344,7 @@ function DashboardWorkspace({
                         <tr className="border-b border-white/8">
                           <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</th>
                           <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</th>
-                          <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Score SUR</th>
+                          <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Patagonia Score</th>
                           
                           <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Fecha</th>
                         </tr>
@@ -5280,7 +5374,7 @@ function DashboardWorkspace({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Ruta de progresión — {metrics.careerRank}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "Score SUR ≥ 7.0", done: metrics.surScore >= 7, value: `${formatDecimal(metrics.surScore)} / 7.0` },
+                  { label: "Patagonia Score ≥ 7.0", done: metrics.surScore >= 7, value: `${formatDecimal(metrics.surScore)} / 7.0` },
                   { label: "PIREPs acumulados", done: metrics.totalPireps >= 5, value: `${formatInteger(metrics.totalPireps)} / 5` },
                   { label: "Horas acumuladas",  done: metrics.totalHours >= 10, value: `${formatDecimal(metrics.totalHours)} hs` },
                 ].map((gate) => (
@@ -5437,7 +5531,7 @@ function DashboardContent() {
   const compactMetrics = useMemo<MetricDisplayItem[]>(
     () => [
       { label: "Estado", type: "text", value: metrics.pilotStatus },
-      { label: "Score SUR", type: "number", value: metrics.surScore, decimals: 1 },
+      { label: "Patagonia Score", type: "number", value: metrics.surScore, decimals: 1 },
       { label: "Rango", type: "text", value: metrics.careerRank },
       {
         label: `Posición ${metrics.monthLabel}`,
