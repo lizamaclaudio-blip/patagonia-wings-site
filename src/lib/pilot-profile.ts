@@ -16,6 +16,10 @@ export type PilotProfileRecord = {
   simulator: string | null;
   rank_code?: string | null;
   career_rank_code?: string | null;
+  total_hours?: number | null;
+  career_hours?: number | null;
+  transferred_hours?: number | null;
+  wallet_balance?: number | null;
   active_qualifications?: string | null;
   active_certifications?: string | null;
   simbrief_username: string | null;
@@ -49,6 +53,7 @@ function normalizeProfileRecord(
     "SCEL") as string;
 
   return {
+    ...(data ?? {}),
     id: data?.id ?? user.id,
     airline_id: data?.airline_id ?? null,
     email: data?.email ?? user.email ?? "",
@@ -62,11 +67,19 @@ function normalizeProfileRecord(
     country:
       data?.country ?? ((metadata.country as string | undefined) ?? "Chile"),
     base_hub: baseHub,
-    current_airport_icao: data?.current_airport_icao ?? data?.current_airport_code ?? baseHub,
-    current_airport_code: data?.current_airport_code ?? data?.current_airport_icao ?? baseHub,
+    current_airport_icao:
+      data?.current_airport_icao ?? data?.current_airport_code ?? baseHub,
+    current_airport_code:
+      data?.current_airport_code ?? data?.current_airport_icao ?? baseHub,
     simulator:
       data?.simulator ??
       ((metadata.simulator as string | undefined) ?? "MSFS 2020"),
+    rank_code: data?.rank_code ?? null,
+    career_rank_code: data?.career_rank_code ?? null,
+    total_hours: data?.total_hours ?? null,
+    career_hours: data?.career_hours ?? null,
+    transferred_hours: data?.transferred_hours ?? null,
+    wallet_balance: data?.wallet_balance ?? null,
     active_qualifications:
       data?.active_qualifications ??
       ((metadata.active_qualifications as string | undefined) ?? null),
