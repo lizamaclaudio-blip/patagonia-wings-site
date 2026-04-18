@@ -217,50 +217,7 @@ function FlightResultContent() {
     }
 
     void load();
-  async function handleAppealDecision(nextStatus: "resolved" | "rejected") {
-    if (!reservation || !isAdminReviewer || currentAppeal.status !== "pending") return;
-
-    setSaving(true);
-    setSaveMessage("");
-    setError("");
-
-    const resolvedAt = new Date().toISOString();
-    const nextAppeal = {
-      ...currentAppeal,
-      status: nextStatus,
-      resolved_at: resolvedAt,
-      resolved_by: pilotCallsign,
-    };
-
-    const nextPayload = {
-      ...mergedScorePayload,
-      flight_appeal: nextAppeal,
-    };
-
-    const { error: updateError, data } = await supabase
-      .from("flight_reservations")
-      .update({
-        score_payload: nextPayload,
-        updated_at: resolvedAt,
-      })
-      .eq("id", reservation.id)
-      .select(
-        "id, pilot_callsign, route_code, reservation_code, origin_ident, destination_ident, aircraft_type_code, aircraft_registration, aircraft_variant_code, addon_provider, status, created_at, completed_at, updated_at, actual_block_minutes, procedure_score, performance_score, procedure_grade, performance_grade, mission_score, score_payload"
-      )
-      .maybeSingle();
-
-    if (updateError) {
-      setError(updateError.message);
-      setSaving(false);
-      return;
-    }
-
-    setReservation((data ?? reservation) as FlightReservationResultRow);
-    setSaveMessage(nextStatus === "resolved" ? "Apelacion resuelta." : "Apelacion rechazada.");
-    setSaving(false);
-  }
-
-  return () => {
+    return () => {
       cancelled = true;
     };
   }, [reservationId, session.user]);
