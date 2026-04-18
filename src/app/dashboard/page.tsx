@@ -660,13 +660,11 @@ function buildDispatchFlightNumber(itinerary: AvailableItineraryOption | null) {
     return "Pendiente";
   }
 
-  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
   const designator = itinerary?.flight_designator?.trim().toUpperCase() ?? "";
-  const airlineCode = designator.match(/^[A-Z]+/)?.[0] ?? "PWG";
-  const numberDigits =
-    rawNumber.match(/\d{1,4}$/)?.[0] ??
-    designator.match(/\d{1,4}$/)?.[0] ??
-    "";
+  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
+  const realValue = designator || rawNumber;
+  const airlineCode = realValue.match(/^[A-Z]+/)?.[0] ?? "PWG";
+  const numberDigits = realValue.match(/\d{1,4}$/)?.[0] ?? "";
 
   if (numberDigits) {
     return `${airlineCode} ${numberDigits.padStart(3, "0")}`;
@@ -686,12 +684,10 @@ function getDispatchFlightNumberValidationValue(itinerary: AvailableItineraryOpt
     return "";
   }
 
-  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
   const designator = itinerary?.flight_designator?.trim().toUpperCase() ?? "";
-  const numberDigits =
-    rawNumber.match(/\d{1,4}$/)?.[0] ??
-    designator.match(/\d{1,4}$/)?.[0] ??
-    "";
+  const rawNumber = itinerary?.flight_number?.trim().toUpperCase() ?? "";
+  const realValue = designator || rawNumber;
+  const numberDigits = realValue.match(/\d{1,4}$/)?.[0] ?? "";
 
   if (numberDigits) {
     return numberDigits.padStart(3, "0");
@@ -703,7 +699,7 @@ function getDispatchFlightNumberValidationValue(itinerary: AvailableItineraryOpt
     return generatedDigits.padStart(3, "0");
   }
 
-  return normalizeDispatchComparisonValue(rawNumber || designator);
+  return normalizeDispatchComparisonValue(realValue);
 }
 
 function formatSimbriefFlightNumber(value: string | null | undefined) {
@@ -3160,6 +3156,7 @@ function DashboardWorkspace({
     try {
       const flightNumber =
         selectedItineraryRecord.flight_designator?.trim().replace(/\s+/g, "").toUpperCase() ||
+        selectedItineraryRecord.flight_number?.trim().replace(/\s+/g, "").toUpperCase() ||
         `PWG${webFlightNumberValidationValue || "000"}`;
 
       const payload = {
@@ -3907,6 +3904,7 @@ function DashboardWorkspace({
       const normalizedFlightNumber =
         simbriefSummary?.flightNumber?.trim().replace(/\s+/g, "").toUpperCase() ||
         selectedItineraryRecord.flight_designator?.trim().replace(/\s+/g, "").toUpperCase() ||
+        selectedItineraryRecord.flight_number?.trim().replace(/\s+/g, "").toUpperCase() ||
         `PWG${webFlightNumberValidationValue || "000"}`;
       const remarks = [
         "DISPATCHED_FROM_DASHBOARD",
@@ -5616,5 +5614,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-
-

@@ -392,11 +392,47 @@ function isAircraftTypeAllowedForPilot(
   aircraftTypeCode: string | null | undefined,
   permittedTypes: Set<string>
 ) {
-  if (permittedTypes.size === 0) return true;
+  if (permittedTypes.size === 0) return false;
 
   return expandAircraftPermissionAliases(aircraftTypeCode).some((code) =>
     permittedTypes.has(code)
   );
+}
+
+function addPermittedTypeAliases(
+  permitted: Set<string>,
+  value: string | null | undefined
+) {
+  for (const alias of expandAircraftPermissionAliases(value)) {
+    permitted.add(alias);
+  }
+}
+
+function collectPermittedTypesFromRows(rows: GenericRecord[]) {
+  const permitted = new Set<string>();
+
+  for (const row of rows) {
+    addPermittedTypeAliases(
+      permitted,
+      typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
+    );
+    addPermittedTypeAliases(
+      permitted,
+      typeof row.variant_aircraft_type_code === "string"
+        ? row.variant_aircraft_type_code
+        : ""
+    );
+    addPermittedTypeAliases(
+      permitted,
+      typeof row.aircraft_family_code === "string" ? row.aircraft_family_code : ""
+    );
+    addPermittedTypeAliases(
+      permitted,
+      typeof row.variant_code === "string" ? row.variant_code : ""
+    );
+  }
+
+  return permitted;
 }
 
 async function fetchPilotPermittedAircraftTypes(rankCode: string) {
@@ -409,16 +445,57 @@ async function fetchPilotPermittedAircraftTypes(rankCode: string) {
     throw error;
   }
 
-  const permitted = new Set<string>();
-  for (const row of ((data ?? []) as GenericRecord[])) {
-    for (const alias of expandAircraftPermissionAliases(
-      typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
-    )) {
-      permitted.add(alias);
+  const directPermissions = collectPermittedTypesFromRows((data ?? []) as GenericRecord[]);
+  if (directPermissions.size > 0) {
+    return directPermissions;
+  }
+
+  for (const fallback of [
+    () =>
+      supabase
+        .from("pw_v_rank_allowed_variants")
+        .select("aircraft_type_code, variant_aircraft_type_code, variant_code, aircraft_family_code")
+        .eq("rank_code", rankCode),
+    async () => {
+      const { data: families, error: familiesError } = await supabase
+        .from("pw_pilot_rank_aircraft_families")
+        .select("aircraft_family_code")
+        .eq("rank_code", rankCode);
+
+      if (familiesError) {
+        return { data: null, error: familiesError };
+      }
+
+      const familyCodes = ((families ?? []) as GenericRecord[])
+        .map((row) =>
+          typeof row.aircraft_family_code === "string" ? row.aircraft_family_code : ""
+        )
+        .filter(Boolean);
+
+      if (!familyCodes.length) {
+        return { data: [], error: null };
+      }
+
+      return await supabase
+        .from("pw_aircraft_family_variants")
+        .select("aircraft_family_code, aircraft_type_code, variant_aircraft_type_code, variant_code")
+        .in("aircraft_family_code", familyCodes);
+    },
+  ]) {
+    const { data: fallbackData, error: fallbackError } = await fallback();
+    if (fallbackError) {
+      continue;
+    }
+
+    const fallbackPermissions = collectPermittedTypesFromRows(
+      (fallbackData ?? []) as GenericRecord[]
+    );
+    if (fallbackPermissions.size > 0) {
+      return fallbackPermissions;
     }
   }
 
-  return permitted;
+  return new Set<string>();
 }
 
 function filterAircraftRowsForPilot(
@@ -607,39 +684,22 @@ function normalizeItineraryFlightIdentity(
   origin: string,
   destination: string
 ) {
-  const normalizedNumber =
+  const rawNumber =
     typeof flightNumber === "number"
       ? String(flightNumber)
       : typeof flightNumber === "string"
-        ? flightNumber
+        ? flightNumber.trim()
         : "";
-  const normalizedDesignator = typeof flightDesignator === "string" ? flightDesignator : "";
-  const generatedDesignator = getOperationalFlightNumber(origin, destination);
-  const generatedDigits = extractOperationalFlightDigits(generatedDesignator);
-
-  const numberDigits = extractOperationalFlightDigits(normalizedNumber);
-  const designatorDigits = extractOperationalFlightDigits(normalizedDesignator);
-  const resolvedDigits = numberDigits || designatorDigits || generatedDigits || null;
-  const resolvedDesignator = (() => {
-    const cleanDesignator = normalizeUpper(normalizedDesignator);
-    if (cleanDesignator && !cleanDesignator.includes("-")) {
-      return cleanDesignator;
-    }
-
-    const cleanNumber = normalizeUpper(normalizedNumber);
-    if (/^[A-Z]{2,4}\d{1,4}$/.test(cleanNumber)) {
-      return cleanNumber;
-    }
-
-    if (resolvedDigits) {
-      return `PWG${resolvedDigits}`;
-    }
-
-    return generatedDesignator || null;
-  })();
+  const rawDesignator =
+    typeof flightDesignator === "string" ? flightDesignator.trim() : "";
+  const normalizedNumber = rawNumber ? normalizeUpper(rawNumber) : "";
+  const normalizedDesignator = rawDesignator ? normalizeUpper(rawDesignator) : "";
+  const generatedDesignator = getOperationalFlightNumber(origin, destination) || null;
+  const resolvedDesignator = normalizedDesignator || normalizedNumber || generatedDesignator;
+  const resolvedNumber = normalizedDesignator || normalizedNumber || generatedDesignator;
 
   return {
-    flightNumber: resolvedDigits,
+    flightNumber: resolvedNumber,
     flightDesignator: resolvedDesignator,
   };
 }
@@ -669,6 +729,8 @@ function mapLegacyReservationFromRpc(
         ? row.aircraft_registration
         : typeof row.registration === "string"
           ? row.registration
+          : typeof row.tail_number === "string"
+            ? row.tail_number
           : null,
     aircraft_type_code:
       typeof row.aircraft_type_code === "string"
@@ -1115,7 +1177,7 @@ const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
 
 export async function listAvailableAircraft(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
-  const rankCode = normalizeRankCode(profile.rank_code ?? profile.career_rank_code);
+  const rankCode = normalizeRankCode(profile.career_rank_code ?? profile.rank_code);
   const permittedTypes = await fetchPilotPermittedAircraftTypes(rankCode);
 
   const mapDisplayRows = (rows: GenericRecord[]) =>
@@ -1163,6 +1225,12 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
             : typeof row.tail_number === "string"
               ? row.tail_number
               : "",
+        aircraft_type_code:
+          typeof row.aircraft_type_code === "string"
+            ? row.aircraft_type_code
+            : typeof row.aircraft_code === "string"
+              ? row.aircraft_code
+              : aircraftCode,
         aircraft_code: aircraftCode,
         aircraft_name: aircraftName,
         aircraft_variant_code:
@@ -1217,7 +1285,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     const { data, error } = await supabase
       .from("aircraft")
       .select(
-        "id, registration, aircraft_type_code, aircraft_model_code, aircraft_variant_code, addon_provider, variant_name, aircraft_display_name, current_airport_code, status"
+        "id, registration, tail_number, aircraft_type_code, aircraft_model_code, aircraft_variant_code, addon_provider, variant_name, aircraft_display_name, current_airport_code, status"
       )
       .eq("current_airport_code", airport)
       .eq("status", "available")
@@ -1236,7 +1304,18 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
 
       return {
         aircraft_id: String(row.id ?? ""),
-        tail_number: typeof row.registration === "string" ? row.registration : "",
+        tail_number:
+          typeof row.registration === "string"
+            ? row.registration
+            : typeof row.tail_number === "string"
+              ? row.tail_number
+              : "",
+        aircraft_type_code:
+          typeof row.aircraft_type_code === "string"
+            ? row.aircraft_type_code
+            : typeof row.aircraft_model_code === "string"
+              ? row.aircraft_model_code
+              : "",
         aircraft_code: resolveSimbriefType(
           typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
         ),
@@ -1250,8 +1329,6 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                     ? row.aircraft_type_code
                     : ""
               ),
-        aircraft_type_code:
-          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : "",
         aircraft_variant_code:
           typeof row.aircraft_variant_code === "string"
             ? row.aircraft_variant_code
@@ -1298,6 +1375,12 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                 ? row.registration
                 : typeof row.tail_number === "string"
                   ? row.tail_number
+                  : "",
+            aircraft_type_code:
+              typeof row.aircraft_type_code === "string"
+                ? row.aircraft_type_code
+                : typeof row.aircraft_code === "string"
+                  ? row.aircraft_code
                   : "",
             aircraft_code: resolveSimbriefType(
               typeof row.aircraft_type_code === "string"
@@ -1360,7 +1443,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
 
 export async function listAvailableItineraries(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
-  const rankCode = normalizeRankCode(profile.rank_code ?? profile.career_rank_code);
+  const rankCode = normalizeRankCode(profile.career_rank_code ?? profile.rank_code);
   const permittedTypes = await fetchPilotPermittedAircraftTypes(rankCode);
   const rawProfile = profile as PilotProfileRecord & {
     qualifications?: string | null;
@@ -1378,7 +1461,10 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
   const mapItineraryRows = (rows: GenericRecord[]) =>
     rows
       .map((row) => {
-        const compatibleAircraftTypes = parseCompatibleAircraftTypes(row.compatible_aircraft_types)
+        const compatibleAircraftTypes = parseCompatibleAircraftTypes(
+          row.compatible_aircraft_types ??
+          row.aircraft_type_code
+        )
           .filter((type) => isAircraftTypeAllowedForPilot(type, permittedTypes));
         const origin = typeof row.origin_ident === "string" ? row.origin_ident : typeof row.origin_icao === "string" ? row.origin_icao : "";
         const destination = typeof row.destination_ident === "string" ? row.destination_ident : typeof row.destination_icao === "string" ? row.destination_icao : "";
@@ -1482,7 +1568,11 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
       const routeCode = typeof row.route_code === "string" ? row.route_code : "";
       const origin = typeof row.origin_ident === "string" ? row.origin_ident : airport;
       const destination = typeof row.destination_ident === "string" ? row.destination_ident : "";
-      const compatibleAircraftTypes = compatibilityMap.get(routeId) ?? [];
+        const compatibleAircraftTypes =
+          compatibilityMap.get(routeId) ??
+          parseCompatibleAircraftTypes(row.aircraft_type_code).filter((type) =>
+            isAircraftTypeAllowedForPilot(type, permittedTypes)
+          );
       const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
         typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
         typeof row.flight_designator === "string" ? row.flight_designator : null,
