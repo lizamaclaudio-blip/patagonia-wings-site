@@ -7,6 +7,7 @@ import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, { useProtectedSession } from "@/components/site/ProtectedPage";
 import { ensurePilotProfile } from "@/lib/pilot-profile";
 import { supabase } from "@/lib/supabase/browser";
+import { resolveSurScore } from "@/lib/sur-score";
 
 type FlightReservationResultRow = {
   id: string;
@@ -251,14 +252,12 @@ function FlightResultContent() {
     asText(reservation?.route_code) ||
     reservationId;
 
-  const procedureScore =
-    asNumber(scoreReport?.procedure_score) ||
-    asNumber(reservation?.procedure_score) ||
-    asNumber(reservation?.mission_score);
-
-  const performanceScore =
-    asNumber(scoreReport?.performance_score) ||
-    asNumber(reservation?.performance_score);
+  const surScore = resolveSurScore({
+    scorePayload: mergedScorePayload,
+    procedureScore: scoreReport?.procedure_score ?? reservation?.procedure_score,
+    performanceScore: scoreReport?.performance_score ?? reservation?.performance_score,
+    missionScore: reservation?.mission_score,
+  });
 
   const fuelStartKg = asNumber(mergedScorePayload.fuel_start_kg);
   const fuelEndKg = asNumber(mergedScorePayload.fuel_end_kg);
@@ -404,8 +403,7 @@ function FlightResultContent() {
                 { label: "Cierre", value: formatDateTime(reservation.completed_at ?? reservation.updated_at) },
                 { label: "Block real", value: formatMinutes(reservation.actual_block_minutes) },
                 { label: "Landing V/S", value: landingVs ? `${Math.round(landingVs)} fpm` : "â€”" },
-                { label: "Score procedimiento", value: procedureScore ? String(Math.round(procedureScore)) : "â€”" },
-                { label: "Score performance", value: performanceScore ? String(Math.round(performanceScore)) : "â€”" },
+                { label: "Score SUR", value: surScore ? String(Math.round(surScore)) : "â€”" },
                 { label: "Comb. inicial", value: fuelStartKg ? `${Math.round(fuelStartKg)} kg` : "â€”" },
                 { label: "Comb. final / usado", value: fuelEndKg || fuelUsedKg ? `${Math.round(fuelEndKg)} kg / ${Math.round(fuelUsedKg)} kg` : "â€”" },
               ].map((item) => (
@@ -426,11 +424,11 @@ function FlightResultContent() {
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="surface-outline rounded-[22px] px-5 py-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Grade procedimiento</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Calificación SUR</p>
                   <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.procedure_grade) || asText(reservation.procedure_grade) || "â€”"}</p>
                 </div>
                 <div className="surface-outline rounded-[22px] px-5 py-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Grade performance</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Calificación técnica</p>
                   <p className="mt-2 text-base font-semibold text-white">{asText(scoreReport?.performance_grade) || asText(reservation.performance_grade) || "â€”"}</p>
                 </div>
               </div>

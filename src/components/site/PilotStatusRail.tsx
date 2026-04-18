@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +9,7 @@ import {
   type PilotProfileRecord,
 } from "@/lib/pilot-profile";
 import { supabase } from "@/lib/supabase/browser";
+import { resolveSurScore } from "@/lib/sur-score";
 
 type ScoreSnapshot = {
   pulso10: number;
@@ -133,30 +134,30 @@ function getRankBadge(rank: string | null | undefined): RankBadge {
   const code = (rank ?? "CADET").trim().toUpperCase();
 
   if (code.includes("LEGEND")) {
-    return { symbol: "✦", label: "Leyenda Patagonia" };
+    return { symbol: "âœ¦", label: "Leyenda Patagonia" };
   }
 
   if (code.includes("INSPECTOR") || code.includes("CHECK") || code.includes("MASTER")) {
-    return { symbol: "★", label: "Inspector de línea" };
+    return { symbol: "â˜…", label: "Inspector de lÃ­nea" };
   }
 
   if (code.includes("COMMANDER")) {
-    return { symbol: "◆", label: "Comandante regional" };
+    return { symbol: "â—†", label: "Comandante regional" };
   }
 
   if (code.includes("CAPTAIN")) {
-    return { symbol: "▲", label: "Capitán de línea" };
+    return { symbol: "â–²", label: "CapitÃ¡n de lÃ­nea" };
   }
 
   if (code.includes("FIRST_OFFICER")) {
-    return { symbol: "■", label: "Primer oficial" };
+    return { symbol: "â– ", label: "Primer oficial" };
   }
 
   if (code.includes("SECOND_OFFICER")) {
-    return { symbol: "●", label: "Segundo oficial" };
+    return { symbol: "â—", label: "Segundo oficial" };
   }
 
-  return { symbol: "◈", label: "Cadete" };
+  return { symbol: "â—ˆ", label: "Cadete" };
 }
 
 export default function PilotStatusRail() {
@@ -165,6 +166,7 @@ export default function PilotStatusRail() {
   const [profile, setProfile] = useState<PilotProfileRecord | null>(null);
   const [score, setScore] = useState<ScoreSnapshot>(EMPTY_SCORE);
   const [activeRoute, setActiveRoute] = useState<string>("-");
+  const surScore = resolveSurScore(score);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,7 +276,7 @@ export default function PilotStatusRail() {
             </span>
             <div className="text-left">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/70">
-                Escalafón
+                EscalafÃ³n
               </span>
               <strong className="text-sm font-semibold text-white">{rankBadge.label}</strong>
             </div>
@@ -286,7 +288,7 @@ export default function PilotStatusRail() {
         <div className="mt-5 space-y-3">
           {[
             { label: "HUB", value: profile?.base_hub ?? "SCEL" },
-            { label: "Ubicación", value: getCurrentAirport(profile) },
+            { label: "UbicaciÃ³n", value: getCurrentAirport(profile) },
             { label: "Vuelo reservado", value: activeRoute },
           ].map((item) => (
             <div
@@ -296,16 +298,14 @@ export default function PilotStatusRail() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 {item.label}
               </p>
-              <p className="mt-2 text-base font-semibold text-white">{loading ? "…" : item.value}</p>
+              <p className="mt-2 text-base font-semibold text-white">{loading ? "â€¦" : item.value}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {[
-            { label: "Procedimiento", value: formatDecimal(score.pulso10) },
-            { label: "Misión", value: formatDecimal(score.ruta10) },
-            { label: "Trayectoria", value: formatInteger(score.legado) },
+            { label: "Score SUR", value: formatDecimal(surScore) },
             { label: "Billetera", value: formatCurrency(score.wallet) },
           ].map((item) => (
             <div
@@ -315,7 +315,7 @@ export default function PilotStatusRail() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/54">
                 {item.label}
               </p>
-              <p className="mt-2 text-lg font-semibold text-white">{loading ? "…" : item.value}</p>
+              <p className="mt-2 text-lg font-semibold text-white">{loading ? "â€¦" : item.value}</p>
             </div>
           ))}
         </div>
@@ -325,7 +325,7 @@ export default function PilotStatusRail() {
             Horas totales
           </p>
           <p className="mt-2 text-3xl font-semibold text-white">
-            {loading ? "…" : formatDecimal(getTotalHours(profile))}
+            {loading ? "â€¦" : formatDecimal(getTotalHours(profile))}
           </p>
         </div>
 
@@ -341,3 +341,4 @@ export default function PilotStatusRail() {
     </aside>
   );
 }
+

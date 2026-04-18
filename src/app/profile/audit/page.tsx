@@ -116,7 +116,7 @@ function AuditContent() {
         scoreRes.error
           ? scoreRes.error.message
           : scoreRes.data
-            ? `Procedimiento ${scoreRes.data.pulso_10 ?? 0} · Misión ${scoreRes.data.ruta_10 ?? 0} · Trayectoria ${scoreRes.data.legado_points ?? 0}`
+            ? `Score SUR ${scoreRes.data.pulso_10 ?? 0}`
             : "Sin score legible aún"
       );
 

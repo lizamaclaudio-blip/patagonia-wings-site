@@ -1,10 +1,11 @@
-{
-  "version": "3.0.9",
+﻿{
+  "version": "3.2.3",
   "webVersion": "2.0",
-  "downloadUrl": "https://github.com/lizamaclaudio-blip/patagonia-wings-acars/releases/latest/download/PatagoniaWingsACARSSetup-3.0.9.exe",
+  "downloadUrl": "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.3.exe",
   "mandatory": false,
-  "notes": "- Luces en tiempo real via LIGHT ON STATES bitmask (SimConnect nativo)\n- Luces verde = ON / rojo = OFF, todas las aeronaves igual\n- Panel SISTEMAS: oculta APU y Bleed Air en aeronaves sin esos sistemas\n- Deteccion de +60 variantes: jets, turbopropulsores, GA\n- Scoring PIREP justo: sin penalizacion de presurización en C208, BE58 y GA\n- SimConnect como backend primario, FSUIPC7 como fallback\n- King Air B350 y Q400 muestran APU correctamente",
-  "releaseDate": "2026-04-16",
+  "notes": "- Resultado final web, historial y apelaciones revisables\n- Cierre real de reservas completed/cancelled/interrupted/crashed/aborted\n- Redirect ACARS a https://patagoniaw.com tras submit OK\n- Score SUR unico visible en web",
+  "releaseDate": "2026-04-18",
   "minVersion": "2.0.5",
-  "fileSize": "48MB"
+  "fileSize": "22.7 MB",
+  "storageProvider": "supabase"
 }
