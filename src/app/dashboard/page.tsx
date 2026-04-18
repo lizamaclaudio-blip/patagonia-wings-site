@@ -148,6 +148,7 @@ type FlightReservationRow = {
   id?: string | null;
   pilot_callsign: string | null;
   route_code?: string | null;
+  flight_number?: string | null;
   aircraft_type_code?: string | null;
   aircraft_registration?: string | null;
   origin_ident?: string | null;
@@ -1323,7 +1324,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
     supabase
       .from("flight_reservations")
       .select(
-        "pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at",
+        "pilot_callsign, route_code, flight_number, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at",
       )
       .in("status", ["dispatched", "in_flight"])
       .order("updated_at", { ascending: false })
@@ -1331,7 +1332,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
     supabase
       .from("flight_reservations")
       .select(
-        "id, pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, procedure_score, mission_score, completed_at, created_at",
+        "id, pilot_callsign, route_code, flight_number, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, procedure_score, mission_score, completed_at, created_at",
       )
       .in("status", ["completed", "cancelled", "interrupted", "crashed", "aborted"])
       .order("completed_at", { ascending: false, nullsFirst: false })
@@ -1991,7 +1992,7 @@ function CentralFlightsTable({
           <tbody>
             {rows.length ? (
               rows.map((row, index) => {
-                const routeLabel = row.route_code?.trim() || formatRouteTag(row);
+                const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
                 // Show just the ICAO model code, not the addon suffix (A319_FENIX → A319)
                 const rawTypeCode = row.aircraft_type_code?.trim() || "";
                 const aircraftPrimary = rawTypeCode
@@ -3224,7 +3225,7 @@ function DashboardWorkspace({
       if (!profile) return;
       const { data } = await supabase
         .from("flight_reservations")
-        .select("id, pilot_callsign, route_code, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at, created_at")
+        .select("id, pilot_callsign, route_code, flight_number, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at, created_at")
         .eq("pilot_callsign", profile.callsign)
         .in("status", ["reserved", "dispatched", "in_flight"])
         .order("updated_at", { ascending: false })
