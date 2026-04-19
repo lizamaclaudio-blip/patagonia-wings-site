@@ -1,8 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>3.2.4.0</version>
-  <url>https://patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe</url>
-  <changelog>v3.2.4: filtro real por rango y aeropuerto para Cadete, itinerarios alineados y updater con reapertura estable.</changelog>
+  <version>3.2.5.0</version>
+  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.5-r2.exe</url>
+  <changelog>v3.2.5: cierre oficial ACARS, score server-side, PIREP oculto y autoupdate alineado.</changelog>
   <mandatory>false</mandatory>
 </item>
-

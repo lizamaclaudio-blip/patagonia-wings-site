@@ -1,12 +1,11 @@
 ﻿{
-  "version": "3.2.4",
-  "webVersion": "2.0",
-  "downloadUrl": "https://patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe",
-  "mandatory": false,
-  "notes": "- Filtro real por rango y aeropuerto para Cadete\n- Itinerarios alineados a aeronaves realmente autorizadas\n- Reapertura estable del ACARS tras update\n- Confirmacion visual al volver a abrir",
-  "releaseDate": "2026-04-18",
-  "minVersion": "2.0.5",
-  "fileSize": "24.7 MB",
-  "storageProvider": "supabase"
+    "version":  "3.2.5",
+    "webVersion":  "2.0",
+    "downloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.5-r2.exe",
+    "mandatory":  false,
+    "notes":  "- Cierre oficial ACARS server-authoritative\n- PIREP oculto + score oficial server-side\n- Estados completed/crashed/aborted/interrupted/manual_review persistidos",
+    "releaseDate":  "2026-04-19",
+    "minVersion":  "2.0.5",
+    "fileSize":  "25 MB",
+    "storageProvider":  "supabase"
 }
-
