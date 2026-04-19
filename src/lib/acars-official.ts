@@ -397,17 +397,30 @@ function buildStageBreakdown(samples: AcarsTelemetrySample[]) {
   const hasTaxiOut = samples.some((sample) => asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 2);
   const hasPreflight = hasSamples;
 
+  const stageMeta: Record<StageName, { phase_code: string; phase_label: string }> = {
+    preflight: { phase_code: "PRE", phase_label: "Preflight" },
+    taxi_out: { phase_code: "TAX", phase_label: "Taxi Out" },
+    takeoff: { phase_code: "TO", phase_label: "Takeoff" },
+    climb: { phase_code: "ASC", phase_label: "Climb" },
+    cruise: { phase_code: "CRU", phase_label: "Cruise" },
+    descent: { phase_code: "DES", phase_label: "Descent" },
+    approach: { phase_code: "LDG", phase_label: "Approach" },
+    landing: { phase_code: "LDG", phase_label: "Landing" },
+    taxi_in: { phase_code: "TAG", phase_label: "Taxi In" },
+    shutdown: { phase_code: "PAR", phase_label: "Shutdown" },
+  };
+
   const stages: Record<StageName, Record<string, unknown>> = {
-    preflight: { reached: hasPreflight, index: hasPreflight ? 0 : -1 },
-    taxi_out: { reached: hasTaxiOut, index: hasTaxiOut ? getStageIndex(samples, (sample) => asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 2) : -1 },
-    takeoff: { reached: takeoffIndex >= 0, index: takeoffIndex },
-    climb: { reached: climbIndex >= 0, index: climbIndex },
-    cruise: { reached: cruiseIndex >= 0, index: cruiseIndex },
-    descent: { reached: descentIndex >= 0, index: descentIndex },
-    approach: { reached: approachIndex >= 0, index: approachIndex },
-    landing: { reached: landingIndex >= 0, index: landingIndex },
-    taxi_in: { reached: taxiInIndex >= 0, index: taxiInIndex },
-    shutdown: { reached: shutdownIndex >= 0, index: shutdownIndex },
+    preflight: { ...stageMeta.preflight, reached: hasPreflight, index: hasPreflight ? 0 : -1 },
+    taxi_out: { ...stageMeta.taxi_out, reached: hasTaxiOut, index: hasTaxiOut ? getStageIndex(samples, (sample) => asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 2) : -1 },
+    takeoff: { ...stageMeta.takeoff, reached: takeoffIndex >= 0, index: takeoffIndex },
+    climb: { ...stageMeta.climb, reached: climbIndex >= 0, index: climbIndex },
+    cruise: { ...stageMeta.cruise, reached: cruiseIndex >= 0, index: cruiseIndex },
+    descent: { ...stageMeta.descent, reached: descentIndex >= 0, index: descentIndex },
+    approach: { ...stageMeta.approach, reached: approachIndex >= 0, index: approachIndex },
+    landing: { ...stageMeta.landing, reached: landingIndex >= 0, index: landingIndex },
+    taxi_in: { ...stageMeta.taxi_in, reached: taxiInIndex >= 0, index: taxiInIndex },
+    shutdown: { ...stageMeta.shutdown, reached: shutdownIndex >= 0, index: shutdownIndex },
   };
 
   return stages;
