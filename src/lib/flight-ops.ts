@@ -125,7 +125,17 @@ export type DbFlightReservationRow = {
   routeText?: string | null;
   routeCode?: string | null;
   remarks: string | null;
-  status: FlightOperationStatus | "dispatched" | "in_progress" | "completed" | "cancelled" | "in_flight";
+  status:
+    | FlightOperationStatus
+    | "dispatched"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "in_flight"
+    | "crashed"
+    | "aborted"
+    | "interrupted"
+    | "manual_review";
   created_at: string;
   updated_at: string;
 };
@@ -199,10 +209,16 @@ function normalizeReservationLifecycleStatus(
       return "in_progress";
     case "completed":
       return "completed";
+    case "crashed":
+      return "crashed";
+    case "aborted":
+      return "aborted";
+    case "interrupted":
+      return "interrupted";
+    case "manual_review":
+      return "manual_review";
     case "cancelled":
     case "canceled":
-    case "aborted":
-    case "interrupted":
     case "manual":
       return "cancelled";
     case "reserved":
