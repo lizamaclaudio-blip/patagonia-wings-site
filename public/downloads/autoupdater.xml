@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>3.2.7.0</version>
-  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.7-r1.exe</url>
-  <changelog>v3.2.7: cierre oficial ACARS, live view, splash real y relanzado automÃ¡tico.</changelog>
+  <version>3.2.6.0</version>
+  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.6.exe</url>
+  <changelog>v3.2.6: 10 fases oficiales PRE/IGN/TAX/TO/ASC/CRU/DES/LDG/TAG/PAR, orden arranque 2-1/4-2-3-1, live view animado, closeout server-authoritative, PIREP y score oficiales.</changelog>
   <mandatory>false</mandatory>
 </item>

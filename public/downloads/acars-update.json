@@ -1,11 +1,11 @@
-﻿{
-    "version":  "3.2.7",
+{
+    "version":  "3.2.6",
     "webVersion":  "2.0",
-    "downloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.7-r1.exe",
+    "downloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-3.2.6.exe",
     "mandatory":  false,
-    "notes":  "- Cierre oficial ACARS end-to-end con live view y closeout oficial\n- PIREP oculto + score oficial server-side persistidos\n- Updater 3.2.7 con splash real y relanzado automÃ¡tico",
-    "releaseDate":  "2026-04-19",
-    "minVersion":  "2.0.5",
-    "fileSize":  "25 MB",
+    "notes":  "- 10 fases oficiales: PRE/IGN/TAX/TO/ASC/CRU/DES/LDG/TAG/PAR\n- Orden arranque motores: bimotores 2-1, cuadrimotores 4-2-3-1\n- Live view con avion animado origen-destino segun progreso real\n- Closeout server-authoritative (completed/crashed/aborted/interrupted/manual_review)\n- PIREP oficial oculto + score server-side persistidos en Supabase\n- Splash de actualizacion con version real y relanzado automatico",
+    "releaseDate":  "2026-04-18",
+    "minVersion":  "3.2.0",
+    "fileSize":  "26 MB",
     "storageProvider":  "supabase"
 }
