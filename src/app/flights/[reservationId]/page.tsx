@@ -122,6 +122,7 @@ function formatStatus(value?: string | null) {
     interrupted: "Interrumpido",
     crashed: "Accidentado",
     aborted: "Abortado",
+    in_progress: "En vuelo",
     in_flight: "En vuelo",
     dispatched: "Despachado",
     reserved: "Reservado",
@@ -137,6 +138,9 @@ function statusTone(value?: string | null) {
     return "text-amber-300 border-amber-400/20 bg-amber-400/10";
   }
   if (normalized === "aborted") return "text-amber-300 border-amber-400/20 bg-amber-400/10";
+  if (normalized === "in_progress" || normalized === "in_flight") {
+    return "text-cyan-200 border-cyan-400/20 bg-cyan-400/10";
+  }
   return "text-white/78 border-white/12 bg-white/5";
 }
 

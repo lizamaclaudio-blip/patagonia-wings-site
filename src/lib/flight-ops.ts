@@ -188,11 +188,14 @@ function normalizeUpper(value: string) {
 }
 
 const ACTIVE_RESERVATION_STATUSES = [
+  // Oficiales
   "reserved",
   "dispatched",
+  "in_progress",
+
+  // Legacy tolerados temporalmente para lectura
   "dispatch_ready",
   "in_flight",
-  "in_progress",
 ] as const;
 
 function normalizeReservationLifecycleStatus(
@@ -203,7 +206,7 @@ function normalizeReservationLifecycleStatus(
   switch (statusValue) {
     case "dispatch_ready":
     case "dispatched":
-      return "dispatch_ready";
+      return "dispatched";
     case "in_flight":
     case "in_progress":
       return "in_progress";
@@ -1890,8 +1893,8 @@ export async function markDispatchPrepared(
     if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
   }
 
-  // Actualizar el status de la reserva a dispatch_ready para que el ACARS pueda leerla.
-  // El ACARS filtra por: dispatch_ready | dispatched | in_progress | in_flight
+  // Actualizar el status oficial de la reserva a dispatched para que el ACARS pueda leerla.
+  // El contrato oficial activo queda: reserved | dispatched | in_progress
   if (reservationStatus === "reserved" || reservationStatus === "draft") {
     try {
       await supabase
@@ -1899,7 +1902,7 @@ export async function markDispatchPrepared(
         .update({ status: "dispatched", updated_at: now })
         .eq("id", reservationId);
     } catch (statusErr) {
-      console.warn("[markDispatchPrepared] No se pudo actualizar status reserva a dispatch_ready:", statusErr);
+      console.warn("[markDispatchPrepared] No se pudo actualizar status reserva a dispatched:", statusErr);
     }
   }
 

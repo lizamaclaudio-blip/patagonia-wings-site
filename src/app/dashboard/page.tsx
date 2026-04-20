@@ -1057,12 +1057,13 @@ function formatFlightModeLabel(mode?: string | null) {
 function formatFlightStatusLabel(status?: string | null) {
   const normalized = (status ?? "").trim().toLowerCase();
   const map: Record<string, string> = {
-  interrupted: "Interrumpido",
-  crashed: "Accidentado",
-  aborted: "Abortado",
+    interrupted: "Interrumpido",
+    crashed: "Accidentado",
+    aborted: "Abortado",
     cancelled: "Cancelado",
     completed: "Completado",
     dispatched: "Despacho",
+    in_progress: "En vuelo",
     in_flight: "En vuelo",
     reserved: "Reservado",
   };
@@ -1326,7 +1327,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
       .select(
         "pilot_callsign, route_code, flight_number, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at",
       )
-      .in("status", ["dispatched", "in_flight"])
+      .in("status", ["dispatched", "in_progress"])
       .order("updated_at", { ascending: false })
       .limit(12),
     supabase
@@ -1938,7 +1939,7 @@ function CentralFlightsTable({
   const statusTone = (status?: string | null) => {
     const normalized = (status ?? "").trim().toLowerCase();
 
-    if (normalized === "in_flight") {
+    if (normalized === "in_progress" || normalized === "in_flight") {
       return "border-cyan-400/18 bg-cyan-500/[0.08] text-cyan-200";
     }
 
@@ -3227,7 +3228,7 @@ function DashboardWorkspace({
         .from("flight_reservations")
         .select("id, pilot_callsign, route_code, flight_number, aircraft_type_code, aircraft_registration, origin_ident, destination_ident, status, flight_mode_code, updated_at, created_at")
         .eq("pilot_callsign", profile.callsign)
-        .in("status", ["reserved", "dispatched", "in_flight"])
+        .in("status", ["reserved", "dispatched", "in_progress"])
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -5091,13 +5092,13 @@ function DashboardWorkspace({
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</p>
                       <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
-                        activeReservation.status === "in_flight"
+                        activeReservation.status === "in_progress" || activeReservation.status === "in_flight"
                           ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30"
                           : activeReservation.status === "dispatched"
                             ? "bg-[#67d7ff]/10 text-[#67d7ff] border border-[#67d7ff]/20"
                             : "bg-white/5 text-white/70 border border-white/10"
                       }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${activeReservation.status === "in_flight" ? "bg-[#49d787]" : activeReservation.status === "dispatched" ? "bg-[#67d7ff]" : "bg-white/40"}`} />
+                        <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : activeReservation.status === "dispatched" ? "bg-[#67d7ff]" : "bg-white/40"}`} />
                         {formatFlightStatusLabel(activeReservation.status)}
                       </span>
                     </div>
