@@ -2930,6 +2930,43 @@ function DispatchWideValueStrip({
   );
 }
 
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function RouteAircraftSideIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 160 70"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="route-plane-body" x1="18" y1="35" x2="142" y2="35" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7EE7FF" />
+          <stop offset="0.5" stopColor="#FFFFFF" />
+          <stop offset="1" stopColor="#64C7FF" />
+        </linearGradient>
+        <linearGradient id="route-plane-wing" x1="56" y1="16" x2="110" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#DFFBFF" />
+          <stop offset="1" stopColor="#7DD8FF" />
+        </linearGradient>
+      </defs>
+      <path d="M20 37C20 29 27 22 42 22H102C125 22 140 27 146 34C148 36 148 39 146 41C140 48 125 53 102 53H42C27 53 20 46 20 37Z" fill="url(#route-plane-body)" />
+      <path d="M35 34H14C10 34 8 36 8 38C8 40 10 42 14 42H35V34Z" fill="#9DEBFF" />
+      <path d="M59 27L41 11C39 9 36 8 33 8H25L37 27H59Z" fill="url(#route-plane-wing)" />
+      <path d="M57 46L37 63H27C23 63 21 61 23 58L41 46H57Z" fill="url(#route-plane-wing)" />
+      <path d="M104 29L129 14C132 12 136 11 140 11H149L129 29H104Z" fill="#B5F2FF" />
+      <path d="M104 45L129 60C132 62 136 63 140 63H149L129 45H104Z" fill="#8EDBFF" />
+      <circle cx="121" cy="34" r="2.5" fill="#0B1F35" fillOpacity="0.85" />
+      <path d="M58 31H96" stroke="#0B1F35" strokeOpacity="0.18" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M58 38H88" stroke="#0B1F35" strokeOpacity="0.14" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 
 function formatAircraftHealthPercent(value?: number | null) {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -3036,6 +3073,7 @@ function DashboardWorkspace({
 }) {
   const [activeReservation, setActiveReservation] = useState<(FlightReservationRow & { id: string }) | null>(null);
   const [cancellingReservation, setCancellingReservation] = useState(false);
+  const [routeNow, setRouteNow] = useState(() => Date.now());
   const [dispatchStep, setDispatchStep] = useState<DispatchStepKey>("flight_type");
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
@@ -3278,6 +3316,14 @@ function DashboardWorkspace({
       setNavigraphInfoMessage("Volviste desde SimBrief. Ahora importa el OFP para validar el despacho.");
     }
   }, [activeTab, searchParams]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setRouteNow(Date.now());
+    }, 15000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const aircraftOptions = [
     {
@@ -3999,10 +4045,86 @@ function DashboardWorkspace({
             ? JSON.stringify(error)
             : "No se pudo despachar el vuelo a la base operativa."
       );
-    } finally {
+  } finally {
       setFinalizingDispatch(false);
     }
   }
+
+  const activeOriginCode = activeReservation?.origin_ident?.trim().toUpperCase() ?? "----";
+  const activeDestinationCode = activeReservation?.destination_ident?.trim().toUpperCase() ?? "----";
+  const activeOriginAirport = itineraryAirportsByIcao[activeOriginCode];
+  const activeDestinationAirport = itineraryAirportsByIcao[activeDestinationCode];
+  const activeItineraryRecord = useMemo(
+    () =>
+      availableItineraries.find((item) => {
+        const sameRoute =
+          activeReservation?.route_code?.trim() &&
+          item.itinerary_code?.trim() &&
+          item.itinerary_code.trim().toUpperCase() === activeReservation.route_code.trim().toUpperCase();
+        const sameAirports =
+          item.origin_icao.trim().toUpperCase() === activeOriginCode &&
+          item.destination_icao.trim().toUpperCase() === activeDestinationCode;
+        return Boolean(sameRoute || sameAirports);
+      }) ?? null,
+    [activeDestinationCode, activeOriginCode, activeReservation?.route_code, availableItineraries],
+  );
+  const activeRouteDistanceNm = useMemo(() => {
+    const itineraryDistance =
+      typeof activeItineraryRecord?.distance_nm === "number" && activeItineraryRecord.distance_nm > 0
+        ? activeItineraryRecord.distance_nm
+        : 0;
+    if (itineraryDistance > 0) {
+      return itineraryDistance;
+    }
+    return calculateDistanceNm(activeOriginAirport, activeDestinationAirport) ?? 0;
+  }, [activeDestinationAirport, activeItineraryRecord, activeOriginAirport]);
+  const activeEstimatedMinutes = useMemo(
+    () =>
+      activeRouteDistanceNm > 0
+        ? estimateBlockMinutes(activeRouteDistanceNm, activeReservation?.aircraft_type_code)
+        : 0,
+    [activeReservation?.aircraft_type_code, activeRouteDistanceNm],
+  );
+  const activeFlightProgress = useMemo(() => {
+    const normalizedStatus = activeReservation?.status?.trim().toLowerCase() ?? "";
+    if (!activeReservation || activeRouteDistanceNm <= 0) {
+      return 0.08;
+    }
+    if (normalizedStatus === "reserved") {
+      return 0.1;
+    }
+    if (normalizedStatus === "dispatched" || normalizedStatus === "dispatch_ready") {
+      return 0.18;
+    }
+    if (normalizedStatus !== "in_progress" && normalizedStatus !== "in_flight") {
+      return 0.1;
+    }
+
+    const startedAt = activeReservation.updated_at ?? activeReservation.created_at;
+    const startedMs = startedAt ? new Date(startedAt).getTime() : Number.NaN;
+    if (!Number.isFinite(startedMs) || activeEstimatedMinutes <= 0) {
+      return 0.38;
+    }
+
+    const elapsedMinutes = Math.max(0, (routeNow - startedMs) / 60000);
+    const rawProgress = elapsedMinutes / activeEstimatedMinutes;
+    return Math.max(0.08, Math.min(0.98, rawProgress));
+  }, [activeEstimatedMinutes, activeReservation, activeRouteDistanceNm, routeNow]);
+  const activeDistanceFromOriginNm = useMemo(
+    () => Math.max(0, Math.round(activeRouteDistanceNm * clamp01(activeFlightProgress))),
+    [activeFlightProgress, activeRouteDistanceNm],
+  );
+  const activeDistanceToDestinationNm = useMemo(
+    () => Math.max(0, Math.round(activeRouteDistanceNm - activeDistanceFromOriginNm)),
+    [activeDistanceFromOriginNm, activeRouteDistanceNm],
+  );
+  const activeProgressLabel = useMemo(() => {
+    const normalizedStatus = activeReservation?.status?.trim().toLowerCase() ?? "";
+    if (normalizedStatus === "reserved") return "Reserva lista";
+    if (normalizedStatus === "dispatched" || normalizedStatus === "dispatch_ready") return "Despacho preparado";
+    if (normalizedStatus === "in_progress" || normalizedStatus === "in_flight") return "Ruta activa";
+    return "Seguimiento";
+  }, [activeReservation?.status]);
 
   return (
     <section className="glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
@@ -5074,75 +5196,120 @@ function DashboardWorkspace({
                 Reserva activa
               </p>
               {activeReservation ? (
-                <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
-                    {/* Ruta */}
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{formatRouteTag(activeReservation)}</p>
-                    </div>
-                    {/* Aeronave */}
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
-                      <p className="mt-1 text-sm font-medium text-white">
-                        {activeReservation.aircraft_type_code ?? "—"}
-                        {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
-                      </p>
-                    </div>
-                    {/* Estado */}
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</p>
-                      <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
-                        activeReservation.status === "in_progress" || activeReservation.status === "in_flight"
-                          ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30"
-                          : activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched"
-                            ? "bg-[#67d7ff]/10 text-[#67d7ff] border border-[#67d7ff]/20"
-                            : "bg-white/5 text-white/70 border border-white/10"
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : (activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched") ? "bg-[#67d7ff]" : "bg-white/40"}`} />
-                        {formatFlightStatusLabel(activeReservation.status)}
-                      </span>
-                    </div>
-                    {/* Modo */}
-                    {activeReservation.flight_mode_code && (
+                <div className="mt-4 space-y-5">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-8">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Modo</p>
-                        <p className="mt-1 text-sm text-white/70">{activeReservation.flight_mode_code}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</p>
+                        <p className="mt-1 text-lg font-semibold text-white">{formatRouteTag(activeReservation)}</p>
                       </div>
-                    )}
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
+                        <p className="mt-1 text-sm font-medium text-white">
+                          {activeReservation.aircraft_type_code ?? "—"}
+                          {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</p>
+                        <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
+                          activeReservation.status === "in_progress" || activeReservation.status === "in_flight"
+                            ? "border border-[#0ca66b]/30 bg-[#0ca66b]/20 text-[#49d787]"
+                            : activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched"
+                              ? "border border-[#67d7ff]/20 bg-[#67d7ff]/10 text-[#67d7ff]"
+                              : "border border-white/10 bg-white/5 text-white/70"
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : (activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched") ? "bg-[#67d7ff]" : "bg-white/40"}`} />
+                          {formatFlightStatusLabel(activeReservation.status)}
+                        </span>
+                      </div>
+                      {activeReservation.flight_mode_code && (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Modo</p>
+                          <p className="mt-1 text-sm text-white/70">{activeReservation.flight_mode_code}</p>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={cancellingReservation}
+                      onClick={async () => {
+                        if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
+                        setCancellingReservation(true);
+                        try {
+                          await cancelFlightOperation(
+                            (activeReservation as FlightReservationRow & { id: string }).id,
+                            profile.callsign
+                          );
+                          setActiveReservation(null);
+                          setPreparedReservationId(null);
+                          setSelectedFlightType(null);
+                          setSelectedAircraft(null);
+                          setSelectedItinerary(null);
+                          setDispatchReady(false);
+                          setSimbriefSummary(null);
+                          setSummaryInfoMessage("");
+                          setSummaryErrorMessage("");
+                          setDispatchStep("flight_type");
+                        } catch {
+                          alert("No se pudo cancelar la reserva. Intenta de nuevo.");
+                        } finally {
+                          setCancellingReservation(false);
+                        }
+                      }}
+                      className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
+                    </button>
                   </div>
-                  {/* Botón cancelar */}
-                  <button
-                    type="button"
-                    disabled={cancellingReservation}
-                    onClick={async () => {
-                      if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
-                      setCancellingReservation(true);
-                      try {
-                        await cancelFlightOperation(
-                          (activeReservation as FlightReservationRow & { id: string }).id,
-                          profile.callsign
-                        );
-                        setActiveReservation(null);
-                        setPreparedReservationId(null);
-                        setSelectedFlightType(null);
-                        setSelectedAircraft(null);
-                        setSelectedItinerary(null);
-                        setDispatchReady(false);
-                        setSimbriefSummary(null);
-                        setSummaryInfoMessage("");
-                        setSummaryErrorMessage("");
-                        setDispatchStep("flight_type");
-                      } catch {
-                        alert("No se pudo cancelar la reserva. Intenta de nuevo.");
-                      } finally {
-                        setCancellingReservation(false);
-                      }
-                    }}
-                    className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
-                  </button>
+
+                  <div className="overflow-hidden rounded-[24px] border border-cyan-400/12 bg-[radial-gradient(circle_at_top_left,rgba(103,215,255,0.16),transparent_42%),linear-gradient(135deg,rgba(3,20,40,0.94),rgba(6,33,61,0.88))] p-5 shadow-[0_24px_60px_rgba(1,10,20,0.34)]">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
+                          Progreso de ruta
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">{activeProgressLabel}</p>
+                      </div>
+                      <div className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/84">
+                        {activeRouteDistanceNm > 0 ? `${formatInteger(activeRouteDistanceNm)} NM totales` : "Ruta en preparación"}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,160px)_1fr_minmax(0,160px)] lg:items-end">
+                      <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-4 py-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">Origen</p>
+                        <p className="mt-2 text-[1.55rem] font-bold tracking-[0.18em] text-white">{activeOriginCode}</p>
+                        <p className="mt-2 text-xs text-cyan-100/80">
+                          {activeRouteDistanceNm > 0 ? `${formatInteger(activeDistanceFromOriginNm)} NM recorridos` : "Esperando salida"}
+                        </p>
+                      </div>
+
+                      <div className="relative px-2 py-4">
+                        <div className="absolute inset-x-0 top-1/2 h-[1px] -translate-y-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        <div className="relative h-[84px] rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-5">
+                          <div className="absolute inset-x-5 top-1/2 h-[12px] -translate-y-1/2 overflow-hidden rounded-full bg-[#07192d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+                            <div className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,rgba(29,119,191,0.28),rgba(103,215,255,0.72),rgba(83,255,182,0.76))]" style={{ width: `${Math.max(6, Math.round(activeFlightProgress * 100))}%` }} />
+                            <div className="absolute inset-0 opacity-70" style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,0.16) 24px 26px)" }} />
+                          </div>
+                          <div
+                            className="absolute top-1/2 w-[90px] -translate-y-1/2 drop-shadow-[0_10px_18px_rgba(103,215,255,0.30)] transition-[left] duration-[1400ms] ease-out"
+                            style={{ left: `calc(${Math.round(activeFlightProgress * 100)}% - 45px)` }}
+                          >
+                            <RouteAircraftSideIcon className="h-auto w-full animate-[pulse_4.6s_ease-in-out_infinite]" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-4 py-4 lg:text-right">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">Destino</p>
+                        <p className="mt-2 text-[1.55rem] font-bold tracking-[0.18em] text-white">{activeDestinationCode}</p>
+                        <p className="mt-2 text-xs text-emerald-100/80">
+                          {activeRouteDistanceNm > 0 ? `${formatInteger(activeDistanceToDestinationNm)} NM restantes` : "Pendiente"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-white/38">Sin reserva activa en este momento.</p>
