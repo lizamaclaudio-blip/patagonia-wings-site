@@ -1062,6 +1062,7 @@ function formatFlightStatusLabel(status?: string | null) {
     aborted: "Abortado",
     cancelled: "Cancelado",
     completed: "Completado",
+    dispatch_ready: "Despacho",
     dispatched: "Despacho",
     in_progress: "En vuelo",
     in_flight: "En vuelo",
@@ -1943,7 +1944,7 @@ function CentralFlightsTable({
       return "border-cyan-400/18 bg-cyan-500/[0.08] text-cyan-200";
     }
 
-    if (normalized === "dispatched") {
+    if (normalized === "dispatch_ready" || normalized === "dispatched") {
       return "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200";
     }
 
@@ -5094,11 +5095,11 @@ function DashboardWorkspace({
                       <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
                         activeReservation.status === "in_progress" || activeReservation.status === "in_flight"
                           ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30"
-                          : activeReservation.status === "dispatched"
+                          : activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched"
                             ? "bg-[#67d7ff]/10 text-[#67d7ff] border border-[#67d7ff]/20"
                             : "bg-white/5 text-white/70 border border-white/10"
                       }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : activeReservation.status === "dispatched" ? "bg-[#67d7ff]" : "bg-white/40"}`} />
+                        <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : (activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched") ? "bg-[#67d7ff]" : "bg-white/40"}`} />
                         {formatFlightStatusLabel(activeReservation.status)}
                       </span>
                     </div>

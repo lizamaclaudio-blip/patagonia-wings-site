@@ -124,6 +124,7 @@ function formatStatus(value?: string | null) {
     aborted: "Abortado",
     in_progress: "En vuelo",
     in_flight: "En vuelo",
+    dispatch_ready: "Despachado",
     dispatched: "Despachado",
     reserved: "Reservado",
   };
@@ -571,4 +572,3 @@ export default function FlightResultPage() {
     </OptionalAuthPage>
   );
 }
-

@@ -1893,8 +1893,9 @@ export async function markDispatchPrepared(
     if (Object.keys(normalized).length > 0) packagePayload.simbrief_normalized  = normalized;
   }
 
-  // Actualizar el status oficial de la reserva a dispatched para que el ACARS pueda leerla.
-  // El contrato oficial activo queda: reserved | dispatched | in_progress
+  // Contrato oficial de reserva:
+  // reserved -> dispatched -> in_progress -> completed
+  // "dispatch_ready" queda solo como alias legacy de lectura.
   if (reservationStatus === "reserved" || reservationStatus === "draft") {
     try {
       await supabase
