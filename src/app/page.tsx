@@ -2,6 +2,8 @@
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
+import { FALLBACK_HOME_STATS, loadHomeStatsFromSupabase } from "@/lib/home-stats";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB, ACARS_RELEASE_NOTES, ACARS_DOWNLOAD_URL } from "@/lib/acars-version";
 
 const services = [
@@ -19,7 +21,15 @@ const services = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  let initialHomeStats = FALLBACK_HOME_STATS;
+
+  try {
+    initialHomeStats = await loadHomeStatsFromSupabase(createSupabaseServerClient());
+  } catch {
+    initialHomeStats = FALLBACK_HOME_STATS;
+  }
+
   return (
     <main className="bg-[#03162f] text-white">
       <section className="parallax-hero relative min-h-screen overflow-hidden">
@@ -56,7 +66,7 @@ export default function HomePage() {
           </div>
 
           <div className="pw-container relative z-20 pb-6 sm:pb-8">
-            <HomeStatsBar />
+            <HomeStatsBar initialStats={initialHomeStats} />
           </div>
         </div>
       </section>
