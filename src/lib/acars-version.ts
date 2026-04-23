@@ -1,17 +1,16 @@
-﻿// Version del cliente ACARS.
-// Actualizar solo este archivo al publicar una nueva release del instalador.
+// Version visible del cliente ACARS publicada al usuario final.
+// La revision interna del updater se controla por manifests remotos.
 
-export const ACARS_VERSION = "4.0.0";
-export const ACARS_BACKEND = "Sistema hibrido por perfil + Supabase Direct";
-export const ACARS_SIZE_MB = "~25.0 MB";
+export const ACARS_VERSION = "6.0.1-beta";
+export const ACARS_BACKEND = "Sistema hibrido por perfil + Supabase + updater diferencial";
+export const ACARS_SIZE_MB = "~28.2 MB";
 export const ACARS_DOWNLOAD_URL =
-  "https://patagoniaw.com/downloads/PatagoniaWingsACARSSetup.exe";
+  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe";
 
 export const ACARS_RELEASE_NOTES = [
-  "Sistema hibrido real por aeronave: SimConnect, FSUIPC y LVAR segun perfil",
-  "Maddog integrado al pipeline sin romper C208 ni PMDG ya certificados",
-  "Perfiles operativos para FBW, Fenix, Headwind, iFly, PMDG 777, Horizons y E-Jets",
-  "AutoUpdater y metadata alineados a la release 4.0.0 publicada desde Supabase",
-  "Descarga publica del instalador sincronizada con la web oficial",
-  "Version Web 2.0 · ACARS 4.0.0",
+  "Telemetria hibrida real por aeronave: SimConnect, FSUIPC, LVAR y perfiles tecnicos por addon.",
+  "Pipeline oficial ACARS + Supabase + releases centralizadas desde Patagonia Wings.",
+  "Perfiles operativos activos para FBW, Fenix, Headwind, iFly, PMDG, Horizons, E-Jets y Maddog.",
+  "Updater profesional con canal beta, revision interna y manifests de actualizacion.",
+  "Release comercial visible: 6.0.1-beta.",
 ];

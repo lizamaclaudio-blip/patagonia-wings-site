@@ -15,9 +15,9 @@ type RouteRow = {
   is_active?: boolean | null;
 };
 
-type AircraftRow = {
-  id?: string | null;
-  aircraft_type_code?: string | null;
+type FleetRow = {
+  registration?: string | null;
+  aircraft_type?: string | null;
 };
 
 const FALLBACK_STATS: HomeStatItem[] = [
@@ -25,6 +25,7 @@ const FALLBACK_STATS: HomeStatItem[] = [
   { key: "destinations", label: "Destinos", value: 0 },
   { key: "aircraft", label: "Aeronaves", value: 0 },
   { key: "types", label: "Tipos", value: 0 },
+  { key: "todayFlights", label: "Vuelos de hoy", value: 0 },
 ];
 
 const integerFormatter = new Intl.NumberFormat("es-CL");
@@ -33,18 +34,50 @@ function normalizeAircraftTypeCode(value: string | null | undefined) {
   return (value ?? "").trim().toUpperCase();
 }
 
+function isOperationalReservationStatus(value: string | null | undefined) {
+  const normalized = (value ?? "").trim().toLowerCase();
+  return normalized.length > 0 && !["cancelled", "aborted", "interrupted", "crashed"].includes(normalized);
+}
+
+function isSameUtcDate(value: string | null | undefined, targetDateKey: string) {
+  if (!value) {
+    return false;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return date.toISOString().slice(0, 10) === targetDateKey;
+}
+
 async function loadHomeStats() {
-  const [routesResponse, aircraftResponse] = await Promise.all([
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  const [routesResponse, fleetResponse, modelsResponse, reservationsResponse] = await Promise.all([
     supabase.from("network_routes").select("id, destination_ident, is_active"),
-    supabase.from("aircraft").select("id, aircraft_type_code"),
+    supabase.from("aircraft_fleet").select("registration, aircraft_type"),
+    supabase.from("aircraft_models").select("code, is_active"),
+    supabase
+      .from("flight_reservations")
+      .select("status, reserved_at, dispatched_at, departed_at, completed_at, created_at"),
   ]);
 
   if (routesResponse.error) {
     throw routesResponse.error;
   }
 
-  if (aircraftResponse.error) {
-    throw aircraftResponse.error;
+  if (fleetResponse.error) {
+    throw fleetResponse.error;
+  }
+
+  if (modelsResponse.error) {
+    throw modelsResponse.error;
+  }
+
+  if (reservationsResponse.error) {
+    throw reservationsResponse.error;
   }
 
   const activeRoutes = ((routesResponse.data ?? []) as RouteRow[]).filter((row) => {
@@ -58,23 +91,48 @@ async function loadHomeStats() {
       .filter(Boolean),
   );
 
-  const aircraftRows = (aircraftResponse.data ?? []) as AircraftRow[];
+  const fleetRows = (fleetResponse.data ?? []) as FleetRow[];
   const uniqueAircraftIds = new Set(
-    aircraftRows
-      .map((row) => (typeof row.id === "string" ? row.id : String(row.id ?? "")).trim())
+    fleetRows
+      .map((row) => (row.registration ?? "").trim().toUpperCase())
       .filter(Boolean),
   );
+
+  const activeModels = ((modelsResponse.data ?? []) as Array<{ code?: string | null; is_active?: boolean | null }>)
+    .filter((row) => row.is_active !== false);
   const uniqueAircraftTypes = new Set(
-    aircraftRows
-      .map((row) => normalizeAircraftTypeCode(row.aircraft_type_code))
+    activeModels
+      .map((row) => normalizeAircraftTypeCode(row.code))
       .filter(Boolean),
   );
+
+  const todaysFlights = ((reservationsResponse.data ?? []) as Array<{
+    status?: string | null;
+    reserved_at?: string | null;
+    dispatched_at?: string | null;
+    departed_at?: string | null;
+    completed_at?: string | null;
+    created_at?: string | null;
+  }>).filter((row) => {
+    if (!isOperationalReservationStatus(row.status)) {
+      return false;
+    }
+
+    return [
+      row.reserved_at,
+      row.dispatched_at,
+      row.departed_at,
+      row.completed_at,
+      row.created_at,
+    ].some((value) => isSameUtcDate(value, todayKey));
+  });
 
   return [
     { key: "routes", label: "Rutas", value: activeRoutes.length },
     { key: "destinations", label: "Destinos", value: uniqueDestinations.size },
     { key: "aircraft", label: "Aeronaves", value: uniqueAircraftIds.size },
     { key: "types", label: "Tipos", value: uniqueAircraftTypes.size },
+    { key: "todayFlights", label: "Vuelos de hoy", value: todaysFlights.length },
   ] satisfies HomeStatItem[];
 }
 
@@ -164,7 +222,17 @@ export default function HomeStatsBar() {
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "aircraft" },
+        { event: "*", schema: "public", table: "aircraft_fleet" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "aircraft_models" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "flight_reservations" },
         scheduleRefresh,
       )
       .subscribe();
@@ -187,7 +255,7 @@ export default function HomeStatsBar() {
   }, []);
 
   return (
-    <div className="parallax-stats grid gap-0 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(4,21,44,0.78)] backdrop-blur-md md:grid-cols-4">
+    <div className="parallax-stats grid gap-0 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(4,21,44,0.78)] backdrop-blur-md md:grid-cols-5">
       {stats.map((item, index) => (
         <div
           key={item.key}
