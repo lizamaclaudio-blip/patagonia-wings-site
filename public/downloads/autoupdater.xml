@@ -1,7 +1,10 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>4.0.0.0</version>
-  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-4.0.0-r2.exe</url>
-  <changelog>v4.0.0: perfiles hibridos por aeronave, release 4.0.0 y autoupdater alineado.</changelog>
+  <version>6.0.1.0</version>
+  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-6.0.1-beta.exe</url>
+  <changelog>ACARS 6.0.1-beta para prueba integral Patagonia Wings.
+Base Supabase normalizada: tipo operativo separado de addon/perfil tecnico ACARS.
+Updater inmediato compatible con versiones beta y release feed activo.
+Control Center preparado para importador, perfiles tecnicos y reglas operativas centralizadas.</changelog>
   <mandatory>false</mandatory>
 </item>

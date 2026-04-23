@@ -1,11 +1,12 @@
-﻿{
-    "version":  "4.0.0",
-    "webVersion":  "2.0",
-    "downloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-4.0.0-r2.exe",
-    "mandatory":  false,
-    "notes":  "- Version 4.0.0 con sistema hibrido por perfil de aeronave\n- Maddog habilitado en pipeline LVAR/FSUIPC/MobiFlight sin romper C208 ni PMDG\n- Metadatos web y autoupdater alineados a la release real",
-    "releaseDate":  "2026-04-20",
-    "minVersion":  "2.0.5",
-    "fileSize":  "25 MB",
-    "storageProvider":  "supabase"
+{
+  "version": "6.0.1-beta",
+  "webVersion": "2.0",
+  "downloadUrl": "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-6.0.1-beta.exe",
+  "mandatory": false,
+  "channel": "beta",
+  "notes": "ACARS 6.0.1-beta para prueba integral Patagonia Wings.\nBase Supabase normalizada: tipo operativo separado de addon/perfil tecnico ACARS.\nUpdater inmediato compatible con versiones beta y release feed activo.\nControl Center preparado para importador, perfiles tecnicos y reglas operativas centralizadas.",
+  "releaseDate": "2026-04-23",
+  "minVersion": "4.0.1",
+  "fileSize": "25 MB",
+  "storageProvider": "supabase"
 }

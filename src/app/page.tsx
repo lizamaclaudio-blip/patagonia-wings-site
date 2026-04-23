@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
@@ -7,10 +7,10 @@ import { ACARS_VERSION, ACARS_BACKEND, ACARS_SIZE_MB, ACARS_RELEASE_NOTES, ACARS
 const services = [
   {
     title: "Reserva y despacho web",
-    text: "Prepara tu operación antes del vuelo, desde la reserva hasta el briefing final listo para ACARS.",
+    text: "Prepara tu operaciÃ³n antes del vuelo, desde la reserva hasta el briefing final listo para ACARS.",
   },
   {
-    title: "Operación regional",
+    title: "OperaciÃ³n regional",
     text: "Una experiencia centrada en la Patagonia, conectando rutas, hubs y aeronaves con identidad propia.",
   },
   {
@@ -41,15 +41,15 @@ export default function HomePage() {
               </h1>
 
               <p className="mt-8 max-w-[520px] text-[22px] font-medium text-white/90 sm:text-[28px]">
-                Tu conexión aérea en la Patagonia
+                Tu conexiÃ³n aÃ©rea en la Patagonia
               </p>
 
               <div className="mt-6 h-[3px] w-28 rounded-full bg-gradient-to-r from-emerald-400 via-cyan-300 to-transparent" />
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <a href="#nosotros" className="parallax-outline-button">
-                  Descubrir más
-                  <span aria-hidden>→</span>
+                  Descubrir mÃ¡s
+                  <span aria-hidden>â†’</span>
                 </a>
               </div>
             </div>
@@ -66,21 +66,21 @@ export default function HomePage() {
           <div>
             <div className="parallax-chip">Nosotros</div>
             <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Una comunidad que crece con objetivos, inmersión y rol real
+              Una comunidad que crece con objetivos, inmersiÃ³n y rol real
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200/88">
               En Patagonia Wings queremos construir una comunidad viva, cercana y ambiciosa: un lugar donde cada
-              piloto tenga un objetivo, una ruta por seguir y una razón real para volver a cabina. Diseñamos
-              operaciones realistas para darte inmersión completa en simuladores de vuelo, desde la planificación
-              hasta el cierre de cada operación.
+              piloto tenga un objetivo, una ruta por seguir y una razÃ³n real para volver a cabina. DiseÃ±amos
+              operaciones realistas para darte inmersiÃ³n completa en simuladores de vuelo, desde la planificaciÃ³n
+              hasta el cierre de cada operaciÃ³n.
             </p>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/78">
-              Aquí puedes tomar el rol que quieras vivir dentro de la aerolínea y sentirte piloto de verdad. En
-              Patagonia Wings asumimos el role play de simulación completa incluso en conversaciones y operaciones,
+              AquÃ­ puedes tomar el rol que quieras vivir dentro de la aerolÃ­nea y sentirte piloto de verdad. En
+              Patagonia Wings asumimos el role play de simulaciÃ³n completa incluso en conversaciones y operaciones,
               y muy pronto habilitaremos Discord para nuestros canales operativos e informativos.
             </p>
             <div className="mt-8 inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-5 py-2 text-sm font-semibold text-emerald-100">
-              Sé el piloto que quieres ser en Patagonia Wings
+              SÃ© el piloto que quieres ser en Patagonia Wings
             </div>
           </div>
 
@@ -96,7 +96,7 @@ export default function HomePage() {
                   Comunidad Patagonia Wings
                 </p>
                 <p className="mt-2 text-lg font-semibold text-white">
-                  Briefing, inmersión y operación compartida
+                  Briefing, inmersiÃ³n y operaciÃ³n compartida
                 </p>
               </div>
             </div>
@@ -109,10 +109,10 @@ export default function HomePage() {
           <div className="parallax-chip">Servicios</div>
           <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Una portada mucho más web, más comercial y más Patagonia Wings
+              Una portada mucho mÃ¡s web, mÃ¡s comercial y mÃ¡s Patagonia Wings
             </h2>
             <Link href="/dashboard" className="button-primary w-fit">
-              Ver dashboard demo
+              Ver panel de piloto
             </Link>
           </div>
 
@@ -147,12 +147,12 @@ export default function HomePage() {
         <div className="pw-container">
           <div className="parallax-chip">Certificaciones</div>
           <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-            Certificaciones, habilitaciones y operación previa al vuelo
+            Certificaciones, habilitaciones y operaciÃ³n previa al vuelo
           </h2>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {[
               "Perfil piloto completo",
-              "Habilitación IFR y ratings",
+              "HabilitaciÃ³n IFR y ratings",
               "Reserva, despacho y briefing final",
             ].map((item) => (
               <div key={item} className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.04] px-6 py-7">
@@ -173,8 +173,8 @@ export default function HomePage() {
                 ACARS Patagonia Wings
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/82">
-                El cliente oficial de ACARS para vuelos en MSFS 2020/2024. Sincronización
-                automática con Supabase, telemetría en tiempo real, panel de luces LED y
+                El cliente oficial de ACARS para vuelos en MSFS 2020/2024. SincronizaciÃ³n
+                automÃ¡tica con Supabase, telemetrÃ­a en tiempo real, panel de luces LED y
                 copiloto de voz integrado.
               </p>
 
@@ -194,15 +194,15 @@ export default function HomePage() {
                   Descargar ACARS v{ACARS_VERSION}
                 </a>
                 <span className="text-sm text-slate-400">
-                  Windows 10/11 · MSFS 2020/2024 · ~48 MB
+                  Windows 10/11 Â· MSFS 2020/2024 Â· ~48 MB
                 </span>
               </div>
 
               <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 backdrop-blur-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 <span className="text-sm text-white/80">
-                  Versión <span className="font-semibold text-white">{ACARS_VERSION}</span>
-                  <span className="mx-2 text-white/30">·</span>
+                  VersiÃ³n <span className="font-semibold text-white">{ACARS_VERSION}</span>
+                  <span className="mx-2 text-white/30">Â·</span>
                   {ACARS_BACKEND}
                 </span>
               </div>
@@ -225,27 +225,27 @@ export default function HomePage() {
             <div className="flex flex-col gap-3">
               {[
                 {
-                  icon: "✈",
+                  icon: "âœˆ",
                   title: "SimConnect nativo",
                   desc: "Conecta directamente con MSFS 2020 y 2024 via SimConnect. Sin apps intermedias.",
                   color: "#2D9CDB",
                 },
                 {
-                  icon: "📡",
-                  title: "Telemetría completa",
-                  desc: "Luces, tren, APU, bleed air, transponder, presurización y más de 30 variables en tiempo real.",
+                  icon: "ðŸ“¡",
+                  title: "TelemetrÃ­a completa",
+                  desc: "Luces, tren, APU, bleed air, transponder, presurizaciÃ³n y mÃ¡s de 30 variables en tiempo real.",
                   color: "#0CA789",
                 },
                 {
-                  icon: "🔊",
+                  icon: "ðŸ”Š",
                   title: "Copiloto de voz",
-                  desc: "Anuncios automáticos al cruzar 10.000 ft, aproximación, luces y llegada. Voz ES/CL/BR.",
+                  desc: "Anuncios automÃ¡ticos al cruzar 10.000 ft, aproximaciÃ³n, luces y llegada. Voz ES/CL/BR.",
                   color: "#FFD700",
                 },
                 {
-                  icon: "☁",
-                  title: "Sincronización Supabase",
-                  desc: "PIREPs automáticos con score, landing rate, g-force y penalizaciones según reglas operacionales.",
+                  icon: "â˜",
+                  title: "SincronizaciÃ³n Supabase",
+                  desc: "PIREPs automÃ¡ticos con score, landing rate, g-force y penalizaciones segÃºn reglas operacionales.",
                   color: "#3FB950",
                 },
               ].map((f) => (
@@ -277,7 +277,7 @@ export default function HomePage() {
                 { label: "Sistema operativo", value: "Windows 10/11 (64-bit)" },
                 { label: "Simulador", value: "MSFS 2020 o 2024" },
                 { label: "Runtime", value: ".NET Framework 4.8.1" },
-                { label: "Conexión", value: "Internet (Supabase sync)" },
+                { label: "ConexiÃ³n", value: "Internet (Supabase sync)" },
               ].map((r) => (
                 <div key={r.label}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -299,7 +299,7 @@ export default function HomePage() {
               Siguiente paso: llevar este look al resto de la web
             </h2>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-white/84">
-              Con esta base ya podemos dejar login, registro, dashboard y perfil con la misma estética one page parallax.
+              Ingresa con tu cuenta Patagonia Wings para operar reservas, despacho y seguimiento real.
             </p>
           </div>
 

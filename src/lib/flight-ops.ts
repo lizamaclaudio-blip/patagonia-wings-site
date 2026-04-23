@@ -333,6 +333,29 @@ function normalizeAircraftDisplayName(code: string) {
   return normalized;
 }
 
+function getOperationalAircraftCode(row: GenericRecord) {
+  for (const key of ["aircraft_model_code", "icao_code", "airframe_code", "aircraft_code"]) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) {
+      return normalizeUpper(value);
+    }
+  }
+
+  const technical = typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : "";
+  return normalizeUpper(technical).split("_")[0] ?? "";
+}
+
+function getTechnicalAircraftCode(row: GenericRecord) {
+  for (const key of ["aircraft_type_code", "aircraft_variant_code", "variant_code"]) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) {
+      return normalizeUpper(value);
+    }
+  }
+
+  return getOperationalAircraftCode(row);
+}
+
 function buildAircraftVariantLabel(record: {
   aircraft_variant_code?: string | null;
   addon_provider?: string | null;
@@ -1203,6 +1226,17 @@ export function isAircraftCompatibleWithRoute(
 
 // Mapa aircraft_type_code → category (sincronizado con tabla aircraft_types de Supabase)
 const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
+  C208: "single_turboprop", TBM9: "single_turboprop", TBM8: "single_turboprop",
+  B350: "twin_turboprop", ATR72: "twin_turboprop",
+  BE58: "piston_twin",
+  E175: "regional_jet", E190: "regional_jet", E195: "regional_jet",
+  A319: "narrowbody_jet", A320: "narrowbody_jet", A20N: "narrowbody_jet",
+  A321: "narrowbody_jet", A21N: "narrowbody_jet",
+  B736: "narrowbody_jet", B737: "narrowbody_jet", B738: "narrowbody_jet",
+  B739: "narrowbody_jet", B38M: "narrowbody_jet",
+  MD82: "narrowbody_jet", MD83: "narrowbody_jet", MD88: "narrowbody_jet",
+  A339: "widebody_jet", A359: "widebody_jet",
+  B772: "widebody_jet", B77W: "widebody_jet", B789: "widebody_jet", B78X: "widebody_jet",
   C208_MSFS: "single_turboprop", C208_BLACKSQUARE: "single_turboprop",
   TBM9_MSFS: "single_turboprop", TBM8_BLACKSQUARE: "single_turboprop",
   B350_MSFS: "twin_turboprop",   B350_BLACKSQUARE: "twin_turboprop",  ATR72_MSFS: "twin_turboprop",
@@ -1235,19 +1269,9 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
               ? row.status.trim().toLowerCase() === "available"
               : false;
 
-      const aircraftCode = resolveSimbriefType(
-        typeof row.icao_code === "string"
-          ? row.icao_code
-          : typeof row.aircraft_model_code === "string"
-            ? row.aircraft_model_code
-            : typeof row.airframe_code === "string"
-              ? row.airframe_code
-              : typeof row.aircraft_type_code === "string"
-                ? row.aircraft_type_code
-                : typeof row.aircraft_code === "string"
-                  ? row.aircraft_code
-                  : ""
-      );
+      const operationalCode = getOperationalAircraftCode(row);
+      const technicalCode = getTechnicalAircraftCode(row);
+      const aircraftCode = resolveSimbriefType(operationalCode);
 
       const aircraftName =
         typeof row.display_name === "string"
@@ -1269,12 +1293,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
             : typeof row.tail_number === "string"
               ? row.tail_number
               : "",
-        aircraft_type_code:
-          typeof row.aircraft_type_code === "string"
-            ? row.aircraft_type_code
-            : typeof row.aircraft_code === "string"
-              ? row.aircraft_code
-              : aircraftCode,
+        aircraft_type_code: operationalCode || aircraftCode,
         aircraft_code: aircraftCode,
         aircraft_name: aircraftName,
         aircraft_variant_code:
@@ -1282,7 +1301,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
             ? row.aircraft_variant_code
             : typeof row.variant_code === "string"
               ? row.variant_code
-              : "",
+              : technicalCode,
         addon_provider:
           typeof row.addon_provider === "string" ? row.addon_provider : "",
         variant_name:
@@ -1345,6 +1364,8 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     return await attachAircraftCondition(filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
       const isAvailable =
         typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
+      const operationalCode = getOperationalAircraftCode(row);
+      const technicalCode = getTechnicalAircraftCode(row);
 
       return {
         aircraft_id: String(row.id ?? ""),
@@ -1354,15 +1375,8 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
             : typeof row.tail_number === "string"
               ? row.tail_number
               : "",
-        aircraft_type_code:
-          typeof row.aircraft_type_code === "string"
-            ? row.aircraft_type_code
-            : typeof row.aircraft_model_code === "string"
-              ? row.aircraft_model_code
-              : "",
-        aircraft_code: resolveSimbriefType(
-          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
-        ),
+        aircraft_type_code: operationalCode,
+        aircraft_code: resolveSimbriefType(operationalCode),
         aircraft_name:
           typeof row.aircraft_display_name === "string" && row.aircraft_display_name
             ? row.aircraft_display_name
@@ -1373,12 +1387,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                     ? row.aircraft_type_code
                     : ""
               ),
-        aircraft_variant_code:
-          typeof row.aircraft_variant_code === "string"
-            ? row.aircraft_variant_code
-            : typeof row.aircraft_model_code === "string"
-              ? row.aircraft_model_code
-              : "",
+        aircraft_variant_code: technicalCode,
         addon_provider:
           typeof row.addon_provider === "string" ? row.addon_provider : "",
         variant_name:
@@ -1392,9 +1401,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
         status: typeof row.status === "string" ? row.status : "available",
         display_status: isAvailable ? "Disponible" : "No disponible",
         selectable: isAvailable,
-        display_category: getDisplayCategoryFromCode(
-          typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""
-        ),
+        display_category: getDisplayCategoryFromCode(operationalCode),
       } satisfies AvailableAircraftOption;
     }), profile, permittedTypes));
   } catch (tableError) {
@@ -1410,6 +1417,8 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
         return await attachAircraftCondition(filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
           const isAvailable =
             typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
+          const operationalCode = getOperationalAircraftCode(row);
+          const technicalCode = getTechnicalAircraftCode(row);
 
           return {
             aircraft_id:
@@ -1420,35 +1429,20 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                 : typeof row.tail_number === "string"
                   ? row.tail_number
                   : "",
-            aircraft_type_code:
-              typeof row.aircraft_type_code === "string"
-                ? row.aircraft_type_code
-                : typeof row.aircraft_code === "string"
-                  ? row.aircraft_code
-                  : "",
-            aircraft_code: resolveSimbriefType(
-              typeof row.aircraft_type_code === "string"
-                ? row.aircraft_type_code
-                : typeof row.aircraft_code === "string"
-                  ? row.aircraft_code
-                  : ""
-            ),
+            aircraft_type_code: operationalCode,
+            aircraft_code: resolveSimbriefType(operationalCode),
             aircraft_name:
               typeof row.aircraft_name === "string"
                 ? row.aircraft_name
                 : normalizeAircraftDisplayName(
-                    typeof row.aircraft_type_code === "string"
-                      ? row.aircraft_type_code
-                      : typeof row.aircraft_code === "string"
-                        ? row.aircraft_code
-                        : ""
+                    operationalCode
                   ),
             aircraft_variant_code:
               typeof row.aircraft_variant_code === "string"
                 ? row.aircraft_variant_code
                 : typeof row.variant_code === "string"
                   ? row.variant_code
-                  : "",
+                  : technicalCode,
             addon_provider:
               typeof row.addon_provider === "string" ? row.addon_provider : "",
             variant_name:
@@ -1470,11 +1464,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
               typeof row.display_category === "string"
                 ? row.display_category
                 : getDisplayCategoryFromCode(
-                    typeof row.aircraft_type_code === "string"
-                      ? row.aircraft_type_code
-                      : typeof row.aircraft_code === "string"
-                        ? row.aircraft_code
-                        : ""
+                    operationalCode
                   ),
           } satisfies AvailableAircraftOption;
         }), profile, permittedTypes));
@@ -1580,7 +1570,11 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         .order("priority")
         .order("route_code"),
       supabase.from("network_route_aircraft").select("route_id, aircraft_type_code"),
-      supabase.from("aircraft").select("aircraft_type_code").eq("current_airport_code", airport).eq("status", "available"),
+      supabase
+        .from("aircraft")
+        .select("aircraft_model_code, aircraft_type_code")
+        .eq("current_airport_code", airport)
+        .eq("status", "available"),
     ]);
 
   if (routesError) throw routesError;
@@ -1588,7 +1582,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
 
   const availableTypes = new Set(
     ((aircraftError ? [] : aircraft ?? []) as GenericRecord[])
-      .map((row) => (typeof row.aircraft_type_code === "string" ? row.aircraft_type_code : ""))
+      .map((row) => getOperationalAircraftCode(row))
       .filter(Boolean)
   );
 
@@ -1719,6 +1713,32 @@ export async function saveFlightOperation(
 
     if (!firstRow) {
       throw new Error("La RPC create_flight_reservation no devolvió una reserva válida.");
+    }
+
+    const reservationId = typeof firstRow.id === "string" ? firstRow.id : "";
+    const operationalAircraftCode = normalizeUpper(
+      operation.aircraftTypeCode || operation.aircraftCode || ""
+    );
+
+    if (reservationId && operationalAircraftCode) {
+      const { data: normalizedReservation, error: normalizeError } = await supabase
+        .from("flight_reservations")
+        .update({
+          aircraft_type_code: operationalAircraftCode,
+          aircraft_variant_code: operation.aircraftVariantCode || null,
+          addon_provider: operation.aircraftAddonProvider || null,
+          variant_name: operation.aircraftVariantLabel || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", reservationId)
+        .select("*")
+        .single();
+
+      if (normalizeError) {
+        throw normalizeError;
+      }
+
+      return normalizedReservation as DbFlightReservationRow;
     }
 
     return mapLegacyReservationFromRpc(firstRow, profile);
