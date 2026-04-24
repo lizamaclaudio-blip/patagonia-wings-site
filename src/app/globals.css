@@ -29,7 +29,7 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top, rgba(24, 181, 219, 0.14), transparent 34%),
+    radial-gradient(circle at top, rgba(24, 181, 219, 0.10), transparent 34%),
     linear-gradient(180deg, #03162f 0%, #06162c 48%, #020d1d 100%);
   color: var(--text);
   font-family:
@@ -68,11 +68,8 @@ canvas {
 
 .grid-overlay {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    radial-gradient(circle at 50% -10%, rgba(34, 211, 238, 0.12), transparent 35%),
-    #03162f;
-  background-size: 42px 42px, 42px 42px, auto, auto;
+    radial-gradient(circle at top, rgba(24, 181, 219, 0.10), transparent 34%),
+    linear-gradient(180deg, #03162f 0%, #06162c 48%, #020d1d 100%);
 }
 
 .pw-container {
@@ -86,24 +83,24 @@ canvas {
   }
 }
 
-/* ==========================================================
-   PUBLIC LANDING / PARALLAX HOME
-   ========================================================== */
+/* PUBLIC LANDING / PARALLAX HOME */
+/* Estas reglas quedan aisladas bajo .parallax-hero para no contaminar Dashboard, Oficina ni Despacho. */
 
 .parallax-hero {
+  position: relative;
   isolation: isolate;
   background: #03162f;
 }
 
-.parallax-bg,
-.parallax-wing,
-.parallax-overlay {
+.parallax-hero .parallax-bg,
+.parallax-hero .parallax-wing,
+.parallax-hero .parallax-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.parallax-bg {
+.parallax-hero .parallax-bg {
   z-index: 0;
   background-image:
     linear-gradient(90deg, rgba(3, 17, 34, 0.88) 0%, rgba(3, 17, 34, 0.62) 31%, rgba(3, 17, 34, 0.18) 64%, rgba(3, 17, 34, 0.55) 100%),
@@ -114,7 +111,7 @@ canvas {
   filter: saturate(1.08) contrast(1.04);
 }
 
-.parallax-wing {
+.parallax-hero .parallax-wing {
   z-index: 1;
   background:
     radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.16), transparent 18%),
@@ -123,7 +120,7 @@ canvas {
   opacity: 0.52;
 }
 
-.parallax-overlay {
+.parallax-hero .parallax-overlay {
   z-index: 2;
   background:
     radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.14), transparent 22%),
@@ -277,10 +274,7 @@ canvas {
     rgba(4, 21, 44, 0.7);
 }
 
-/* ==========================================================
-   AUTH / CONTROL CENTER LEGACY SUPPORT
-   Legacy support para no romper páginas existentes del panel.
-   ========================================================== */
+/* Compatibilidad basica para vistas internas antiguas/admin. */
 
 .auth-screen {
   min-height: 100vh;
