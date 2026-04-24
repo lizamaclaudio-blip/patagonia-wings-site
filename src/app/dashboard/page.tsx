@@ -1014,7 +1014,7 @@ function buildNewsItems(
       body: `Este panel queda listo para eventos, avisos operativos, récords del mes y publicaciones internas sin salir de la Central del hub.`,
     },
     {
-      tag: "OPERACIÃ“N",
+      tag: "OPERACIÓN",
       title: activeCount > 0 ? `${activeCount} vuelo(s) activos ahora` : "Operación tranquila en este momento",
       body:
         activeCount > 0
@@ -1022,10 +1022,10 @@ function buildNewsItems(
           : `Cuando haya pilotos volando, aquí podrás destacar movimientos activos, eventos del día y tráfico relevante del hub actual.`,
     },
     {
-      tag: "ÃšLTIMO CIERRE",
+      tag: "ÚLTIMO CIERRE",
       title: latestFlight ? latestFlightTag : "Esperando vuelos recientes",
       body: latestFlight
-        ? `Ãšltimo cierre registrado con ${formatDecimal(latestFlightScore)} pts SUR. Este bloque queda listo para convertirlo luego en noticia, récord o destacado.`
+        ? `Último cierre registrado con ${formatDecimal(latestFlightScore)} pts SUR. Este bloque queda listo para convertirlo luego en noticia, récord o destacado.`
         : `Aún no hay cierres recientes para convertir en noticia. Cuando entren más vuelos, esta tarjeta podrá resaltar el último PIREP destacado.`,
     },
     {
@@ -2178,14 +2178,14 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-              Ãšltimos 20 vuelos
+              Últimos 20 vuelos
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              Ãšltimos cierres
+              Últimos cierres
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.recentFlights.length)} registro(s)</p>
           </div>
@@ -5018,7 +5018,7 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Ãšltima validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
+                          Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
