@@ -1,20 +1,21 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Patagonia Wings Control Center",
-  description: "Panel privado de administración de Patagonia Wings",
+  title: "Patagonia Wings Web",
+  description: "Centro de operaciones web Patagonia Wings",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: ReactNode;
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body className="grid-overlay min-h-screen" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
