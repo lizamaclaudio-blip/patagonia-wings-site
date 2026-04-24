@@ -504,9 +504,12 @@ export default function PilotOfficePanel({
     void runCareerAction(
       `start-${aircraftCode}`,
       "Entrenamiento iniciado correctamente.",
-      () => supabase.rpc("pw_start_aircraft_training", {
-        p_aircraft_type_code: aircraftCode,
-      }),
+      async () => {
+        const response = await supabase.rpc("pw_start_aircraft_training", {
+          p_aircraft_type_code: aircraftCode,
+        });
+        return response;
+      },
     );
   }
 
@@ -517,10 +520,13 @@ export default function PilotOfficePanel({
     void runCareerAction(
       `refresh-${aircraftCode}`,
       "Progreso de entrenamiento actualizado.",
-      () => supabase.rpc("pw_refresh_pilot_aircraft_training", {
-        p_pilot_callsign: callsign,
-        p_aircraft_type_code: aircraftCode,
-      }),
+      async () => {
+        const response = await supabase.rpc("pw_refresh_pilot_aircraft_training", {
+          p_pilot_callsign: callsign,
+          p_aircraft_type_code: aircraftCode,
+        });
+        return response;
+      },
     );
   }
 
@@ -531,9 +537,12 @@ export default function PilotOfficePanel({
     void runCareerAction(
       `checkride-${aircraftCode}`,
       "Checkride solicitado correctamente.",
-      () => supabase.rpc("pw_request_aircraft_checkride", {
-        p_aircraft_type_code: aircraftCode,
-      }),
+      async () => {
+        const response = await supabase.rpc("pw_request_aircraft_checkride", {
+          p_aircraft_type_code: aircraftCode,
+        });
+        return response;
+      },
     );
   }
 
@@ -541,7 +550,10 @@ export default function PilotOfficePanel({
     void runCareerAction(
       "promotion-checkride",
       "Checkride de ascenso solicitado correctamente.",
-      () => supabase.rpc("pw_request_promotion_checkride"),
+      async () => {
+        const response = await supabase.rpc("pw_request_promotion_checkride");
+        return response;
+      },
     );
   }
 
