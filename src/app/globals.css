@@ -1,5 +1,7 @@
+@import "tailwindcss";
+
 :root {
-  --bg: #08111b;
+  --bg: #03162f;
   --panel: #0d1824;
   --panel-2: #101f2f;
   --panel-3: #13273a;
@@ -18,19 +20,26 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top, rgba(74, 198, 255, 0.08), transparent 36%),
-    linear-gradient(180deg, #061019 0%, #0a1320 52%, #08111b 100%);
+    radial-gradient(circle at top, rgba(24, 181, 219, 0.14), transparent 34%),
+    linear-gradient(180deg, #03162f 0%, #06162c 48%, #020d1d 100%);
   color: var(--text);
-  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Arial, Helvetica, sans-serif;
 }
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 a {
@@ -44,6 +53,234 @@ select,
 textarea {
   font: inherit;
 }
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.35);
+  color: white;
+}
+
+.grid-overlay {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    radial-gradient(circle at 50% -10%, rgba(34, 211, 238, 0.12), transparent 35%),
+    #03162f;
+  background-size: 42px 42px, 42px 42px, auto, auto;
+}
+
+.pw-container {
+  width: min(100% - 32px, 1440px);
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .pw-container {
+    width: min(100% - 96px, 1440px);
+  }
+}
+
+/* ==========================================================
+   PUBLIC LANDING / PARALLAX HOME
+   ========================================================== */
+
+.parallax-hero {
+  isolation: isolate;
+  background: #03162f;
+}
+
+.parallax-bg,
+.parallax-wing,
+.parallax-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.parallax-bg {
+  z-index: 0;
+  background-image:
+    linear-gradient(90deg, rgba(3, 17, 34, 0.88) 0%, rgba(3, 17, 34, 0.62) 31%, rgba(3, 17, 34, 0.18) 64%, rgba(3, 17, 34, 0.55) 100%),
+    url("/branding/hero-banner.png");
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.015);
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.parallax-wing {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.16), transparent 18%),
+    linear-gradient(120deg, transparent 0 62%, rgba(255, 255, 255, 0.13) 62% 64%, transparent 64%);
+  mix-blend-mode: screen;
+  opacity: 0.52;
+}
+
+.parallax-overlay {
+  z-index: 2;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.14), transparent 22%),
+    radial-gradient(circle at 78% 84%, rgba(56, 189, 248, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(3, 22, 47, 0.05) 0%, rgba(3, 22, 47, 0.35) 52%, rgba(3, 22, 47, 0.88) 100%);
+}
+
+.parallax-nav {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(3, 18, 38, 0.46);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.parallax-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 24%, transparent 76%, rgba(255, 255, 255, 0.08)),
+    radial-gradient(circle at 20% 0%, rgba(45, 212, 191, 0.16), transparent 35%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.parallax-link {
+  position: relative;
+  white-space: nowrap;
+}
+
+.parallax-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #34d399, #67e8f9);
+  transition: right 0.18s ease;
+}
+
+.parallax-link:hover::after,
+.parallax-link.active::after {
+  right: 0;
+}
+
+.parallax-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 8px 13px;
+  color: rgba(186, 230, 253, 0.92);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  backdrop-filter: blur(14px);
+}
+
+.parallax-chip::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #34d399, #67e8f9);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.78);
+}
+
+.parallax-outline-button,
+.parallax-login-button,
+.button-primary,
+.button-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border-radius: 18px;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.parallax-outline-button {
+  border: 1px solid rgba(226, 232, 240, 0.42);
+  background: rgba(3, 18, 38, 0.34);
+  padding: 18px 28px;
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.parallax-outline-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 249, 0.8);
+  background: rgba(14, 116, 144, 0.22);
+  box-shadow: 0 16px 42px rgba(8, 145, 178, 0.22);
+}
+
+.parallax-login-button,
+.button-primary {
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 45%, #0ea5e9 100%);
+  color: white;
+  box-shadow:
+    0 14px 38px rgba(16, 185, 129, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.parallax-login-button:hover,
+.button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 48px rgba(16, 185, 129, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.button-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.button-ghost:hover {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 249, 0.38);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.parallax-stats {
+  box-shadow:
+    0 26px 95px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.parallax-stats > div {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+    rgba(4, 21, 44, 0.7);
+}
+
+/* ==========================================================
+   AUTH / CONTROL CENTER LEGACY SUPPORT
+   Se mantiene para no romper páginas existentes del panel.
+   ========================================================== */
 
 .auth-screen {
   min-height: 100vh;
@@ -156,11 +393,6 @@ textarea {
   cursor: wait;
   opacity: 0.7;
   transform: none;
-}
-
-.button-primary {
-  background: linear-gradient(135deg, var(--cyan), var(--cyan-strong));
-  color: #04111a;
 }
 
 .button-secondary {
@@ -441,38 +673,6 @@ textarea {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-@media (max-width: 1200px) {
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .two-columns,
-  .admin-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-@media (max-width: 720px) {
-  .auth-panel,
-  .grid-two,
-  .toolbar-grid,
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .main-panel,
-  .sidebar,
-  .auth-screen {
-    padding: 18px;
-  }
-}
-
-
 .career-ladder {
   display: grid;
   gap: 18px;
@@ -486,7 +686,8 @@ textarea {
   align-items: flex-start;
 }
 
-.career-rank-badges {
+.career-rank-badges,
+.pill-wrap {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -511,14 +712,46 @@ textarea {
   font-size: 0.96rem;
 }
 
-.pill-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+@media (max-width: 1200px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .two-columns,
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
 }
 
 @media (max-width: 720px) {
+  .auth-panel,
+  .grid-two,
+  .toolbar-grid,
+  .metric-grid,
   .career-grid {
     grid-template-columns: 1fr;
+  }
+
+  .main-panel,
+  .sidebar,
+  .auth-screen {
+    padding: 18px;
+  }
+
+  .parallax-nav {
+    border-radius: 24px;
+  }
+
+  .parallax-outline-button {
+    width: 100%;
+  }
+
+  .parallax-stats > div {
+    min-height: 105px;
   }
 }
