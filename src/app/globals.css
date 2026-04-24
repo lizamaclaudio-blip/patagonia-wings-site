@@ -522,3 +522,44 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+@layer utilities {
+  .surface-outline .mt-4.flex.items-center.gap-5 > .flex.h-16.w-16.shrink-0.items-center.justify-center.rounded-full {
+    position: relative;
+    height: 88px;
+    width: 88px;
+    overflow: hidden;
+    border-radius: 26px;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    background:
+      radial-gradient(circle at top, rgba(12, 166, 107, 0.24), rgba(4, 20, 40, 0.94)),
+      linear-gradient(135deg, rgba(10, 70, 52, 0.92), rgba(8, 24, 45, 0.96)) !important;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.22);
+  }
+
+  .surface-outline .mt-4.flex.items-center.gap-5 > .flex.h-16.w-16.shrink-0.items-center.justify-center.rounded-full::after {
+    content: "Foto";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.26);
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(4px);
+  }
+
+  .surface-outline .mt-4.flex.items-center.gap-5 > .flex.h-16.w-16.shrink-0.items-center.justify-center.rounded-full > span {
+    position: relative;
+    z-index: 1;
+    transform: translateY(-8px);
+    letter-spacing: 0.08em;
+  }
+}
