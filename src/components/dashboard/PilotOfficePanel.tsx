@@ -115,7 +115,7 @@ const OFFICE_TABS: Array<{ key: OfficeTabKey; label: string }> = [
   { key: "career", label: "Carrera" },
   { key: "licenses", label: "Licencias" },
   { key: "training", label: "Entrenamiento" },
-  { key: "theory", label: "Teorico" },
+  { key: "theory", label: "Teórico" },
   { key: "checkrides", label: "Checkrides" },
   { key: "certifications", label: "Certificaciones" },
 ];
@@ -302,6 +302,10 @@ export default function PilotOfficePanel({
   );
   const [careerData, setCareerData] = useState<CareerOfficeRpcResult | null>(null);
   const [loadingCareer, setLoadingCareer] = useState(true);
+  const [careerRefreshNonce, setCareerRefreshNonce] = useState(0);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const callsign = profile.callsign ?? "";
   const totalHours = asNumber(careerData?.metrics?.total_hours, asNumber(metrics.totalHours ?? profile.career_hours ?? profile.total_hours));
@@ -323,7 +327,7 @@ export default function PilotOfficePanel({
   const rpcCurrentRank = normalizeRankFromRpc(careerData?.current_rank);
   const rpcNextRank = normalizeRankFromRpc(careerData?.next_rank);
   const currentRankName = rpcCurrentRank?.name ?? localProgress.currentRank.name;
-  const nextRankName = rpcNextRank?.name ?? localProgress.nextRank?.name ?? "Rango maximo";
+  const nextRankName = rpcNextRank?.name ?? localProgress.nextRank?.name ?? "Rango máximo";
   const nextRequirements = careerData?.next_requirements?.length
     ? careerData.next_requirements
     : localProgress.requirements.map((item) => ({
@@ -412,7 +416,7 @@ export default function PilotOfficePanel({
     return () => {
       mounted = false;
     };
-  }, [profile.id]);
+  }, [profile.id, careerRefreshNonce]);
 
   function changeOfficeTab(tab: OfficeTabKey) {
     setActiveOfficeTab(tab);
@@ -421,6 +425,124 @@ export default function PilotOfficePanel({
     params.set("tab", "office");
     params.set("officeTab", tab);
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  function getCareerActionMessage(result: Record<string, unknown>, fallback: string) {
+    const error = asString(result.error);
+    const status = asString(result.status);
+    const action = asString(result.action);
+
+    const errorLabels: Record<string, string> = {
+      PILOT_PROFILE_NOT_FOUND: "No se encontró el perfil del piloto conectado.",
+      AIRCRAFT_LICENSE_NOT_CONFIGURED: "La aeronave todavía no tiene licencia configurada.",
+      LOCKED_BY_RANK: "Esta aeronave está bloqueada por rango.",
+      LICENSE_BLOCKED: "La licencia está bloqueada o suspendida.",
+      CHECKRIDE_NOT_REQUIRED: "Esta aeronave no requiere checkride inicial.",
+      TRAINING_REQUIREMENTS_NOT_MET: "Aún faltan requisitos de entrenamiento.",
+      PROMOTION_REQUIREMENTS_NOT_MET: "Aún faltan requisitos para solicitar el checkride de ascenso.",
+      MAX_RANK_REACHED: "Ya estás en el rango máximo operacional.",
+      MISSING_CALLSIGN: "Falta callsign del piloto.",
+      MISSING_AIRCRAFT_TYPE: "Falta código de aeronave.",
+    };
+
+    const statusLabels: Record<string, string> = {
+      ALREADY_VALID: "La licencia ya está vigente.",
+      CHECKRIDE_ALREADY_REQUESTED: "El checkride ya estaba solicitado.",
+      PROMOTION_CHECKRIDE_ALREADY_REQUESTED: "El checkride de ascenso ya estaba solicitado.",
+    };
+
+    const actionLabels: Record<string, string> = {
+      TRAINING_STARTED: "Entrenamiento iniciado correctamente.",
+      CHECKRIDE_REQUESTED: "Checkride solicitado correctamente.",
+      PROMOTION_CHECKRIDE_REQUESTED: "Checkride de ascenso solicitado correctamente.",
+    };
+
+    if (error) return errorLabels[error] ?? error;
+    if (status) return statusLabels[status] ?? status;
+    if (action) return actionLabels[action] ?? action;
+    return fallback;
+  }
+
+  async function runCareerAction(
+    key: string,
+    fallbackSuccessMessage: string,
+    callback: () => Promise<{ data: unknown; error: unknown }>,
+  ) {
+    setActionBusy(key);
+    setActionMessage(null);
+    setActionError(null);
+
+    try {
+      const { data, error } = await callback();
+
+      if (error) {
+        setActionError("No se pudo completar la acción. Revisa la sesión o los permisos.");
+        return;
+      }
+
+      const result = (data ?? {}) as Record<string, unknown>;
+      const ok = result.ok !== false;
+
+      if (!ok) {
+        setActionError(getCareerActionMessage(result, "La acción no pudo completarse."));
+        return;
+      }
+
+      setActionMessage(getCareerActionMessage(result, fallbackSuccessMessage));
+      setCareerRefreshNonce((value) => value + 1);
+    } catch {
+      setActionError("Ocurrió un error inesperado al ejecutar la acción.");
+    } finally {
+      setActionBusy(null);
+    }
+  }
+
+  function startAircraftTraining(aircraftTypeCode: unknown) {
+    const aircraftCode = asString(aircraftTypeCode).toUpperCase();
+    if (!aircraftCode) return;
+
+    void runCareerAction(
+      `start-${aircraftCode}`,
+      "Entrenamiento iniciado correctamente.",
+      () => supabase.rpc("pw_start_aircraft_training", {
+        p_aircraft_type_code: aircraftCode,
+      }),
+    );
+  }
+
+  function refreshAircraftTraining(aircraftTypeCode: unknown) {
+    const aircraftCode = asString(aircraftTypeCode).toUpperCase();
+    if (!aircraftCode || !callsign) return;
+
+    void runCareerAction(
+      `refresh-${aircraftCode}`,
+      "Progreso de entrenamiento actualizado.",
+      () => supabase.rpc("pw_refresh_pilot_aircraft_training", {
+        p_pilot_callsign: callsign,
+        p_aircraft_type_code: aircraftCode,
+      }),
+    );
+  }
+
+  function requestAircraftCheckride(aircraftTypeCode: unknown) {
+    const aircraftCode = asString(aircraftTypeCode).toUpperCase();
+    if (!aircraftCode) return;
+
+    void runCareerAction(
+      `checkride-${aircraftCode}`,
+      "Checkride solicitado correctamente.",
+      () => supabase.rpc("pw_request_aircraft_checkride", {
+        p_aircraft_type_code: aircraftCode,
+      }),
+    );
+  }
+
+  function requestPromotionCheckride() {
+    void runCareerAction(
+      "promotion-checkride",
+      "Checkride de ascenso solicitado correctamente.",
+      () => supabase.rpc("pw_request_promotion_checkride"),
+    );
   }
 
   const requirementProgress = nextRequirements.length
@@ -433,6 +555,8 @@ export default function PilotOfficePanel({
         }, 0) / nextRequirements.length,
       )
     : 100;
+
+  const canRequestPromotionCheckride = Boolean(localProgress.nextRank) && nextRequirements.length > 0 && nextRequirements.every((item) => Boolean(item.met));
 
   return (
     <div className="flex flex-col gap-5">
@@ -497,12 +621,24 @@ export default function PilotOfficePanel({
         })}
       </div>
 
+      {actionMessage ? (
+        <div className="rounded-[18px] border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100">
+          {actionMessage}
+        </div>
+      ) : null}
+
+      {actionError ? (
+        <div className="rounded-[18px] border border-rose-300/24 bg-rose-400/10 px-4 py-3 text-sm font-semibold text-rose-100">
+          {actionError}
+        </div>
+      ) : null}
+
       {activeOfficeTab === "summary" ? (
         <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
           <SurfaceCard>
             <SectionTitle
               eyebrow="Proximo objetivo"
-              title={localProgress.nextRank ? `Ascenso a ${nextRankName}` : "Rango maximo alcanzado"}
+              title={localProgress.nextRank ? `Ascenso a ${nextRankName}` : "Rango máximo alcanzado"}
               description={loadingCareer ? "Actualizando datos desde Supabase..." : localProgress.nextRecommendedAction}
             />
 
@@ -513,6 +649,16 @@ export default function PilotOfficePanel({
               </div>
               <div className="mt-3">
                 <ProgressBar value={requirementProgress} />
+              </div>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  disabled={!canRequestPromotionCheckride || actionBusy === "promotion-checkride"}
+                  onClick={requestPromotionCheckride}
+                  className="rounded-[14px] border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/16 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {actionBusy === "promotion-checkride" ? "Solicitando..." : "Solicitar checkride de ascenso"}
+                </button>
               </div>
             </div>
 
@@ -573,7 +719,7 @@ export default function PilotOfficePanel({
           <SectionTitle
             eyebrow="Carrera"
             title={localProgress.nextRank ? `Objetivo actual: ${nextRankName}` : "Escalafon completado"}
-            description="La Oficina muestra solo el siguiente objetivo activo. Cuando se apruebe, se habilitara el proximo escalon."
+            description="La Oficina muestra solo el siguiente objetivo activo. Cuando se apruebe, se habilitará el próximo escalón."
           />
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
@@ -624,26 +770,43 @@ export default function PilotOfficePanel({
           <SectionTitle
             eyebrow="Licencias"
             title="Habilitaciones por aeronave"
-            description="Cada aeronave puede exigir rango minimo, horas de entrenamiento, vuelos de entrenamiento y checkride."
+            description="Cada aeronave puede exigir rango mínimo, horas de entrenamiento, vuelos de entrenamiento y checkride."
           />
 
           <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[1120px] text-sm">
               <thead>
                 <tr className="border-b border-white/8 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
                   <th className="pb-3">Avion</th>
                   <th className="pb-3">Familia</th>
-                  <th className="pb-3">Rango minimo</th>
+                  <th className="pb-3">Rango mínimo</th>
                   <th className="pb-3">Estado</th>
                   <th className="pb-3 text-right">Horas</th>
                   <th className="pb-3 text-right">Vuelos</th>
                   <th className="pb-3">Checkride</th>
                   <th className="pb-3">Otorgada</th>
+                  <th className="pb-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {aircraftLicenses.map((item) => (
-                  <tr key={asString(item.aircraft_type_code)} className="border-b border-white/6 last:border-0">
+                {aircraftLicenses.map((item) => {
+                  const aircraftCode = asString(item.aircraft_type_code).toUpperCase();
+                  const status = asString(item.status).toUpperCase();
+                  const busyStart = actionBusy === `start-${aircraftCode}`;
+                  const busyRefresh = actionBusy === `refresh-${aircraftCode}`;
+                  const busyCheckride = actionBusy === `checkride-${aircraftCode}`;
+                  const isLocked = status === "LOCKED";
+                  const isValid = status === "VALID";
+                  const canRequestCheckride = Boolean(item.checkride_required) && (
+                    status === "ELIGIBLE_FOR_CHECKRIDE" ||
+                    (
+                      asNumber(item.training_hours) >= asNumber(item.training_hours_required) &&
+                      asNumber(item.training_flights) >= asNumber(item.training_flights_required)
+                    )
+                  );
+
+                  return (
+                  <tr key={aircraftCode} className="border-b border-white/6 last:border-0">
                     <td className="py-3">
                       <p className="font-semibold text-white">{asString(item.display_name, asString(item.aircraft_type_code))}</p>
                       <p className="text-xs text-white/38">{asString(item.aircraft_type_code)}</p>
@@ -659,8 +822,43 @@ export default function PilotOfficePanel({
                     </td>
                     <td className="py-3 text-white/62">{item.checkride_required ? asString(item.checkride_template_code, "Requerido") : "No inicial"}</td>
                     <td className="py-3 text-white/45">{formatDate(item.granted_at)}</td>
+                    <td className="py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        {!isValid ? (
+                          <button
+                            type="button"
+                            disabled={isLocked || busyStart}
+                            onClick={() => startAircraftTraining(aircraftCode)}
+                            className="rounded-[10px] border border-white/10 bg-white/[0.055] px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {busyStart ? "Iniciando..." : status === "TRAINING" ? "Entrenando" : "Iniciar"}
+                          </button>
+                        ) : null}
+                        {!isLocked ? (
+                          <button
+                            type="button"
+                            disabled={busyRefresh}
+                            onClick={() => refreshAircraftTraining(aircraftCode)}
+                            className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {busyRefresh ? "Actualizando..." : "Actualizar"}
+                          </button>
+                        ) : null}
+                        {canRequestCheckride && !isValid ? (
+                          <button
+                            type="button"
+                            disabled={busyCheckride}
+                            onClick={() => requestAircraftCheckride(aircraftCode)}
+                            className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {busyCheckride ? "Solicitando..." : "Checkride"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -673,7 +871,7 @@ export default function PilotOfficePanel({
             <SectionTitle
               eyebrow="Entrenamiento"
               title="Aeronaves en progreso"
-              description="Aqui se consolidaran las horas de entrenamiento por aeronave y la elegibilidad para checkride."
+              description="Aquí se consolidaran las horas de entrenamiento por aeronave y la elegibilidad para checkride."
             />
             <div className="mt-5 space-y-3">
               {currentTrainingLicenses.length > 0 ? (
@@ -685,6 +883,24 @@ export default function PilotOfficePanel({
                         <p className="mt-1 text-xs text-white/42">{asString(item.aircraft_type_code)} - {asString(item.family_code)}</p>
                       </div>
                       <StatusPill status={item.status} />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={actionBusy === `refresh-${asString(item.aircraft_type_code).toUpperCase()}`}
+                        onClick={() => refreshAircraftTraining(item.aircraft_type_code)}
+                        className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {actionBusy === `refresh-${asString(item.aircraft_type_code).toUpperCase()}` ? "Actualizando..." : "Actualizar progreso"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}`}
+                        onClick={() => requestAircraftCheckride(item.aircraft_type_code)}
+                        className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}` ? "Solicitando..." : "Solicitar checkride"}
+                      </button>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
                       <div>
@@ -709,7 +925,7 @@ export default function PilotOfficePanel({
           <SurfaceCard>
             <SectionTitle eyebrow="Reserva" title="Entrenar ahora" />
             <p className="mt-3 text-sm leading-6 text-white/58">
-              Usa el despacho en modo entrenamiento para comenzar a sumar horas por aeronave. Luego se habilitara el checkride correspondiente.
+              Usa el despacho en modo entrenamiento para comenzar a sumar horas por aeronave. Luego se habilitará el checkride correspondiente.
             </p>
             {activeReservation ? (
               <div className="mt-5 rounded-[18px] border border-cyan-300/16 bg-cyan-300/[0.045] p-4">
@@ -732,7 +948,7 @@ export default function PilotOfficePanel({
       {activeOfficeTab === "theory" ? (
         <SurfaceCard>
           <SectionTitle
-            eyebrow="Teorico"
+            eyebrow="Teórico"
             title="Cursos y examenes"
             description="Los cursos se desbloquean segun tu rango y preparan ascensos, licencias y certificaciones."
           />
@@ -763,7 +979,7 @@ export default function PilotOfficePanel({
         <SurfaceCard>
           <SectionTitle
             eyebrow="Checkrides"
-            title="Vuelos de evaluacion"
+            title="Vuelos de evaluación"
             description="Cuando completes el entrenamiento requerido, podras solicitar el checkride de la aeronave o ascenso."
           />
           <div className="mt-6 grid gap-3 lg:grid-cols-2">
@@ -774,15 +990,20 @@ export default function PilotOfficePanel({
                   <p className="mt-1 text-sm text-white/55">{asString(item.checkride_template_code, "Checkride requerido")}</p>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <StatusPill status={item.status} />
-                    <button type="button" className="rounded-[12px] border border-white/12 bg-white/[0.055] px-3 py-2 text-xs font-semibold text-white/70">
-                      Solicitud pendiente
+                    <button
+                      type="button"
+                      disabled={actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}`}
+                      onClick={() => requestAircraftCheckride(item.aircraft_type_code)}
+                      className="rounded-[12px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}` ? "Solicitando..." : "Solicitar"}
                     </button>
                   </div>
                 </div>
               ))
             ) : (
               <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
-                Todavia no hay checkrides elegibles. Completa las horas y vuelos de entrenamiento requeridos.
+                Todavía no hay checkrides elegibles. Completa las horas y vuelos de entrenamiento requeridos.
               </p>
             )}
           </div>
