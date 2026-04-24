@@ -91,6 +91,7 @@ type CareerOfficeRpcResult = {
   aircraft_licenses?: Array<Record<string, unknown>>;
   theory_courses?: Array<Record<string, unknown>>;
   certifications?: Array<Record<string, unknown>>;
+  pilot_checkrides?: Array<Record<string, unknown>>;
 };
 
 type OfficeTabKey =
@@ -362,6 +363,7 @@ export default function PilotOfficePanel({
 
   const theoryCourses = careerData?.theory_courses ?? [];
   const certifications = careerData?.certifications ?? [];
+  const pilotCheckrides = careerData?.pilot_checkrides ?? [];
 
   const currentTrainingLicenses = aircraftLicenses.filter((item) => {
     const status = asString(item.status).toUpperCase();
@@ -992,32 +994,94 @@ export default function PilotOfficePanel({
           <SectionTitle
             eyebrow="Checkrides"
             title="Vuelos de evaluación"
-            description="Cuando completes el entrenamiento requerido, podras solicitar el checkride de la aeronave o ascenso."
+            description="Aquí se muestran los checkrides solicitados, aprobados, rechazados y los elegibles para solicitar."
           />
-          <div className="mt-6 grid gap-3 lg:grid-cols-2">
-            {checkrideCandidates.length > 0 ? (
-              checkrideCandidates.map((item) => (
-                <div key={asString(item.aircraft_type_code)} className="rounded-[18px] border border-cyan-300/16 bg-cyan-300/[0.045] p-4">
-                  <p className="font-semibold text-white">{asString(item.display_name)}</p>
-                  <p className="mt-1 text-sm text-white/55">{asString(item.checkride_template_code, "Checkride requerido")}</p>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <StatusPill status={item.status} />
-                    <button
-                      type="button"
-                      disabled={actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}`}
-                      onClick={() => requestAircraftCheckride(item.aircraft_type_code)}
-                      className="rounded-[12px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      {actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}` ? "Solicitando..." : "Solicitar"}
-                    </button>
-                  </div>
+
+          <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr]">
+            <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Solicitados</p>
+                  <h3 className="mt-2 text-xl font-semibold text-white">Estado actual</h3>
                 </div>
-              ))
-            ) : (
-              <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
-                Todavía no hay checkrides elegibles. Completa las horas y vuelos de entrenamiento requeridos.
-              </p>
-            )}
+                <button
+                  type="button"
+                  disabled={loadingCareer}
+                  onClick={() => setCareerRefreshNonce((value) => value + 1)}
+                  className="rounded-[12px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {loadingCareer ? "Actualizando..." : "Actualizar"}
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {pilotCheckrides.length > 0 ? (
+                  pilotCheckrides.map((checkride, index) => (
+                    <div key={asString(checkride.id, `${asString(checkride.checkride_code)}-${index}`)} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-white">{asString(checkride.template_name, asString(checkride.checkride_code, "Checkride"))}</p>
+                          <p className="mt-1 text-xs text-white/42">
+                            {asString(checkride.aircraft_type_code, "Ascenso")} {checkride.origin_icao || checkride.destination_icao ? `- ${asString(checkride.origin_icao)} / ${asString(checkride.destination_icao)}` : ""}
+                          </p>
+                        </div>
+                        <StatusPill status={checkride.status} />
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Score</p>
+                          <p className="mt-1 font-semibold text-white">{checkride.score != null ? formatNumber(checkride.score, 1) : "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Solicitado</p>
+                          <p className="mt-1 font-semibold text-white">{formatDate(checkride.requested_at ?? checkride.created_at)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Cierre</p>
+                          <p className="mt-1 font-semibold text-white">{formatDate(checkride.completed_at)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+                    No hay checkrides solicitados todavía.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Elegibles</p>
+              <h3 className="mt-2 text-xl font-semibold text-white">Listos para solicitar</h3>
+
+              <div className="mt-5 space-y-3">
+                {checkrideCandidates.length > 0 ? (
+                  checkrideCandidates.map((item) => (
+                    <div key={asString(item.aircraft_type_code)} className="rounded-[18px] border border-cyan-300/16 bg-cyan-300/[0.045] p-4">
+                      <p className="font-semibold text-white">{asString(item.display_name)}</p>
+                      <p className="mt-1 text-sm text-white/55">{asString(item.checkride_template_code, "Checkride requerido")}</p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <StatusPill status={item.status} />
+                        <button
+                          type="button"
+                          disabled={actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}`}
+                          onClick={() => requestAircraftCheckride(item.aircraft_type_code)}
+                          className="rounded-[12px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}` ? "Solicitando..." : "Solicitar"}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+                    Todavía no hay checkrides elegibles. Completa las horas y vuelos de entrenamiento requeridos.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </SurfaceCard>
       ) : null}
