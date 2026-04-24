@@ -351,6 +351,9 @@ export default function PilotOfficePanel({
         status: item.minRankCode === "CADET" ? "AVAILABLE" : "LOCKED",
         training_hours: 0,
         training_flights: 0,
+        training_average_score: null,
+        granted_at: null,
+        expires_at: null,
       }));
 
   const theoryCourses = careerData?.theory_courses ?? [];
