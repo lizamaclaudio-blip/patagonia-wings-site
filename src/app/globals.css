@@ -279,7 +279,7 @@ canvas {
 
 /* ==========================================================
    AUTH / CONTROL CENTER LEGACY SUPPORT
-   Se mantiene para no romper páginas existentes del panel.
+   Legacy support para no romper páginas existentes del panel.
    ========================================================== */
 
 .auth-screen {
