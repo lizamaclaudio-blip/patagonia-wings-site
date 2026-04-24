@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase/browser";
 type FleetRow = {
   aircraft_model_code?: string | null;
   aircraft_display_name?: string | null;
-  aircraft_name?: string | null;
   addon_provider?: string | null;
   is_active?: boolean | null;
 };
@@ -38,14 +37,14 @@ const FALLBACK_FLEET: FleetEntry[] = [
   { aircraftName: "Boeing 787-9 Dreamliner", developers: ["Microsoft Horizons"] },
   { aircraftName: "Boeing 787-10 Dreamliner", developers: ["Asobo Studio"] },
   { aircraftName: "Cessna 208 Caravan", developers: ["Asobo Studio", "Black Square"] },
-  { aircraftName: "Embraer E170", developers: ["FlightSim Studio"] },
   { aircraftName: "Embraer E175", developers: ["FlightSim Studio"] },
   { aircraftName: "Embraer E190", developers: ["FlightSim Studio"] },
   { aircraftName: "Embraer E195", developers: ["FlightSim Studio"] },
   { aircraftName: "McDonnell Douglas MD-82", developers: ["Leonardo MadDog"] },
   { aircraftName: "McDonnell Douglas MD-83", developers: ["Leonardo MadDog"] },
   { aircraftName: "McDonnell Douglas MD-88", developers: ["Leonardo MadDog"] },
-  { aircraftName: "TBM 850 / 930", developers: ["Asobo Studio", "Black Square"] },
+  { aircraftName: "TBM 850", developers: ["Black Square"] },
+  { aircraftName: "TBM 930", developers: ["Asobo Studio"] },
 ];
 
 function normalizeDeveloperName(value: string | null | undefined) {
@@ -53,31 +52,15 @@ function normalizeDeveloperName(value: string | null | undefined) {
   const map: Record<string, string> = {
     Asobo: "Asobo Studio",
     FBW: "FlyByWire Simulations",
-    "Microsoft / Asobo": "Asobo Studio",
-    "Microsoft / Hans Hartmann": "Asobo Studio",
-    "LatinVFR / Horizons": "LatinVFR Horizons",
-    "FlightSim Studio": "FlightSim Studio",
-    "Leonardo Maddog": "Leonardo MadDog",
   };
 
-  return map[normalized] ?? normalized;
+  return map[normalized] ?? normalized ?? "";
 }
 
-function normalizeAircraftName(
-  aircraftName: string | null | undefined,
-  displayName: string | null | undefined,
-  modelCode: string | null | undefined,
-) {
-  const cleanName = (aircraftName ?? "").trim();
-  if (cleanName) {
-    return cleanName;
-  }
-
-  const cleanDisplay = (displayName ?? "").trim();
-
-  // Evita que el showcase agrupe por matrícula, por ejemplo CC-AAA - A320.
-  if (cleanDisplay && !/^(CC|LV)-[A-Z]{3}\s+-\s+/i.test(cleanDisplay)) {
-    return cleanDisplay;
+function normalizeAircraftName(value: string | null | undefined, modelCode: string | null | undefined) {
+  const cleanValue = (value ?? "").trim();
+  if (cleanValue) {
+    return cleanValue;
   }
 
   const code = (modelCode ?? "").trim().toUpperCase();
@@ -92,29 +75,22 @@ function normalizeAircraftName(
     ATR72: "ATR 72-600",
     B350: "Beechcraft 350 King Air",
     B38M: "Boeing 737 MAX 8",
-    B736: "Boeing 737-600",
     B737: "Boeing 737-700",
     B738: "Boeing 737-800",
     B739: "Boeing 737-900",
-    B748: "Boeing 747-8i",
     B772: "Boeing 777-200ER",
-    B77F: "Boeing 777 Freighter",
     B77W: "Boeing 777-300ER",
     B789: "Boeing 787-9 Dreamliner",
     B78X: "Boeing 787-10 Dreamliner",
     BE58: "Beechcraft 58 Baron",
-    C172: "Cessna 172 Skyhawk",
     C208: "Cessna 208 Caravan",
-    DHC6: "DHC-6 Twin Otter",
-    E170: "Embraer E170",
     E175: "Embraer E175",
     E190: "Embraer E190",
     E195: "Embraer E195",
     MD82: "McDonnell Douglas MD-82",
     MD83: "McDonnell Douglas MD-83",
     MD88: "McDonnell Douglas MD-88",
-    SU95: "Sukhoi Superjet 100",
-    TBM9: "TBM 850 / 930",
+    TBM9: "TBM 930",
   };
 
   return map[code] ?? code;
@@ -128,13 +104,8 @@ function mapFleetRows(rows: FleetRow[]) {
       continue;
     }
 
-    const aircraftName = normalizeAircraftName(
-      row.aircraft_name,
-      row.aircraft_display_name,
-      row.aircraft_model_code,
-    );
+    const aircraftName = normalizeAircraftName(row.aircraft_display_name, row.aircraft_model_code);
     const developer = normalizeDeveloperName(row.addon_provider) || "Desarrollador por confirmar";
-
     if (!aircraftName) {
       continue;
     }
@@ -152,69 +123,36 @@ function mapFleetRows(rows: FleetRow[]) {
     .sort((a, b) => a.aircraftName.localeCompare(b.aircraftName));
 }
 
-async function loadFleetEntriesFromRpc() {
-  const { data, error } = await supabase.rpc("pw_get_public_fleet_showcase");
-
-  if (error) {
-    throw error;
-  }
-
-  return mapFleetRows((data ?? []) as FleetRow[]);
-}
-
-async function loadFleetEntriesFromTables() {
+async function loadFleetEntries() {
   const { data, error } = await supabase
     .from("aircraft")
     .select("aircraft_model_code, aircraft_display_name, addon_provider, is_active")
-    .order("aircraft_model_code");
+    .order("aircraft_display_name");
 
   if (error) {
     throw error;
   }
 
-  return mapFleetRows((data ?? []) as FleetRow[]);
-}
-
-async function loadFleetEntries() {
-  try {
-    const rpcEntries = await loadFleetEntriesFromRpc();
-    if (rpcEntries.length > 0) {
-      return rpcEntries;
-    }
-  } catch {
-    // Si el RPC aún no está instalado, se usa la lectura histórica.
-  }
-
-  try {
-    const tableEntries = await loadFleetEntriesFromTables();
-    if (tableEntries.length > 0) {
-      return tableEntries;
-    }
-  } catch {
-    // Si RLS bloquea la tabla, se usa fallback visible.
-  }
-
-  return FALLBACK_FLEET;
+  const entries = mapFleetRows((data ?? []) as FleetRow[]);
+  return entries.length > 0 ? entries : FALLBACK_FLEET;
 }
 
 function devBadgeClass(dev: string): string {
   const d = dev.toLowerCase();
-  if (d.includes("pmdg")) return "bg-blue-600/25 text-blue-300 ring-1 ring-blue-500/30";
-  if (d.includes("fenix")) return "bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/30";
-  if (d.includes("flybywire") || d.includes("fbw")) {
-    return "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/30";
-  }
+  if (d.includes("pmdg"))        return "bg-blue-600/25 text-blue-300 ring-1 ring-blue-500/30";
+  if (d.includes("fenix"))       return "bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/30";
+  if (d.includes("flybywire") || d.includes("fbw"))
+                                  return "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/30";
   if (d.includes("black square")) return "bg-slate-500/25 text-slate-200 ring-1 ring-slate-400/30";
-  if (d.includes("asobo")) return "bg-emerald-600/20 text-emerald-300 ring-1 ring-emerald-500/30";
-  if (d.includes("inibuilds")) return "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30";
-  if (d.includes("headwind")) return "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30";
-  if (d.includes("flightsim")) return "bg-teal-500/20 text-teal-300 ring-1 ring-teal-500/30";
-  if (d.includes("ifly")) return "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30";
-  if (d.includes("leonardo") || d.includes("maddog")) {
-    return "bg-red-500/20 text-red-300 ring-1 ring-red-500/30";
-  }
-  if (d.includes("latinvfr")) return "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/30";
-  if (d.includes("microsoft")) return "bg-blue-400/15 text-blue-200 ring-1 ring-blue-400/25";
+  if (d.includes("asobo"))        return "bg-emerald-600/20 text-emerald-300 ring-1 ring-emerald-500/30";
+  if (d.includes("inibuilds"))    return "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30";
+  if (d.includes("headwind"))     return "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30";
+  if (d.includes("flightsim"))    return "bg-teal-500/20 text-teal-300 ring-1 ring-teal-500/30";
+  if (d.includes("ifly"))         return "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30";
+  if (d.includes("leonardo") || d.includes("maddog"))
+                                  return "bg-red-500/20 text-red-300 ring-1 ring-red-500/30";
+  if (d.includes("latinvfr"))     return "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/30";
+  if (d.includes("microsoft"))    return "bg-blue-400/15 text-blue-200 ring-1 ring-blue-400/25";
   return "bg-white/10 text-white/70 ring-1 ring-white/15";
 }
 
@@ -252,22 +190,18 @@ export default function HomeFleetShowcase() {
 
     const channel = supabase
       .channel("home-fleet-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "aircraft" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "aircraft_fleet" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "aircraft_models" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "aircraft_variants" }, scheduleRefresh)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "aircraft" },
+        scheduleRefresh,
+      )
       .subscribe();
-
-    const intervalId = window.setInterval(() => {
-      void refreshFleet();
-    }, 120000);
 
     return () => {
       isMounted = false;
       if (refreshTimer) {
         window.clearTimeout(refreshTimer);
       }
-      window.clearInterval(intervalId);
       void supabase.removeChannel(channel);
     };
   }, []);
