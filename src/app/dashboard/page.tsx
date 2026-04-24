@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/site/PublicHeader";
+import PilotOfficePanel from "@/components/dashboard/PilotOfficePanel";
 import ProtectedPage, {
   useProtectedSession,
 } from "@/components/site/ProtectedPage";
@@ -5075,314 +5076,19 @@ function DashboardWorkspace({
         ) : null}
 
         {activeTab === "office" && profile ? (
-          <div className="flex flex-col gap-4">
-
-            {/* â”€â”€ Fila 1: Perfil + Accesos â”€â”€ */}
-            <div className="grid gap-4 lg:grid-cols-3">
-
-              {/* Tarjeta de perfil */}
-              <div className="surface-outline rounded-[24px] p-6 lg:col-span-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                  Oficina del piloto
-                </p>
-                <div className="mt-4 flex items-center gap-5">
-                  {/* Avatar initials */}
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
-                    style={{ background: "linear-gradient(135deg,#0ca66b,#15b96e)" }}>
-                    <span className="text-xl font-bold text-white">
-                      {((profile.first_name?.[0] ?? "") + (profile.last_name?.[0] ?? "")).toUpperCase() || profile.callsign.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-2xl font-semibold text-white leading-tight">
-                      {profile.first_name || profile.last_name
-                        ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()
-                        : profile.callsign}
-                    </h2>
-                    <p className="mt-0.5 text-sm text-white/54">{profile.callsign}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-0.5 text-[11px] font-semibold text-white/80">
-                        {metrics.careerRank}
-                      </span>
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${metrics.pilotStatus === "ACTIVO" ? "bg-[#0ca66b]/20 text-[#49d787] border border-[#0ca66b]/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${metrics.pilotStatus === "ACTIVO" ? "bg-[#49d787]" : "bg-white/30"}`} />
-                        {metrics.pilotStatus}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Datos operacionales */}
-                <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/8 pt-5 sm:grid-cols-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Hub base</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">País</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Simulador</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">SimBrief</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">VATSIM</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">IVAO</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "—"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Accesos rápidos */}
-              <div className="surface-outline rounded-[24px] p-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
-                <div className="mt-4 flex flex-col gap-3">
-                  <Link href="/profile" className="button-secondary text-center text-sm">
-                    ✏ Editar perfil
-                  </Link>
-                  <Link href="/certifications" className="button-ghost text-center text-sm">
-                    ðŸŽ– Certificaciones
-                  </Link>
-                  <Link href="/operations" className="button-ghost text-center text-sm">
-                    ðŸ“‹ Operaciones
-                  </Link>
-                </div>
-
-                {/* Habilitaciones activas */}
-                {profile.active_qualifications && (
-                  <div className="mt-5 border-t border-white/8 pt-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Habilitaciones</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {profile.active_qualifications.split(",").map((q) => q.trim()).filter(Boolean).map((q) => (
-                        <span key={q} className="inline-block rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">
-                          {q}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* â”€â”€ Fila 2: Métricas de carrera â”€â”€ */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[
-                { label: "Horas totales", value: formatDecimal(metrics.totalHours), unit: "hs" },
-                { label: "PIREPs", value: formatInteger(metrics.totalPireps), unit: "vuelos" },
-                { label: `Horas ${metrics.monthLabel}`, value: formatDecimal(metrics.monthHours), unit: "hs" },
-                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "—", unit: "" },
-              ].map((m) => (
-                <div key={m.label} className="surface-outline rounded-[20px] p-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-white">{m.value}</p>
-                  {m.unit && <p className="mt-0.5 text-[11px] text-white/38">{m.unit}</p>}
-                </div>
-              ))}
-            </div>
-
-            {/* â”€â”€ Fila 3: Scores + Billetera â”€â”€ */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[
-                { label: "Patagonia Score", value: formatDecimal(metrics.surScore), accent: "#67d7ff" },
-                { label: "Rango", value: metrics.careerRank, accent: "#ffffff" },
-                { label: "Estado", value: metrics.pilotStatus, accent: "#0ca66b" },
-                { label: "Billetera", value: formatCurrency(metrics.walletBalance), accent: "#0ca66b" },
-              ].map((m) => (
-                <div key={m.label} className="surface-outline rounded-[20px] p-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
-                  <p className="mt-2 text-3xl font-semibold" style={{ color: m.accent }}>{m.value}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* â”€â”€ Fila 4: Reserva activa â”€â”€ */}
-            <div className="surface-outline rounded-[24px] p-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Reserva activa
-              </p>
-              {activeReservation ? (
-                <div className="mt-4 space-y-5">
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-8">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</p>
-                        <p className="mt-1 text-lg font-semibold text-white">{formatRouteTag(activeReservation)}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
-                        <p className="mt-1 text-sm font-medium text-white">
-                          {activeReservation.aircraft_type_code ?? "—"}
-                          {activeReservation.aircraft_registration ? `  -  ${activeReservation.aircraft_registration}` : ""}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</p>
-                        <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${
-                          activeReservation.status === "in_progress" || activeReservation.status === "in_flight"
-                            ? "border border-[#0ca66b]/30 bg-[#0ca66b]/20 text-[#49d787]"
-                            : activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched"
-                              ? "border border-[#67d7ff]/20 bg-[#67d7ff]/10 text-[#67d7ff]"
-                              : "border border-white/10 bg-white/5 text-white/70"
-                        }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${(activeReservation.status === "in_progress" || activeReservation.status === "in_flight") ? "bg-[#49d787]" : (activeReservation.status === "dispatch_ready" || activeReservation.status === "dispatched") ? "bg-[#67d7ff]" : "bg-white/40"}`} />
-                          {formatFlightStatusLabel(activeReservation.status)}
-                        </span>
-                      </div>
-                      {activeReservation.flight_mode_code && (
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Modo</p>
-                          <p className="mt-1 text-sm text-white/70">{activeReservation.flight_mode_code}</p>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={cancellingReservation}
-                      onClick={async () => {
-                        if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
-                        setCancellingReservation(true);
-                        try {
-                          await cancelFlightOperation(
-                            (activeReservation as FlightReservationRow & { id: string }).id,
-                            profile.callsign
-                          );
-                          setActiveReservation(null);
-                          setPreparedReservationId(null);
-                          setSelectedFlightType(null);
-                          setSelectedAircraft(null);
-                          setSelectedItinerary(null);
-                          setDispatchReady(false);
-                          setSimbriefSummary(null);
-                          setSummaryInfoMessage("");
-                          setSummaryErrorMessage("");
-                          setDispatchStep("flight_type");
-                        } catch {
-                          alert("No se pudo cancelar la reserva. Intenta de nuevo.");
-                        } finally {
-                          setCancellingReservation(false);
-                        }
-                      }}
-                      className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
-                    </button>
-                  </div>
-
-                  <div className="overflow-hidden rounded-[24px] border border-cyan-400/12 bg-[radial-gradient(circle_at_top_left,rgba(103,215,255,0.16),transparent_42%),linear-gradient(135deg,rgba(3,20,40,0.94),rgba(6,33,61,0.88))] p-5 shadow-[0_24px_60px_rgba(1,10,20,0.34)]">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
-                          Progreso de ruta
-                        </p>
-                        <p className="mt-2 text-base font-semibold text-white">{activeProgressLabel}</p>
-                      </div>
-                      <div className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/84">
-                        {activeRouteDistanceNm > 0 ? `${formatInteger(activeRouteDistanceNm)} NM totales` : "Ruta en preparación"}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,160px)_1fr_minmax(0,160px)] lg:items-end">
-                      <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-4 py-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">Origen</p>
-                        <p className="mt-2 text-[1.55rem] font-bold tracking-[0.18em] text-white">{activeOriginCode}</p>
-                        <p className="mt-2 text-xs text-cyan-100/80">
-                          {activeRouteDistanceNm > 0 ? `${formatInteger(activeDistanceFromOriginNm)} NM recorridos` : "Esperando salida"}
-                        </p>
-                      </div>
-
-                      <div className="relative px-2 py-4">
-                        <div className="absolute inset-x-0 top-1/2 h-[1px] -translate-y-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                        <div className="relative h-[84px] rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-5">
-                          <div className="absolute inset-x-5 top-1/2 h-[12px] -translate-y-1/2 overflow-hidden rounded-full bg-[#07192d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-                            <div className="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,rgba(29,119,191,0.28),rgba(103,215,255,0.72),rgba(83,255,182,0.76))]" style={{ width: `${Math.max(6, Math.round(activeFlightProgress * 100))}%` }} />
-                            <div className="absolute inset-0 opacity-70" style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,0.16) 24px 26px)" }} />
-                          </div>
-                          <div
-                            className="absolute top-1/2 w-[90px] -translate-y-1/2 drop-shadow-[0_10px_18px_rgba(103,215,255,0.30)] transition-[left] duration-[1400ms] ease-out"
-                            style={{ left: `calc(${Math.round(activeFlightProgress * 100)}% - 45px)` }}
-                          >
-                            <RouteAircraftSideIcon className="h-auto w-full animate-[pulse_4.6s_ease-in-out_infinite]" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[18px] border border-white/8 bg-white/[0.04] px-4 py-4 lg:text-right">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">Destino</p>
-                        <p className="mt-2 text-[1.55rem] font-bold tracking-[0.18em] text-white">{activeDestinationCode}</p>
-                        <p className="mt-2 text-xs text-emerald-100/80">
-                          {activeRouteDistanceNm > 0 ? `${formatInteger(activeDistanceToDestinationNm)} NM restantes` : "Pendiente"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-white/38">Sin reserva activa en este momento.</p>
-              )}
-            </div>
-
-            {/* â”€â”€ Fila 5: Historial de vuelos â”€â”€ */}
-            <div className="surface-outline rounded-[24px] p-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Historial de vuelos
-              </p>
-              {central.recentFlights.length === 0 ? (
-                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aún.</p>
-              ) : (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-white/8">
-                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Ruta</th>
-                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</th>
-                        <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Tipo</th>
-                        <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Score</th>
-                        <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Fecha</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {central.recentFlights.slice(0, 8).map((f, i) => (
-                        <tr key={i} className="border-b border-white/5 last:border-0">
-                          <td className="py-3 font-medium text-white">
-                            {f.id ? (
-                              <Link href={`/flights/${f.id}`} className="transition hover:text-[#67d7ff]">
-                                {formatRouteTag(f)}
-                              </Link>
-                            ) : (
-                              formatRouteTag(f)
-                            )}
-                          </td>
-                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
-                          <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
-                          <td className="py-3 text-right font-semibold text-[#67d7ff]">
-                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
-                          </td>
-                          <td className="py-3 text-right text-white/38">
-                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-          </div>
+          <PilotOfficePanel
+            profile={profile}
+            metrics={metrics}
+            activeReservation={activeReservation}
+            recentFlights={central.recentFlights}
+            onGoDispatch={() => onChangeTab("dispatch")}
+          />
         ) : null}
 
         {activeTab === "training" ? (
           <div className="flex flex-col gap-5">
 
-            {/* â”€â”€ Header â”€â”€ */}
+            {/* -- Header -- */}
             <div className="surface-outline rounded-[24px] p-6">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -5404,7 +5110,7 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* â”€â”€ Fila 1: Métricas de entrenamiento â”€â”€ */}
+            {/* -- Fila 1: Métricas de entrenamiento -- */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 {
@@ -5442,7 +5148,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 2: Habilitaciones + Categorías â”€â”€ */}
+            {/* -- Fila 2: Habilitaciones + Categorías -- */}
             <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
 
               {/* Habilitaciones activas */}
@@ -5479,10 +5185,10 @@ function DashboardWorkspace({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Tipos de entrenamiento</p>
                 <div className="mt-4 flex flex-col gap-3">
                   {[
-                    { icon: "ðŸ›©", title: "Vuelo de línea de entrenamiento", desc: "Rutas de la red en modo entrenamiento supervisado. Score sin penalización.", badge: "Disponible", badgeColor: "#49d787" },
+                    { icon: "✈", title: "Vuelo de línea de entrenamiento", desc: "Rutas de la red en modo entrenamiento supervisado. Score sin penalización.", badge: "Disponible", badgeColor: "#49d787" },
                     { icon: "✅", title: "Checkride de tipo", desc: "Habilitación para operar una nueva familia de aeronaves. Requiere completar el perfil.", badge: "Con reserva", badgeColor: "#67d7ff" },
                     { icon: "ðŸ—º", title: "Familiarización de ruta", desc: "Vuelos de baja presión para conocer rutas nuevas, terminales y procedimientos regionales.", badge: "Disponible", badgeColor: "#49d787" },
-                    { icon: "â¬†", title: "Solicitar ascenso de rango", desc: "Cuando cumplas los gates de horas y score, podés iniciar el proceso de ascenso.", badge: metrics.surScore >= 7 ? "Elegible" : "Pendiente", badgeColor: metrics.surScore >= 7 ? "#49d787" : "#ffffff" },
+                    { icon: "↑", title: "Solicitar ascenso de rango", desc: "Cuando cumplas los gates de horas y score, podés iniciar el proceso de ascenso.", badge: metrics.surScore >= 7 ? "Elegible" : "Pendiente", badgeColor: metrics.surScore >= 7 ? "#49d787" : "#ffffff" },
                   ].map((item) => (
                     <div key={item.title} className="flex items-start gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
                       <span className="mt-0.5 text-xl">{item.icon}</span>
@@ -5502,7 +5208,7 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* â”€â”€ Fila 3: Historial de vuelos de entrenamiento â”€â”€ */}
+            {/* -- Fila 3: Historial de vuelos de entrenamiento -- */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Historial de entrenamiento</p>
               {(() => {
@@ -5550,12 +5256,12 @@ function DashboardWorkspace({
               })()}
             </div>
 
-            {/* â”€â”€ Fila 4: Próximos pasos â”€â”€ */}
+            {/* -- Fila 4: Próximos pasos -- */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Ruta de progresión — {metrics.careerRank}</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {[
-                  { label: "Patagonia Score â‰¥ 7.0", done: metrics.surScore >= 7, value: `${formatDecimal(metrics.surScore)} / 7.0` },
+                  { label: "Patagonia Score ≥ 7.0", done: metrics.surScore >= 7, value: `${formatDecimal(metrics.surScore)} / 7.0` },
                   { label: "PIREPs acumulados", done: metrics.totalPireps >= 5, value: `${formatInteger(metrics.totalPireps)} / 5` },
                   { label: "Horas acumuladas",  done: metrics.totalHours >= 10, value: `${formatDecimal(metrics.totalHours)} hs` },
                 ].map((gate) => (
