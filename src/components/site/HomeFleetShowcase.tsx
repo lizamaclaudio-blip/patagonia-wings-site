@@ -11,6 +11,11 @@ type FleetRow = {
   is_active?: boolean | null;
 };
 
+type FleetTypeRow = {
+  aircraft_type?: string | null;
+  status?: string | null;
+};
+
 type FleetEntry = {
   aircraftName: string;
   developers: string[];
@@ -123,18 +128,53 @@ function mapFleetRows(rows: FleetRow[]) {
     .sort((a, b) => a.aircraftName.localeCompare(b.aircraftName));
 }
 
+function mapFleetTypeRows(rows: FleetTypeRow[]): FleetEntry[] {
+  const INACTIVE = ["retired", "deleted", "inactive"];
+  const seen = new Map<string, FleetEntry>();
+
+  for (const row of rows) {
+    const normalized = (row.status ?? "").trim().toLowerCase();
+    if (INACTIVE.includes(normalized)) continue;
+
+    const code = (row.aircraft_type ?? "").trim().toUpperCase();
+    if (!code) continue;
+
+    const name = normalizeAircraftName(null, code);
+    if (!name || name === code) continue; // skip unmapped codes
+
+    if (!seen.has(name)) {
+      seen.set(name, { aircraftName: name, developers: [] });
+    }
+  }
+
+  return Array.from(seen.values()).sort((a, b) =>
+    a.aircraftName.localeCompare(b.aircraftName),
+  );
+}
+
 async function loadFleetEntries() {
-  const { data, error } = await supabase
+  // 1st try: aircraft table (has display name + developer info)
+  const aircraftRes = await supabase
     .from("aircraft")
     .select("aircraft_model_code, aircraft_display_name, addon_provider, is_active")
     .order("aircraft_display_name");
 
-  if (error) {
-    throw error;
+  if (!aircraftRes.error) {
+    const entries = mapFleetRows((aircraftRes.data ?? []) as FleetRow[]);
+    if (entries.length > 0) return entries;
   }
 
-  const entries = mapFleetRows((data ?? []) as FleetRow[]);
-  return entries.length > 0 ? entries : FALLBACK_FLEET;
+  // 2nd try: aircraft_fleet table (grouping by aircraft_type)
+  const fleetRes = await supabase
+    .from("aircraft_fleet")
+    .select("aircraft_type, status");
+
+  if (!fleetRes.error) {
+    const entries = mapFleetTypeRows((fleetRes.data ?? []) as FleetTypeRow[]);
+    if (entries.length > 0) return entries;
+  }
+
+  return FALLBACK_FLEET;
 }
 
 function devBadgeClass(dev: string): string {
@@ -157,7 +197,8 @@ function devBadgeClass(dev: string): string {
 }
 
 export default function HomeFleetShowcase() {
-  const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>(FALLBACK_FLEET);
+  const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -168,10 +209,12 @@ export default function HomeFleetShowcase() {
         const nextEntries = await loadFleetEntries();
         if (isMounted) {
           setFleetEntries(nextEntries);
+          setLoaded(true);
         }
       } catch {
         if (isMounted) {
           setFleetEntries(FALLBACK_FLEET);
+          setLoaded(true);
         }
       }
     };
@@ -193,6 +236,11 @@ export default function HomeFleetShowcase() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "aircraft" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "aircraft_fleet" },
         scheduleRefresh,
       )
       .subscribe();
@@ -226,33 +274,46 @@ export default function HomeFleetShowcase() {
           Quiero unirme a la flota
         </Link>
         <div className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm">
-          {fleetEntries.length} modelo(s) activos en nuestra flota
+          {loaded ? `${fleetEntries.length} modelo${fleetEntries.length !== 1 ? "s" : ""} en flota` : "Cargando flota…"}
         </div>
       </div>
 
       <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
-        <div className="grid max-h-[380px] gap-x-6 gap-y-2 overflow-y-auto pr-1 sm:grid-cols-2">
-          {fleetEntries.map((entry) => (
-            <div
-              key={entry.aircraftName}
-              className="border-b border-white/8 pb-2.5 pt-0.5 last:border-b-0"
-            >
-              <p className="text-[14px] font-semibold leading-5 text-white/94">
-                {entry.aircraftName}
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {entry.developers.map((dev) => (
-                  <span
-                    key={dev}
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${devBadgeClass(dev)}`}
-                  >
-                    {dev}
-                  </span>
-                ))}
+        {!loaded ? (
+          <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="border-b border-white/8 pb-2.5 pt-0.5">
+                <div className="h-3.5 w-36 animate-pulse rounded-full bg-white/10" />
+                <div className="mt-2 h-2.5 w-20 animate-pulse rounded-full bg-white/6" />
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid max-h-[380px] gap-x-6 gap-y-2 overflow-y-auto pr-1 sm:grid-cols-2">
+            {fleetEntries.map((entry) => (
+              <div
+                key={entry.aircraftName}
+                className="border-b border-white/8 pb-2.5 pt-0.5 last:border-b-0"
+              >
+                <p className="text-[14px] font-semibold leading-5 text-white/94">
+                  {entry.aircraftName}
+                </p>
+                {entry.developers.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {entry.developers.map((dev) => (
+                      <span
+                        key={dev}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${devBadgeClass(dev)}`}
+                      >
+                        {dev}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
