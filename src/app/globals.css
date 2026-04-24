@@ -349,10 +349,7 @@ canvas {
   gap: 8px;
 }
 
-.field-label {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
+/* .field-label defined at bottom of file */
 
 .input,
 .textarea {
@@ -389,11 +386,7 @@ canvas {
   transform: none;
 }
 
-.button-secondary {
-  background: rgba(17, 31, 47, 0.96);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
+/* .button-secondary defined at bottom of file */
 
 .button-danger {
   background: rgba(255, 108, 132, 0.16);
@@ -772,4 +765,101 @@ canvas {
 
 .parallax-nav::before {
   border-radius: inherit;
+}
+
+/* ── CLASES DE PÁGINAS INTERNAS (login, register, profile, certifications) ── */
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(8, 23, 46, 0.82), rgba(5, 17, 33, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.surface-outline {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+.section-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.input-premium {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+  font-size: 14px;
+  color: white;
+  outline: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.input-premium::placeholder {
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.input-premium:focus {
+  border-color: rgba(103, 232, 249, 0.40);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.input-premium option {
+  background-color: #0d1b2e;
+  color: #ffffff;
+}
+
+.input-premium:read-only,
+.input-premium.opacity-70 {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Upgrade button-secondary to match premium style */
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 18px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button-secondary:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* field-label upgrade */
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.88);
 }
