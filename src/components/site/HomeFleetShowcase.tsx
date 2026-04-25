@@ -139,8 +139,7 @@ function mapFleetTypeRows(rows: FleetTypeRow[]): FleetEntry[] {
     const code = (row.aircraft_type ?? "").trim().toUpperCase();
     if (!code) continue;
 
-    const name = normalizeAircraftName(null, code);
-    if (!name || name === code) continue; // skip unmapped codes
+    const name = normalizeAircraftName(null, code) || code;
 
     if (!seen.has(name)) {
       seen.set(name, { aircraftName: name, developers: [] });
@@ -153,25 +152,23 @@ function mapFleetTypeRows(rows: FleetTypeRow[]): FleetEntry[] {
 }
 
 async function loadFleetEntries() {
-  // 1st try: aircraft table (has display name + developer info)
-  const aircraftRes = await supabase
-    .from("aircraft")
-    .select("aircraft_model_code, aircraft_display_name, addon_provider, is_active")
-    .order("aircraft_display_name");
+  const [aircraftRes, fleetRes] = await Promise.all([
+    supabase
+      .from("aircraft")
+      .select("aircraft_model_code, aircraft_display_name, addon_provider, is_active")
+      .order("aircraft_display_name"),
+    supabase.from("aircraft_fleet").select("aircraft_type, status"),
+  ]);
 
-  if (!aircraftRes.error) {
-    const entries = mapFleetRows((aircraftRes.data ?? []) as FleetRow[]);
-    if (entries.length > 0) return entries;
-  }
+  const fromAircraft = aircraftRes.error ? [] : mapFleetRows((aircraftRes.data ?? []) as FleetRow[]);
+  const fromFleet = fleetRes.error ? [] : mapFleetTypeRows((fleetRes.data ?? []) as FleetTypeRow[]);
 
-  // 2nd try: aircraft_fleet table (grouping by aircraft_type)
-  const fleetRes = await supabase
-    .from("aircraft_fleet")
-    .select("aircraft_type, status");
-
-  if (!fleetRes.error) {
-    const entries = mapFleetTypeRows((fleetRes.data ?? []) as FleetTypeRow[]);
-    if (entries.length > 0) return entries;
+  // Merge: prefer aircraft table names, fill in missing types from fleet table
+  if (fromAircraft.length > 0 || fromFleet.length > 0) {
+    const merged = new Map<string, FleetEntry>();
+    for (const e of fromFleet) merged.set(e.aircraftName, e);
+    for (const e of fromAircraft) merged.set(e.aircraftName, e); // aircraft names win
+    return Array.from(merged.values()).sort((a, b) => a.aircraftName.localeCompare(b.aircraftName));
   }
 
   return FALLBACK_FLEET;
