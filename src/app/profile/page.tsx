@@ -228,8 +228,62 @@ function PilotEconomyView({ session, profile }: { session: import("@supabase/sup
     return () => { cancelled = true; };
   }, [session]);
 
-  function handlePrint() {
-    window.print();
+  function buildPdfHtml() {
+    const monthName = MONTH_NAMES_ES[(data!.period.month - 1)] ?? "";
+    const callsign = profile?.callsign ?? "—";
+    const walletBal = toNumber(((profile as unknown) as Record<string, unknown> | null)?.wallet_balance ?? 0);
+    const rows = [
+      ["Callsign", callsign],
+      ["Período", `${monthName} ${data!.period.year}`],
+      ["Fecha de pago estimada", data!.paymentDate],
+      ["Vuelos completados", String(data!.flightsCount)],
+      ["Califica sueldo base (≥5 vuelos)", data!.qualifiesForBase ? "Sí" : "No"],
+      ["Comisiones", `+${fmtUsd(data!.commissionTotalUsd)}`],
+      ["Sueldo base", `+${fmtUsd(data!.baseSalaryUsd)}`],
+      ["Deducciones por daño", data!.damageDeductionsUsd > 0 ? `−${fmtUsd(data!.damageDeductionsUsd)}` : "$0 USD"],
+      ["TOTAL NETO", fmtUsd(data!.netPaidUsd)],
+      ["Saldo billetera", fmtUsd(walletBal)],
+      ["Estado del período", (data!.ledger as Record<string, unknown> | null)?.status === "paid" ? "PAGADO" : "PENDIENTE"],
+    ];
+
+    const tableRows = rows.map(([label, value]) =>
+      `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:13px">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;text-align:right">${value}</td></tr>`
+    ).join("");
+
+    const flightRows = (data!.recentFlights ?? []).slice(0, 15).map((f, i) => {
+      const dateStr = f.completedAt ? new Date(f.completedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "—";
+      return `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#fff"}"><td style="padding:6px 12px;font-size:12px;color:#374151">${i + 1}</td><td style="padding:6px 12px;font-size:12px;color:#374151">${dateStr}</td><td style="padding:6px 12px;font-size:12px;text-align:right;color:#059669;font-weight:600">+${fmtUsd(f.commissionUsd)}</td><td style="padding:6px 12px;font-size:12px;text-align:right;color:${f.damageDeductionUsd > 0 ? "#dc2626" : "#9ca3af"};font-weight:600">${f.damageDeductionUsd > 0 ? `−${fmtUsd(f.damageDeductionUsd)}` : "—"}</td></tr>`;
+    }).join("");
+
+    return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Liquidación ${callsign} — ${monthName} ${data!.period.year}</title><style>body{font-family:system-ui,sans-serif;margin:0;padding:32px;color:#111827;background:#fff}h1{font-size:22px;font-weight:800;margin:0 0 4px}p.sub{font-size:13px;color:#6b7280;margin:0 0 24px}hr{border:none;border-top:2px solid #e5e7eb;margin:20px 0}table{width:100%;border-collapse:collapse}th{padding:10px 12px;background:#f3f4f6;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;text-align:left}th:last-child{text-align:right}.footer{margin-top:32px;font-size:11px;color:#9ca3af;text-align:center}@media print{body{padding:16px}}</style></head><body>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <div><h1>Patagonia Wings — Liquidación de haberes</h1><p class="sub">${monthName} ${data!.period.year} · Piloto: ${callsign}</p></div>
+  <div style="font-size:28px">✈</div>
+</div>
+<hr>
+<table><tbody>${tableRows}</tbody></table>
+${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px">Detalle de vuelos (${data!.recentFlights.length})</h2><table><thead><tr><th>#</th><th>Fecha</th><th style="text-align:right">Comisión</th><th style="text-align:right">Deducción</th></tr></thead><tbody>${flightRows}</tbody></table>` : ""}
+<div class="footer"><p>Documento generado el ${new Date().toLocaleDateString("es-CL")} · No es un documento oficial. Solo para uso interno Patagonia Wings Virtual Airline.</p></div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+  }
+
+  function handleDownloadPdf() {
+    if (!data) return;
+    const html = buildPdfHtml();
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    if (win) {
+      win.addEventListener("load", () => URL.revokeObjectURL(url));
+    } else {
+      // Fallback: direct download as HTML if popup blocked
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `liquidacion-${profile?.callsign ?? "piloto"}-${data.period.year}-${String(data.period.month).padStart(2, "0")}.html`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
   }
 
   if (loadingEco) {
@@ -287,10 +341,10 @@ function PilotEconomyView({ session, profile }: { session: import("@supabase/sup
           </span>
           <button
             type="button"
-            onClick={handlePrint}
-            className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/70 transition hover:border-white/20 hover:text-white print:hidden"
+            onClick={handleDownloadPdf}
+            className="hidden sm:flex items-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/8 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:border-emerald-400/40 hover:bg-emerald-400/14 print:hidden"
           >
-            🖨 Imprimir liquidación
+            📄 Descargar PDF
           </button>
         </div>
       </div>

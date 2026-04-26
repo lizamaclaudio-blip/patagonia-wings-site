@@ -3679,261 +3679,59 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
   );
 }
 
-function CentralTransfersSection({
-  airportCode,
-  options,
-}: {
-  airportCode: string;
-  options: TransferOption[];
-}) {
-  const [destinations, setDestinations] = useState<TransferDestinationOption[]>([]);
-  const [isLoadingTransfers, setIsLoadingTransfers] = useState(false);
-  const [transferMessage, setTransferMessage] = useState<string | null>(null);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [submittingKey, setSubmittingKey] = useState<string | null>(null);
-
-  const accentMap: Record<TransferOption["accent"], string> = {
-    emerald: "border-emerald-400/14 bg-emerald-500/[0.05] text-emerald-200",
-    amber: "border-amber-400/18 bg-amber-400/[0.06] text-amber-100",
-    cyan: "border-cyan-400/14 bg-cyan-500/[0.05] text-cyan-200",
-  };
-
-  const visibleOptions = options.filter(
-    (option) => option.mode === "ground_taxi" || option.mode === "ground_bus" || option.mode === "air_ticket",
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadTransferOptions() {
-      setIsLoadingTransfers(true);
-      setTransferError(null);
-
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-
-        if (!token) {
-          throw new Error("No se encontró una sesión activa para consultar traslados.");
-        }
-
-        const response = await fetch("/api/pilot/transfer", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-          cache: "no-store",
-        });
-
-        const payload = (await response.json().catch(() => null)) as {
-          options?: TransferDestinationOption[];
-          error?: string;
-        } | null;
-
-        if (!response.ok) {
-          throw new Error(payload?.error ?? "No se pudieron cargar alternativas de traslado.");
-        }
-
-        if (isMounted) {
-          setDestinations(payload?.options ?? []);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setDestinations([]);
-          setTransferError(error instanceof Error ? error.message : "No se pudieron cargar traslados.");
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingTransfers(false);
-        }
-      }
-    }
-
-    void loadTransferOptions();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [airportCode]);
-
-  async function submitTransfer(destination: TransferDestinationOption) {
-    const key = `${destination.mode}:${destination.destination_ident}`;
-    setSubmittingKey(key);
-    setTransferError(null);
-    setTransferMessage(null);
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      if (!token) {
-        throw new Error("No se encontró una sesión activa para ejecutar el traslado.");
-      }
-
-      const response = await fetch("/api/pilot/transfer", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          mode: destination.mode,
-          destinationIdent: destination.destination_ident,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        destinationIdent?: string;
-        totalCostUsd?: number;
-        walletBalanceUsd?: number;
-        error?: string;
-      } | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "No se pudo ejecutar el traslado.");
-      }
-
-      setTransferMessage(
-        `Traslado confirmado a ${payload?.destinationIdent ?? destination.destination_ident}. Se descontaron ${formatTransferUsd(payload?.totalCostUsd ?? destination.total_cost_usd)}.`,
-      );
-
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 900);
-    } catch (error) {
-      setTransferError(error instanceof Error ? error.message : "No se pudo ejecutar el traslado.");
-    } finally {
-      setSubmittingKey(null);
-    }
+function CentralNewsSection({ items, liveNews }: { items: CentralOverview["newsItems"]; liveNews: Array<{ title: string; description: string | null; url: string; publishedAt: string; source: string }> | null }) {
+  // If live news is available, show it as the primary section
+  if (liveNews && liveNews.length > 0) {
+    return (
+      <section>
+        <div className="flex items-center gap-3 mb-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Noticias locales
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold text-white">Aviación en tu región</h3>
+          </div>
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+            Live
+          </span>
+        </div>
+        <div className="space-y-2">
+          {liveNews.map((article, i) => {
+            const dateStr = article.publishedAt
+              ? new Date(article.publishedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
+              : "";
+            return (
+              <a
+                key={i}
+                href={article.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-start gap-4 rounded-[18px] border border-white/8 bg-white/[0.025] px-4 py-4 transition hover:border-white/16 hover:bg-white/[0.04]"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white/90 leading-snug">{article.title}</p>
+                  {article.description && (
+                    <p className="mt-1 text-xs leading-5 text-white/50 line-clamp-2">{article.description}</p>
+                  )}
+                  <div className="mt-2 flex items-center gap-2">
+                    {article.source && (
+                      <span className="text-[10px] font-semibold text-white/40">{article.source}</span>
+                    )}
+                    {dateStr && (
+                      <span className="text-[10px] text-white/30">{dateStr}</span>
+                    )}
+                  </div>
+                </div>
+                <span className="shrink-0 text-white/24 text-sm mt-0.5">→</span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    );
   }
 
-  const hasAbandonmentPenalty = destinations.some((d) => d.abandonment_penalty_usd > 0);
-
-  return (
-    <section>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Traslados</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h3 className="text-2xl font-semibold text-white">Reposicionamiento</h3>
-            {!isLoadingTransfers && destinations.length > 0 && (
-              hasAbandonmentPenalty ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200">
-                  ⚠ Aeropuerto no-hub · +$350 multa
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-                  ✓ Hub designado · sin multa
-                </span>
-              )
-            )}
-          </div>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
-            Reposiciónate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
-            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional — partís desde un hub."}
-          </p>
-        </div>
-      </div>
-
-      {transferMessage ? (
-        <div className="mt-4 rounded-2xl border border-emerald-300/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100">
-          {transferMessage}
-        </div>
-      ) : null}
-
-      {transferError ? (
-        <div className="mt-4 rounded-2xl border border-rose-300/18 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">
-          {transferError}
-        </div>
-      ) : null}
-
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
-        {visibleOptions.map((option, optionIndex) => {
-          const optionDestinations = destinations
-            .filter((item) => normalizeTransferModeForUi(item.mode) === option.mode)
-            .slice(0, 4);
-
-          return (
-            <article
-              key={`${option.mode}-${optionIndex}`}
-              className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5"
-            >
-              <div className="flex items-center justify-between">
-                <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
-                  {option.title}
-                </div>
-              </div>
-              <p className="mt-3 text-xs leading-5 text-white/52">{option.subtitle}</p>
-
-              <div className="mt-5 space-y-3">
-                {isLoadingTransfers ? (
-                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
-                    Calculando alternativas...
-                  </div>
-                ) : optionDestinations.length === 0 ? (
-                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
-                    Sin alternativas desde esta ubicación.
-                  </div>
-                ) : (
-                  optionDestinations.map((destination, destinationIndex) => {
-                    const submitKey = `${destination.mode}:${destination.destination_ident}`;
-                    const renderKey = `${option.mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
-                    const isSubmitting = submittingKey === submitKey;
-                    const blocked = isSubmitting || !destination.can_afford;
-                    const hasPenalty = destination.abandonment_penalty_usd > 0;
-
-                    return (
-                      <div
-                        key={renderKey}
-                        className={`rounded-2xl border px-3 py-3 ${hasPenalty ? "border-amber-300/12 bg-amber-400/[0.04]" : "border-white/8 bg-[#031428]/55"}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
-                              {destination.destination_ident}
-                            </p>
-                            <p className="mt-1 truncate text-sm font-semibold text-white">
-                              {destination.destination_city ?? destination.destination_ident}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs text-white/44">
-                              {destination.destination_name ?? "Aeropuerto"}
-                            </p>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-base font-black text-white">{formatTransferUsd(destination.total_cost_usd)}</p>
-                            <p className="mt-0.5 text-[10px] text-white/40">
-                              {hasPenalty
-                                ? <span className="text-amber-300/80">+{formatTransferUsd(destination.abandonment_penalty_usd)} multa</span>
-                                : <span className="text-emerald-300/70">sin multa</span>}
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={blocked}
-                          onClick={() => void submitTransfer(destination)}
-                          className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-cyan-100/16 bg-cyan-300/12 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-50 transition hover:bg-cyan-300/18 disabled:cursor-not-allowed disabled:border-white/8 disabled:bg-white/[0.04] disabled:text-white/30"
-                        >
-                          {isSubmitting ? "Procesando…" : destination.can_afford ? "Trasladarme aquí" : "Saldo insuficiente"}
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function CentralNewsSection({ items }: { items: CentralOverview["newsItems"] }) {
+  // Fallback: static operational panel
   return (
     <section>
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
@@ -4125,16 +3923,429 @@ function CentralFlightsTable({
   );
 }
 
+// ─── Office Economy Panel ─────────────────────────────────────────────────────
+
+type EconStats = {
+  airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
+  breakdown: { income_flights: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_salaries: number };
+  totalFlightsCompleted: number;
+};
+
+function OfficeEconomyPanel() {
+  const [stats, setStats] = useState<EconStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/economia/stats")
+      .then((r) => r.json())
+      .then((data: { ok?: boolean } & Partial<EconStats>) => {
+        if (data.ok && data.airline) setStats(data as EconStats);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoadingStats(false));
+  }, []);
+
+  if (loadingStats) {
+    return (
+      <div className="surface-outline rounded-[24px] p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Economía aerolínea</p>
+        <p className="mt-3 text-sm text-white/36">Cargando estadísticas...</p>
+      </div>
+    );
+  }
+  if (!stats) return null;
+
+  const { airline, breakdown, totalFlightsCompleted } = stats;
+  const isProfit = airline.net_profit_usd >= 0;
+
+  function fmtU(n: number) {
+    return `$${Math.abs(n).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
+  }
+
+  return (
+    <div className="surface-outline rounded-[24px] p-6">
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">💰 Economía aerolínea</p>
+          <h3 className="mt-1 text-lg font-semibold text-white">{airline.name}</h3>
+        </div>
+        <Link href="/economia" className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90">
+          Ver completo →
+        </Link>
+      </div>
+
+      {/* 4 main KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
+        {[
+          { label: "Balance", value: fmtU(airline.balance_usd), color: airline.balance_usd >= 0 ? "#34d399" : "#f87171" },
+          { label: "Ingresos", value: fmtU(airline.total_revenue_usd), color: "#38bdf8" },
+          { label: "Costos", value: fmtU(airline.total_costs_usd), color: "#fbbf24" },
+          { label: isProfit ? "Utilidad" : "Pérdida", value: `${isProfit ? "+" : "−"}${fmtU(airline.net_profit_usd)}`, color: isProfit ? "#34d399" : "#f87171" },
+        ].map((k) => (
+          <div key={k.label} className="rounded-[16px] border border-white/8 bg-white/[0.02] px-4 py-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{k.label}</p>
+            <p className="mt-1.5 text-base font-black" style={{ color: k.color }}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Breakdown row */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          { label: "Vuelos", value: String(totalFlightsCompleted), color: "text-white" },
+          { label: "Combustible", value: fmtU(breakdown.cost_fuel), color: "text-amber-300" },
+          { label: "Mant.", value: fmtU(breakdown.cost_maintenance), color: "text-amber-300" },
+          { label: "Pilotos", value: fmtU(breakdown.cost_pilot_payments), color: "text-cyan-300" },
+          { label: "Reparac.", value: fmtU(breakdown.cost_repairs), color: "text-rose-300" },
+          { label: "Salarios", value: fmtU(breakdown.cost_salaries), color: "text-violet-300" },
+        ].map((b) => (
+          <div key={b.label} className="flex flex-col rounded-[12px] border border-white/6 bg-white/[0.015] px-3 py-2.5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/36">{b.label}</p>
+            <p className={`mt-1 text-xs font-bold ${b.color}`}>{b.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Wrapper: only renders the divider + transfers when the inner component doesn't return null.
+// We use a child-component approach: CentralTransfersSection returns null when empty,
+// so we pre-check using a shared state exposed via callback.
+function CentralTransfersSectionWrapper({ central }: { central: CentralOverview }) {
+  const [hasContent, setHasContent] = useState<boolean | null>(null);
+  return (
+    <>
+      {hasContent !== false && <CentralSectionDivider />}
+      <CentralTransfersSectionControlled
+        airportCode={central.airportCode}
+        options={central.transferOptions}
+        onEmpty={() => setHasContent(false)}
+        onHasContent={() => setHasContent(true)}
+      />
+    </>
+  );
+}
+
+function CentralTransfersSectionControlled({
+  airportCode,
+  options,
+  onEmpty,
+  onHasContent,
+}: {
+  airportCode: string;
+  options: TransferOption[];
+  onEmpty: () => void;
+  onHasContent: () => void;
+}) {
+  const [destinations, setDestinations] = useState<TransferDestinationOption[]>([]);
+  const [isLoadingTransfers, setIsLoadingTransfers] = useState(false);
+  const [transferMessage, setTransferMessage] = useState<string | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [submittingKey, setSubmittingKey] = useState<string | null>(null);
+
+  const accentMap: Record<TransferOption["accent"], string> = {
+    emerald: "border-emerald-400/14 bg-emerald-500/[0.05] text-emerald-200",
+    amber: "border-amber-400/18 bg-amber-400/[0.06] text-amber-100",
+    cyan: "border-cyan-400/14 bg-cyan-500/[0.05] text-cyan-200",
+  };
+
+  const visibleOptions = options.filter(
+    (option) => option.mode === "ground_taxi" || option.mode === "ground_bus" || option.mode === "air_ticket",
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTransferOptions() {
+      setIsLoadingTransfers(true);
+      setTransferError(null);
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        if (!token) {
+          throw new Error("No se encontró una sesión activa para consultar traslados.");
+        }
+
+        const response = await fetch("/api/pilot/transfer", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        });
+
+        const payload = (await response.json().catch(() => null)) as {
+          options?: TransferDestinationOption[];
+          error?: string;
+        } | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "No se pudieron cargar alternativas de traslado.");
+        }
+
+        if (isMounted) {
+          const opts = payload?.options ?? [];
+          setDestinations(opts);
+          if (opts.length === 0) onEmpty();
+          else onHasContent();
+        }
+      } catch (error) {
+        if (isMounted) {
+          setDestinations([]);
+          setTransferError(error instanceof Error ? error.message : "No se pudieron cargar traslados.");
+          onEmpty();
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingTransfers(false);
+        }
+      }
+    }
+
+    void loadTransferOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [airportCode, onEmpty, onHasContent]);
+
+  async function submitTransfer(destination: TransferDestinationOption) {
+    const key = `${destination.mode}:${destination.destination_ident}`;
+    setSubmittingKey(key);
+    setTransferError(null);
+    setTransferMessage(null);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        throw new Error("No se encontró una sesión activa para ejecutar el traslado.");
+      }
+
+      const response = await fetch("/api/pilot/transfer", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          mode: destination.mode,
+          destinationIdent: destination.destination_ident,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        destinationIdent?: string;
+        totalCostUsd?: number;
+        walletBalanceUsd?: number;
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "No se pudo ejecutar el traslado.");
+      }
+
+      setTransferMessage(
+        `Traslado confirmado a ${payload?.destinationIdent ?? destination.destination_ident}. Se descontaron ${formatTransferUsd(payload?.totalCostUsd ?? destination.total_cost_usd)}.`,
+      );
+
+      window.setTimeout(() => { window.location.reload(); }, 900);
+    } catch (error) {
+      setTransferError(error instanceof Error ? error.message : "No se pudo ejecutar el traslado.");
+    } finally {
+      setSubmittingKey(null);
+    }
+  }
+
+  // Completely hide when no destinations and no messages
+  if (!isLoadingTransfers && destinations.length === 0 && !transferMessage && !transferError) {
+    return null;
+  }
+
+  const hasAbandonmentPenalty = destinations.some((d) => d.abandonment_penalty_usd > 0);
+
+  return (
+    <section>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Traslados</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h3 className="text-2xl font-semibold text-white">Reposicionamiento</h3>
+            {!isLoadingTransfers && destinations.length > 0 && (
+              hasAbandonmentPenalty ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200">
+                  ⚠ Aeropuerto no-hub · +$350 multa
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+                  ✓ Hub designado · sin multa
+                </span>
+              )
+            )}
+          </div>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
+            Reposiciónate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
+            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional — partís desde un hub."}
+          </p>
+        </div>
+      </div>
+
+      {transferMessage ? (
+        <div className="mt-4 rounded-2xl border border-emerald-300/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100">
+          {transferMessage}
+        </div>
+      ) : null}
+
+      {transferError ? (
+        <div className="mt-4 rounded-2xl border border-rose-300/18 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">
+          {transferError}
+        </div>
+      ) : null}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        {visibleOptions.map((option, optionIndex) => {
+          const optionDestinations = destinations
+            .filter((item) => normalizeTransferModeForUi(item.mode) === option.mode)
+            .slice(0, 4);
+
+          return (
+            <article
+              key={`${option.mode}-${optionIndex}`}
+              className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5"
+            >
+              <div className="flex items-center justify-between">
+                <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
+                  {option.title}
+                </div>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-white/52">{option.subtitle}</p>
+
+              <div className="mt-5 space-y-3">
+                {isLoadingTransfers ? (
+                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
+                    Calculando alternativas...
+                  </div>
+                ) : optionDestinations.length === 0 ? (
+                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
+                    Sin alternativas desde esta ubicación.
+                  </div>
+                ) : (
+                  optionDestinations.map((destination, destinationIndex) => {
+                    const submitKey = `${destination.mode}:${destination.destination_ident}`;
+                    const renderKey = `${option.mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
+                    const isSubmitting = submittingKey === submitKey;
+                    const blocked = isSubmitting || !destination.can_afford;
+                    const hasPenalty = destination.abandonment_penalty_usd > 0;
+
+                    return (
+                      <div
+                        key={renderKey}
+                        className="rounded-2xl border border-white/8 bg-[#031428]/55 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-bold text-white">{destination.destination_ident}</p>
+                            <p className="mt-0.5 text-[10px] text-white/48">{destination.destination_name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-black ${destination.can_afford ? "text-emerald-300" : "text-rose-300"}`}>
+                              {formatTransferUsd(destination.total_cost_usd)}
+                            </p>
+                            {hasPenalty && (
+                              <p className="text-[10px] text-amber-300">+${destination.abandonment_penalty_usd} multa</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={blocked}
+                          onClick={() => void submitTransfer(destination)}
+                          className={`mt-3 w-full rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                            blocked
+                              ? "cursor-not-allowed border border-white/8 bg-white/[0.03] text-white/32"
+                              : "border border-emerald-400/18 bg-emerald-500/[0.06] text-emerald-200 hover:bg-emerald-500/10"
+                          }`}
+                        >
+                          {isSubmitting ? "Trasladando..." : destination.can_afford ? "Confirmar traslado" : "Saldo insuficiente"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// ─── News section wrapper ─────────────────────────────────────────────────────
+
+type LiveNewsArticle = {
+  title: string;
+  description: string | null;
+  url: string;
+  publishedAt: string;
+  source: string;
+};
+
+function CentralNewsSectionWrapper({ central }: { central: CentralOverview }) {
+  const [liveNews, setLiveNews] = useState<LiveNewsArticle[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (central.municipality) params.set("city", central.municipality);
+    if (central.countryName) params.set("country", central.countryName);
+
+    fetch(`/api/news/local?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; items?: LiveNewsArticle[] }) => {
+        if (!cancelled) setLiveNews(data.ok && data.items && data.items.length > 0 ? data.items : null);
+      })
+      .catch(() => { if (!cancelled) setLiveNews(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [central.municipality, central.countryName]);
+
+  // If still loading, show static items
+  if (loading) {
+    return (
+      <>
+        <CentralSectionDivider />
+        <CentralNewsSection items={central.newsItems} liveNews={null} />
+      </>
+    );
+  }
+
+  // If no live news, show static operational items (hide section only if static is also empty)
+  return (
+    <>
+      <CentralSectionDivider />
+      <CentralNewsSection items={central.newsItems} liveNews={liveNews} />
+    </>
+  );
+}
+
 function CentralWorkspace({ central }: { central: CentralOverview }) {
   return (
     <div className="space-y-6">
       <CentralAirportHero central={central} />
 
-      <CentralSectionDivider />
-      <CentralTransfersSection airportCode={central.airportCode} options={central.transferOptions} />
+      <CentralTransfersSectionWrapper central={central} />
 
-      <CentralSectionDivider />
-      <CentralNewsSection items={central.newsItems} />
+      <CentralNewsSectionWrapper central={central} />
 
       <CentralSectionDivider />
       <section>
@@ -9351,7 +9562,10 @@ function DashboardWorkspace({
               )}
             </div>
 
-            {/* ── Fila 5: Historial de vuelos ── */}
+            {/* ── Fila 5: Economía aerolínea (mini panel) ── */}
+            <OfficeEconomyPanel />
+
+            {/* ── Fila 6: Historial de vuelos ── */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
