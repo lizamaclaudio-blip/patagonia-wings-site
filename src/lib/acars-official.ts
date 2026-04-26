@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { calculateFlightCommission, calculateDamageDeduction } from "@/lib/pilot-economy";
 
 export type OfficialFlightStatus =
   | "reserved"
@@ -383,16 +384,21 @@ function buildStageBreakdown(samples: AcarsTelemetrySample[]) {
     samples,
     (sample, index) => index >= Math.max(0, landingIndex) && asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 2 && asNumber(sample.groundSpeed) < 30
   );
-  const shutdownIndex = getStageIndex(
-    samples,
-    (sample, index) =>
-      index >= Math.max(0, taxiInIndex) &&
-      asBoolean(sample.onGround) &&
-      asBoolean(sample.parkingBrake) &&
-      asNumber(sample.groundSpeed) < 1 &&
-      asNumber(sample.engine1N1) < 20 &&
-      asNumber(sample.engine2N1) < 20
-  );
+  // Shutdown is only valid after an actual landing (landingIndex >= 0).
+  // Without this guard, a pilot at the origin gate (GS=0, brakes on, engines off)
+  // would falsely trigger shutdown and be scored as "completed".
+  const shutdownIndex = landingIndex >= 0
+    ? getStageIndex(
+        samples,
+        (sample, index) =>
+          index >= Math.max(0, taxiInIndex >= 0 ? taxiInIndex : landingIndex) &&
+          asBoolean(sample.onGround) &&
+          asBoolean(sample.parkingBrake) &&
+          asNumber(sample.groundSpeed) < 1 &&
+          asNumber(sample.engine1N1) < 20 &&
+          asNumber(sample.engine2N1) < 20
+      )
+    : -1;
 
   const hasTaxiOut = samples.some((sample) => asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 2);
   const hasPreflight = hasSamples;
@@ -523,15 +529,21 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("LANDING_CONFIG", "approach", "high", "Configuración de aproximación incoherente."));
   }
 
+  // "cancelled" = pilot never left the gate (no takeoff, no taxi).
+  // "aborted" = pilot started rolling/taxied but didn't take off.
+  const pilotNeverDeparted = !stages.takeoff.reached && !stages.taxi_out.reached;
+
   let finalStatus: OfficialFlightStatus = severeDamage || crashEvent || hardLanding
     ? "crashed"
-    : !stages.takeoff.reached && (stages.taxi_out.reached || samples.length > 0)
-      ? "aborted"
-      : stages.takeoff.reached && (!stages.landing.reached || !stages.shutdown.reached)
-        ? "interrupted"
-        : stages.shutdown.reached
-          ? "completed"
-          : "manual_review";
+    : pilotNeverDeparted
+      ? "cancelled"
+      : !stages.takeoff.reached && (stages.taxi_out.reached || samples.length > 0)
+        ? "aborted"
+        : stages.takeoff.reached && (!stages.landing.reached || !stages.shutdown.reached)
+          ? "interrupted"
+          : stages.shutdown.reached
+            ? "completed"
+            : "manual_review";
 
   if (requestedCloseoutStatus === "interrupted" && finalStatus === "manual_review") {
     finalStatus = "interrupted";
@@ -540,20 +552,25 @@ export function evaluateOfficialCloseout(params: {
     finalStatus = "aborted";
   }
 
+  // Verify pilot actually arrived at the planned destination.
+  // If the arrival airport doesn't match destination_ident, downgrade to interrupted.
+  const reportedArrivalIcao = normalizeIcao(
+    activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? ""
+  );
+  const plannedDestination = normalizeIcao(reservation.destination_ident);
+  const arrivedAtDestination =
+    reportedArrivalIcao.length > 0 && reportedArrivalIcao === plannedDestination;
+
+  if (finalStatus === "completed" && !arrivedAtDestination) {
+    finalStatus = "interrupted";
+    manualReviewReasons.push("destination_not_reached");
+    penalties.push(buildEvent("DESTINATION_NOT_REACHED", "landing", "critical", "El vuelo cerró sin llegar al destino planificado. No se otorgan puntos."));
+  }
+
   if (finalStatus === "crashed") {
     safetyScore -= 55;
     missionScore -= 35;
     penalties.push(buildEvent("CRASH", "landing", "critical", "El cierre oficial fue marcado como accidentado."));
-  }
-
-  if (finalStatus === "aborted") {
-    missionScore -= 25;
-    efficiencyScore -= 10;
-  }
-
-  if (finalStatus === "interrupted") {
-    missionScore -= 20;
-    efficiencyScore -= 15;
   }
 
   if (!samples.length) {
@@ -562,6 +579,15 @@ export function evaluateOfficialCloseout(params: {
 
   if (finalStatus === "manual_review" || manualReviewReasons.length > 0) {
     safetyScore -= 10;
+  }
+
+  // Rule: only completed flights earn points. All other outcomes → zero scores.
+  if (finalStatus !== "completed") {
+    procedureScore = 0;
+    missionScore = 0;
+    safetyScore = 0;
+    efficiencyScore = 0;
+    penalties.push(buildEvent("NO_SCORE", "general", "critical", `Vuelo cerrado como "${finalStatus}". No se otorgan puntos. El vuelo debe completarse y aterrizar en el destino planificado.`));
   }
 
   const fuelStartKg = asNumber(samples[0]?.fuelKg) || asNumber(preparedDispatch?.fuelPlannedKg);
@@ -596,9 +622,16 @@ export function evaluateOfficialCloseout(params: {
   const landingGForce = Math.max(asNumber(report?.landingG), ...samples.map((sample) => asNumber(sample.landingG)));
 
   const completedAt = endTime;
-  const aircraftLocation = finalStatus === "completed"
-    ? normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? reservation.destination_ident)
-    : normalizeIcao(profile.current_airport_code ?? profile.current_airport_icao ?? reservation.origin_ident);
+  // For completed flights, use the actual arrival airport.
+  // For interrupted flights that took off, use the reported arrival if available (pilot diverted/emergency).
+  // For cancelled/aborted (never departed or never took off), use origin — aircraft didn't move.
+  const reportedActualArrival = normalizeIcao(activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? "");
+  const aircraftLocation =
+    finalStatus === "completed"
+      ? normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? reservation.destination_ident)
+      : finalStatus === "interrupted" && reportedActualArrival
+        ? reportedActualArrival
+        : normalizeIcao(reservation.origin_ident);
   const aircraftStatus = finalStatus === "crashed" ? "maintenance" : "available";
 
   const healthPenalty = finalStatus === "crashed" ? 45 : severeDamage ? 25 : asNumber(damageSummary.events_count) * 3;
@@ -778,12 +811,16 @@ export async function persistOfficialCloseout(params: {
     throw new Error(reservationError?.message ?? "No se pudo persistir el cierre oficial en flight_reservations.");
   }
 
+  // dispatch_packages.dispatch_status only accepts: pending, prepared, released, cancelled, dispatched.
+  // Map all non-completed flight outcomes to "cancelled" to free the dispatch slot.
+  const dispatchClosureStatus = official.finalStatus === "completed" ? "dispatched" : "cancelled";
+
   const dispatchPackageId = asText(params.dispatchPackage?.id ?? params.dispatchPackage?.reservation_id);
   if (dispatchPackageId || params.dispatchPackage) {
     await supabase
       .from("dispatch_packages")
       .update({
-        dispatch_status: official.finalStatus,
+        dispatch_status: dispatchClosureStatus,
         updated_at: nowIso,
       })
       .eq("reservation_id", reservationId);
@@ -792,16 +829,61 @@ export async function persistOfficialCloseout(params: {
   const currentHours = asNumber(params.profile.total_hours);
   const currentCareerHours = asNumber(params.profile.career_hours);
   const blockHours = Number((official.actualBlockMinutes / 60).toFixed(2));
-  await supabase
-    .from("pilot_profiles")
-    .update({
-      current_airport_code: official.aircraftLocation,
-      current_airport_icao: official.aircraftLocation,
-      total_hours: official.finalStatus === "completed" ? currentHours + blockHours : currentHours,
-      career_hours: official.finalStatus === "completed" ? currentCareerHours + blockHours : currentCareerHours,
-      updated_at: nowIso,
-    })
-    .eq("id", params.user.id);
+
+  // Commission payment on completed flights
+  let commissionUsd = 0;
+  let damageDeductionUsd = 0;
+  if (official.finalStatus === "completed") {
+    const distanceNm = asNumber(params.reservation.distance_nm ?? params.report?.distance ?? 0);
+    const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
+    const flightModeCode = asText(params.reservation.flight_mode_code ?? params.activeFlight?.flightModeCode ?? "CAREER");
+
+    commissionUsd = calculateFlightCommission({
+      distanceNm,
+      blockMinutes: official.actualBlockMinutes,
+      aircraftTypeCode,
+      flightModeCode,
+    });
+
+    damageDeductionUsd = calculateDamageDeduction(
+      (params.damageEvents ?? []).map((e) => ({ severity: asText(e.severity) || null })),
+      aircraftTypeCode
+    );
+
+    const netEarned = Math.max(0, commissionUsd - damageDeductionUsd);
+    const currentBalance = asNumber(params.profile.wallet_balance);
+
+    await supabase
+      .from("pilot_profiles")
+      .update({
+        current_airport_code: official.aircraftLocation,
+        current_airport_icao: official.aircraftLocation,
+        total_hours: currentHours + blockHours,
+        career_hours: currentCareerHours + blockHours,
+        wallet_balance: Math.round((currentBalance + netEarned) * 100) / 100,
+        updated_at: nowIso,
+      })
+      .eq("id", params.user.id);
+
+    await supabase
+      .from("flight_reservations")
+      .update({
+        commission_usd: commissionUsd,
+        damage_deduction_usd: damageDeductionUsd,
+      })
+      .eq("id", reservationId);
+  } else {
+    await supabase
+      .from("pilot_profiles")
+      .update({
+        current_airport_code: official.aircraftLocation,
+        current_airport_icao: official.aircraftLocation,
+        total_hours: currentHours,
+        career_hours: currentCareerHours,
+        updated_at: nowIso,
+      })
+      .eq("id", params.user.id);
+  }
 
   const aircraftId = asText(params.reservation.aircraft_id ?? params.activeFlight?.aircraftId);
   if (aircraftId) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 type AviationWeatherMetarRow = {
+  icaoId?: string | null;
+  stationId?: string | null;
   rawOb?: string | null;
   raw_text?: string | null;
   raw?: string | null;
@@ -16,9 +18,24 @@ function normalizeIds(value: string | null) {
     .map((item) => item.trim())
     .filter(Boolean)
     .filter((item) => /^[A-Z0-9]{4}$/.test(item))
-    .slice(0, 5);
+    .slice(0, 8);
 
   return normalized;
+}
+
+function getMetarRaw(row?: AviationWeatherMetarRow | null) {
+  return row?.rawOb ?? row?.raw_text ?? row?.raw ?? null;
+}
+
+function getMetarStation(row?: AviationWeatherMetarRow | null) {
+  const explicit = (row?.icaoId ?? row?.stationId ?? "").trim().toUpperCase();
+  if (explicit) {
+    return explicit;
+  }
+
+  const raw = getMetarRaw(row)?.trim().toUpperCase() ?? "";
+  const firstToken = raw.split(/\s+/)[0] ?? "";
+  return /^[A-Z0-9]{4}$/.test(firstToken) ? firstToken : null;
 }
 
 export async function GET(request: NextRequest) {
@@ -69,18 +86,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const first = Array.isArray(payload)
-      ? (payload[0] as AviationWeatherMetarRow | undefined)
-      : null;
+    const rows = Array.isArray(payload) ? (payload as AviationWeatherMetarRow[]) : [];
+    const firstWithRaw =
+      ids
+        .map((id) => rows.find((row) => getMetarStation(row) === id && Boolean(getMetarRaw(row))))
+        .find(Boolean) ?? rows.find((row) => Boolean(getMetarRaw(row))) ?? null;
 
     return NextResponse.json(
       {
         ok: true,
-        metar: {
-          raw: first?.rawOb ?? first?.raw_text ?? first?.raw ?? null,
-          observed:
-            first?.obsTime ?? first?.observationTime ?? first?.reportTime ?? null,
-        },
+        metar: firstWithRaw
+          ? {
+              raw: getMetarRaw(firstWithRaw),
+              observed:
+                firstWithRaw.obsTime ??
+                firstWithRaw.observationTime ??
+                firstWithRaw.reportTime ??
+                null,
+              station: getMetarStation(firstWithRaw),
+              requestedIds: ids,
+            }
+          : null,
       },
       { status: 200 },
     );

@@ -1,6 +1,5 @@
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import {
-  getOperationalFlightNumber,
   type AvailableAircraftOption,
   type FlightOperationRecord,
 } from "@/lib/flight-ops";
@@ -147,8 +146,12 @@ export async function listCharterAircraftAtOrigin(originIcao: string) {
 
   if (error) throw error;
 
-  const rows = Array.isArray(data) ? data : [];
-  return rows.map((row) => toAircraftOption(row as Record<string, unknown>)).filter((row) => row.aircraft_id);
+  const rows = Array.isArray(data)
+    ? data
+    : typeof data === "string"
+      ? JSON.parse(data)
+      : [];
+  return rows.map((row: unknown) => toAircraftOption(row as Record<string, unknown>)).filter((row: CharterAircraftOption) => row.aircraft_id);
 }
 
 export function buildCharterFlightOperation(params: {
@@ -159,7 +162,7 @@ export function buildCharterFlightOperation(params: {
   const now = new Date().toISOString();
   const origin = normalizeIcao(params.draft.originIcao);
   const destination = normalizeIcao(params.draft.destinationIcao);
-  const flightNumber = getOperationalFlightNumber(origin, destination) || `PWG${Math.floor(900 + Math.random() * 90)}`;
+  const flightNumber = (params.profile.callsign ?? "").trim().toUpperCase();
   const aircraft = params.draft.selectedAircraft;
   const aircraftTypeCode = normalizeIcao(aircraft.aircraft_type_code ?? aircraft.aircraft_code);
   const tailNumber = aircraft.tail_number?.trim() ?? "";
@@ -196,4 +199,57 @@ export function buildCharterFlightOperation(params: {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+
+export type CharterReservationResult = {
+  ok: boolean;
+  error?: string | null;
+  reservation_id?: string | null;
+  reservation_code?: string | null;
+  flight_number?: string | null;
+  route_code?: string | null;
+  origin_ident?: string | null;
+  destination_ident?: string | null;
+  aircraft_id?: string | null;
+  aircraft_fleet_id?: string | null;
+  aircraft_registration?: string | null;
+  aircraft_type_code?: string | null;
+  status?: string | null;
+};
+
+export async function createCharterReservation(params: {
+  aircraftId: string;
+  originIcao: string;
+  destinationIcao: string;
+  scheduledDeparture: string;
+  plannedBlockMinutes?: number | null;
+  remarks?: string | null;
+}) {
+  const { data, error } = await supabase.rpc("pw_create_charter_reservation_v2", {
+    p_aircraft_id: params.aircraftId,
+    p_origin_ident: normalizeIcao(params.originIcao),
+    p_destination_ident: normalizeIcao(params.destinationIcao),
+    p_scheduled_departure: params.scheduledDeparture,
+    p_planned_block_min: params.plannedBlockMinutes ?? null,
+    p_remarks: params.remarks ?? null,
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      error: error.message ?? "RPC_ERROR",
+    } as CharterReservationResult;
+  }
+
+  const result = (data ?? { ok: false, error: "EMPTY_RESPONSE" }) as CharterReservationResult;
+
+  if (!result.ok && result.error) {
+    return {
+      ...result,
+      error: String(result.error),
+    };
+  }
+
+  return result;
 }

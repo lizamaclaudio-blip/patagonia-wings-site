@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#24374a"/>
+      <stop offset="100%" stop-color="#4f7d8d"/>
+    </linearGradient>
+    <linearGradient id="runway" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4f5966"/>
+      <stop offset="100%" stop-color="#232a32"/>
+    </linearGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2bd07b"/>
+      <stop offset="100%" stop-color="#1ea0ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#04111d" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <circle cx="1100" cy="130" r="48" fill="#f0f6ff" opacity="0.65"/>
+  <g opacity="0.9">
+    <ellipse cx="260" cy="145" rx="130" ry="34" fill="#e6eef8" opacity="0.9"/>
+    <ellipse cx="360" cy="130" rx="95" ry="28" fill="#eef4fb" opacity="0.9"/>
+    <ellipse cx="720" cy="165" rx="150" ry="38" fill="#e1ebf4" opacity="0.85"/>
+    <ellipse cx="860" cy="150" rx="105" ry="30" fill="#eef4fb" opacity="0.8"/>
+  </g>
+  <rect x="0" y="285" width="1280" height="70" fill="#dbe4ee" opacity="0.38"/>
+<rect x="0" y="320" width="1280" height="85" fill="#eef4fb" opacity="0.42"/>
+  <path d="M0 520 C180 470 350 500 520 520 C710 545 980 520 1280 470 L1280 720 L0 720 Z" fill="#30474e" opacity="0.75"/>
+  <path d="M0 560 C240 540 440 600 670 585 C860 570 1080 520 1280 510 L1280 720 L0 720 Z" fill="#49615c" opacity="0.78"/>
+  <path d="M410 720 L640 355 L720 355 L518 720 Z" fill="url(#runway)"/>
+  <path d="M545 720 L675 420 L705 420 L595 720 Z" fill="#77808d" opacity="0.4"/>
+  <g opacity="0.95">
+    <rect x="666" y="378" width="12" height="28" rx="4" fill="#f7f2d0"/>
+    <rect x="652" y="430" width="10" height="24" rx="4" fill="#f7f2d0"/>
+    <rect x="639" y="480" width="9" height="22" rx="4" fill="#f7f2d0"/>
+    <rect x="624" y="538" width="8" height="20" rx="4" fill="#f7f2d0"/>
+    <rect x="610" y="592" width="7" height="18" rx="4" fill="#f7f2d0"/>
+  </g>
+  
+  <g filter="url(#shadow)" transform="translate(650 305) rotate(-11)">
+    <path d="M0 40 C40 10 165 5 300 28 C400 46 470 80 470 96 C470 113 396 130 310 133 L225 135 C200 161 175 173 120 171 C93 170 84 163 86 153 L126 136 L55 132 C29 130 0 120 0 104 C0 88 15 63 0 40 Z" fill="#ffffff"/>
+    <path d="M143 125 L210 170 L190 178 L123 140 Z" fill="#ffffff"/>
+    <path d="M278 40 L360 -40 L388 -32 L340 42 Z" fill="#ffffff"/>
+    <path d="M312 133 L392 189 L366 198 L291 147 Z" fill="#ffffff"/>
+    <path d="M442 71 L515 54 L524 65 L461 88 Z" fill="#ffffff"/>
+    <path d="M114 97 C175 88 256 87 333 95" stroke="url(#stripe)" stroke-width="14" stroke-linecap="round" opacity="0.95"/>
+    <path d="M157 112 C209 108 279 109 339 116" stroke="#3d66ff" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
+    <text x="196" y="84" font-size="21" font-family="Arial, Helvetica, sans-serif" font-weight="700" fill="#1d2b39" letter-spacing="2">PATAGONIA WINGS</text>
+  </g>
+  <g>
+    <rect x="48" y="42" width="410" height="138" rx="20" fill="#0d1724" opacity="0.72"/>
+    <text x="78" y="96" font-size="30" font-family="Arial, Helvetica, sans-serif" font-weight="700" fill="#f4fbff">Aeropuerto especial</text>
+    <text x="78" y="132" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#c4d5e6">Operación patagónica</text>
+    <text x="78" y="160" font-size="16" font-family="Arial, Helvetica, sans-serif" fill="#7af0bf">Patagonia Wings Checkride</text>
+  </g>
+</svg>

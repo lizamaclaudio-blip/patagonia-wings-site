@@ -17,57 +17,159 @@ type Props = {
   onDestinationChange: (value: string) => void;
   onScheduledDepartureChange: (value: string) => void;
   onAircraftChange: (aircraft: CharterAircraftOption | null) => void;
+  originLocked?: boolean;
+};
+
+const AIRCRAFT_TYPE_LABELS: Record<string, string> = {
+  A319: "Airbus A319",
+  A320: "Airbus A320",
+  A20N: "Airbus A320neo",
+  A321: "Airbus A321",
+  A21N: "Airbus A321neo",
+  A339: "Airbus A330-900neo",
+  A359: "Airbus A350-900",
+  ATR72: "ATR 72-600",
+  AT76: "ATR 72-600",
+  B350: "Beechcraft 350 King Air",
+  BE58: "Beechcraft 58 Baron",
+  B736: "Boeing 737-600",
+  B737: "Boeing 737-700",
+  B738: "Boeing 737-800",
+  B739: "Boeing 737-900",
+  B38M: "Boeing 737 MAX 8",
+  B789: "Boeing 787-9",
+  B78X: "Boeing 787-10",
+  C208: "Cessna 208B Grand Caravan",
+  DH8D: "De Havilland Dash 8 Q400",
+  E175: "Embraer E175",
+  E190: "Embraer E190",
+  E195: "Embraer E195",
+  MD82: "McDonnell Douglas MD-82",
 };
 
 function normalizeIcao(value: string) {
-  return value.trim().toUpperCase();
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+}
+
+function normalizeCode(value: string | null | undefined) {
+  return (value ?? "").trim().toUpperCase();
+}
+
+function getAircraftTypeCode(item: CharterAircraftOption) {
+  return normalizeCode(item.aircraft_type_code ?? item.aircraft_code);
+}
+
+function getAircraftTypeName(code: string) {
+  return AIRCRAFT_TYPE_LABELS[normalizeCode(code)] ?? normalizeCode(code) ?? "Sin tipo";
+}
+
+function getAircraftTypeLabel(value: string | null | undefined) {
+  const code = normalizeCode(value);
+  const name = getAircraftTypeName(code);
+  return code && name !== code ? `${code} · ${name}` : name;
+}
+
+function getAircraftRegistrationLabel(item: CharterAircraftOption) {
+  const typeCode = getAircraftTypeCode(item);
+  const typeName = getAircraftTypeName(typeCode);
+  const registration = (item.tail_number ?? "").trim() || "Sin matrícula";
+  const variant = (item.variant_name ?? "").trim();
+  const provider = (item.addon_provider ?? "").trim();
+
+  return [registration, typeName, variant, provider]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function AirportSearchBox({
   label,
   value,
   onChange,
+  locked = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  locked?: boolean;
 }) {
-  const [query, setQuery] = useState(value);
+  const [query, setQuery] = useState(normalizeIcao(value));
   const [results, setResults] = useState<CharterAirportOption[]>([]);
+  const [exactAirport, setExactAirport] = useState<CharterAirportOption | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setQuery(value);
+    setQuery(normalizeIcao(value));
   }, [value]);
 
   useEffect(() => {
     let mounted = true;
-    const clean = query.trim();
+    const clean = normalizeIcao(query);
 
-    if (clean.length < 2) {
+    setExactAirport(null);
+
+    if (locked) {
+      if (clean.length === 4) {
+        searchCharterAirports(clean, 1)
+          .then((items) => {
+            if (!mounted) return;
+            setExactAirport(items.find((airport) => airport.icao === clean) ?? null);
+          })
+          .catch(() => {
+            if (!mounted) return;
+            setExactAirport(null);
+          });
+      }
+
       setResults([]);
-      return;
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    if (clean.length < 3) {
+      setResults([]);
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
     }
 
     setLoading(true);
     const timeout = window.setTimeout(() => {
-      searchCharterAirports(clean, 12)
+      searchCharterAirports(clean, clean.length === 4 ? 8 : 12)
         .then((items) => {
-          if (mounted) setResults(items);
+          if (!mounted) return;
+
+          const exact = items.find((airport) => airport.icao === clean) ?? null;
+          setExactAirport(exact);
+
+          if (clean.length === 4 && exact) {
+            setResults([]);
+            return;
+          }
+
+          const filtered = clean.length === 4
+            ? items.filter((airport) => airport.icao === clean || airport.icao.startsWith(clean))
+            : items;
+
+          setResults(filtered);
         })
         .catch(() => {
-          if (mounted) setResults([]);
+          if (!mounted) return;
+          setResults([]);
+          setExactAirport(null);
         })
         .finally(() => {
           if (mounted) setLoading(false);
         });
-    }, 220);
+    }, clean.length === 4 ? 80 : 180);
 
     return () => {
       mounted = false;
       window.clearTimeout(timeout);
     };
-  }, [query]);
+  }, [locked, query]);
 
   return (
     <div className="relative rounded-[22px] border border-white/8 bg-white/[0.035] p-4">
@@ -75,35 +177,131 @@ function AirportSearchBox({
       <input
         value={query}
         onChange={(event) => {
+          if (locked) return;
           const next = normalizeIcao(event.target.value);
           setQuery(next);
           onChange(next);
         }}
-        placeholder="Ej: SCEL"
-        maxLength={6}
-        className="mt-3 w-full rounded-[16px] border border-white/10 bg-black/20 px-4 py-3 text-lg font-semibold uppercase tracking-[0.16em] text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45"
+        readOnly={locked}
+        placeholder=""
+        maxLength={4}
+        className={`mt-3 w-full rounded-[16px] border border-white/10 px-4 py-3 text-lg font-semibold uppercase tracking-[0.16em] text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/45 ${
+          locked ? "cursor-not-allowed bg-white/[0.035] text-white/72" : "bg-black/20"
+        }`}
       />
-      <p className="mt-2 text-xs text-white/42">
-        {loading ? "Buscando aeropuertos..." : "Escribe ICAO, ciudad o nombre de aeropuerto."}
-      </p>
 
-      {results.length > 0 ? (
-        <div className="absolute left-4 right-4 top-[104px] z-30 max-h-72 overflow-y-auto rounded-[18px] border border-white/10 bg-[#07111f]/95 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+      <div className="mt-2 min-h-[18px] text-xs text-white/42">
+        {locked ? (
+          exactAirport ? (
+            <span className="font-semibold text-emerald-200">
+              {exactAirport.icao} seleccionado · {exactAirport.name ?? "Aeropuerto"}
+            </span>
+          ) : (
+            "Origen bloqueado según ubicación actual del piloto."
+          )
+        ) : loading ? (
+          "Validando ICAO..."
+        ) : exactAirport ? (
+          <span className="font-semibold text-emerald-200">
+            {exactAirport.icao} seleccionado · {exactAirport.name ?? "Aeropuerto"}
+          </span>
+        ) : query.length >= 4 ? (
+          <span className="text-amber-100/75">ICAO no encontrado todavía en la base.</span>
+        ) : (
+          "Escribe el ICAO exacto del aeropuerto."
+        )}
+      </div>
+
+      {!locked && results.length > 0 ? (
+        <div className="absolute left-4 right-4 top-[104px] z-30 max-h-72 overflow-y-auto rounded-[18px] border border-cyan-300/18 bg-[#07111f]/98 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
           {results.map((airport) => (
             <button
               key={`${label}-${airport.icao}`}
               type="button"
               onClick={() => {
                 setQuery(airport.icao);
+                setExactAirport(airport);
                 onChange(airport.icao);
                 setResults([]);
               }}
-              className="flex w-full items-center justify-between gap-3 rounded-[14px] px-3 py-2 text-left transition hover:bg-white/[0.07]"
+              className="flex w-full items-center justify-between gap-3 rounded-[14px] px-3 py-2 text-left transition hover:bg-cyan-300/[0.10]"
             >
               <span>
                 <span className="block text-sm font-semibold text-white">{airport.icao} · {airport.name ?? "Aeropuerto"}</span>
                 <span className="block text-xs text-white/42">{airport.city ?? "Ciudad"} · {airport.country ?? "País"}</span>
               </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DarkDropdown({
+  label,
+  placeholder,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  options: Array<{ value: string; label: string; description?: string }>;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((item) => item.value === value) ?? null;
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  return (
+    <div className="relative">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">{label}</span>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className="mt-3 flex w-full items-center justify-between gap-3 rounded-[16px] border border-white/10 bg-[#061427] px-4 py-3 text-left text-sm font-semibold text-white outline-none transition hover:border-cyan-300/28 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        <span className="min-w-0 truncate">{selected?.label ?? placeholder}</span>
+        <span className="text-white/45">⌄</span>
+      </button>
+
+      {open && !disabled ? (
+        <div className="absolute left-0 right-0 top-[86px] z-40 max-h-72 overflow-y-auto rounded-[18px] border border-cyan-300/18 bg-[#07111f]/98 p-2 shadow-[0_20px_70px_rgba(0,0,0,0.62)] backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+            className="w-full rounded-[13px] px-3 py-2 text-left text-sm font-semibold text-white/55 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            {placeholder}
+          </button>
+
+          {options.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => {
+                onChange(item.value);
+                setOpen(false);
+              }}
+              className={`w-full rounded-[13px] px-3 py-2 text-left transition ${
+                item.value === value ? "bg-cyan-300/[0.14]" : "hover:bg-cyan-300/[0.08]"
+              }`}
+            >
+              <span className="block truncate text-sm font-semibold text-white">{item.label}</span>
+              {item.description ? (
+                <span className="mt-0.5 block truncate text-xs text-white/42">{item.description}</span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -121,34 +319,81 @@ export default function CharterOriginDestinationStep({
   onDestinationChange,
   onScheduledDepartureChange,
   onAircraftChange,
+  originLocked = true,
 }: Props) {
   const [aircraft, setAircraft] = useState<CharterAircraftOption[]>([]);
+  const [selectedType, setSelectedType] = useState("");
   const [loadingAircraft, setLoadingAircraft] = useState(false);
 
   const normalizedOrigin = useMemo(() => normalizeIcao(originIcao), [originIcao]);
   const normalizedDestination = useMemo(() => normalizeIcao(destinationIcao), [destinationIcao]);
-  const routeReady = normalizedOrigin.length >= 3 && normalizedDestination.length >= 3 && normalizedOrigin !== normalizedDestination;
+  const routeReady = normalizedOrigin.length === 4 && normalizedDestination.length === 4 && normalizedOrigin !== normalizedDestination;
+
+  const aircraftTypes = useMemo(() => {
+    return Array.from(
+      new Set(
+        aircraft
+          .map((item) => getAircraftTypeCode(item))
+          .filter(Boolean),
+      ),
+    ).sort();
+  }, [aircraft]);
+
+  const typeOptions = useMemo(
+    () => aircraftTypes.map((code) => ({
+      value: code,
+      label: getAircraftTypeLabel(code),
+      description: `${aircraft.filter((item) => getAircraftTypeCode(item) === code).length} matrícula(s) disponible(s)`,
+    })),
+    [aircraft, aircraftTypes],
+  );
+
+  const filteredAircraft = useMemo(() => {
+    if (!selectedType) return [];
+    return aircraft.filter((item) => getAircraftTypeCode(item) === selectedType);
+  }, [aircraft, selectedType]);
+
+  const aircraftOptions = useMemo(
+    () => filteredAircraft.map((item) => ({
+      value: item.aircraft_id,
+      label: getAircraftRegistrationLabel(item),
+      description: `${getAircraftTypeLabel(getAircraftTypeCode(item))} · ${item.current_airport_icao ?? normalizedOrigin}`,
+    })),
+    [filteredAircraft, normalizedOrigin],
+  );
 
   useEffect(() => {
     let mounted = true;
 
-    if (normalizedOrigin.length < 3) {
+    if (normalizedOrigin.length !== 4) {
       setAircraft([]);
+      setSelectedType("");
       onAircraftChange(null);
-      return;
+      return () => {
+        mounted = false;
+      };
     }
 
     setLoadingAircraft(true);
     listCharterAircraftAtOrigin(normalizedOrigin)
       .then((items) => {
         if (!mounted) return;
+
         setAircraft(items);
-        const current = items.find((item) => item.aircraft_id === selectedAircraftId) ?? null;
-        if (!current) onAircraftChange(null);
+
+        const current = items.find((item: CharterAircraftOption) => item.aircraft_id === selectedAircraftId) ?? null;
+        if (current) {
+          setSelectedType(getAircraftTypeCode(current));
+          return;
+        }
+
+        setSelectedType("");
+        onAircraftChange(null);
       })
       .catch(() => {
         if (!mounted) return;
         setAircraft([]);
+        setSelectedType("");
         onAircraftChange(null);
       })
       .finally(() => {
@@ -166,19 +411,19 @@ export default function CharterOriginDestinationStep({
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">Chárter</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">Origen / Destino libre</h3>
         <p className="mt-2 text-sm leading-6 text-white/58">
-          El piloto elige cualquier aeropuerto cargado en la base. La aeronave y el piloto se moverán al destino al cerrar el vuelo, igual que Itinerario.
+          El origen queda bloqueado según la ubicación actual del piloto. Elige destino, tipo de aeronave, matrícula y hora local.
         </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <AirportSearchBox label="Origen" value={originIcao} onChange={onOriginChange} />
+        <AirportSearchBox label="Origen" value={originIcao} onChange={onOriginChange} locked={originLocked} />
         <AirportSearchBox label="Destino" value={destinationIcao} onChange={onDestinationChange} />
       </div>
 
       <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-4">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Horario UTC</label>
+        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Hora local</label>
         <input
-          type="datetime-local"
+          type="time"
           value={scheduledDeparture}
           onChange={(event) => onScheduledDepartureChange(event.target.value)}
           className="mt-3 w-full rounded-[16px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-300/45"
@@ -190,41 +435,48 @@ export default function CharterOriginDestinationStep({
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Aeronaves disponibles</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">Licencia válida + ubicación en {normalizedOrigin || "origen"}</h3>
+            <h3 className="mt-2 text-xl font-semibold text-white">Selección de aeronave</h3>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-semibold text-white/55">
             {loadingAircraft ? "Cargando" : `${aircraft.length} disponibles`}
           </span>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {aircraft.map((item) => {
-            const selected = item.aircraft_id === selectedAircraftId;
-            return (
-              <button
-                key={item.aircraft_id}
-                type="button"
-                disabled={!routeReady}
-                onClick={() => onAircraftChange(item)}
-                className={`rounded-[18px] border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                  selected
-                    ? "border-cyan-300/45 bg-cyan-300/[0.12]"
-                    : "border-white/8 bg-white/[0.035] hover:border-cyan-300/24 hover:bg-cyan-300/[0.07]"
-                }`}
-              >
-                <p className="text-sm font-semibold text-white">{item.tail_number || item.aircraft_code}</p>
-                <p className="mt-1 text-xs text-white/45">{item.aircraft_name}</p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100/60">{item.aircraft_type_code ?? item.aircraft_code}</p>
-              </button>
-            );
-          })}
+        <p className="mt-2 text-sm text-white/55">
+          Solo aparecen aeronaves compatibles con el rango/licencia del piloto y ubicadas en {normalizedOrigin || "el origen"}.
+        </p>
 
-          {!loadingAircraft && aircraft.length === 0 ? (
-            <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55 md:col-span-2 xl:col-span-3">
-              No hay aeronaves con licencia válida disponibles en el origen seleccionado.
-            </p>
-          ) : null}
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <DarkDropdown
+            label="1 · Tipo de aeronave"
+            placeholder="— Elige tipo —"
+            value={selectedType}
+            options={typeOptions}
+            disabled={!routeReady || loadingAircraft || aircraftTypes.length === 0}
+            onChange={(value) => {
+              setSelectedType(value);
+              onAircraftChange(null);
+            }}
+          />
+
+          <DarkDropdown
+            label="2 · Nº de registro"
+            placeholder="— Elige matrícula —"
+            value={selectedAircraftId ?? ""}
+            options={aircraftOptions}
+            disabled={!routeReady || !selectedType || filteredAircraft.length === 0}
+            onChange={(value) => {
+              const next = filteredAircraft.find((item) => item.aircraft_id === value) ?? null;
+              onAircraftChange(next);
+            }}
+          />
         </div>
+
+        {!loadingAircraft && aircraft.length === 0 ? (
+          <p className="mt-5 rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+            No hay aeronaves disponibles para tu rango/licencia en el origen seleccionado.
+          </p>
+        ) : null}
       </div>
     </div>
   );

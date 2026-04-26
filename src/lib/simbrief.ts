@@ -34,6 +34,7 @@ export type SimbriefOfpSummary = {
   source: "real";
   matchedByStaticId: boolean;
   staticId: string | null;
+  airlineIcao: string | null;
   flightNumber: string | null;
   origin: string | null;
   destination: string | null;
@@ -441,6 +442,7 @@ export function extractSimbriefOfpSummary(
     source: "real",
     matchedByStaticId: false,
     staticId: null,
+    airlineIcao: null,
     flightNumber: null,
     origin: null,
     destination: null,
@@ -481,12 +483,41 @@ export function extractSimbriefOfpSummary(
     staticId && typeof summary.staticId === "string" && summary.staticId === staticId
   );
 
+  const airlineIcao = firstDefined(raw, [
+    "params.airline",
+    "params.airline_icao",
+    "params.airlineicao",
+    "params.icao_airline",
+    "params.airline_iata",
+    "general.airline",
+    "general.airline_icao",
+    "general.airlineicao",
+    "general.icao_airline",
+    "general.airline_iata",
+    "atc.airline",
+    "atc.airline_icao",
+    "atc.icao_airline",
+    "api.airline",
+    "api.airline_icao",
+    "api.icao_airline",
+  ]);
   const flightNumber = firstDefined(raw, [
     "general.flight_number",
     "general.fltnum",
+    "general.flightnum",
+    "general.callsign",
     "params.fltnum",
     "params.flightnum",
+    "params.flight_number",
+    "params.callsign",
+    "atc.flight_number",
+    "atc.fltnum",
+    "atc.flightnum",
+    "atc.callsign",
     "api.fltnum",
+    "api.flight_number",
+    "api.flightnum",
+    "api.callsign",
   ]);
   const origin = firstDefined(raw, [
     "origin.icao_code",
@@ -540,7 +571,30 @@ export function extractSimbriefOfpSummary(
     "params.cruise_altitude",
   ]);
 
-  summary.flightNumber = typeof flightNumber === "string" ? normalizeUpper(flightNumber) : null;
+  let normalizedAirlineIcao = typeof airlineIcao === "string" ? normalizeUpper(airlineIcao).replace(/[^A-Z]/g, "") : null;
+  let normalizedFlightNumber = typeof flightNumber === "string" ? normalizeUpper(flightNumber) : null;
+
+  // SimBrief can expose the flight identity in different shapes depending on the source
+  // endpoint: sometimes as airline + number, sometimes as a single callsign (e.g. PGW978),
+  // and sometimes only as the numeric flight number. Keep both fields normalized so the
+  // dashboard can validate Web PWG978 against SimBrief PGW978 correctly.
+  if (!normalizedAirlineIcao && normalizedFlightNumber) {
+    const combinedMatch = normalizedFlightNumber.replace(/\s+/g, "").match(/^([A-Z]{2,4})(\d+[A-Z]?)$/);
+    if (combinedMatch) {
+      normalizedAirlineIcao = combinedMatch[1];
+      normalizedFlightNumber = combinedMatch[2];
+    }
+  }
+
+  if (normalizedAirlineIcao && normalizedFlightNumber) {
+    const compactFlightNumber = normalizedFlightNumber.replace(/\s+/g, "");
+    if (compactFlightNumber.startsWith(normalizedAirlineIcao)) {
+      normalizedFlightNumber = compactFlightNumber.slice(normalizedAirlineIcao.length) || normalizedFlightNumber;
+    }
+  }
+
+  summary.airlineIcao = normalizedAirlineIcao || null;
+  summary.flightNumber = normalizedFlightNumber || null;
   summary.origin = typeof origin === "string" ? normalizeUpper(origin) : null;
   summary.destination = typeof destination === "string" ? normalizeUpper(destination) : null;
   summary.alternate = typeof alternate === "string" ? normalizeUpper(alternate) : null;

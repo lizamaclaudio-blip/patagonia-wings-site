@@ -50,7 +50,7 @@ function normalizeProfileRecord(
   const metadata = user.user_metadata ?? {};
   const baseHub = (data?.base_hub ??
     (metadata.base_hub as string | undefined) ??
-    "SCEL") as string;
+    "SCTB") as string;
 
   return {
     ...(data ?? {}),
@@ -164,11 +164,11 @@ async function repairPilotProfileIfNeeded(
   }
 
   if (!profile.base_hub) {
-    patch.base_hub = ((metadata.base_hub as string | undefined) ?? "SCEL").toUpperCase();
+    patch.base_hub = ((metadata.base_hub as string | undefined) ?? "SCTB").toUpperCase();
   }
 
   if (!profile.current_airport_icao) {
-    patch.current_airport_icao = (patch.base_hub ?? profile.base_hub ?? "SCEL").toUpperCase();
+    patch.current_airport_icao = (patch.base_hub ?? profile.base_hub ?? "SCTB").toUpperCase();
   }
 
   if (Object.keys(patch).length === 0) {
@@ -205,7 +205,7 @@ export async function ensurePilotProfile(
   const metadata = user.user_metadata ?? {};
   const airlineId = await getPatagoniaAirlineId();
   const callsign = (await getNextPwgCallsign()) ?? buildFallbackCallsign(user);
-  const baseHub = ((metadata.base_hub as string | undefined) ?? "SCEL").toUpperCase();
+  const baseHub = ((metadata.base_hub as string | undefined) ?? "SCTB").toUpperCase();
 
   const payload = {
     id: user.id,
@@ -217,12 +217,14 @@ export async function ensurePilotProfile(
     country: (metadata.country as string | undefined) ?? "Chile",
     base_hub: baseHub,
     current_airport_icao: baseHub,
+    current_airport_code: baseHub,
     simulator: (metadata.simulator as string | undefined) ?? "MSFS 2020",
     simbrief_username:
       (metadata.simbrief_username as string | undefined) ?? null,
     vatsim_id: (metadata.vatsim_id as string | undefined) ?? null,
     ivao_id: (metadata.ivao_id as string | undefined) ?? null,
     status: "active",
+    wallet_balance: 1000,
   };
 
   const { data, error } = await supabase
@@ -317,8 +319,9 @@ export async function updatePilotProfile(
       typeof safeUpdates.last_name === "string" ? safeUpdates.last_name : null,
     country:
       typeof safeUpdates.country === "string" ? safeUpdates.country : "Chile",
-    base_hub: "SCEL",
-    current_airport_icao: "SCEL",
+    base_hub: "SCTB",
+    current_airport_icao: "SCTB",
+    current_airport_code: "SCTB",
     simulator:
       typeof safeUpdates.simulator === "string"
         ? safeUpdates.simulator

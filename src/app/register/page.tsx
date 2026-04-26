@@ -50,6 +50,89 @@ const COUNTRIES = [
   "Zambia","Zimbabue",
 ];
 
+
+type SignupHub = {
+  icao: string;
+  hub_name: string | null;
+  city: string | null;
+  country: string | null;
+  country_code: string | null;
+  flag_emoji: string | null;
+  preferred_operation_note: string | null;
+  signup_sort_order: number | null;
+};
+
+const FALLBACK_SIGNUP_HUBS: SignupHub[] = [
+  {
+    icao: "SCTB",
+    hub_name: "Eulogio Sánchez / Tobalaba",
+    city: "Santiago",
+    country: "Chile",
+    country_code: "CL",
+    flag_emoji: "🇨🇱",
+    preferred_operation_note: "Base escuela/regional de Santiago para pilotos nuevos.",
+    signup_sort_order: 10,
+  },
+  {
+    icao: "SCPF",
+    hub_name: "Marcel Marchant / La Paloma",
+    city: "Puerto Montt",
+    country: "Chile",
+    country_code: "CL",
+    flag_emoji: "🇨🇱",
+    preferred_operation_note: "Base escuela/regional Patagonia Norte.",
+    signup_sort_order: 20,
+  },
+  {
+    icao: "SCRD",
+    hub_name: "Rodelillo",
+    city: "Valparaíso / Viña del Mar",
+    country: "Chile",
+    country_code: "CL",
+    flag_emoji: "🇨🇱",
+    preferred_operation_note: "Base escuela/regional costa central.",
+    signup_sort_order: 30,
+  },
+  {
+    icao: "SADF",
+    hub_name: "San Fernando",
+    city: "Buenos Aires",
+    country: "Argentina",
+    country_code: "AR",
+    flag_emoji: "🇦🇷",
+    preferred_operation_note: "Base escuela/regional Buenos Aires Norte.",
+    signup_sort_order: 40,
+  },
+  {
+    icao: "SADM",
+    hub_name: "Morón",
+    city: "Buenos Aires",
+    country: "Argentina",
+    country_code: "AR",
+    flag_emoji: "🇦🇷",
+    preferred_operation_note: "Base escuela/regional Buenos Aires Oeste.",
+    signup_sort_order: 50,
+  },
+  {
+    icao: "SADL",
+    hub_name: "La Plata",
+    city: "La Plata",
+    country: "Argentina",
+    country_code: "AR",
+    flag_emoji: "🇦🇷",
+    preferred_operation_note: "Base escuela/regional Buenos Aires Sur.",
+    signup_sort_order: 60,
+  },
+];
+
+function formatSignupHubLabel(hub: SignupHub) {
+  const flag = hub.flag_emoji || "🏳️";
+  const city = hub.city || "Ciudad no definida";
+  const name = hub.hub_name || "Base Patagonia Wings";
+  const country = hub.country || "";
+  return `${flag} ${hub.icao} — ${city} · ${name}${country ? ` · ${country}` : ""}`;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -58,7 +141,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [country, setCountry] = useState("Chile");
-  const [baseHub, setBaseHub] = useState("SCEL");
+  const [baseHub, setBaseHub] = useState("SCTB");
+  const [signupHubs, setSignupHubs] = useState<SignupHub[]>(FALLBACK_SIGNUP_HUBS);
+  const [loadingSignupHubs, setLoadingSignupHubs] = useState(true);
   const [simulator, setSimulator] = useState("MSFS 2020");
 
   const [submitting, setSubmitting] = useState(false);
@@ -77,6 +162,49 @@ export default function RegisterPage() {
     });
     return () => { isMounted = false; };
   }, [router]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSignupHubs() {
+      setLoadingSignupHubs(true);
+
+      const { data, error } = await supabase
+        .from("pw_v_signup_hubs_v2")
+        .select("icao, hub_name, city, country, country_code, flag_emoji, preferred_operation_note, signup_sort_order")
+        .order("signup_sort_order", { ascending: true });
+
+      if (!isMounted) return;
+
+      const cleanHubs = ((data ?? []) as SignupHub[])
+        .filter((hub) => typeof hub.icao === "string" && hub.icao.trim().length > 0)
+        .map((hub) => ({
+          ...hub,
+          icao: hub.icao.trim().toUpperCase(),
+        }));
+
+      const nextHubs = !error && cleanHubs.length > 0
+        ? cleanHubs
+        : FALLBACK_SIGNUP_HUBS;
+
+      setSignupHubs(nextHubs);
+      setBaseHub((current) => {
+        const normalizedCurrent = current.trim().toUpperCase();
+        return nextHubs.some((hub) => hub.icao === normalizedCurrent)
+          ? normalizedCurrent
+          : nextHubs[0]?.icao ?? "SCTB";
+      });
+
+      setLoadingSignupHubs(false);
+    }
+
+    loadSignupHubs();
+
+    return () => { isMounted = false; };
+  }, []);
+
+  const selectedSignupHub = signupHubs.find((hub) => hub.icao === baseHub) ?? signupHubs[0] ?? FALLBACK_SIGNUP_HUBS[0];
+
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -357,16 +485,24 @@ export default function RegisterPage() {
 
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label className="field-label">Hub base inicial</label>
+                      <label className="field-label">Base escuela inicial</label>
                       <select
                         className="input-premium"
                         value={baseHub}
                         onChange={(e) => setBaseHub(e.target.value)}
+                        disabled={loadingSignupHubs}
                       >
-                        <option value="SCEL">SCEL — Santiago</option>
-                        <option value="SCTE">SCTE — Puerto Montt</option>
-                        <option value="SCFA">SCFA — Antofagasta</option>
+                        {signupHubs.map((hub) => (
+                          <option key={hub.icao} value={hub.icao}>
+                            {formatSignupHubLabel(hub)}
+                          </option>
+                        ))}
                       </select>
+                      <p className="mt-2 text-[11px] leading-5 text-white/45">
+                        {loadingSignupHubs
+                          ? "Cargando bases escuela disponibles..."
+                          : selectedSignupHub?.preferred_operation_note || "Solo se muestran bases escuela/regionales habilitadas para pilotos nuevos."}
+                      </p>
                     </div>
                     <div>
                       <label className="field-label">Simulador principal</label>

@@ -2,6 +2,9 @@ import { access } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type PexelsPhotoResponse = {
   photos?: Array<{
     url?: string | null;
@@ -18,9 +21,22 @@ type PexelsPhotoResponse = {
 };
 
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+const PEXELS_REVALIDATE_SECONDS = 60 * 60 * 6;
 
-function sanitizeChunk(value: string | null) {
+function sanitizeChunk(value: string | null | undefined) {
   return (value ?? "").trim();
+}
+
+function normalizeSearchText(value: string | null | undefined) {
+  return sanitizeChunk(value)
+    .replace(/\bAirport\b/gi, "")
+    .replace(/\bInternational\b/gi, "")
+    .replace(/\bIntl\b/gi, "")
+    .replace(/\bAeropuerto\b/gi, "")
+    .replace(/\bAerodromo\b/gi, "")
+    .replace(/\bAeródromo\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function findLocalAirportImage(icao: string) {
@@ -29,10 +45,7 @@ async function findLocalAirportImage(icao: string) {
   const publicAirportsDir = path.join(process.cwd(), "public", "airports");
 
   for (const extension of IMAGE_EXTENSIONS) {
-    for (const filename of [
-      `${normalizedUpper}.${extension}`,
-      `${normalizedLower}.${extension}`,
-    ]) {
+    for (const filename of [`${normalizedUpper}.${extension}`, `${normalizedLower}.${extension}`]) {
       try {
         await access(path.join(publicAirportsDir, filename));
         return `/airports/${filename}`;
@@ -46,24 +59,37 @@ async function findLocalAirportImage(icao: string) {
 }
 
 function buildSearchQueries({
+  icao,
   airportName,
   city,
   country,
 }: {
+  icao: string;
   airportName: string;
   city: string;
   country: string;
 }) {
-  const cleanedAirport = sanitizeChunk(airportName).replace(/\bAirport\b/gi, "").trim();
-  const cleanedCity = sanitizeChunk(city);
-  const cleanedCountry = sanitizeChunk(country);
+  const cleanedIcao = sanitizeChunk(icao).toUpperCase();
+  const cleanedAirport = normalizeSearchText(airportName);
+  const cleanedCity = normalizeSearchText(city);
+  const cleanedCountry = normalizeSearchText(country);
 
-  return [
-    [cleanedCity, cleanedCountry, "city skyline"].filter(Boolean).join(" "),
-    [cleanedCity, cleanedCountry, "aerial city"].filter(Boolean).join(" "),
-    [cleanedAirport, cleanedCity, cleanedCountry].filter(Boolean).join(" "),
-    [cleanedCity, cleanedCountry].filter(Boolean).join(" "),
-  ].filter(Boolean);
+  return Array.from(
+    new Set(
+      [
+        [cleanedIcao, "airport runway"].filter(Boolean).join(" "),
+        [cleanedIcao, "airport terminal"].filter(Boolean).join(" "),
+        [cleanedAirport, cleanedCity, cleanedCountry, "airport runway"].filter(Boolean).join(" "),
+        [cleanedAirport, cleanedCity, cleanedCountry, "airport terminal"].filter(Boolean).join(" "),
+        [cleanedAirport, cleanedCity, cleanedCountry, "airport aerial"].filter(Boolean).join(" "),
+        [cleanedCity, cleanedCountry, "airport runway"].filter(Boolean).join(" "),
+        [cleanedCity, cleanedCountry, "airport terminal"].filter(Boolean).join(" "),
+        [cleanedCity, cleanedCountry, "airfield runway"].filter(Boolean).join(" "),
+      ]
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 7),
+    ),
+  );
 }
 
 async function searchPexelsPhoto(query: string, apiKey: string) {
@@ -78,7 +104,7 @@ async function searchPexelsPhoto(query: string, apiKey: string) {
     headers: {
       Authorization: apiKey,
     },
-    next: { revalidate: 21600 },
+    next: { revalidate: PEXELS_REVALIDATE_SECONDS },
   });
 
   if (!response.ok) {
@@ -112,6 +138,7 @@ async function searchPexelsPhoto(query: string, apiKey: string) {
     providerName: "Pexels",
     providerUrl: "https://www.pexels.com",
     photoPageUrl: photo.url ?? null,
+    query,
   };
 }
 
@@ -119,7 +146,7 @@ function jsonResponse(body: unknown, status = 200) {
   return NextResponse.json(body, {
     status,
     headers: {
-      "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400",
+      "Cache-Control": "no-store, max-age=0",
     },
   });
 }
@@ -129,9 +156,28 @@ export async function GET(request: NextRequest) {
   const airportName = sanitizeChunk(request.nextUrl.searchParams.get("airportName"));
   const city = sanitizeChunk(request.nextUrl.searchParams.get("city"));
   const country = sanitizeChunk(request.nextUrl.searchParams.get("country"));
+  const prefer = sanitizeChunk(request.nextUrl.searchParams.get("prefer")).toLowerCase();
 
   if (!icao) {
     return jsonResponse({ error: "Falta ICAO." }, 400);
+  }
+
+  const pexelsApiKey = process.env.PEXELS_API_KEY?.trim();
+  const shouldPreferPexels = prefer === "pexels" || prefer === "dynamic";
+
+  if (pexelsApiKey && shouldPreferPexels) {
+    const queries = buildSearchQueries({ icao, airportName, city, country });
+
+    for (const query of queries) {
+      try {
+        const result = await searchPexelsPhoto(query, pexelsApiKey);
+        if (result) {
+          return jsonResponse(result);
+        }
+      } catch {
+        // continue with next query
+      }
+    }
   }
 
   const localImageUrl = await findLocalAirportImage(icao);
@@ -148,24 +194,28 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const pexelsApiKey = process.env.PEXELS_API_KEY?.trim();
+  if (pexelsApiKey && !shouldPreferPexels) {
+    const queries = buildSearchQueries({ icao, airportName, city, country });
 
-  if (!pexelsApiKey) {
-    return jsonResponse({ error: "No existe imagen local ni PEXELS_API_KEY." }, 404);
-  }
-
-  const queries = buildSearchQueries({ airportName, city, country });
-
-  for (const query of queries) {
-    try {
-      const result = await searchPexelsPhoto(query, pexelsApiKey);
-      if (result) {
-        return jsonResponse(result);
+    for (const query of queries) {
+      try {
+        const result = await searchPexelsPhoto(query, pexelsApiKey);
+        if (result) {
+          return jsonResponse(result);
+        }
+      } catch {
+        // continue with next query
       }
-    } catch {
-      // continue with next query
     }
   }
 
-  return jsonResponse({ error: "No se encontró imagen para este aeropuerto." }, 404);
+  return jsonResponse(
+    {
+      error: pexelsApiKey
+        ? "No se encontró imagen dinámica ni local para este aeropuerto."
+        : "No existe imagen local y falta PEXELS_API_KEY.",
+      source: "fallback",
+    },
+    404,
+  );
 }

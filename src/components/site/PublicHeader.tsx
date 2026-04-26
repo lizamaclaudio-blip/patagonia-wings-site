@@ -13,11 +13,15 @@ const navItems = [
   { href: "/#flota",           label: "Flota" },
   { href: "/#certificaciones", label: "Certificaciones" },
   { href: "/#descargas",       label: "Descargas" },
-  { href: "/#contacto",        label: "Contacto" },
+  { href: "/routes",            label: "Rutas" },
+  { href: "/dashboard#partners", label: "Partners" },
 ];
 
 function isPublicNavActive(pathname: string, href: string) {
-  return pathname === "/" && href === "/#inicio";
+  if (href === "/#inicio") return pathname === "/";
+  if (href.startsWith("/#")) return false;
+  if (href.includes("#")) return pathname === href.split("#")[0];
+  return pathname === href;
 }
 
 export default function PublicHeader() {
