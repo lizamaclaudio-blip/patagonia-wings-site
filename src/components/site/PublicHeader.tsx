@@ -7,14 +7,13 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase/browser";
 
 const navItems = [
-  { href: "/#inicio",          label: "Inicio" },
-  { href: "/#nosotros",        label: "Nosotros" },
-  { href: "/#servicios",       label: "Servicios" },
-  { href: "/#flota",           label: "Flota" },
-  { href: "/#certificaciones", label: "Certificaciones" },
-  { href: "/#descargas",       label: "Descargas" },
-  { href: "/routes",            label: "Rutas" },
-  { href: "/dashboard#partners", label: "Partners" },
+  { href: "/#inicio",    label: "Inicio" },
+  { href: "/#nosotros",  label: "Nosotros" },
+  { href: "/#servicios", label: "Servicios" },
+  { href: "/#flota",     label: "Flota" },
+  { href: "/#descargas", label: "Descargas" },
+  { href: "/routes",     label: "Rutas" },
+  { href: "/economia",   label: "Economía" },
 ];
 
 function isPublicNavActive(pathname: string, href: string) {
@@ -132,6 +131,13 @@ export default function PublicHeader() {
                   onClick={() => setMenuOpen(false)}
                 >
                   ✈ Despacho
+                </Link>
+                <Link
+                  href="/economia"
+                  className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  💰 Economía
                 </Link>
                 <div className="my-2 border-t border-white/[0.07]" />
                 <button

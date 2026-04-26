@@ -28,7 +28,7 @@ type ProfileFormState = {
   ivao_id: string;
 };
 
-type ProfileView = "perfil" | "datos";
+type ProfileView = "perfil" | "datos" | "economia";
 
 type NavigraphStatusResponse = {
   configured: boolean;
@@ -172,7 +172,195 @@ function getRankBadge(rank: string | null | undefined) {
 }
 
 function readView(value: string | null): ProfileView {
-  return value === "datos" ? "datos" : "perfil";
+  if (value === "datos") return "datos";
+  if (value === "economia") return "economia";
+  return "perfil";
+}
+
+// ─── Pilot Economy Types ──────────────────────────────────────────────────────
+
+type PilotSalaryData = {
+  period: { year: number; month: number };
+  paymentDate: string;
+  flightsCount: number;
+  commissionTotalUsd: number;
+  damageDeductionsUsd: number;
+  baseSalaryUsd: number;
+  netPaidUsd: number;
+  qualifiesForBase: boolean;
+  ledger: Record<string, unknown> | null;
+  recentFlights: Array<{ id: string; commissionUsd: number; damageDeductionUsd: number; completedAt: string }>;
+};
+
+const MONTH_NAMES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+function fmtUsd(n: number) {
+  return `$${Math.abs(n).toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD`;
+}
+
+function PilotEconomyView({ session, profile }: { session: import("@supabase/supabase-js").Session; profile: import("@/lib/pilot-profile").PilotProfileRecord | null }) {
+  const [data, setData] = useState<PilotSalaryData | null>(null);
+  const [loadingEco, setLoadingEco] = useState(true);
+  const [errorEco, setErrorEco] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoadingEco(true);
+      setErrorEco("");
+      try {
+        const token = session.access_token ?? "";
+        const res = await fetch("/api/pilot/salary/monthly", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("No se pudo cargar la liquidación.");
+        const json = (await res.json()) as PilotSalaryData;
+        if (!cancelled) setData(json);
+      } catch (err) {
+        if (!cancelled) setErrorEco(err instanceof Error ? err.message : "Error al cargar.");
+      } finally {
+        if (!cancelled) setLoadingEco(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [session]);
+
+  function handlePrint() {
+    window.print();
+  }
+
+  if (loadingEco) {
+    return (
+      <div className="py-10 text-center text-sm text-white/40">Cargando datos económicos...</div>
+    );
+  }
+
+  if (errorEco) {
+    return (
+      <div className="rounded-[18px] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{errorEco}</div>
+    );
+  }
+
+  if (!data) return null;
+
+  const walletBalance = toNumber(((profile as unknown) as Record<string, unknown> | null)?.wallet_balance ?? 0);
+  const monthName = MONTH_NAMES_ES[(data.period.month - 1)] ?? "";
+  const ledgerStatus = (data.ledger as Record<string, unknown> | null)?.status as string | undefined;
+  const isPaid = ledgerStatus === "paid";
+  const isSkipped = ledgerStatus === "skipped";
+
+  const econCards = [
+    { emoji: "💼", label: "Saldo billetera", value: fmtUsd(walletBalance), tone: walletBalance >= 0 ? "text-emerald-300" : "text-rose-300", bg: "from-emerald-500/10" },
+    { emoji: "✈️", label: "Vuelos completados", value: String(data.flightsCount), tone: "text-white", bg: "from-sky-500/10" },
+    { emoji: "💵", label: "Comisiones del mes", value: fmtUsd(data.commissionTotalUsd), tone: "text-cyan-300", bg: "from-cyan-500/10" },
+    { emoji: "📅", label: "Sueldo base", value: data.qualifiesForBase ? fmtUsd(data.baseSalaryUsd) : "No califica (< 5 vuelos)", tone: data.qualifiesForBase ? "text-violet-300" : "text-white/40", bg: "from-violet-500/10" },
+    { emoji: "🔧", label: "Deducciones daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "Sin deducciones", tone: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40", bg: "from-rose-500/10" },
+    { emoji: "🏦", label: "Neto del período", value: fmtUsd(data.netPaidUsd), tone: "text-emerald-300", bg: "from-emerald-500/10" },
+  ];
+
+  return (
+    <div className="space-y-6 print:text-black">
+      {/* Print header (only visible on print) */}
+      <div className="hidden print:block mb-6">
+        <h1 className="text-2xl font-bold">Patagonia Wings — Liquidación de haberes</h1>
+        <p className="text-sm">{monthName} {data.period.year} · Piloto: {profile?.callsign ?? "—"}</p>
+        <hr className="mt-2" />
+      </div>
+
+      {/* Period header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40 print:text-gray-500">Período actual</p>
+          <h3 className="mt-1 text-xl font-bold text-white print:text-black">{monthName} {data.period.year}</h3>
+          <p className="mt-1 text-xs text-white/48 print:text-gray-600">Fecha de pago estimada: {data.paymentDate}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${
+            isPaid ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-200"
+            : isSkipped ? "border-white/10 bg-white/[0.04] text-white/40"
+            : "border-amber-300/20 bg-amber-400/10 text-amber-200"
+          }`}>
+            {isPaid ? "✅ Pagado" : isSkipped ? "Sin actividad" : "🕐 Pendiente"}
+          </span>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/70 transition hover:border-white/20 hover:text-white print:hidden"
+          >
+            🖨 Imprimir liquidación
+          </button>
+        </div>
+      </div>
+
+      {/* Economy cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {econCards.map((card) => (
+          <div key={card.label} className={`rounded-[20px] border border-white/8 bg-gradient-to-br ${card.bg} to-transparent px-5 py-5 print:border print:border-gray-200 print:bg-white`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl print:hidden">{card.emoji}</span>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40 print:text-gray-500">{card.label}</p>
+            </div>
+            <p className={`text-xl font-black ${card.tone} print:text-black`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Payment info */}
+      <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Resumen del período</p>
+        <div className="space-y-2">
+          {[
+            { label: "Comisiones", value: `+${fmtUsd(data.commissionTotalUsd)}`, color: "text-emerald-300" },
+            { label: `Sueldo base (${data.qualifiesForBase ? "5+ vuelos ✓" : "< 5 vuelos ✗"})`, value: data.qualifiesForBase ? `+${fmtUsd(data.baseSalaryUsd)}` : "$0 USD", color: data.qualifiesForBase ? "text-violet-300" : "text-white/40" },
+            { label: "Deducciones por daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "$0 USD", color: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40" },
+          ].map((row) => (
+            <div key={row.label} className="flex justify-between text-sm">
+              <span className="text-white/60 print:text-gray-600">{row.label}</span>
+              <span className={`font-bold ${row.color} print:text-black`}>{row.value}</span>
+            </div>
+          ))}
+          <div className="mt-2 border-t border-white/8 pt-2 flex justify-between text-sm print:border-t print:border-gray-200">
+            <span className="font-bold text-white print:text-black">Total neto</span>
+            <span className="font-black text-emerald-300 print:text-black">{fmtUsd(data.netPaidUsd)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent flights */}
+      {data.recentFlights.length > 0 && (
+        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Vuelos del período ({data.recentFlights.length})</p>
+          <div className="space-y-1.5">
+            {data.recentFlights.slice(0, 10).map((f, i) => {
+              const dateStr = f.completedAt ? new Date(f.completedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "—";
+              return (
+                <div key={i} className="flex items-center justify-between rounded-[10px] border border-white/5 bg-white/[0.015] px-3 py-2 print:border print:border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/30 print:text-gray-400">✈</span>
+                    <span className="text-xs text-white/60 print:text-gray-600">{dateStr}</span>
+                  </div>
+                  <div className="flex gap-4 text-xs">
+                    <span className="text-emerald-300 font-semibold print:text-black">+{fmtUsd(f.commissionUsd)}</span>
+                    {f.damageDeductionUsd > 0 && (
+                      <span className="text-rose-300 font-semibold print:text-gray-600">−{fmtUsd(f.damageDeductionUsd)}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Print footer */}
+      <div className="hidden print:block mt-6 text-xs text-gray-500 border-t pt-4">
+        <p>Patagonia Wings Virtual Airline — Documento generado el {new Date().toLocaleDateString("es-CL")}. Documento no oficial.</p>
+      </div>
+    </div>
+  );
 }
 
 function ProfileContent() {
@@ -445,6 +633,17 @@ function ProfileContent() {
               >
                 Mis datos
               </button>
+              <button
+                type="button"
+                onClick={() => switchView("economia")}
+                className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                  activeView === "economia"
+                    ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                    : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                }`}
+              >
+                💰 Mi economía
+              </button>
             </div>
           </div>
         </section>
@@ -577,6 +776,19 @@ function ProfileContent() {
                 </div>
               </div>
             </div>
+          </section>
+        ) : null}
+
+        {activeView === "economia" ? (
+          <section className="glass-panel rounded-[30px] p-6 sm:p-7">
+            <div className="mb-5">
+              <span className="section-chip">Mi economía</span>
+              <h2 className="mt-4 text-3xl font-semibold text-white">💰 Liquidación del período actual</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
+                Tus comisiones, sueldo base y deducciones del mes en curso. El pago se realiza el último día hábil del mes.
+              </p>
+            </div>
+            <PilotEconomyView session={session} profile={profile} />
           </section>
         ) : null}
 

@@ -141,7 +141,7 @@ const SECTIONS: Section[] = [
       },
       {
         heading: "Multa por abandono operacional",
-        text: "Si tu aeronave quedó en un aeropuerto que NO es un hub designado de Patagonia Wings, se suma una multa de $350 USD al costo del traslado. Esta multa refleja el costo operacional de reubicar recursos fuera de la red. Si el avión quedó en un hub (SCL, EZE, GRU, MIA, JFK, MAD, LHR, CDG, DXB, SIN…), el traslado solo cobra el precio real — sin multa.",
+        text: "Si tu aeronave quedó en un aeropuerto que NO es un hub designado de Patagonia Wings, se suma una multa de $350 USD al costo del traslado. Esta multa refleja el costo operacional de reubicar recursos fuera de la red.",
       },
       {
         heading: "Cómo evitar la multa",
@@ -185,10 +185,10 @@ function SectionCard({ section }: { section: Section }) {
 
 function CommissionTable() {
   const rows = [
-    { ruta: "SCBA → SCTE (Regional)", nm: 140, block: 45, tipo: "DHC-8 (Regional ×1.3)", modo: "CAREER ×1.0", comision: "$43.68" },
-    { ruta: "SCEL → SAEZ (Nacional)", nm: 960, block: 135, tipo: "A320 (Narrowbody ×1.6)", modo: "CAREER ×1.0", comision: "$165.12" },
-    { ruta: "SCEL → SPJC (Internacional)", nm: 2340, block: 290, tipo: "A320 (Narrowbody ×1.6)", modo: "CHARTER ×1.3", comision: "$500.00" },
-    { ruta: "SCEL → EGLL (Long haul)", nm: 7200, block: 780, tipo: "B787 (Widebody ×2.2)", modo: "CAREER ×1.0", comision: "$500.00" },
+    { ruta: "SCBA → SCTE (Regional)", nm: 140, block: 45, tipo: "DHC-8 (Regional ×1.3)", modo: "CAREER ×1.5", comision: "$43.68" },
+    { ruta: "SCEL → SAEZ (Nacional)", nm: 960, block: 135, tipo: "A320 (Narrowbody ×1.6)", modo: "CAREER ×1.5", comision: "$165.12" },
+    { ruta: "SCEL → SPJC (Internacional)", nm: 2340, block: 290, tipo: "A320 (Narrowbody ×1.6)", modo: "CHARTER ×1.2", comision: "$500.00" },
+    { ruta: "SCEL → EGLL (Long haul)", nm: 7200, block: 780, tipo: "B787 (Widebody ×2.2)", modo: "CAREER ×1.5", comision: "$500.00" },
     { ruta: "SCPQ → SCTE (Local)", nm: 65, block: 25, tipo: "C208 (GA ×0.8)", modo: "TRAINING ×0.5", comision: "$15.00" },
   ];
 
@@ -220,6 +220,87 @@ function CommissionTable() {
   );
 }
 
+// ─── SVG Mini Line Chart ──────────────────────────────────────────────────────
+
+type ChartSeries = { label: string; color: string; values: number[] };
+
+function MiniLineChart({ series, labels }: { series: ChartSeries[]; labels: string[] }) {
+  const W = 560;
+  const H = 120;
+  const PAD_L = 8;
+  const PAD_R = 8;
+  const PAD_T = 12;
+  const PAD_B = 8;
+
+  const allValues = series.flatMap((s) => s.values);
+  const minVal = Math.min(0, ...allValues);
+  const maxVal = Math.max(...allValues, 1);
+  const range = maxVal - minVal || 1;
+
+  const n = labels.length;
+  const xStep = n <= 1 ? 0 : (W - PAD_L - PAD_R) / (n - 1);
+
+  function toX(i: number) { return PAD_L + i * xStep; }
+  function toY(v: number) { return PAD_T + (1 - (v - minVal) / range) * (H - PAD_T - PAD_B); }
+
+  function buildPath(values: number[]) {
+    return values.map((v, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(" ");
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full"
+      style={{ height: 120 }}
+      aria-hidden="true"
+    >
+      {/* Zero line */}
+      {minVal < 0 && (
+        <line
+          x1={PAD_L} y1={toY(0).toFixed(1)}
+          x2={W - PAD_R} y2={toY(0).toFixed(1)}
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
+      )}
+      {/* Series lines */}
+      {series.map((s) => (
+        <g key={s.label}>
+          <path
+            d={buildPath(s.values)}
+            fill="none"
+            stroke={s.color}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          {/* Dots */}
+          {s.values.map((v, i) => (
+            <circle key={i} cx={toX(i).toFixed(1)} cy={toY(v).toFixed(1)} r="3" fill={s.color} />
+          ))}
+        </g>
+      ))}
+      {/* X labels */}
+      {labels.map((label, i) => (
+        <text
+          key={i}
+          x={toX(i).toFixed(1)}
+          y={H - 1}
+          textAnchor="middle"
+          fontSize="9"
+          fill="rgba(255,255,255,0.35)"
+          fontFamily="system-ui, sans-serif"
+        >
+          {label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+// ─── Airline Finance Panel ────────────────────────────────────────────────────
+
 type EconomiaStats = {
   airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
   breakdown: { income_flights: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_salaries: number };
@@ -233,6 +314,26 @@ const MONTH_NAMES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct"
 
 function fmt(n: number) { return n.toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 function fmtUsd(n: number) { return `$${fmt(Math.abs(n))} USD`; }
+
+function entryTypeLabel(t: string) {
+  const map: Record<string, string> = {
+    flight_income: "Ingreso vuelo",
+    fuel_cost: "Combustible",
+    maintenance_cost: "Mantenimiento",
+    pilot_payment: "Pago piloto",
+    repair_cost: "Reparación",
+    salary_payment: "Nómina",
+    initial_capital: "Capital inicial",
+  };
+  return map[t] ?? t;
+}
+
+function entryTypeColor(t: string) {
+  if (t === "flight_income" || t === "initial_capital") return "text-emerald-300";
+  if (t === "pilot_payment" || t === "salary_payment") return "text-cyan-300";
+  if (t === "repair_cost") return "text-rose-300";
+  return "text-amber-300";
+}
 
 function AirlineFinancePanel() {
   const [stats, setStats] = useState<EconomiaStats | null>(null);
@@ -250,58 +351,108 @@ function AirlineFinancePanel() {
 
   if (loading) return (
     <div className="mb-10 rounded-[28px] border border-white/10 bg-white/[0.03] p-7 text-sm text-white/40">
-      Cargando estadisticas de la aerolinea...
+      Cargando estadísticas de la aerolínea...
     </div>
   );
   if (!stats) return null;
 
-  const { airline, breakdown, payroll, topPilots, totalFlightsCompleted } = stats;
+  const { airline, breakdown, payroll, topPilots, totalFlightsCompleted, recentLedger } = stats;
   const isProfit = airline.net_profit_usd >= 0;
+
+  // Build chart data from payroll (reverse = oldest first)
+  const chartPayroll = [...payroll].reverse();
+  const chartLabels = chartPayroll.map((r) => `${MONTH_NAMES[r.month - 1]}`);
+  const hasChart = chartPayroll.length >= 2;
+
+  const summaryCards = [
+    { emoji: "🏦", label: "Balance actual", value: fmtUsd(airline.balance_usd), tone: airline.balance_usd >= 0 ? "text-emerald-300" : "text-rose-300", bg: "from-emerald-500/10" },
+    { emoji: "📈", label: "Ingresos totales", value: fmtUsd(airline.total_revenue_usd), tone: "text-sky-300", bg: "from-sky-500/10" },
+    { emoji: "📉", label: "Costos totales", value: fmtUsd(airline.total_costs_usd), tone: "text-amber-300", bg: "from-amber-500/10" },
+    { emoji: isProfit ? "✅" : "⚠️", label: isProfit ? "Utilidad neta" : "Pérdida neta", value: `${isProfit ? "+" : "−"}${fmtUsd(airline.net_profit_usd)}`, tone: isProfit ? "text-emerald-300" : "text-rose-300", bg: isProfit ? "from-emerald-500/10" : "from-rose-500/10" },
+  ];
+
+  const breakdownCards = [
+    { emoji: "✈️", label: "Vuelos completados", value: String(totalFlightsCompleted), tone: "text-white" },
+    { emoji: "💵", label: "Ingreso por vuelos", value: fmtUsd(breakdown.income_flights), tone: "text-emerald-300" },
+    { emoji: "⛽", label: "Combustible", value: fmtUsd(breakdown.cost_fuel), tone: "text-amber-300" },
+    { emoji: "🔩", label: "Mantenimiento", value: fmtUsd(breakdown.cost_maintenance), tone: "text-amber-300" },
+    { emoji: "👨‍✈️", label: "Pagos a pilotos", value: fmtUsd(breakdown.cost_pilot_payments), tone: "text-cyan-300" },
+    { emoji: "🔧", label: "Reparaciones", value: fmtUsd(breakdown.cost_repairs), tone: "text-rose-300" },
+  ];
 
   return (
     <div className="mb-10 space-y-5">
-      {/* Airline summary */}
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-7">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">Caja aerolínea · {airline.name}</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "Balance actual", value: fmtUsd(airline.balance_usd), tone: airline.balance_usd >= 0 ? "text-emerald-300" : "text-rose-300" },
-            { label: "Ingresos totales", value: fmtUsd(airline.total_revenue_usd), tone: "text-sky-300" },
-            { label: "Costos totales", value: fmtUsd(airline.total_costs_usd), tone: "text-amber-300" },
-            { label: `Utilidad ${isProfit ? "neta" : "/ pérdida"}`, value: `${isProfit ? "+" : "−"}${fmtUsd(airline.net_profit_usd)}`, tone: isProfit ? "text-emerald-300" : "text-rose-300" },
-          ].map((item) => (
-            <div key={item.label} className="rounded-[20px] border border-white/8 bg-black/15 px-5 py-4">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">{item.label}</p>
-              <p className={`mt-2 text-lg font-black ${item.tone}`}>{item.value}</p>
+      {/* Summary cards */}
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 sm:p-7">
+        <div className="flex items-center gap-2 mb-5">
+          <span className="text-2xl">🏢</span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">Aerolínea virtual</p>
+            <p className="text-base font-bold text-white">{airline.name}</p>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {summaryCards.map((card) => (
+            <div key={card.label} className={`rounded-[20px] border border-white/8 bg-gradient-to-br ${card.bg} to-transparent px-5 py-5`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{card.emoji}</span>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">{card.label}</p>
+              </div>
+              <p className={`text-xl font-black ${card.tone}`}>{card.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Cost breakdown */}
+        {/* Cost breakdown mini-grid */}
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {[
-            { label: "Vuelos completados", value: String(totalFlightsCompleted), tone: "text-white" },
-            { label: "Ingreso por vuelos", value: fmtUsd(breakdown.income_flights), tone: "text-emerald-300" },
-            { label: "Combustible", value: fmtUsd(breakdown.cost_fuel), tone: "text-amber-300" },
-            { label: "Mantenimiento", value: fmtUsd(breakdown.cost_maintenance), tone: "text-amber-300" },
-            { label: "Pagos pilotos", value: fmtUsd(breakdown.cost_pilot_payments), tone: "text-cyan-300" },
-            { label: "Reparaciones", value: fmtUsd(breakdown.cost_repairs), tone: "text-rose-300" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-white/[0.02] px-4 py-3">
-              <span className="text-[11px] text-white/54">{item.label}</span>
-              <span className={`text-sm font-bold ${item.tone}`}>{item.value}</span>
+          {breakdownCards.map((card) => (
+            <div key={card.label} className="flex items-center gap-3 rounded-[14px] border border-white/6 bg-white/[0.02] px-4 py-3">
+              <span className="text-base">{card.emoji}</span>
+              <span className="flex-1 text-[11px] text-white/54">{card.label}</span>
+              <span className={`text-sm font-bold ${card.tone}`}>{card.value}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Payroll by month + top pilots side by side */}
+      {/* Monthly trend chart */}
+      {hasChart && (
+        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-1">Tendencia mensual</p>
+          <h3 className="text-base font-bold text-white mb-4">Ingresos · Costos · Neto por piloto</h3>
+          <MiniLineChart
+            labels={chartLabels}
+            series={[
+              { label: "Comisiones", color: "#34d399", values: chartPayroll.map((r) => r.commission) },
+              { label: "Base salary", color: "#818cf8", values: chartPayroll.map((r) => r.base_salary) },
+              { label: "Neto", color: "#38bdf8", values: chartPayroll.map((r) => r.net) },
+            ]}
+          />
+          <div className="mt-3 flex flex-wrap gap-4">
+            {[
+              { color: "#34d399", label: "Comisiones pilotos" },
+              { color: "#818cf8", label: "Sueldo base" },
+              { color: "#38bdf8", label: "Neto total" },
+            ].map((l) => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-5 rounded-full" style={{ backgroundColor: l.color }} />
+                <span className="text-[11px] text-white/50">{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Payroll by month + top pilots */}
       {(payroll.length > 0 || topPilots.length > 0) && (
         <div className="grid gap-5 lg:grid-cols-2">
           {payroll.length > 0 && (
             <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Nomina mensual</p>
-              <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">📋</span>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Nómina mensual</p>
+              </div>
+              <div className="space-y-2">
                 {payroll.slice(0, 6).map((row) => (
                   <div key={`${row.year}-${row.month}`} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
                     <div>
@@ -320,12 +471,17 @@ function AirlineFinancePanel() {
 
           {topPilots.length > 0 && (
             <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Top pilotos por comision</p>
-              <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🏆</span>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Top pilotos por comisión</p>
+              </div>
+              <div className="space-y-2">
                 {topPilots.map((p, i) => (
                   <div key={p.callsign} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-white/30">#{i + 1}</span>
+                      <span className={`text-sm font-black ${i === 0 ? "text-amber-300" : i === 1 ? "text-white/60" : i === 2 ? "text-amber-600" : "text-white/30"}`}>
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                      </span>
                       <span className="text-sm font-bold text-white">{p.callsign}</span>
                     </div>
                     <span className="text-sm font-black text-cyan-300">{fmtUsd(p.commission)}</span>
@@ -334,6 +490,39 @@ function AirlineFinancePanel() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Recent ledger */}
+      {recentLedger.length > 0 && (
+        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">🧾</span>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Últimas transacciones</p>
+          </div>
+          <div className="space-y-1.5">
+            {recentLedger.map((row, i) => {
+              const isIncome = row.amount_usd > 0;
+              const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "";
+              return (
+                <div key={i} className="flex items-center justify-between rounded-[12px] border border-white/5 bg-white/[0.015] px-4 py-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-base shrink-0">{isIncome ? "💚" : "🔴"}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-white/80 truncate">{entryTypeLabel(row.entry_type)}</p>
+                      {row.pilot_callsign && <p className="text-[10px] text-white/36">{row.pilot_callsign}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    <p className={`text-sm font-bold ${entryTypeColor(row.entry_type)}`}>
+                      {isIncome ? "+" : "−"}{fmtUsd(row.amount_usd)}
+                    </p>
+                    <p className="text-[10px] text-white/30">{dateStr}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -359,7 +548,7 @@ export default function EconomiaPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-400/70">
               Patagonia Wings
             </p>
-            <h1 className="mt-2 text-4xl font-black text-white">Sistema económico</h1>
+            <h1 className="mt-2 text-4xl font-black text-white">💰 Sistema económico</h1>
             <p className="mt-3 max-w-2xl text-base leading-7 text-white/60">
               Cómo se calculan tus ingresos, comisiones, sueldo mensual y deducciones dentro de la simulación de aerolínea virtual.
             </p>
@@ -368,11 +557,11 @@ export default function EconomiaPage() {
           {/* Quick summary pills */}
           <div className="mt-6 flex flex-wrap gap-2">
             {[
-              { label: "$1,000 USD de inicio", color: "border-emerald-400/20 bg-emerald-400/8 text-emerald-300" },
-              { label: "Comisión por cada vuelo completado", color: "border-cyan-400/20 bg-cyan-400/8 text-cyan-300" },
-              { label: "$1,500 USD sueldo base con 5+ vuelos/mes", color: "border-violet-400/20 bg-violet-400/8 text-violet-300" },
-              { label: "Pago el último día hábil del mes", color: "border-amber-400/20 bg-amber-400/8 text-amber-300" },
-              { label: "−10% por daño grave a la aeronave", color: "border-red-400/20 bg-red-400/8 text-red-300" },
+              { label: "💳 $1,000 USD de inicio", color: "border-emerald-400/20 bg-emerald-400/8 text-emerald-300" },
+              { label: "✈️ Comisión por cada vuelo completado", color: "border-cyan-400/20 bg-cyan-400/8 text-cyan-300" },
+              { label: "📅 $1,500 USD sueldo base con 5+ vuelos/mes", color: "border-violet-400/20 bg-violet-400/8 text-violet-300" },
+              { label: "🗓 Pago el último día hábil del mes", color: "border-amber-400/20 bg-amber-400/8 text-amber-300" },
+              { label: "⚠️ −10% por daño grave a la aeronave", color: "border-red-400/20 bg-red-400/8 text-red-300" },
             ].map((pill) => (
               <span
                 key={pill.label}
@@ -398,7 +587,7 @@ export default function EconomiaPage() {
         <div className="mt-8">
           <div className="mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Referencia rápida</p>
-            <h2 className="mt-1 text-xl font-bold text-white">Ejemplos de comisión por ruta</h2>
+            <h2 className="mt-1 text-xl font-bold text-white">📊 Ejemplos de comisión por ruta</h2>
             <p className="mt-1 text-sm text-white/48">Los valores al tope $500 aplican cuando la fórmula supera ese máximo.</p>
           </div>
           <CommissionTable />
@@ -407,7 +596,7 @@ export default function EconomiaPage() {
         {/* Monthly timeline */}
         <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Ciclo mensual</p>
-          <h2 className="mt-1 text-xl font-bold text-white">¿Qué pasa cada mes?</h2>
+          <h2 className="mt-1 text-xl font-bold text-white">🗓 ¿Qué pasa cada mes?</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { day: "Día 1", title: "Inicio del período", desc: "Comienza el conteo de vuelos y acumulación de comisiones para el nuevo mes." },
@@ -439,6 +628,12 @@ export default function EconomiaPage() {
             className="rounded-2xl border border-emerald-400/24 bg-emerald-400/10 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/16"
           >
             Ver rutas y comisiones estimadas
+          </Link>
+          <Link
+            href="/profile?view=economia"
+            className="rounded-2xl border border-cyan-400/24 bg-cyan-400/10 px-6 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/16"
+          >
+            Mi liquidación personal →
           </Link>
         </div>
       </main>
