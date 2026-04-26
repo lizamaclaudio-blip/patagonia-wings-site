@@ -6,6 +6,7 @@ import {
   type AcarsReportInput,
   type AcarsTelemetrySample,
   type AircraftDamageEventInput,
+  type AcarsCloseoutPayloadInput,
   type PreparedDispatchInput,
 } from "@/lib/acars-official";
 
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
       telemetryLog?: AcarsTelemetrySample[] | null;
       lastSimData?: AcarsTelemetrySample | null;
       damageEvents?: AircraftDamageEventInput[] | null;
+      closeoutPayload?: AcarsCloseoutPayloadInput | null;
     };
 
     const reservationId =
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
       telemetryLog: payload.telemetryLog ?? [],
       lastSimData: payload.lastSimData ?? null,
       damageEvents: payload.damageEvents ?? [],
+      closeoutPayload: payload.closeoutPayload ?? null,
     });
 
     return NextResponse.json({

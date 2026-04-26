@@ -105,6 +105,102 @@ export function calculateDamageDeduction(
   return Math.round(repairBase * 0.1 * 100) / 100;
 }
 
+// ─── Route / itinerary centralised calculations ───────────────────────────────
+
+/** Estimate block minutes from route distance (simple linear model).
+ *  Adds ~45-min constant for taxi-out/in + climb/descent overhead.
+ */
+export function estimateBlockMinutes(distanceNm: number): number {
+  if (distanceNm <= 0) return 0;
+  // Cruise ~440 kt average → 1 NM ≈ 0.136 min + 45 min fixed overhead
+  return Math.max(30, Math.round(distanceNm * 0.136 + 45));
+}
+
+/** Estimated fuel consumption in kg for a given route and aircraft category */
+export function estimateFuelKg(
+  distanceNm: number,
+  aircraftTypeCode?: string | null
+): number {
+  if (distanceNm <= 0) return 0;
+  const cat = classifyAircraft(aircraftTypeCode);
+  // kg/NM burn rate by category (rough averages incl climb/descent penalty)
+  const ratePerNm: Record<AircraftCategory, number> = {
+    widebody: 22,
+    narrowbody: 8,
+    regional: 3.5,
+    ga: 0.8,
+  };
+  return Math.round(distanceNm * ratePerNm[cat]);
+}
+
+/** Estimated fuel cost in USD (JetA ~$1.05/kg) */
+export function estimateFuelCostUsd(
+  distanceNm: number,
+  aircraftTypeCode?: string | null
+): number {
+  return Math.round(estimateFuelKg(distanceNm, aircraftTypeCode) * 1.05 * 100) / 100;
+}
+
+/** Estimated hourly maintenance/wear cost by aircraft category */
+export function estimateWearCostPerHour(aircraftTypeCode?: string | null): number {
+  const rates: Record<AircraftCategory, number> = {
+    widebody: 180,
+    narrowbody: 90,
+    regional: 45,
+    ga: 20,
+  };
+  return rates[classifyAircraft(aircraftTypeCode)];
+}
+
+/** Estimated maintenance cost for a route */
+export function estimateMaintenanceCostUsd(
+  distanceNm: number,
+  aircraftTypeCode?: string | null
+): number {
+  const blockHours = estimateBlockMinutes(distanceNm) / 60;
+  return Math.round(blockHours * estimateWearCostPerHour(aircraftTypeCode) * 100) / 100;
+}
+
+/** Full route P&L estimate for display in route catalog / itinerary pages */
+export function estimateRouteProfitLoss(
+  distanceNm: number,
+  aircraftTypeCode?: string | null,
+  flightModeCode?: string | null
+): {
+  blockMinutes: number;
+  fuelKg: number;
+  fuelCostUsd: number;
+  maintenanceCostUsd: number;
+  pilotCommissionUsd: number;
+  airlineRevenueUsd: number;
+  netProfitUsd: number;
+} {
+  const blockMinutes = estimateBlockMinutes(distanceNm);
+  const fuelKg = estimateFuelKg(distanceNm, aircraftTypeCode);
+  const fuelCostUsd = Math.round(fuelKg * 1.05 * 100) / 100;
+  const maintenanceCostUsd = estimateMaintenanceCostUsd(distanceNm, aircraftTypeCode);
+  const pilotCommissionUsd = calculateFlightCommission({
+    distanceNm,
+    blockMinutes,
+    aircraftTypeCode,
+    flightModeCode,
+  });
+  // Airline revenue = 3× pilot commission (virtual airline model)
+  const airlineRevenueUsd = Math.round(pilotCommissionUsd * 3 * 100) / 100;
+  const totalCosts = fuelCostUsd + maintenanceCostUsd + pilotCommissionUsd;
+  const netProfitUsd = Math.round((airlineRevenueUsd - totalCosts) * 100) / 100;
+
+  return {
+    blockMinutes,
+    fuelKg,
+    fuelCostUsd,
+    maintenanceCostUsd,
+    pilotCommissionUsd,
+    airlineRevenueUsd,
+    netProfitUsd,
+  };
+}
+
 // Projected commission label for route catalog display
 export function estimateRouteCommission(
   distanceNm: number | null | undefined,

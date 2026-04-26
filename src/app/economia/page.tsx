@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
 
 type Section = {
@@ -219,6 +220,126 @@ function CommissionTable() {
   );
 }
 
+type EconomiaStats = {
+  airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
+  breakdown: { income_flights: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_salaries: number };
+  payroll: Array<{ year: number; month: number; flights: number; commission: number; base_salary: number; net: number; callsigns: string[] }>;
+  recentLedger: Array<{ entry_type: string; amount_usd: number; pilot_callsign?: string; description?: string; created_at: string }>;
+  topPilots: Array<{ callsign: string; commission: number }>;
+  totalFlightsCompleted: number;
+};
+
+const MONTH_NAMES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function fmt(n: number) { return n.toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function fmtUsd(n: number) { return `$${fmt(Math.abs(n))} USD`; }
+
+function AirlineFinancePanel() {
+  const [stats, setStats] = useState<EconomiaStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/economia/stats")
+      .then((r) => r.json())
+      .then((data: { ok?: boolean } & Partial<EconomiaStats>) => {
+        if (data.ok && data.airline) setStats(data as EconomiaStats);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="mb-10 rounded-[28px] border border-white/10 bg-white/[0.03] p-7 text-sm text-white/40">
+      Cargando estadisticas de la aerolinea...
+    </div>
+  );
+  if (!stats) return null;
+
+  const { airline, breakdown, payroll, topPilots, totalFlightsCompleted } = stats;
+  const isProfit = airline.net_profit_usd >= 0;
+
+  return (
+    <div className="mb-10 space-y-5">
+      {/* Airline summary */}
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-7">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">Caja aerolínea · {airline.name}</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Balance actual", value: fmtUsd(airline.balance_usd), tone: airline.balance_usd >= 0 ? "text-emerald-300" : "text-rose-300" },
+            { label: "Ingresos totales", value: fmtUsd(airline.total_revenue_usd), tone: "text-sky-300" },
+            { label: "Costos totales", value: fmtUsd(airline.total_costs_usd), tone: "text-amber-300" },
+            { label: `Utilidad ${isProfit ? "neta" : "/ pérdida"}`, value: `${isProfit ? "+" : "−"}${fmtUsd(airline.net_profit_usd)}`, tone: isProfit ? "text-emerald-300" : "text-rose-300" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-[20px] border border-white/8 bg-black/15 px-5 py-4">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">{item.label}</p>
+              <p className={`mt-2 text-lg font-black ${item.tone}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Cost breakdown */}
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Vuelos completados", value: String(totalFlightsCompleted), tone: "text-white" },
+            { label: "Ingreso por vuelos", value: fmtUsd(breakdown.income_flights), tone: "text-emerald-300" },
+            { label: "Combustible", value: fmtUsd(breakdown.cost_fuel), tone: "text-amber-300" },
+            { label: "Mantenimiento", value: fmtUsd(breakdown.cost_maintenance), tone: "text-amber-300" },
+            { label: "Pagos pilotos", value: fmtUsd(breakdown.cost_pilot_payments), tone: "text-cyan-300" },
+            { label: "Reparaciones", value: fmtUsd(breakdown.cost_repairs), tone: "text-rose-300" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-white/[0.02] px-4 py-3">
+              <span className="text-[11px] text-white/54">{item.label}</span>
+              <span className={`text-sm font-bold ${item.tone}`}>{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Payroll by month + top pilots side by side */}
+      {(payroll.length > 0 || topPilots.length > 0) && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {payroll.length > 0 && (
+            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Nomina mensual</p>
+              <div className="mt-4 space-y-2">
+                {payroll.slice(0, 6).map((row) => (
+                  <div key={`${row.year}-${row.month}`} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
+                    <div>
+                      <p className="text-xs font-bold text-white">{MONTH_NAMES[row.month - 1]} {row.year}</p>
+                      <p className="text-[10px] text-white/44">{row.flights} vuelos · {row.callsigns.length} piloto{row.callsigns.length !== 1 ? "s" : ""}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-emerald-300">{fmtUsd(row.net)}</p>
+                      <p className="text-[10px] text-white/40">comisión {fmtUsd(row.commission)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {topPilots.length > 0 && (
+            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Top pilotos por comision</p>
+              <div className="mt-4 space-y-2">
+                {topPilots.map((p, i) => (
+                  <div key={p.callsign} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-white/30">#{i + 1}</span>
+                      <span className="text-sm font-bold text-white">{p.callsign}</span>
+                    </div>
+                    <span className="text-sm font-black text-cyan-300">{fmtUsd(p.commission)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EconomiaPage() {
   return (
     <div className="min-h-screen bg-[#030e1a]">
@@ -262,6 +383,9 @@ export default function EconomiaPage() {
             ))}
           </div>
         </div>
+
+        {/* Airline live financial panel */}
+        <AirlineFinancePanel />
 
         {/* Sections */}
         <div className="space-y-6">

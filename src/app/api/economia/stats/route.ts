@@ -1,0 +1,149 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+
+function asNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
+function asText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export async function GET() {
+  try {
+    const supabase = createSupabaseServerClient();
+
+    // Airline summary from airlines table + aggregate from ledger
+    const [airlineRes, ledgerAggRes, ledgerRecentRes, payrollRes, topPilotsRes] = await Promise.all([
+      supabase.from("airlines").select("id, name, balance_usd, total_revenue_usd, total_costs_usd").limit(1).maybeSingle(),
+
+      supabase.from("airline_ledger").select("entry_type, amount_usd"),
+
+      supabase
+        .from("airline_ledger")
+        .select("entry_type, amount_usd, pilot_callsign, description, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
+
+      supabase
+        .from("pilot_salary_ledger")
+        .select("pilot_callsign, period_year, period_month, flights_count, commission_total_usd, block_hours_total, base_salary_usd, net_paid_usd, status")
+        .order("period_year", { ascending: false })
+        .order("period_month", { ascending: false })
+        .limit(30),
+
+      supabase
+        .from("flight_reservations")
+        .select("pilot_callsign, commission_usd, damage_deduction_usd")
+        .eq("status", "completed")
+        .not("commission_usd", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(100),
+    ]);
+
+    const airline = airlineRes.data ?? null;
+    const ledgerRows = (ledgerAggRes.data ?? []) as Array<{ entry_type: string; amount_usd: unknown }>;
+    const recentLedger = (ledgerRecentRes.data ?? []) as Array<Record<string, unknown>>;
+    const payrollRows = (payrollRes.data ?? []) as Array<Record<string, unknown>>;
+    const topPilotRows = (topPilotsRes.data ?? []) as Array<Record<string, unknown>>;
+
+    // Aggregate from ledger by entry_type
+    const byType: Record<string, number> = {};
+    for (const row of ledgerRows) {
+      const t = asText(row.entry_type) || "other";
+      byType[t] = (byType[t] ?? 0) + asNumber(row.amount_usd);
+    }
+
+    const totalIncome = asNumber(byType["flight_income"]);
+    const totalFuel = Math.abs(asNumber(byType["fuel_cost"]));
+    const totalMaintenance = Math.abs(asNumber(byType["maintenance_cost"]));
+    const totalPilotPayments = Math.abs(asNumber(byType["pilot_payment"]));
+    const totalRepairs = Math.abs(asNumber(byType["repair_cost"]));
+    const totalSalaries = Math.abs(asNumber(byType["salary_payment"]));
+    const totalCosts = totalFuel + totalMaintenance + totalPilotPayments + totalRepairs + totalSalaries;
+    const netProfit = totalIncome - totalCosts;
+
+    // Use stored balance if available, otherwise calculate from ledger
+    const airlineBalance = airline
+      ? asNumber(airline.balance_usd) !== 0
+        ? asNumber(airline.balance_usd)
+        : netProfit
+      : netProfit;
+
+    // Monthly payroll summary — group by year/month
+    const payrollByMonth: Record<string, { year: number; month: number; flights: number; commission: number; base_salary: number; net: number; callsigns: string[] }> = {};
+    for (const row of payrollRows) {
+      const key = `${asNumber(row.period_year)}-${asNumber(row.period_month)}`;
+      if (!payrollByMonth[key]) {
+        payrollByMonth[key] = {
+          year: asNumber(row.period_year),
+          month: asNumber(row.period_month),
+          flights: 0,
+          commission: 0,
+          base_salary: 0,
+          net: 0,
+          callsigns: [],
+        };
+      }
+      payrollByMonth[key].flights += asNumber(row.flights_count);
+      payrollByMonth[key].commission += asNumber(row.commission_total_usd);
+      payrollByMonth[key].base_salary += asNumber(row.base_salary_usd);
+      payrollByMonth[key].net += asNumber(row.net_paid_usd);
+      const cs = asText(row.pilot_callsign);
+      if (cs && !payrollByMonth[key].callsigns.includes(cs)) {
+        payrollByMonth[key].callsigns.push(cs);
+      }
+    }
+
+    // Top pilots by commission
+    const pilotTotals: Record<string, number> = {};
+    for (const row of topPilotRows) {
+      const cs = asText(row.pilot_callsign);
+      if (!cs) continue;
+      pilotTotals[cs] = (pilotTotals[cs] ?? 0) + asNumber(row.commission_usd);
+    }
+    const topPilots = Object.entries(pilotTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([callsign, commission]) => ({ callsign, commission: Math.round(commission * 100) / 100 }));
+
+    const totalFlightsCompleted = topPilotRows.length;
+
+    return NextResponse.json({
+      ok: true,
+      airline: {
+        name: asText(airline?.name) || "Patagonia Wings",
+        balance_usd: Math.round(airlineBalance * 100) / 100,
+        total_revenue_usd: Math.round(totalIncome * 100) / 100,
+        total_costs_usd: Math.round(totalCosts * 100) / 100,
+        net_profit_usd: Math.round(netProfit * 100) / 100,
+      },
+      breakdown: {
+        income_flights: Math.round(totalIncome * 100) / 100,
+        cost_fuel: Math.round(totalFuel * 100) / 100,
+        cost_maintenance: Math.round(totalMaintenance * 100) / 100,
+        cost_pilot_payments: Math.round(totalPilotPayments * 100) / 100,
+        cost_repairs: Math.round(totalRepairs * 100) / 100,
+        cost_salaries: Math.round(totalSalaries * 100) / 100,
+      },
+      payroll: Object.values(payrollByMonth)
+        .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month)
+        .slice(0, 6),
+      recentLedger: recentLedger.slice(0, 10),
+      topPilots,
+      totalFlightsCompleted,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "Error al obtener estadisticas." },
+      { status: 500 }
+    );
+  }
+}

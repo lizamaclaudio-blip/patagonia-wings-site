@@ -31,6 +31,12 @@ type FlightReservationResultRow = {
   performance_grade?: string | null;
   mission_score?: number | null;
   score_payload?: Record<string, unknown> | null;
+  commission_usd?: number | null;
+  damage_deduction_usd?: number | null;
+  airline_revenue_usd?: number | null;
+  fuel_cost_usd?: number | null;
+  maintenance_cost_usd?: number | null;
+  distance_nm?: number | null;
 };
 
 type FlightScoreReportRow = {
@@ -192,7 +198,7 @@ function FlightResultContent() {
         supabase
           .from("flight_reservations")
           .select(
-            "id, pilot_callsign, route_code, reservation_code, origin_ident, destination_ident, aircraft_type_code, aircraft_registration, addon_provider, status, created_at, completed_at, updated_at, actual_block_minutes, procedure_score, performance_score, procedure_grade, performance_grade, mission_score, score_payload"
+            "id, pilot_callsign, route_code, reservation_code, origin_ident, destination_ident, aircraft_type_code, aircraft_registration, addon_provider, status, created_at, completed_at, updated_at, actual_block_minutes, procedure_score, performance_score, procedure_grade, performance_grade, mission_score, score_payload, commission_usd, damage_deduction_usd, airline_revenue_usd, fuel_cost_usd, maintenance_cost_usd, distance_nm"
           )
           .eq("id", reservationId)
           .maybeSingle(),
@@ -253,6 +259,15 @@ function FlightResultContent() {
   const damageEvents = Array.isArray(damageSummary.events)
     ? (damageSummary.events as Array<Record<string, unknown>>)
     : [];
+
+  const penalties = Array.isArray(mergedScorePayload.penalties_json)
+    ? (mergedScorePayload.penalties_json as Array<Record<string, unknown>>)
+    : [];
+  const officialEvents = Array.isArray(mergedScorePayload.events_json)
+    ? (mergedScorePayload.events_json as Array<Record<string, unknown>>)
+    : [];
+  const rawPirepFileName = asText(mergedScorePayload.raw_pirep_file_name);
+  const scoringStatus = asText(mergedScorePayload.scoring_status) || asText(asObject(mergedScorePayload.official_closeout).scoring_status);
 
   const flightNumber =
     asText(reservation?.reservation_code) ||
@@ -442,6 +457,62 @@ function FlightResultContent() {
             </div>
 
             <div className="glass-panel rounded-[30px] p-7">
+            <div className="glass-panel rounded-[30px] p-7">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Evaluación oficial servidor</p>
+                  <p className="mt-2 text-sm text-white/70">
+                    ACARS registró el PIREP RAW; Supabase/Web calculó este resultado contra el reglaje vigente.
+                  </p>
+                </div>
+                <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
+                  {scoringStatus || "scored"}
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div className="surface-outline rounded-[22px] px-5 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">PIREP XML</p>
+                  <p className="mt-2 truncate text-sm font-semibold text-white">{rawPirepFileName || "Guardado en score_payload"}</p>
+                </div>
+                <div className="surface-outline rounded-[22px] px-5 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Penalizaciones</p>
+                  <p className="mt-2 text-base font-semibold text-white">{penalties.length}</p>
+                </div>
+                <div className="surface-outline rounded-[22px] px-5 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Eventos</p>
+                  <p className="mt-2 text-base font-semibold text-white">{officialEvents.length}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-[24px] border border-rose-400/15 bg-rose-400/5 p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-200/80">Detalle penalizaciones</p>
+                  <div className="mt-4 space-y-3">
+                    {penalties.length ? penalties.slice(0, 10).map((item, index) => (
+                      <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
+                        <p className="text-sm font-semibold text-white">{asText(item.code) || "PENALTY"}</p>
+                        <p className="mt-1 text-xs text-white/54">{asText(item.stage)} · {asText(item.severity)}</p>
+                        <p className="mt-2 text-sm text-white/78">{asText(item.detail)}</p>
+                      </div>
+                    )) : <p className="text-sm text-white/64">Sin penalizaciones registradas.</p>}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-emerald-400/15 bg-emerald-400/5 p-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200/80">Timeline servidor</p>
+                  <div className="mt-4 space-y-3">
+                    {officialEvents.length ? officialEvents.slice(0, 10).map((item, index) => (
+                      <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
+                        <p className="text-sm font-semibold text-white">{asText(item.code) || "EVENT"}</p>
+                        <p className="mt-1 text-xs text-white/54">{asText(item.stage)} · {asText(item.severity)}</p>
+                        <p className="mt-2 text-sm text-white/78">{asText(item.detail)}</p>
+                      </div>
+                    )) : <p className="text-sm text-white/64">Sin eventos oficiales registrados.</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Daño aplicado</p>
               {damageEvents.length ? (
                 <div className="mt-4 space-y-3">
@@ -458,6 +529,77 @@ function FlightResultContent() {
               )}
             </div>
           </section>
+
+          {/* Economy section — only shown for completed flights with data */}
+          {(reservation.commission_usd != null || asNumber(mergedScorePayload.fuel_used_kg) > 0) ? (
+          <section className="glass-panel rounded-[30px] p-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Economia del vuelo</p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: "Pago piloto",
+                  value: reservation.commission_usd != null ? `+$${asNumber(reservation.commission_usd).toFixed(2)}` : (mergedScorePayload.commission_usd != null ? `+$${asNumber(mergedScorePayload.commission_usd).toFixed(2)}` : "—"),
+                  tone: "text-emerald-300",
+                },
+                {
+                  label: "Descuento daño",
+                  value: reservation.damage_deduction_usd != null && asNumber(reservation.damage_deduction_usd) > 0
+                    ? `-$${asNumber(reservation.damage_deduction_usd).toFixed(2)}`
+                    : "Sin descuento",
+                  tone: asNumber(reservation.damage_deduction_usd) > 0 ? "text-rose-300" : "text-white/60",
+                },
+                {
+                  label: "Combustible usado",
+                  value: asNumber(mergedScorePayload.fuel_used_kg) > 0
+                    ? `${Math.round(asNumber(mergedScorePayload.fuel_used_kg))} kg`
+                    : (reservation.fuel_cost_usd != null ? `$${asNumber(reservation.fuel_cost_usd).toFixed(0)} costo` : "—"),
+                  tone: "text-white",
+                },
+                {
+                  label: "Distancia ruta",
+                  value: reservation.distance_nm != null && asNumber(reservation.distance_nm) > 0
+                    ? `${Math.round(asNumber(reservation.distance_nm))} NM`
+                    : "—",
+                  tone: "text-white",
+                },
+                {
+                  label: "Costo combustible",
+                  value: reservation.fuel_cost_usd != null ? `-$${asNumber(reservation.fuel_cost_usd).toFixed(2)}` : "—",
+                  tone: "text-amber-200",
+                },
+                {
+                  label: "Mantenimiento",
+                  value: reservation.maintenance_cost_usd != null ? `-$${asNumber(reservation.maintenance_cost_usd).toFixed(2)}` : "—",
+                  tone: "text-amber-200",
+                },
+                {
+                  label: "Ingreso aerolinea",
+                  value: reservation.airline_revenue_usd != null ? `$${asNumber(reservation.airline_revenue_usd).toFixed(2)}` : "—",
+                  tone: "text-sky-200",
+                },
+                {
+                  label: "Neto aerolinea",
+                  value: (reservation.airline_revenue_usd != null && reservation.fuel_cost_usd != null && reservation.maintenance_cost_usd != null)
+                    ? (() => {
+                        const net = asNumber(reservation.airline_revenue_usd) - asNumber(reservation.fuel_cost_usd) - asNumber(reservation.maintenance_cost_usd) - asNumber(reservation.commission_usd);
+                        return `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`;
+                      })()
+                    : "—",
+                  tone: (() => {
+                    if (reservation.airline_revenue_usd == null) return "text-white/60";
+                    const net = asNumber(reservation.airline_revenue_usd) - asNumber(reservation.fuel_cost_usd) - asNumber(reservation.maintenance_cost_usd) - asNumber(reservation.commission_usd);
+                    return net >= 0 ? "text-emerald-300" : "text-rose-300";
+                  })(),
+                },
+              ].map((item) => (
+                <div key={item.label} className="surface-outline rounded-[22px] px-5 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">{item.label}</p>
+                  <p className={`mt-2 text-base font-semibold ${item.tone}`}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          ) : null}
 
           {canSeeAppeal ? (
           <section className="glass-panel rounded-[30px] p-7">

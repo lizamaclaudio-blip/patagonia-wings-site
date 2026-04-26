@@ -99,8 +99,14 @@ export type AcarsTelemetrySample = {
   fuelTotalLbs?: number | null;
   fuelKg?: number | null;
   fuelFlowLbsHour?: number | null;
+  totalWeightKg?: number | null;
+  totalWeightLbs?: number | null;
+  zeroFuelWeightKg?: number | null;
+  payloadKg?: number | null;
   engine1N1?: number | null;
   engine2N1?: number | null;
+  engine3N1?: number | null;
+  engine4N1?: number | null;
   landingVS?: number | null;
   landingG?: number | null;
   onGround?: boolean | null;
@@ -111,6 +117,7 @@ export type AcarsTelemetrySample = {
   navLightsOn?: boolean | null;
   parkingBrake?: boolean | null;
   autopilotActive?: boolean | null;
+  doorOpen?: boolean | null;
   pause?: boolean | null;
   seatBeltSign?: boolean | null;
   noSmokingSign?: boolean | null;
@@ -121,6 +128,8 @@ export type AcarsTelemetrySample = {
   spoilersArmed?: boolean | null;
   reverserActive?: boolean | null;
   transponderCharlieMode?: boolean | null;
+  transponderCode?: number | null;
+  transponderStateRaw?: number | null;
   apuRunning?: boolean | null;
   bleedAirOn?: boolean | null;
   cabinAltitudeFeet?: number | null;
@@ -132,6 +141,7 @@ export type AcarsTelemetrySample = {
   simulatorType?: string | null;
   aircraftTitle?: string | null;
   detectedProfileCode?: string | null;
+  com2FrequencyMhz?: number | null;
 };
 
 export type AircraftDamageEventInput = {
@@ -142,6 +152,19 @@ export type AircraftDamageEventInput = {
   severity?: string | null;
   details?: Record<string, unknown> | null;
   capturedAtUtc?: string | null;
+};
+
+export type AcarsCloseoutPayloadInput = {
+  contractVersion?: string | null;
+  generatedAtUtc?: string | null;
+  reservationId?: string | null;
+  resultUrl?: string | null;
+  header?: Record<string, unknown> | null;
+  scores?: Record<string, unknown> | null;
+  evaluation?: Record<string, unknown> | null;
+  pirepFileName?: string | null;
+  pirepChecksumSha256?: string | null;
+  pirepXmlContent?: string | null;
 };
 
 type GenericRow = Record<string, unknown>;
@@ -227,6 +250,62 @@ function buildEvent(code: string, stage: string, severity: string, detail: strin
   };
 }
 
+
+function xmlEscape(value: unknown) {
+  const raw = value == null ? "" : typeof value === "string" ? value.trim() : String(value);
+  return raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function xmlTag(name: string, value: unknown) {
+  return `<${name}>${xmlEscape(value)}</${name}>`;
+}
+
+function extractXmlNumber(xml: string, tag: string) {
+  if (!xml) return 0;
+  const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "i"));
+  return match ? asNumber(match[1]) : 0;
+}
+
+function extractXmlText(xml: string, tag: string) {
+  if (!xml) return "";
+  const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "i"));
+  return match ? asText(match[1]) : "";
+}
+
+function buildEvaluatedPirepXml(rawXml: string, official: OfficialScoringResult, reservationId: string) {
+  const sourceXml = rawXml || "<PIREP />";
+  const evaluatedBlock = [
+    "<EvaluacionServidor>",
+    xmlTag("ReservationId", reservationId),
+    xmlTag("Estado", official.finalStatus),
+    xmlTag("ScoringStatus", official.scoringStatus),
+    xmlTag("PuntosFinales", official.finalScore),
+    xmlTag("Procedimientos", official.procedureScore),
+    xmlTag("Mision", official.missionScore),
+    xmlTag("Seguridad", official.safetyScore),
+    xmlTag("Eficiencia", official.efficiencyScore),
+    xmlTag("BlockMinutes", official.actualBlockMinutes),
+    xmlTag("FuelUsedKg", official.fuelUsedKg),
+    xmlTag("LandingVS", official.landingVsFpm),
+    xmlTag("LandingG", official.landingGForce),
+    "<Penalizaciones>",
+    ...official.penaltiesJson.map((item) => `  <Item code="${xmlEscape(item.code)}" stage="${xmlEscape(item.stage)}" severity="${xmlEscape(item.severity)}">${xmlEscape(item.detail)}</Item>`),
+    "</Penalizaciones>",
+    "<Eventos>",
+    ...official.eventsJson.map((item) => `  <Item code="${xmlEscape(item.code)}" stage="${xmlEscape(item.stage)}" severity="${xmlEscape(item.severity)}">${xmlEscape(item.detail)}</Item>`),
+    "</Eventos>",
+    "</EvaluacionServidor>",
+  ].join("\n");
+
+  return sourceXml.includes("</PIREP>")
+    ? sourceXml.replace("</PIREP>", `${evaluatedBlock}\n</PIREP>`)
+    : `<PIREP>${evaluatedBlock}</PIREP>`;
+}
 function isMissingRelationError(error: unknown) {
   const payload = asObject(error);
   const code = asText(payload.code);
@@ -442,6 +521,7 @@ export function evaluateOfficialCloseout(params: {
   telemetryLog?: AcarsTelemetrySample[] | null;
   lastSimData?: AcarsTelemetrySample | null;
   damageEvents?: AircraftDamageEventInput[] | null;
+  closeoutPayload?: AcarsCloseoutPayloadInput | null;
 }): OfficialScoringResult {
   const reservation = params.reservation;
   const profile = params.profile;
@@ -454,6 +534,10 @@ export function evaluateOfficialCloseout(params: {
     .sort((left, right) => new Date(asText(left.capturedAtUtc)).getTime() - new Date(asText(right.capturedAtUtc)).getTime());
   const lastSample = params.lastSimData ?? samples.at(-1) ?? null;
   const damageEvents = params.damageEvents ?? [];
+  const closeoutPayload = params.closeoutPayload ?? null;
+  const rawPirepXml = asText(closeoutPayload?.pirepXmlContent);
+  const rawPirepFileName = asText(closeoutPayload?.pirepFileName);
+  const rawPirepChecksum = asText(closeoutPayload?.pirepChecksumSha256);
   const stages = buildStageBreakdown(samples);
   const damageSummary = summarizeDamage(damageEvents);
   const penalties: Array<Record<string, unknown>> = [];
@@ -470,7 +554,8 @@ export function evaluateOfficialCloseout(params: {
     : "";
   const severeDamage = asNumber(damageSummary.severe_count) > 0 || requestedCloseoutStatus === "crashed";
   const crashEvent = damageEvents.some((event) => asText(event.eventCode).toLowerCase().includes("crash"));
-  const hardLanding = Math.abs(asNumber(lastSample?.landingVS) || asNumber(report?.landingVS)) >= 700;
+  const touchdownVsAbs = Math.abs(asNumber(lastSample?.landingVS) || asNumber(report?.landingVS));
+  const hardLanding = touchdownVsAbs >= 1000;
   const routeMismatch =
     normalizeIcao(reservation.origin_ident) !== normalizeIcao(activeFlight?.departureIcao ?? preparedDispatch?.departureIcao ?? report?.departureIcao) ||
     normalizeIcao(reservation.destination_ident) !== normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? report?.arrivalIcao);
@@ -529,6 +614,102 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("LANDING_CONFIG", "approach", "high", "Configuración de aproximación incoherente."));
   }
 
+
+  // Reglaje Patagonia Wings server-side. ACARS registra; Web/Supabase evalua oficialmente.
+  const firstSampleDate = samples.length ? new Date(asText(samples[0].capturedAtUtc)) : null;
+  const sampleSecondsFromStart = (sample: AcarsTelemetrySample) => {
+    if (!firstSampleDate) return 0;
+    const t = new Date(asText(sample.capturedAtUtc)).getTime();
+    return Number.isFinite(t) ? Math.max(0, Math.round((t - firstSampleDate.getTime()) / 1000)) : 0;
+  };
+  const firstNavOn = samples.find((sample) => asBoolean(sample.navLightsOn));
+  const navOnSeconds = firstNavOn ? sampleSecondsFromStart(firstNavOn) : 0;
+  if (samples.length && (!firstNavOn || navOnSeconds > 190)) {
+    procedureScore -= 3;
+    penalties.push(buildEvent("PRE_NAV_LATE", "preflight", "medium", "NAV lights no se encendieron dentro del margen reglamentario de prevuelo."));
+  }
+
+  const firstBeaconOn = samples.find((sample) => asBoolean(sample.beaconLightsOn));
+  const firstEngineStable = samples.find((sample) => asNumber(sample.engine1N1) >= 20 || asNumber(sample.engine2N1) >= 20 || asNumber(sample.engine3N1) >= 20 || asNumber(sample.engine4N1) >= 20);
+  if (firstBeaconOn && firstEngineStable) {
+    const beaconToEngineSec = sampleSecondsFromStart(firstEngineStable) - sampleSecondsFromStart(firstBeaconOn);
+    if (beaconToEngineSec > 610) {
+      procedureScore -= 10;
+      penalties.push(buildEvent("PRE_BEACON_ENGINE_TIMEOUT", "preflight", "high", "Arranque iniciado despues de 10 minutos desde BEACON ON."));
+    }
+  }
+
+  const fuelBeforeNav = firstNavOn
+    ? samples
+        .filter((sample) => sampleSecondsFromStart(sample) < navOnSeconds)
+        .some((sample, index, arr) => index > 0 && asNumber(sample.fuelKg) - asNumber(arr[index - 1].fuelKg) > 10)
+    : false;
+  if (fuelBeforeNav) {
+    procedureScore -= 3;
+    penalties.push(buildEvent("PRE_FUEL_BEFORE_NAV", "preflight", "medium", "Carga de combustible detectada antes de NAV ON."));
+  }
+
+  const taxiSpeedStrict = samples.some((sample) => asBoolean(sample.onGround) && asNumber(sample.groundSpeed) > 40);
+  if (taxiSpeedStrict) {
+    procedureScore -= 10;
+    safetyScore -= 8;
+    penalties.push(buildEvent("TAXI_SPEED_STRONG", "taxi", "high", "Velocidad de taxi supera 25 kt más tolerancia global."));
+  }
+
+  const reverseTaxi = samples.some((sample) => asBoolean(sample.onGround) && asBoolean(sample.reverserActive) && asNumber(sample.groundSpeed) > 1);
+  if (reverseTaxi) {
+    procedureScore -= 8;
+    penalties.push(buildEvent("TAXI_REVERSER", "taxi", "high", "Uso de reversa/reversores detectado durante taxi."));
+  }
+
+  const airborneIndex = samples.findIndex((sample) => !asBoolean(sample.onGround) && asNumber(sample.altitudeAGL) > 30);
+  if (airborneIndex >= 0) {
+    const airborneSample = samples[airborneIndex];
+    const gearUpSample = samples.slice(airborneIndex).find((sample) => !asBoolean(sample.gearDown));
+    if (!gearUpSample || sampleSecondsFromStart(gearUpSample) - sampleSecondsFromStart(airborneSample) > 25) {
+      procedureScore -= 5;
+      penalties.push(buildEvent("TO_GEAR_UP_LATE", "takeoff", "medium", "Tren no retraído dentro de 20 segundos + margen posterior al airborne."));
+    }
+  }
+
+  const lowAltitudeOverspeed = samples.some((sample) => !asBoolean(sample.onGround) && asNumber(sample.altitudeFeet) < 10000 && asNumber(sample.indicatedAirspeed) > 265);
+  if (lowAltitudeOverspeed) {
+    procedureScore -= 5;
+    safetyScore -= 5;
+    penalties.push(buildEvent("AIR_250_UNDER_10000", "airborne", "medium", "Exceso de 250 kt bajo 10.000 ft considerando tolerancia."));
+  }
+
+  const highVerticalSpeed = samples.some((sample) => Math.abs(asNumber(sample.verticalSpeed)) > 6500);
+  if (highVerticalSpeed) {
+    safetyScore -= 6;
+    penalties.push(buildEvent("AIR_VS_LIMIT", "airborne", "medium", "Velocidad vertical supera límite reglamentario con tolerancia."));
+  }
+
+  const landingLightsBelow10000 = samples
+    .filter((sample) => !asBoolean(sample.onGround) && asNumber(sample.altitudeFeet) < 9500 && asNumber(sample.altitudeAGL) > 500)
+    .some((sample) => !asBoolean(sample.landingLightsOn));
+  if (landingLightsBelow10000) {
+    procedureScore -= 5;
+    penalties.push(buildEvent("AIR_LANDING_LIGHTS_10000", "airborne", "medium", "Landing lights apagadas bajo 10.000 ft."));
+  }
+
+  const picFailures = Math.max(extractXmlNumber(rawPirepXml, "PICsFailed"), 0);
+  const picCount = Math.max(extractXmlNumber(rawPirepXml, "CantidadPICs"), 0);
+  if (picFailures > 0) {
+    procedureScore -= picFailures * 5;
+    penalties.push(buildEvent("CRU_PIC_COM2_FAILED", "cruise", "medium", `PIC COM2 falló ${picFailures} vez/veces.`));
+  }
+  if (picCount > 0 && picFailures === 0) {
+    events.push(buildEvent("CRU_PIC_COM2_OK", "cruise", "info", `PIC COM2 registrado correctamente: ${picCount} check(s).`));
+  }
+
+  if (touchdownVsAbs >= 501 && touchdownVsAbs < 1000) {
+    safetyScore -= 15;
+    penalties.push(buildEvent("LDG_VS_HARD", "landing", "high", "Aterrizaje muy duro por V/S, pero bajo umbral crítico de invalidez."));
+  } else if (touchdownVsAbs >= 301) {
+    safetyScore -= 8;
+    penalties.push(buildEvent("LDG_VS_FIRM", "landing", "medium", "Aterrizaje duro por V/S."));
+  }
   // "cancelled" = pilot never left the gate (no takeoff, no taxi).
   // "aborted" = pilot started rolling/taxied but didn't take off.
   const pilotNeverDeparted = !stages.takeoff.reached && !stages.taxi_out.reached;
@@ -658,7 +839,7 @@ export function evaluateOfficialCloseout(params: {
     100
   );
 
-  const officialPirep = {
+  const officialPirep: Record<string, unknown> = {
     hidden: true,
     generated_at: completedAt,
     pilot_callsign: asText(profile.callsign),
@@ -676,6 +857,10 @@ export function evaluateOfficialCloseout(params: {
     final_score: finalScore,
     scoring_status: scoringStatus,
   };
+
+  if (rawPirepFileName) officialPirep["pirep_file_name"] = rawPirepFileName;
+  if (rawPirepChecksum) officialPirep["pirep_checksum"] = rawPirepChecksum;
+
 
   events.push(
     ...Object.entries(stages)
@@ -745,12 +930,17 @@ export async function persistOfficialCloseout(params: {
   telemetryLog?: AcarsTelemetrySample[] | null;
   lastSimData?: AcarsTelemetrySample | null;
   damageEvents?: AircraftDamageEventInput[] | null;
+  closeoutPayload?: AcarsCloseoutPayloadInput | null;
 }) {
   const official = evaluateOfficialCloseout(params);
   const supabase = createSupabaseServerClient(params.accessToken);
   const nowIso = new Date().toISOString();
   const reservationId = asText(params.reservation.id);
   const existingPayload = asObject(params.reservation.score_payload);
+  const rawPirepXml = asText(params.closeoutPayload?.pirepXmlContent);
+  const rawPirepFileName = asText(params.closeoutPayload?.pirepFileName);
+  const rawPirepChecksum = asText(params.closeoutPayload?.pirepChecksumSha256);
+  const evaluatedPirepXml = buildEvaluatedPirepXml(rawPirepXml, official, reservationId);
 
   const officialPayload = {
     ...existingPayload,
@@ -762,6 +952,10 @@ export async function persistOfficialCloseout(params: {
       pilot_callsign: asText(params.profile.callsign),
     },
     official_pirep: official.officialPirep,
+    raw_pirep_xml: rawPirepXml,
+    raw_pirep_file_name: rawPirepFileName,
+    raw_pirep_checksum: rawPirepChecksum,
+    evaluated_pirep_xml: evaluatedPirepXml,
     penalties_json: official.penaltiesJson,
     events_json: official.eventsJson,
     stage_breakdown_json: official.stageBreakdownJson,
@@ -909,7 +1103,7 @@ export async function persistOfficialCloseout(params: {
       );
   }
 
-  await maybeInsert("pw_flight_score_reports", {
+  await maybeUpsert("pw_flight_score_reports", {
     reservation_id: reservationId,
     pilot_callsign: asText(params.profile.callsign),
     route_code: asText(params.reservation.route_code),
@@ -921,22 +1115,32 @@ export async function persistOfficialCloseout(params: {
     score_payload: officialPayload,
     notes: asText(params.report?.remarks),
     scored_at: nowIso,
-  });
+  }, "reservation_id");
 
-  await maybeInsert("pirep_reports", {
+  await maybeUpsert("pirep_reports", {
     reservation_id: reservationId,
     reference_code: reservationId,
     callsign: asText(params.profile.callsign),
     flight_number: asText(params.activeFlight?.flightNumber ?? params.report?.flightNumber ?? params.reservation.route_code),
+    flight_type: asText(params.preparedDispatch?.flightMode ?? params.activeFlight?.flightModeCode ?? params.reservation.flight_mode_code ?? "CAREER"),
     origin_icao: normalizeIcao(params.reservation.origin_ident),
     destination_icao: normalizeIcao(params.reservation.destination_ident),
     aircraft_model: asText(params.reservation.aircraft_type_code),
     aircraft_registration: asText(params.reservation.aircraft_registration),
     created_on_utc: nowIso,
     result_status: official.finalStatus,
+    // payload_xml: raw PIREP XML or evaluated fallback (NOT NULL in DB)
+    payload_xml: rawPirepXml || evaluatedPirepXml || "<PIREP/>",
     report_json: official.officialPirep,
+    raw_pirep_json: { telemetryLog: params.telemetryLog ?? [], lastSimData: params.lastSimData ?? null, closeoutPayload: params.closeoutPayload ?? null },
+    evaluation_json: officialPayload,
+    pirep_file_name: rawPirepFileName,
+    pirep_checksum: rawPirepChecksum,
+    pirep_xml_content: rawPirepXml,
+    raw_pirep_xml: rawPirepXml,
+    evaluated_pirep_xml: evaluatedPirepXml,
     hidden: true,
-  });
+  }, "reservation_id");
 
   await maybeInsert(
     "aircraft_damage_events",
@@ -960,9 +1164,159 @@ export async function persistOfficialCloseout(params: {
     created_at: nowIso,
   });
 
+  // ── Economy: per-flight columns on flight_reservations ──────────────────────
+  const distanceNm = asNumber(params.report?.distance ?? 0);
+  if (official.finalStatus === "completed") {
+    const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
+    const fuelCostPerKg = 1.05; // ~$1.05 USD/kg JetA average
+    const fuelCostUsd = Math.round(official.fuelUsedKg * fuelCostPerKg * 100) / 100;
+    const maintenanceCostUsd = Math.round(
+      (official.actualBlockMinutes / 60) * estimateWearCostPerHour(aircraftTypeCode) * 100
+    ) / 100;
+    // Airline revenue = 3× pilot commission (simplified virtual airline model)
+    const airlineRevenueUsd = Math.round(commissionUsd * 3 * 100) / 100;
+
+    await supabase
+      .from("flight_reservations")
+      .update({
+        distance_nm: distanceNm > 0 ? distanceNm : null,
+        fuel_cost_usd: fuelCostUsd,
+        maintenance_cost_usd: maintenanceCostUsd,
+        airline_revenue_usd: airlineRevenueUsd,
+      })
+      .eq("id", reservationId);
+
+    // ── Airline ledger entries ─────────────────────────────────────────────────
+    const pilotCallsign = asText(params.profile.callsign);
+    const airlineRow = await supabase.from("airlines").select("id").limit(1).maybeSingle();
+    const airlineId = asText(airlineRow.data?.id) || null;
+    if (airlineId) {
+      const ledgerEntries = [
+        {
+          airline_id: airlineId,
+          entry_type: "flight_income",
+          amount_usd: airlineRevenueUsd,
+          reservation_id: reservationId,
+          pilot_callsign: pilotCallsign,
+          description: `Ingreso vuelo ${asText(params.activeFlight?.flightNumber ?? params.reservation.route_code)} ${normalizeIcao(params.reservation.origin_ident)}-${normalizeIcao(params.reservation.destination_ident)}`,
+          created_at: nowIso,
+        },
+        {
+          airline_id: airlineId,
+          entry_type: "fuel_cost",
+          amount_usd: -fuelCostUsd,
+          reservation_id: reservationId,
+          pilot_callsign: pilotCallsign,
+          description: `Combustible ${official.fuelUsedKg} kg`,
+          created_at: nowIso,
+        },
+        {
+          airline_id: airlineId,
+          entry_type: "maintenance_cost",
+          amount_usd: -maintenanceCostUsd,
+          reservation_id: reservationId,
+          pilot_callsign: pilotCallsign,
+          description: `Mantenimiento ${(official.actualBlockMinutes / 60).toFixed(1)} h block`,
+          created_at: nowIso,
+        },
+        {
+          airline_id: airlineId,
+          entry_type: "pilot_payment",
+          amount_usd: -commissionUsd,
+          reservation_id: reservationId,
+          pilot_callsign: pilotCallsign,
+          description: `Pago piloto ${pilotCallsign}`,
+          created_at: nowIso,
+        },
+      ];
+      if (damageDeductionUsd > 0) {
+        ledgerEntries.push({
+          airline_id: airlineId,
+          entry_type: "repair_cost",
+          amount_usd: -damageDeductionUsd,
+          reservation_id: reservationId,
+          pilot_callsign: pilotCallsign,
+          description: `Reparacion por daño en vuelo`,
+          created_at: nowIso,
+        });
+      }
+
+      await maybeInsert("airline_ledger", ledgerEntries);
+
+      // Update airline summary balance (read-then-write, best-effort)
+      const netFlight = airlineRevenueUsd - fuelCostUsd - maintenanceCostUsd - commissionUsd - damageDeductionUsd;
+      const { data: airlineBalance } = await supabase
+        .from("airlines")
+        .select("balance_usd, total_revenue_usd, total_costs_usd")
+        .eq("id", airlineId)
+        .maybeSingle();
+      if (airlineBalance) {
+        const totalCosts = fuelCostUsd + maintenanceCostUsd + commissionUsd + damageDeductionUsd;
+        await supabase.from("airlines").update({
+          balance_usd: Math.round((asNumber(airlineBalance.balance_usd) + netFlight) * 100) / 100,
+          total_revenue_usd: Math.round((asNumber(airlineBalance.total_revenue_usd) + airlineRevenueUsd) * 100) / 100,
+          total_costs_usd: Math.round((asNumber(airlineBalance.total_costs_usd) + totalCosts) * 100) / 100,
+        }).eq("id", airlineId);
+      }
+    }
+
+    // ── Monthly payroll ledger entry ───────────────────────────────────────────
+    const now = new Date(nowIso);
+    const periodYear = now.getUTCFullYear();
+    const periodMonth = now.getUTCMonth() + 1;
+    const { data: existingLedger } = await supabase
+      .from("pilot_salary_ledger")
+      .select("id, flights_count, commission_total_usd, block_hours_total")
+      .eq("pilot_id", params.user.id)
+      .eq("period_year", periodYear)
+      .eq("period_month", periodMonth)
+      .maybeSingle();
+
+    if (existingLedger) {
+      await supabase
+        .from("pilot_salary_ledger")
+        .update({
+          flights_count: asNumber(existingLedger.flights_count) + 1,
+          commission_total_usd: asNumber(existingLedger.commission_total_usd) + commissionUsd,
+          block_hours_total: asNumber(existingLedger.block_hours_total) + blockHours,
+          pilot_callsign: asText(params.profile.callsign) || null,
+        })
+        .eq("id", existingLedger.id);
+    } else {
+      await supabase.from("pilot_salary_ledger").insert({
+        pilot_id: params.user.id,
+        pilot_callsign: asText(params.profile.callsign) || null,
+        period_year: periodYear,
+        period_month: periodMonth,
+        flights_count: 1,
+        commission_total_usd: commissionUsd,
+        damage_deductions_usd: damageDeductionUsd,
+        base_salary_usd: 0,
+        net_paid_usd: commissionUsd - damageDeductionUsd,
+        block_hours_total: blockHours,
+        status: "pending",
+      });
+    }
+  }
+
   return {
     reservation: updatedReservation as GenericRow,
     official,
     resultUrl: `/flights/${reservationId}`,
   };
+}
+
+/** Estimated hourly wear cost (USD) by aircraft category */
+function estimateWearCostPerHour(aircraftTypeCode: string): number {
+  const category = aircraftTypeCode
+    ? (["B777","B787","B747","A350","A380","A330","A340","B767","B752"].some((c) => aircraftTypeCode.toUpperCase().startsWith(c))
+        ? "widebody"
+        : ["B737","B738","A319","A320","A321","B757"].some((c) => aircraftTypeCode.toUpperCase().startsWith(c))
+          ? "narrowbody"
+          : ["CRJ","E170","E175","E190","DH8","AT7","SF34","C208","PC12"].some((c) => aircraftTypeCode.toUpperCase().startsWith(c))
+            ? "regional"
+            : "ga")
+    : "ga";
+  const rates: Record<string, number> = { widebody: 180, narrowbody: 90, regional: 45, ga: 20 };
+  return rates[category] ?? 45;
 }
