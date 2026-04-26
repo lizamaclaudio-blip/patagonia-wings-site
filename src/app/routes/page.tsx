@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage from "@/components/site/ProtectedPage";
 import { supabase } from "@/lib/supabase/browser";
+import { estimateRouteProfitLoss } from "@/lib/pilot-economy";
 
 type RouteCategory =
   | "regional"
@@ -188,6 +189,24 @@ function formatBlock(value: number | string | null | undefined) {
   if (hours <= 0) return `${rest} min`;
   return `${hours} h ${String(rest).padStart(2, "0")} min`;
 }
+function formatUsd(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const sign = value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
+}
+
+function pickEconomyAircraftType(route: RouteCatalogRow | null) {
+  const types = routeAircraftTypes(route);
+  return types[0] ?? "A320";
+}
+
+function routeEconomyEstimate(route: RouteCatalogRow | null) {
+  if (!route) return null;
+  const distance = toNumber(route.distance_nm);
+  if (!distance || distance <= 0) return null;
+  return estimateRouteProfitLoss(distance, pickEconomyAircraftType(route), "CAREER");
+}
+
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").trim().toUpperCase();
@@ -421,6 +440,34 @@ function DirectionCell({ title, route }: { title: string; route: RouteCatalogRow
           <p className="mt-1 font-bold text-white/84">{formatBlock(route.expected_block_p80)}</p>
         </div>
       </div>
+
+      {(() => {
+        const economy = routeEconomyEstimate(route);
+        return economy ? (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+            <div className="rounded-xl border border-emerald-300/14 bg-emerald-300/[0.06] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-emerald-100/50">💵 Piloto</p>
+              <p className="mt-1 font-black text-emerald-100">{formatUsd(economy.pilotCommissionUsd)}</p>
+            </div>
+            <div className="rounded-xl border border-cyan-300/14 bg-cyan-300/[0.06] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">📈 Utilidad</p>
+              <p className="mt-1 font-black text-cyan-100">{formatUsd(economy.netProfitUsd)}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">⛽ Combustible</p>
+              <p className="mt-1 font-bold text-white/78">{formatUsd(economy.fuelCostUsd)}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">🛠 Mantención</p>
+              <p className="mt-1 font-bold text-white/78">{formatUsd(economy.maintenanceCostUsd)}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/48">
+            Economía estimada no disponible.
+          </div>
+        );
+      })()}
     </div>
   );
 }

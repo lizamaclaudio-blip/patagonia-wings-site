@@ -8,6 +8,18 @@ import {
   type CharterAirportOption,
 } from "@/lib/charter-ops";
 
+type FlightEconomyEstimate = {
+  distanceNm: number;
+  blockMinutes: number;
+  fuelKg: number;
+  fuelCostUsd: number;
+  maintenanceCostUsd: number;
+  pilotCommissionUsd: number;
+  pilotPaymentUsd?: number;
+  airlineRevenueUsd: number;
+  netProfitUsd: number;
+};
+
 type Props = {
   originIcao: string;
   destinationIcao: string;
@@ -46,6 +58,20 @@ const AIRCRAFT_TYPE_LABELS: Record<string, string> = {
   E195: "Embraer E195",
   MD82: "McDonnell Douglas MD-82",
 };
+
+function formatUsd(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const sign = value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
+}
+
+function formatMinutes(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const minutes = Math.max(0, Math.round(value));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return hours > 0 ? `${hours} h ${String(rest).padStart(2, "0")} min` : `${rest} min`;
+}
 
 function normalizeIcao(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
@@ -324,6 +350,8 @@ export default function CharterOriginDestinationStep({
   const [aircraft, setAircraft] = useState<CharterAircraftOption[]>([]);
   const [selectedType, setSelectedType] = useState("");
   const [loadingAircraft, setLoadingAircraft] = useState(false);
+  const [economyEstimate, setEconomyEstimate] = useState<FlightEconomyEstimate | null>(null);
+  const [loadingEconomy, setLoadingEconomy] = useState(false);
 
   const normalizedOrigin = useMemo(() => normalizeIcao(originIcao), [originIcao]);
   const normalizedDestination = useMemo(() => normalizeIcao(destinationIcao), [destinationIcao]);
@@ -405,6 +433,54 @@ export default function CharterOriginDestinationStep({
     };
   }, [normalizedOrigin, onAircraftChange, selectedAircraftId]);
 
+
+  const selectedAircraft = useMemo(
+    () => aircraft.find((item) => item.aircraft_id === selectedAircraftId) ?? null,
+    [aircraft, selectedAircraftId],
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    const aircraftType = selectedAircraft ? getAircraftTypeCode(selectedAircraft) : selectedType;
+
+    if (!routeReady || !aircraftType) {
+      setEconomyEstimate(null);
+      setLoadingEconomy(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    setLoadingEconomy(true);
+    const params = new URLSearchParams({
+      origin: normalizedOrigin,
+      destination: normalizedDestination,
+      aircraftType,
+      operationType: "CHARTER",
+    });
+
+    fetch(`/api/economia/estimate-flight?${params.toString()}`)
+      .then((response) => response.json())
+      .then((payload: { ok?: boolean } & Partial<FlightEconomyEstimate>) => {
+        if (!mounted) return;
+        if (payload.ok && typeof payload.distanceNm === "number") {
+          setEconomyEstimate(payload as FlightEconomyEstimate);
+        } else {
+          setEconomyEstimate(null);
+        }
+      })
+      .catch(() => {
+        if (mounted) setEconomyEstimate(null);
+      })
+      .finally(() => {
+        if (mounted) setLoadingEconomy(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [normalizedDestination, normalizedOrigin, routeReady, selectedAircraft, selectedType]);
+
   return (
     <div className="grid gap-5">
       <div className="rounded-[24px] border border-cyan-300/14 bg-cyan-300/[0.045] p-5">
@@ -430,6 +506,49 @@ export default function CharterOriginDestinationStep({
         />
         <p className="mt-2 text-xs text-white/42">La meteorología real queda obligatoria para este tipo de vuelo.</p>
       </div>
+
+      <div className="rounded-[22px] border border-emerald-300/14 bg-emerald-300/[0.045] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Estimación económica del chárter</p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              {normalizedOrigin || "---"} → {normalizedDestination || "---"}
+            </h3>
+          </div>
+          {loadingEconomy ? (
+            <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/55">Calculando...</span>
+          ) : null}
+        </div>
+
+        {!routeReady || !selectedType ? (
+          <p className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-white/55">
+            Completa origen, destino y aeronave para calcular.
+          </p>
+        ) : economyEstimate ? (
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ["💵 Piloto", formatUsd(economyEstimate.pilotCommissionUsd ?? economyEstimate.pilotPaymentUsd), "text-emerald-100"],
+              ["🏢 Aerolínea", formatUsd(economyEstimate.airlineRevenueUsd), "text-cyan-100"],
+              ["⛽ Combustible", formatUsd(economyEstimate.fuelCostUsd), "text-amber-100"],
+              ["🛠 Mantención", formatUsd(economyEstimate.maintenanceCostUsd), "text-white/82"],
+              ["📈 Utilidad", formatUsd(economyEstimate.netProfitUsd), economyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100"],
+            ].map(([label, value, tone]) => (
+              <div key={label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{label}</p>
+                <p className={`mt-1 text-sm font-black ${tone}`}>{value}</p>
+              </div>
+            ))}
+            <div className="sm:col-span-2 lg:col-span-5 text-xs text-white/44">
+              Distancia {Math.round(economyEstimate.distanceNm).toLocaleString("es-CL")} NM · Block {formatMinutes(economyEstimate.blockMinutes)} · Fuel {Math.round(economyEstimate.fuelKg).toLocaleString("es-CL")} kg
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-white/55">
+            Economía estimada no disponible para esta combinación.
+          </p>
+        )}
+      </div>
+
 
       <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
         <div className="flex items-center justify-between gap-4">

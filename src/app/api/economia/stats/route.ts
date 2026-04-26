@@ -61,6 +61,7 @@ export async function GET() {
       byType[t] = (byType[t] ?? 0) + asNumber(row.amount_usd);
     }
 
+    const initialCapital = asNumber(byType["initial_capital"]);
     const totalIncome = asNumber(byType["flight_income"]);
     const totalFuel = Math.abs(asNumber(byType["fuel_cost"]));
     const totalMaintenance = Math.abs(asNumber(byType["maintenance_cost"]));
@@ -70,12 +71,19 @@ export async function GET() {
     const totalCosts = totalFuel + totalMaintenance + totalPilotPayments + totalRepairs + totalSalaries;
     const netProfit = totalIncome - totalCosts;
 
-    // Use stored balance if available, otherwise calculate from ledger
-    const airlineBalance = airline
-      ? asNumber(airline.balance_usd) !== 0
-        ? asNumber(airline.balance_usd)
-        : netProfit
-      : netProfit;
+    const storedBalance = airline ? asNumber(airline.balance_usd) : 0;
+    const ledgerBalance = ledgerRows.reduce((sum, row) => sum + asNumber(row.amount_usd), 0);
+    const hasLedgerRows = ledgerRows.length > 0;
+
+    // Prefer the real persisted balance. If it has not been recalculated yet,
+    // use ledger sum. If the database still has no initial capital entry, expose
+    // the operational base so Oficina/Economía never render an empty $0 airline.
+    const airlineBalance =
+      storedBalance !== 0
+        ? storedBalance
+        : hasLedgerRows
+          ? ledgerBalance
+          : 1305000;
 
     // Monthly payroll summary — group by year/month
     const payrollByMonth: Record<string, { year: number; month: number; flights: number; commission: number; base_salary: number; net: number; callsigns: string[] }> = {};
@@ -124,6 +132,8 @@ export async function GET() {
         total_revenue_usd: Math.round(totalIncome * 100) / 100,
         total_costs_usd: Math.round(totalCosts * 100) / 100,
         net_profit_usd: Math.round(netProfit * 100) / 100,
+        initial_capital_usd: Math.round((initialCapital || 1305000) * 100) / 100,
+        has_real_ledger: hasLedgerRows,
       },
       breakdown: {
         income_flights: Math.round(totalIncome * 100) / 100,
