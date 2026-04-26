@@ -34,6 +34,7 @@ import {
   type SimbriefOfpSummary,
 } from "@/lib/simbrief";
 import { supabase } from "@/lib/supabase/browser";
+import { estimateRouteProfitLoss } from "@/lib/pilot-economy";
 import { resolvePatagoniaScore } from "@/lib/sur-score";
 
 type DashboardMetrics = {
@@ -2839,50 +2840,14 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
 }
 
 function buildNewsItems(
-  airportCode: string,
-  pilotsOnField: number,
-  activeFlights: FlightReservationRow[],
-  recentFlights: FlightReservationRow[],
+  _airportCode?: string,
+  _pilotsOnField?: number,
+  _activeFlights?: unknown[],
+  _recentFlights?: unknown[],
 ): NewsItem[] {
-  const latestFlight = recentFlights[0] ?? null;
-  const latestFlightTag = latestFlight ? formatRouteTag(latestFlight) : `${airportCode} → ---`;
-  const latestFlightScore = latestFlight
-    ? resolvePatagoniaScore({
-        scorePayload: latestFlight.score_payload,
-        performanceScore: latestFlight.performance_score,
-        procedureScore: latestFlight.procedure_score,
-        missionScore: latestFlight.mission_score,
-      })
-    : 0;
-  const activeCount = activeFlights.length;
-
-  return [
-    {
-      tag: "NOTAM",
-      title: `Centro informativo ${airportCode}`,
-      body: `Este panel queda listo para eventos, avisos operativos, récords del mes y publicaciones internas sin salir de la Central del hub.`,
-    },
-    {
-      tag: "OPERACIÓN",
-      title: activeCount > 0 ? `${activeCount} vuelo(s) activos ahora` : "Operación tranquila en este momento",
-      body:
-        activeCount > 0
-          ? `Ya puedes usar esta ventana para destacar la operación viva del día y luego enchufar alertas reales según salida, taxi, crucero o llegada.`
-          : `Cuando haya pilotos volando, aquí podrás destacar movimientos activos, eventos del día y tráfico relevante del hub actual.`,
-    },
-    {
-      tag: "ÚLTIMO CIERRE",
-      title: latestFlight ? latestFlightTag : "Esperando vuelos recientes",
-      body: latestFlight
-        ? `Último cierre registrado con ${formatDecimal(latestFlightScore)} pts Patagonia. Este bloque queda listo para convertirlo luego en noticia, récord o destacado.`
-        : `Aún no hay cierres recientes para convertir en noticia. Cuando entren más vuelos, esta tarjeta podrá resaltar el último PIREP destacado.`,
-    },
-    {
-      tag: "MOVIMIENTO HUB",
-      title: `${formatInteger(pilotsOnField)} piloto(s) en ${airportCode}`,
-      body: `La Central ya puede mostrar el estado operativo del hub actual. Más adelante podremos usar este mismo bloque para avisos de traslados, slots o saturación operativa.`,
-    },
-  ];
+  // El panel visible usa /api/news/local. Se mantiene la función para
+  // compatibilidad con CentralOverview, sin tarjetas estáticas antiguas.
+  return [];
 }
 
 function formatFlightModeLabel(mode?: string | null) {
@@ -3679,79 +3644,70 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
   );
 }
 
-function CentralNewsSection({ items, liveNews }: { items: CentralOverview["newsItems"]; liveNews: Array<{ title: string; description: string | null; url: string; publishedAt: string; source: string }> | null }) {
-  // If live news is available, show it as the primary section
-  if (liveNews && liveNews.length > 0) {
+function CentralNewsSection({ liveNews }: { items: CentralOverview["newsItems"]; liveNews: Array<{ title: string; description: string | null; url: string; publishedAt: string; source: string }> | null }) {
+  if (!liveNews || liveNews.length === 0) {
     return (
-      <section>
-        <div className="flex items-center gap-3 mb-5">
+      <section className="rounded-[24px] border border-white/8 bg-white/[0.025] p-5">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-              Noticias locales
-            </p>
-            <h3 className="mt-1 text-2xl font-semibold text-white">Aviación en tu región</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Noticias locales</p>
+            <h3 className="mt-1 text-2xl font-semibold text-white">Sin noticias disponibles</h3>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
-            Live
+          <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/48">
+            Local
           </span>
         </div>
-        <div className="space-y-2">
-          {liveNews.map((article, i) => {
-            const dateStr = article.publishedAt
-              ? new Date(article.publishedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
-              : "";
-            return (
-              <a
-                key={i}
-                href={article.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="flex items-start gap-4 rounded-[18px] border border-white/8 bg-white/[0.025] px-4 py-4 transition hover:border-white/16 hover:bg-white/[0.04]"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white/90 leading-snug">{article.title}</p>
-                  {article.description && (
-                    <p className="mt-1 text-xs leading-5 text-white/50 line-clamp-2">{article.description}</p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2">
-                    {article.source && (
-                      <span className="text-[10px] font-semibold text-white/40">{article.source}</span>
-                    )}
-                    {dateStr && (
-                      <span className="text-[10px] text-white/30">{dateStr}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="shrink-0 text-white/24 text-sm mt-0.5">→</span>
-              </a>
-            );
-          })}
-        </div>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/52">
+          Cuando exista conexión con la API de noticias o se publiquen novedades para la ciudad actual del piloto, aparecerán aquí en una ventana limpia.
+        </p>
       </section>
     );
   }
 
-  // Fallback: static operational panel
   return (
     <section>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-        Noticias / NOTAM
-      </p>
-      <h3 className="mt-2 text-2xl font-semibold text-white">Panel informativo</h3>
+      <div className="mb-5 flex items-center gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            Noticias locales
+          </p>
+          <h3 className="mt-1 text-2xl font-semibold text-white">Actualidad cerca de tu base</h3>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+          Live
+        </span>
+      </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-        {items.map((item) => (
-          <article
-            key={`${item.tag}-${item.title}`}
-            className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4"
-          >
-            <div className="inline-flex rounded-full border border-white/10 bg-[#031428]/65 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">
-              {item.tag}
-            </div>
-            <p className="mt-4 text-base font-semibold text-white">{item.title}</p>
-            <p className="mt-3 text-sm leading-7 text-white/72">{item.body}</p>
-          </article>
-        ))}
+      <div className="space-y-2">
+        {liveNews.slice(0, 5).map((article, i) => {
+          const dateStr = article.publishedAt
+            ? new Date(article.publishedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
+            : "";
+          return (
+            <a
+              key={`${article.url}-${i}`}
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-[18px] border border-white/8 bg-white/[0.035] p-4 transition hover:border-cyan-300/24 hover:bg-cyan-300/[0.045]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
+                    {article.source || "Fuente local"} {dateStr ? `· ${dateStr}` : ""}
+                  </p>
+                  <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white">
+                    {article.title}
+                  </h4>
+                </div>
+                <span className="shrink-0 text-white/35">↗</span>
+              </div>
+              {article.description ? (
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
+              ) : null}
+            </a>
+          );
+        })}
       </div>
     </section>
   );
@@ -3926,7 +3882,7 @@ function CentralFlightsTable({
 // ─── Office Economy Panel ─────────────────────────────────────────────────────
 
 type EconStats = {
-  airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
+  airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number; initial_capital_usd?: number; has_real_ledger?: boolean };
   breakdown: { income_flights: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_salaries: number };
   totalFlightsCompleted: number;
 };
@@ -3953,9 +3909,28 @@ function OfficeEconomyPanel() {
       </div>
     );
   }
-  if (!stats) return null;
+  const fallbackStats: EconStats = {
+    airline: {
+      name: "Patagonia Wings",
+      balance_usd: 1305000,
+      total_revenue_usd: 0,
+      total_costs_usd: 0,
+      net_profit_usd: 0,
+      initial_capital_usd: 1305000,
+      has_real_ledger: false,
+    },
+    breakdown: {
+      income_flights: 0,
+      cost_fuel: 0,
+      cost_maintenance: 0,
+      cost_pilot_payments: 0,
+      cost_repairs: 0,
+      cost_salaries: 0,
+    },
+    totalFlightsCompleted: 0,
+  };
 
-  const { airline, breakdown, totalFlightsCompleted } = stats;
+  const { airline, breakdown, totalFlightsCompleted } = stats ?? fallbackStats;
   const isProfit = airline.net_profit_usd >= 0;
 
   function fmtU(n: number) {
@@ -3968,6 +3943,11 @@ function OfficeEconomyPanel() {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">💰 Economía aerolínea</p>
           <h3 className="mt-1 text-lg font-semibold text-white">{airline.name}</h3>
+          {airline.has_real_ledger === false ? (
+            <p className="mt-2 max-w-xl text-xs leading-5 text-white/48">
+              Capital inicial operativo cargado. Sin operaciones registradas aún.
+            </p>
+          ) : null}
         </div>
         <Link href="/economia" className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90">
           Ver completo →
@@ -5001,6 +4981,56 @@ function getItineraryRouteCategory(item: AvailableItineraryOption) {
   return "";
 }
 
+
+function formatEconomyUsd(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const sign = value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
+}
+
+function buildEconomyEstimate(distanceNm: number | null | undefined, aircraftTypeCode?: string | null, mode: "CAREER" | "CHARTER" = "CAREER") {
+  if (!distanceNm || distanceNm <= 0) return null;
+  return estimateRouteProfitLoss(distanceNm, aircraftTypeCode ?? "A320", mode);
+}
+
+function EconomyMiniGrid({
+  distanceNm,
+  aircraftTypeCode,
+  mode = "CAREER",
+}: {
+  distanceNm: number | null | undefined;
+  aircraftTypeCode?: string | null;
+  mode?: "CAREER" | "CHARTER";
+}) {
+  const estimate = buildEconomyEstimate(distanceNm, aircraftTypeCode, mode);
+  if (!estimate) {
+    return (
+      <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/50">
+        Economía estimada no disponible para esta combinación.
+      </div>
+    );
+  }
+
+  const values = [
+    { label: "💵 Piloto", value: formatEconomyUsd(estimate.pilotCommissionUsd), tone: "text-emerald-100" },
+    { label: "🏢 Aerolínea", value: formatEconomyUsd(estimate.airlineRevenueUsd), tone: "text-cyan-100" },
+    { label: "⛽ Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
+    { label: "🛠 Mantención", value: formatEconomyUsd(estimate.maintenanceCostUsd), tone: "text-white/82" },
+    { label: "📈 Utilidad", value: formatEconomyUsd(estimate.netProfitUsd), tone: estimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
+  ];
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-5">
+      {values.map((item) => (
+        <div key={item.label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{item.label}</p>
+          <p className={`mt-1 text-sm font-black ${item.tone}`}>{item.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DispatchItineraryTable({
   rows,
   selectedItineraryId,
@@ -5034,6 +5064,7 @@ function DispatchItineraryTable({
               <th className="px-4 py-3 font-semibold">Destino</th>
               <th className="px-4 py-3 font-semibold">Distancia</th>
               <th className="px-4 py-3 font-semibold">Duracion aprox.</th>
+              <th className="px-4 py-3 font-semibold">Economía</th>
               <th className="px-4 py-3 font-semibold">Salida (local)</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
             </tr>
@@ -5138,6 +5169,20 @@ function DispatchItineraryTable({
                       <span className="ml-1 text-[11px] text-white/40">~est.</span>
                     ) : null}
                   </td>
+                  {/* ECONOMIA */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {(() => {
+                      const estimate = buildEconomyEstimate(distanceNm, selectedAircraftTypeCode, "CAREER");
+                      return estimate ? (
+                        <div className="text-xs leading-5">
+                          <p className="font-black text-emerald-100">💵 {formatEconomyUsd(estimate.pilotCommissionUsd)}</p>
+                          <p className="font-semibold text-cyan-100/80">📈 {formatEconomyUsd(estimate.netProfitUsd)}</p>
+                        </div>
+                      ) : (
+                        <span className="text-white/38">—</span>
+                      );
+                    })()}
+                  </td>
                   {/* HORA DE SALIDA */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <select
@@ -5174,7 +5219,7 @@ function DispatchItineraryTable({
 
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-white/54">
                   No hay itinerarios disponibles para la aeronave y modo de vuelo seleccionados.
                 </td>
               </tr>
@@ -8757,6 +8802,25 @@ function DashboardWorkspace({
                               ? `${filteredItineraries.length} itinerario(s) disponibles para esta combinacion.`
                               : "No hay itinerarios compatibles para la combinacion actual."}
                         </div>
+
+                        {selectedItineraryRecord ? (
+                          <div className="mt-4 rounded-[20px] border border-emerald-300/16 bg-emerald-300/[0.045] p-4">
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Economía estimada del itinerario</p>
+                                <p className="mt-1 text-sm text-white/58">Valores previos al despacho; el cierre real se recalcula con el PIREP y el ledger.</p>
+                              </div>
+                              <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
+                                {selectedItineraryRecord.origin_icao} → {selectedItineraryRecord.destination_icao}
+                              </span>
+                            </div>
+                            <EconomyMiniGrid
+                              distanceNm={Number(selectedItineraryRecord.distance_nm) || null}
+                              aircraftTypeCode={selectedAircraftRecord?.aircraft_type_code ?? selectedAircraftRecord?.aircraft_code ?? null}
+                              mode="CAREER"
+                            />
+                          </div>
+                        ) : null}
 
                         <div className="mt-5 flex flex-wrap gap-3">
                           <button type="button" onClick={() => handleStepChange("aircraft")} className="button-secondary py-3">
