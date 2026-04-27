@@ -1,10 +1,13 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  buildSimbriefApiLoaderUrl,
+  buildSimbriefDispatchPrefillUrl,
   buildSimbriefEditUrl,
   buildSimbriefFetchUrl,
-  buildSimbriefRedirectUrl,
   buildStaticId,
+  isUsableSimbriefApiKey,
+  resolveSimbriefGenerationMode,
   resolveSimbriefType,
   type SimbriefDispatchPayload,
   type SimbriefDispatchResponse,
@@ -13,13 +16,8 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.SIMBRIEF_API_KEY?.trim();
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Falta SIMBRIEF_API_KEY en variables de entorno." },
-        { status: 500 }
-      );
-    }
+    const requestedMode = resolveSimbriefGenerationMode(process.env.SIMBRIEF_GENERATION_MODE);
+    const canUseApiLoader = requestedMode === "api" && isUsableSimbriefApiKey(apiKey);
 
     const payload = (await request.json()) as Partial<SimbriefDispatchPayload>;
 
@@ -51,51 +49,67 @@ export async function POST(request: NextRequest) {
       staticId
     )}&username=${encodeURIComponent(payload.simbriefUsername)}`;
 
-    const apicode = createHash("md5")
-      .update(
-        `${apiKey}${payload.origin.toUpperCase()}${payload.destination.toUpperCase()}${type}${timestamp}${outputpage}`
-      )
-      .digest("hex");
-
-    const generateUrl = buildSimbriefRedirectUrl({
+    const normalizedPayload: SimbriefDispatchPayload = {
+      userId: payload.userId,
+      reservationId: payload.reservationId ?? null,
+      callsign: payload.callsign ?? "PWG000",
+      simbriefUsername: payload.simbriefUsername,
+      firstName: payload.firstName ?? null,
+      lastName: payload.lastName ?? null,
+      flightNumber: payload.flightNumber ?? "1000",
       origin: payload.origin,
       destination: payload.destination,
-      type,
-      timestamp,
-      outputpage,
-      apicode,
-      payload: {
-        userId: payload.userId,
-        reservationId: payload.reservationId ?? null,
-        callsign: payload.callsign ?? "PWG000",
-        simbriefUsername: payload.simbriefUsername,
-        firstName: payload.firstName ?? null,
-        lastName: payload.lastName ?? null,
-        flightNumber: payload.flightNumber ?? "1000",
-        origin: payload.origin,
-        destination: payload.destination,
-        alternate: payload.alternate ?? null,
-        aircraftCode: payload.aircraftCode,
-        aircraftTailNumber: payload.aircraftTailNumber ?? null,
-        routeText: payload.routeText ?? "",
-        scheduledDeparture: payload.scheduledDeparture ?? new Date().toISOString(),
-        eteMinutes: payload.eteMinutes ?? 60,
-        pax: payload.pax ?? 0,
-        cargoKg: payload.cargoKg ?? 0,
-        remarks: payload.remarks ?? "PATAGONIA WINGS WEB DISPATCH",
-      },
-      staticId,
-    });
+      alternate: payload.alternate ?? null,
+      aircraftCode: payload.aircraftCode,
+      aircraftTailNumber: payload.aircraftTailNumber ?? null,
+      routeText: payload.routeText ?? "",
+      scheduledDeparture: payload.scheduledDeparture ?? new Date().toISOString(),
+      eteMinutes: payload.eteMinutes ?? 60,
+      pax: payload.pax ?? 0,
+      cargoKg: payload.cargoKg ?? 0,
+      remarks: payload.remarks ?? "PATAGONIA WINGS WEB DISPATCH",
+    };
+
+    const apicode = canUseApiLoader
+      ? createHash("md5")
+          .update(
+            `${apiKey}${payload.origin.toUpperCase()}${payload.destination.toUpperCase()}${type}${timestamp}${outputpage}`
+          )
+          .digest("hex")
+      : null;
+
+    const generateUrl = canUseApiLoader
+      ? buildSimbriefApiLoaderUrl({
+          origin: payload.origin,
+          destination: payload.destination,
+          type,
+          timestamp,
+          outputpage,
+          apicode: apicode ?? "",
+          payload: normalizedPayload,
+          staticId,
+        })
+      : buildSimbriefDispatchPrefillUrl({
+          origin: payload.origin,
+          destination: payload.destination,
+          type,
+          payload: normalizedPayload,
+          staticId,
+        });
 
     const result: SimbriefDispatchResponse = {
       ok: true,
       staticId,
       type,
       timestamp,
+      mode: canUseApiLoader ? "api" : "redirect",
       generateUrl,
       outputpage,
       fetchUrl: buildSimbriefFetchUrl(payload.simbriefUsername, staticId),
       editUrl: buildSimbriefEditUrl(staticId),
+      warning: canUseApiLoader
+        ? undefined
+        : "Modo seguro sin API key: se abrirá SimBrief prellenado. Para generación API con retorno automático, configura SIMBRIEF_GENERATION_MODE=api y una SIMBRIEF_API_KEY válida.",
     };
 
     return NextResponse.json(result, { status: 200 });

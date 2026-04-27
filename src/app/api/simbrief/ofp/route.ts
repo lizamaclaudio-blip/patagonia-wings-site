@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   buildSimbriefFetchUrl,
+  buildSimbriefXmlFetchUrl,
   extractSimbriefOfpSummary,
 } from "@/lib/simbrief";
 
@@ -28,6 +29,23 @@ async function fetchSimbrief(url: string) {
     rawText,
     parsed,
   };
+}
+
+async function fetchSimbriefXml(username: string, staticId: string | null) {
+  const response = await fetch(buildSimbriefXmlFetchUrl(username, staticId), {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      Accept: "application/xml, text/xml, text/plain, */*",
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const text = await response.text();
+  return text.trim() ? text : null;
 }
 
 export async function GET(request: NextRequest) {
@@ -66,6 +84,7 @@ export async function GET(request: NextRequest) {
 
     const summary = extractSimbriefOfpSummary(result.parsed, staticId);
     summary.matchedByStaticId = matchedByStaticId || summary.matchedByStaticId;
+    const rawXml = await fetchSimbriefXml(username, staticId);
 
     if (staticId && !summary.matchedByStaticId) {
       return NextResponse.json(
@@ -75,6 +94,7 @@ export async function GET(request: NextRequest) {
           matchedByStaticId: false,
           summary,
           raw: result.parsed,
+          rawXml,
         },
         { status: 409 }
       );
@@ -86,6 +106,7 @@ export async function GET(request: NextRequest) {
         matchedByStaticId: summary.matchedByStaticId,
         summary,
         raw: result.parsed,
+        rawXml,
       },
       { status: 200 }
     );

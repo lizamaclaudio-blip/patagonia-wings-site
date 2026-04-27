@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { calculateFlightCommission, calculateDamageDeduction } from "@/lib/pilot-economy";
+import { calculateFlightCommission, calculateDamageDeduction, estimateFlightEconomy } from "@/lib/pilot-economy";
 
 export type OfficialFlightStatus =
   | "reserved"
@@ -326,6 +326,83 @@ async function maybeUpsert(table: string, payload: Record<string, unknown>, onCo
   const { error } = await supabase.from(table).upsert(payload, onConflict ? { onConflict } : undefined);
   if (error && !isMissingRelationError(error)) {
     throw error;
+  }
+}
+
+async function maybeDeleteByReservationId(table: string, reservationId: string) {
+  if (!reservationId) return;
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.from(table).delete().eq("reservation_id", reservationId);
+  if (error && !isMissingRelationError(error)) {
+    throw error;
+  }
+}
+
+async function maybeUpsertReservationRow(table: string, reservationId: string, payload: Record<string, unknown>) {
+  if (!reservationId) return;
+  const supabase = createSupabaseServerClient();
+  const { data, error: selectError } = await supabase
+    .from(table)
+    .select("id")
+    .eq("reservation_id", reservationId)
+    .maybeSingle();
+
+  if (selectError) {
+    if (isMissingRelationError(selectError)) return;
+    throw selectError;
+  }
+
+  if (data?.id) {
+    const { error } = await supabase.from(table).update(payload).eq("id", data.id);
+    if (error && !isMissingRelationError(error)) throw error;
+    return;
+  }
+
+  const { error } = await supabase.from(table).insert(payload);
+  if (error && !isMissingRelationError(error)) {
+    throw error;
+  }
+}
+
+async function maybeRecalculateAirlineBalance(airlineId: string) {
+  if (!airlineId) return;
+  const supabase = createSupabaseServerClient();
+
+  const rpcResult = await supabase.rpc("pw_recalculate_airline_balance", { p_airline_id: airlineId });
+  if (!rpcResult.error) return;
+
+  const message = `${asText(rpcResult.error.message)} ${asText(rpcResult.error.details)} ${asText(rpcResult.error.hint)}`.toLowerCase();
+  if (!message.includes("function") && !message.includes("schema cache") && !message.includes("could not find")) {
+    throw rpcResult.error;
+  }
+
+  const { data, error } = await supabase
+    .from("airline_ledger")
+    .select("amount_usd")
+    .eq("airline_id", airlineId)
+    .limit(50000);
+
+  if (error) {
+    if (isMissingRelationError(error)) return;
+    throw error;
+  }
+
+  const amounts = (data ?? []).map((row) => asNumber(row.amount_usd));
+  const balance = amounts.reduce((sum, amount) => sum + amount, 0);
+  const revenue = amounts.filter((amount) => amount > 0).reduce((sum, amount) => sum + amount, 0);
+  const costs = Math.abs(amounts.filter((amount) => amount < 0).reduce((sum, amount) => sum + amount, 0));
+
+  const { error: updateError } = await supabase
+    .from("airlines")
+    .update({
+      balance_usd: Math.round(balance * 100) / 100,
+      total_revenue_usd: Math.round(revenue * 100) / 100,
+      total_costs_usd: Math.round(costs * 100) / 100,
+    })
+    .eq("id", airlineId);
+
+  if (updateError && !isMissingRelationError(updateError)) {
+    throw updateError;
   }
 }
 
@@ -937,6 +1014,8 @@ export async function persistOfficialCloseout(params: {
   const nowIso = new Date().toISOString();
   const reservationId = asText(params.reservation.id);
   const existingPayload = asObject(params.reservation.score_payload);
+  const existingEconomyAccounting = asObject(existingPayload.economy_accounting);
+  const rewardsAlreadyApplied = Boolean(asText(existingEconomyAccounting.pilot_rewards_applied_at));
   const rawPirepXml = asText(params.closeoutPayload?.pirepXmlContent);
   const rawPirepFileName = asText(params.closeoutPayload?.pirepFileName);
   const rawPirepChecksum = asText(params.closeoutPayload?.pirepChecksumSha256);
@@ -1046,17 +1125,24 @@ export async function persistOfficialCloseout(params: {
 
     const netEarned = Math.max(0, commissionUsd - damageDeductionUsd);
     const currentBalance = asNumber(params.profile.wallet_balance);
+    const pilotProfilePatch = rewardsAlreadyApplied
+      ? {
+          current_airport_code: official.aircraftLocation,
+          current_airport_icao: official.aircraftLocation,
+          updated_at: nowIso,
+        }
+      : {
+          current_airport_code: official.aircraftLocation,
+          current_airport_icao: official.aircraftLocation,
+          total_hours: currentHours + blockHours,
+          career_hours: currentCareerHours + blockHours,
+          wallet_balance: Math.round((currentBalance + netEarned) * 100) / 100,
+          updated_at: nowIso,
+        };
 
     await supabase
       .from("pilot_profiles")
-      .update({
-        current_airport_code: official.aircraftLocation,
-        current_airport_icao: official.aircraftLocation,
-        total_hours: currentHours + blockHours,
-        career_hours: currentCareerHours + blockHours,
-        wallet_balance: Math.round((currentBalance + netEarned) * 100) / 100,
-        updated_at: nowIso,
-      })
+      .update(pilotProfilePatch)
       .eq("id", params.user.id);
 
     await supabase
@@ -1164,17 +1250,33 @@ export async function persistOfficialCloseout(params: {
     created_at: nowIso,
   });
 
-  // ── Economy: per-flight columns on flight_reservations ──────────────────────
+  // ── Economy: realistic per-flight accounting and metrics ─────────────────────
   const distanceNm = asNumber(params.report?.distance ?? 0);
   if (official.finalStatus === "completed") {
     const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
-    const fuelCostPerKg = 1.05; // ~$1.05 USD/kg JetA average
-    const fuelCostUsd = Math.round(official.fuelUsedKg * fuelCostPerKg * 100) / 100;
-    const maintenanceCostUsd = Math.round(
-      (official.actualBlockMinutes / 60) * estimateWearCostPerHour(aircraftTypeCode) * 100
-    ) / 100;
-    // Airline revenue = 3× pilot commission (simplified virtual airline model)
-    const airlineRevenueUsd = Math.round(commissionUsd * 3 * 100) / 100;
+    const originIcao = normalizeIcao(params.reservation.origin_ident);
+    const destinationIcao = normalizeIcao(params.reservation.destination_ident);
+    const economy = estimateFlightEconomy({
+      distanceNm,
+      blockMinutes: official.actualBlockMinutes,
+      aircraftTypeCode,
+      operationType: asText(params.preparedDispatch?.flightMode ?? params.activeFlight?.flightModeCode ?? params.reservation.flight_mode_code ?? "CAREER"),
+      originIcao,
+      destinationIcao,
+      passengerCount: params.preparedDispatch?.passengerCount ?? null,
+      cargoKg: params.preparedDispatch?.cargoKg ?? null,
+      actualFuelKg: official.fuelUsedKg,
+      damageCostUsd: damageDeductionUsd,
+      economySource: "actual",
+    });
+    const fuelCostUsd = economy.fuelCostUsd;
+    const maintenanceCostUsd = economy.maintenanceCostUsd;
+    const airlineRevenueUsd = economy.airlineRevenueUsd;
+    const airportFeesUsd = economy.airportFeesUsd;
+    const handlingCostUsd = economy.handlingCostUsd;
+    const repairReserveUsd = economy.repairReserveUsd;
+    const totalCosts = economy.totalCostUsd;
+    const netFlight = economy.netProfitUsd;
 
     await supabase
       .from("flight_reservations")
@@ -1183,120 +1285,148 @@ export async function persistOfficialCloseout(params: {
         fuel_cost_usd: fuelCostUsd,
         maintenance_cost_usd: maintenanceCostUsd,
         airline_revenue_usd: airlineRevenueUsd,
+        airport_fees_usd: airportFeesUsd,
+        handling_cost_usd: handlingCostUsd,
+        repair_reserve_usd: repairReserveUsd,
+        onboard_service_revenue_usd: economy.onboardServiceRevenueUsd,
+        onboard_sales_revenue_usd: economy.onboardSalesRevenueUsd,
+        onboard_service_cost_usd: economy.onboardServiceCostUsd,
+        passenger_revenue_usd: economy.passengerRevenueUsd,
+        cargo_revenue_usd: economy.cargoRevenueUsd,
+        total_cost_usd: totalCosts,
+        net_profit_usd: netFlight,
+        estimated_passengers: economy.estimatedPassengers,
+        estimated_cargo_kg: economy.estimatedCargoKg,
       })
       .eq("id", reservationId);
 
-    // ── Airline ledger entries ─────────────────────────────────────────────────
+    const economySnapshotPayload = {
+      reservation_id: reservationId,
+      flight_number: asText(params.activeFlight?.flightNumber ?? params.report?.flightNumber ?? params.reservation.route_code),
+      pilot_id: params.user.id,
+      pilot_callsign: asText(params.profile.callsign),
+      aircraft_id: asText(params.reservation.aircraft_id ?? params.activeFlight?.aircraftId) || null,
+      aircraft_registration: asText(params.reservation.aircraft_registration),
+      aircraft_type: aircraftTypeCode,
+      operation_type: asText(params.preparedDispatch?.flightMode ?? params.activeFlight?.flightModeCode ?? params.reservation.flight_mode_code ?? "CAREER"),
+      origin_icao: originIcao,
+      destination_icao: destinationIcao,
+      distance_nm: economy.distanceNm,
+      block_minutes_estimated: economy.blockMinutes,
+      block_minutes_actual: official.actualBlockMinutes,
+      estimated_passengers: economy.estimatedPassengers,
+      estimated_cargo_kg: economy.estimatedCargoKg,
+      fuel_kg_estimated: economy.fuelKg,
+      fuel_kg_actual: official.fuelUsedKg,
+      fuel_liters_estimated: economy.fuelLiters,
+      fuel_price_usd: economy.fuelPriceUsdPerKg,
+      fuel_cost_usd: fuelCostUsd,
+      passenger_revenue_usd: economy.passengerRevenueUsd,
+      cargo_revenue_usd: economy.cargoRevenueUsd,
+      onboard_service_revenue_usd: economy.onboardServiceRevenueUsd,
+      onboard_sales_revenue_usd: economy.onboardSalesRevenueUsd,
+      onboard_service_cost_usd: economy.onboardServiceCostUsd,
+      airline_revenue_usd: airlineRevenueUsd,
+      pilot_payment_usd: commissionUsd,
+      maintenance_cost_usd: maintenanceCostUsd,
+      repair_cost_usd: damageDeductionUsd,
+      airport_fees_usd: airportFeesUsd,
+      handling_cost_usd: handlingCostUsd,
+      total_cost_usd: totalCosts,
+      net_profit_usd: netFlight,
+      profit_margin_pct: economy.profitMarginPct,
+      economy_source: "actual",
+      created_at: nowIso,
+      metadata: economy,
+    };
+
+    await maybeUpsertReservationRow("flight_economy_snapshots", reservationId, economySnapshotPayload);
+
     const pilotCallsign = asText(params.profile.callsign);
     const airlineRow = await supabase.from("airlines").select("id").limit(1).maybeSingle();
     const airlineId = asText(airlineRow.data?.id) || null;
     if (airlineId) {
       const ledgerEntries = [
-        {
-          airline_id: airlineId,
-          entry_type: "flight_income",
-          amount_usd: airlineRevenueUsd,
-          reservation_id: reservationId,
-          pilot_callsign: pilotCallsign,
-          description: `Ingreso vuelo ${asText(params.activeFlight?.flightNumber ?? params.reservation.route_code)} ${normalizeIcao(params.reservation.origin_ident)}-${normalizeIcao(params.reservation.destination_ident)}`,
-          created_at: nowIso,
-        },
-        {
-          airline_id: airlineId,
-          entry_type: "fuel_cost",
-          amount_usd: -fuelCostUsd,
-          reservation_id: reservationId,
-          pilot_callsign: pilotCallsign,
-          description: `Combustible ${official.fuelUsedKg} kg`,
-          created_at: nowIso,
-        },
-        {
-          airline_id: airlineId,
-          entry_type: "maintenance_cost",
-          amount_usd: -maintenanceCostUsd,
-          reservation_id: reservationId,
-          pilot_callsign: pilotCallsign,
-          description: `Mantenimiento ${(official.actualBlockMinutes / 60).toFixed(1)} h block`,
-          created_at: nowIso,
-        },
-        {
-          airline_id: airlineId,
-          entry_type: "pilot_payment",
-          amount_usd: -commissionUsd,
-          reservation_id: reservationId,
-          pilot_callsign: pilotCallsign,
-          description: `Pago piloto ${pilotCallsign}`,
-          created_at: nowIso,
-        },
+        { airline_id: airlineId, entry_type: "passenger_revenue", amount_usd: economy.passengerRevenueUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Ingreso pasajeros ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "cargo_revenue", amount_usd: economy.cargoRevenueUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Ingreso carga ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "onboard_service_revenue", amount_usd: economy.onboardServiceRevenueUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Servicio a bordo ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "onboard_sales_revenue", amount_usd: economy.onboardSalesRevenueUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Ventas catalogo a bordo ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "fuel_cost", amount_usd: -fuelCostUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Combustible ${official.fuelUsedKg} kg`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "maintenance_cost", amount_usd: -maintenanceCostUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Mantenimiento ${(official.actualBlockMinutes / 60).toFixed(1)} h block`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "airport_fees", amount_usd: -airportFeesUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Tasas aeroportuarias ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "handling_cost", amount_usd: -handlingCostUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Handling y rampa ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "onboard_service_cost", amount_usd: -economy.onboardServiceCostUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Costo servicio a bordo ${originIcao}-${destinationIcao}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "pilot_payment", amount_usd: -commissionUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: `Pago piloto ${pilotCallsign}`, metadata: economy, created_at: nowIso },
+        { airline_id: airlineId, entry_type: "repair_reserve", amount_usd: -repairReserveUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: "Reserva técnica de reparación/desgaste", metadata: economy, created_at: nowIso },
       ];
       if (damageDeductionUsd > 0) {
-        ledgerEntries.push({
-          airline_id: airlineId,
-          entry_type: "repair_cost",
-          amount_usd: -damageDeductionUsd,
-          reservation_id: reservationId,
-          pilot_callsign: pilotCallsign,
-          description: `Reparacion por daño en vuelo`,
-          created_at: nowIso,
+        ledgerEntries.push({ airline_id: airlineId, entry_type: "repair_cost", amount_usd: -damageDeductionUsd, reservation_id: reservationId, pilot_callsign: pilotCallsign, description: "Reparacion por daño en vuelo", metadata: economy, created_at: nowIso });
+      }
+      await maybeDeleteByReservationId("airline_ledger", reservationId);
+      await maybeInsert("airline_ledger", ledgerEntries);
+      await maybeRecalculateAirlineBalance(airlineId);
+    }
+    // ── Monthly payroll ledger entry ───────────────────────────────────────────
+    if (!rewardsAlreadyApplied) {
+      const now = new Date(nowIso);
+      const periodYear = now.getUTCFullYear();
+      const periodMonth = now.getUTCMonth() + 1;
+      const { data: existingLedger } = await supabase
+        .from("pilot_salary_ledger")
+        .select("id, flights_count, commission_total_usd, damage_deductions_usd, net_paid_usd, block_hours_total")
+        .eq("pilot_id", params.user.id)
+        .eq("period_year", periodYear)
+        .eq("period_month", periodMonth)
+        .maybeSingle();
+
+      if (existingLedger) {
+        await supabase
+          .from("pilot_salary_ledger")
+          .update({
+            flights_count: asNumber(existingLedger.flights_count) + 1,
+            commission_total_usd: asNumber(existingLedger.commission_total_usd) + commissionUsd,
+            damage_deductions_usd: asNumber(existingLedger.damage_deductions_usd) + damageDeductionUsd,
+            net_paid_usd: asNumber(existingLedger.net_paid_usd) + commissionUsd - damageDeductionUsd,
+            block_hours_total: asNumber(existingLedger.block_hours_total) + blockHours,
+            pilot_callsign: asText(params.profile.callsign) || null,
+          })
+          .eq("id", existingLedger.id);
+      } else {
+        await supabase.from("pilot_salary_ledger").insert({
+          pilot_id: params.user.id,
+          pilot_callsign: asText(params.profile.callsign) || null,
+          period_year: periodYear,
+          period_month: periodMonth,
+          flights_count: 1,
+          commission_total_usd: commissionUsd,
+          damage_deductions_usd: damageDeductionUsd,
+          base_salary_usd: 0,
+          net_paid_usd: commissionUsd - damageDeductionUsd,
+          block_hours_total: blockHours,
+          status: "pending",
         });
       }
-
-      await maybeInsert("airline_ledger", ledgerEntries);
-
-      // Update airline summary balance (read-then-write, best-effort)
-      const netFlight = airlineRevenueUsd - fuelCostUsd - maintenanceCostUsd - commissionUsd - damageDeductionUsd;
-      const { data: airlineBalance } = await supabase
-        .from("airlines")
-        .select("balance_usd, total_revenue_usd, total_costs_usd")
-        .eq("id", airlineId)
-        .maybeSingle();
-      if (airlineBalance) {
-        const totalCosts = fuelCostUsd + maintenanceCostUsd + commissionUsd + damageDeductionUsd;
-        await supabase.from("airlines").update({
-          balance_usd: Math.round((asNumber(airlineBalance.balance_usd) + netFlight) * 100) / 100,
-          total_revenue_usd: Math.round((asNumber(airlineBalance.total_revenue_usd) + airlineRevenueUsd) * 100) / 100,
-          total_costs_usd: Math.round((asNumber(airlineBalance.total_costs_usd) + totalCosts) * 100) / 100,
-        }).eq("id", airlineId);
-      }
     }
 
-    // ── Monthly payroll ledger entry ───────────────────────────────────────────
-    const now = new Date(nowIso);
-    const periodYear = now.getUTCFullYear();
-    const periodMonth = now.getUTCMonth() + 1;
-    const { data: existingLedger } = await supabase
-      .from("pilot_salary_ledger")
-      .select("id, flights_count, commission_total_usd, block_hours_total")
-      .eq("pilot_id", params.user.id)
-      .eq("period_year", periodYear)
-      .eq("period_month", periodMonth)
-      .maybeSingle();
+    const economyAccountingPayload = {
+      ...officialPayload,
+      economy_accounting: {
+        ...existingEconomyAccounting,
+        accounting_applied_at: nowIso,
+        pilot_rewards_applied_at: rewardsAlreadyApplied ? asText(existingEconomyAccounting.pilot_rewards_applied_at) || nowIso : nowIso,
+        version: "economy-closeout-v1",
+        reservation_id: reservationId,
+        net_profit_usd: netFlight,
+        pilot_payment_usd: commissionUsd,
+        total_cost_usd: totalCosts,
+        airline_revenue_usd: airlineRevenueUsd,
+      },
+    };
 
-    if (existingLedger) {
-      await supabase
-        .from("pilot_salary_ledger")
-        .update({
-          flights_count: asNumber(existingLedger.flights_count) + 1,
-          commission_total_usd: asNumber(existingLedger.commission_total_usd) + commissionUsd,
-          block_hours_total: asNumber(existingLedger.block_hours_total) + blockHours,
-          pilot_callsign: asText(params.profile.callsign) || null,
-        })
-        .eq("id", existingLedger.id);
-    } else {
-      await supabase.from("pilot_salary_ledger").insert({
-        pilot_id: params.user.id,
-        pilot_callsign: asText(params.profile.callsign) || null,
-        period_year: periodYear,
-        period_month: periodMonth,
-        flights_count: 1,
-        commission_total_usd: commissionUsd,
-        damage_deductions_usd: damageDeductionUsd,
-        base_salary_usd: 0,
-        net_paid_usd: commissionUsd - damageDeductionUsd,
-        block_hours_total: blockHours,
-        status: "pending",
-      });
-    }
+    await supabase
+      .from("flight_reservations")
+      .update({ score_payload: economyAccountingPayload })
+      .eq("id", reservationId);
   }
 
   return {

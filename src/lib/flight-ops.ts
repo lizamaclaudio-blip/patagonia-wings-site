@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/browser";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import { resolveSimbriefType } from "@/lib/simbrief";
+import { estimateSimbriefFlightEconomy, filterAircraftTypesForRoute } from "@/lib/pilot-economy";
 
 export type FlightMode = "itinerary" | "charter" | "training" | "event";
 export type FlightOperationStatus = "draft" | "reserved" | "dispatch_ready";
@@ -1597,10 +1598,20 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
               ? row.id
               : routeCode;
         const destinationCity = typeof row.destination_city === "string" ? row.destination_city : destination;
-        const availableCount =
-          typeof row.available_aircraft_count === "number"
-            ? row.available_aircraft_count
-            : Number(row.available_aircraft_count ?? compatibleAircraftTypes.length ?? 0);
+        const distanceNm = toFiniteNumber(row.distance_nm);
+        const routeCategory = normalizeRouteCategoryForDispatch(row);
+        const originCountry = typeof row.origin_country === "string" ? row.origin_country : null;
+        const destinationCountry = typeof row.destination_country === "string" ? row.destination_country : null;
+        const economyFiltered = distanceNm && distanceNm > 0
+          ? filterAircraftTypesForRoute({
+              aircraftTypeCodes: compatibleAircraftTypes,
+              distanceNm,
+              operationCategory: routeCategory,
+              originCountry,
+              destinationCountry,
+            }).compatibleTypes
+          : compatibleAircraftTypes;
+        const availableCount = economyFiltered.length;
         const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
           typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
           typeof row.flight_designator === "string" ? row.flight_designator : null,
@@ -1610,10 +1621,9 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
 
         if (!routeCode || !origin || !destination) return null;
         if (normalizeUpper(origin) !== airport) return null;
-        if (compatibleAircraftTypes.length === 0) return null;
+        if (economyFiltered.length === 0) return null;
         if (!routeMatchesOperationalRequirements(row, pilotQualifications, pilotCertifications)) return null;
 
-        const distanceNm = toFiniteNumber(row.distance_nm);
         const scheduledBlockMin = toFiniteNumber(row.scheduled_block_min ?? row.block_minutes);
         const expectedBlockP50 = toFiniteNumber(row.expected_block_p50 ?? row.block_minutes);
         const expectedBlockP80 = toFiniteNumber(row.expected_block_p80 ?? row.block_minutes);
@@ -1627,17 +1637,17 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
           destination_icao: destination,
           origin_city: typeof row.origin_city === "string" ? row.origin_city : null,
           destination_city: typeof row.destination_city === "string" ? row.destination_city : null,
-          aircraft_type_code: compatibleAircraftTypes.length === 1 ? compatibleAircraftTypes[0] : null,
-          aircraft_type_name: compatibleAircraftTypes.length === 1 ? normalizeAircraftDisplayName(compatibleAircraftTypes[0]) : compatibleAircraftTypes.length > 1 ? "Multi-fleet" : null,
-          compatible_aircraft_types: compatibleAircraftTypes,
-          available_aircraft_count: Number.isFinite(availableCount) ? availableCount : 0,
+          aircraft_type_code: economyFiltered.length === 1 ? economyFiltered[0] : null,
+          aircraft_type_name: economyFiltered.length === 1 ? normalizeAircraftDisplayName(economyFiltered[0]) : economyFiltered.length > 1 ? "Multi-fleet" : null,
+          compatible_aircraft_types: economyFiltered,
+          available_aircraft_count: availableCount,
           distance_nm: distanceNm,
-          route_category: normalizeRouteCategoryForDispatch(row),
+          route_category: routeCategory,
           route_group: typeof row.route_group === "string" ? row.route_group : null,
           service_profile: typeof row.service_profile === "string" ? row.service_profile : null,
           service_level: typeof row.service_level === "string" ? row.service_level : null,
-          origin_country: typeof row.origin_country === "string" ? row.origin_country : null,
-          destination_country: typeof row.destination_country === "string" ? row.destination_country : null,
+          origin_country: originCountry,
+          destination_country: destinationCountry,
           scheduled_block_min: scheduledBlockMin,
           expected_block_p50: expectedBlockP50,
           expected_block_p80: expectedBlockP80,
@@ -1773,13 +1783,24 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
           parseCompatibleAircraftTypes(row.aircraft_type_code).filter((type) =>
             isAircraftTypeAllowedForPilot(type, permittedTypes)
           );
+        const distanceNm = toFiniteNumber(row.distance_nm);
+        const routeCategory = normalizeRouteCategoryForDispatch(row);
+        const economyFiltered = distanceNm && distanceNm > 0
+          ? filterAircraftTypesForRoute({
+              aircraftTypeCodes: compatibleAircraftTypes,
+              distanceNm,
+              operationCategory: routeCategory,
+              originCountry: null,
+              destinationCountry: null,
+            }).compatibleTypes
+          : compatibleAircraftTypes;
         const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
           typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
           typeof row.flight_designator === "string" ? row.flight_designator : null,
           origin,
           destination
         );
-        if (!routeId || !routeCode || !destination || compatibleAircraftTypes.length === 0) return null;
+        if (!routeId || !routeCode || !destination || economyFiltered.length === 0) return null;
         if (!routeMatchesOperationalRequirements(row, pilotQualifications, pilotCertifications)) return null;
         return {
           itinerary_id: routeId,
@@ -1790,12 +1811,12 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
           destination_icao: destination,
           origin_city: null,
           destination_city: null,
-          aircraft_type_code: compatibleAircraftTypes.length === 1 ? compatibleAircraftTypes[0] : null,
-          aircraft_type_name: compatibleAircraftTypes.length === 1 ? normalizeAircraftDisplayName(compatibleAircraftTypes[0]) : "Multi-fleet",
-          compatible_aircraft_types: compatibleAircraftTypes,
-          available_aircraft_count: compatibleAircraftTypes.length,
-          distance_nm: toFiniteNumber(row.distance_nm),
-          route_category: normalizeRouteCategoryForDispatch(row),
+          aircraft_type_code: economyFiltered.length === 1 ? economyFiltered[0] : null,
+          aircraft_type_name: economyFiltered.length === 1 ? normalizeAircraftDisplayName(economyFiltered[0]) : "Multi-fleet",
+          compatible_aircraft_types: economyFiltered,
+          available_aircraft_count: economyFiltered.length,
+          distance_nm: distanceNm,
+          route_category: routeCategory,
           route_group: typeof row.route_group === "string" ? row.route_group : null,
           service_profile: typeof row.service_profile === "string" ? row.service_profile : null,
           service_level: typeof row.service_level === "string" ? row.service_level : null,
@@ -2005,6 +2026,8 @@ export type DispatchSimBriefData = {
   matchedByStaticId?: boolean | null;
   rawUnits?: string | null;
   pdfUrl?: string | null;
+  rawOfpJson?: unknown | null;
+  rawOfpXml?: string | null;
 };
 
 export async function markDispatchPrepared(
@@ -2156,6 +2179,53 @@ export async function markDispatchPrepared(
     if (simBriefData.pdfUrl)                 normalized.pdf_url                    = simBriefData.pdfUrl;
   }
 
+  const plannedEconomy = simBriefData
+    ? estimateSimbriefFlightEconomy({
+        distanceNm: simBriefData.distanceNm ?? null,
+        blockMinutes: simBriefData.scheduledBlockMinutes ?? simBriefData.expectedBlockP50Minutes ?? simBriefData.eteMinutes ?? null,
+        eteMinutes: simBriefData.eteMinutes ?? null,
+        aircraftTypeCode: simBriefData.airframe ?? reservationAircraftType,
+        operationType: isCharterReservation ? "CHARTER" : "CAREER",
+        operationCategory: isCharterReservation ? "charter" : null,
+        originIcao: simBriefData.originIcao ?? reservationOriginCode,
+        destinationIcao: simBriefData.destinationIcao ?? reservationDestinationCode,
+        passengerCount: simBriefData.passengerCount ?? null,
+        cargoKg: simBriefData.cargoKg ?? null,
+        payloadKg: simBriefData.payloadKg ?? null,
+        tripFuelKg: simBriefData.tripFuelKg ?? null,
+        taxiFuelKg: simBriefData.taxiFuelKg ?? null,
+        reserveFuelKg: simBriefData.reserveFuelKg ?? null,
+        blockFuelKg: simBriefData.blockFuelKg ?? null,
+      })
+    : null;
+
+  if (plannedEconomy) {
+    normalized.economy_source = "simbrief";
+    normalized.economy_plan = {
+      estimated_passengers: plannedEconomy.estimatedPassengers,
+      estimated_cargo_kg: plannedEconomy.estimatedCargoKg,
+      planned_fuel_kg: plannedEconomy.fuelKg,
+      fuel_price_usd_per_kg: plannedEconomy.fuelPriceUsdPerKg,
+      fuel_cost_usd: plannedEconomy.fuelCostUsd,
+      passenger_revenue_usd: plannedEconomy.passengerRevenueUsd,
+      cargo_revenue_usd: plannedEconomy.cargoRevenueUsd,
+      onboard_service_revenue_usd: plannedEconomy.onboardServiceRevenueUsd,
+      onboard_sales_revenue_usd: plannedEconomy.onboardSalesRevenueUsd,
+      onboard_service_cost_usd: plannedEconomy.onboardServiceCostUsd,
+      airline_revenue_usd: plannedEconomy.airlineRevenueUsd,
+      pilot_payment_usd: plannedEconomy.pilotPaymentUsd,
+      maintenance_cost_usd: plannedEconomy.maintenanceCostUsd,
+      airport_fees_usd: plannedEconomy.airportFeesUsd,
+      handling_cost_usd: plannedEconomy.handlingCostUsd,
+      total_cost_usd: plannedEconomy.totalCostUsd,
+      net_profit_usd: plannedEconomy.netProfitUsd,
+      profit_margin_pct: plannedEconomy.profitMarginPct,
+      route_band: plannedEconomy.routeBand,
+      aircraft_compatible: plannedEconomy.aircraftCompatible,
+      compatibility_reason: plannedEconomy.compatibilityReason,
+    };
+  }
+
   const packagePayload: Record<string, unknown> = {
     reservation_id: reservationId,
     pilot_callsign: effectivePilotCallsign || null,
@@ -2191,6 +2261,120 @@ export async function markDispatchPrepared(
         .eq("id", reservationId);
     } catch (statusErr) {
       console.warn("[markDispatchPrepared] No se pudo actualizar status reserva a dispatched:", statusErr);
+    }
+  }
+
+  if (plannedEconomy) {
+    const economyReservationPatch: Record<string, unknown> = {
+      distance_nm: plannedEconomy.distanceNm,
+      actual_block_minutes: plannedEconomy.blockMinutes,
+      estimated_passengers: plannedEconomy.estimatedPassengers,
+      estimated_cargo_kg: plannedEconomy.estimatedCargoKg,
+      fuel_cost_usd: plannedEconomy.fuelCostUsd,
+      maintenance_cost_usd: plannedEconomy.maintenanceCostUsd,
+      airline_revenue_usd: plannedEconomy.airlineRevenueUsd,
+      airport_fees_usd: plannedEconomy.airportFeesUsd,
+      handling_cost_usd: plannedEconomy.handlingCostUsd,
+      repair_reserve_usd: plannedEconomy.repairReserveUsd,
+      passenger_revenue_usd: plannedEconomy.passengerRevenueUsd,
+      cargo_revenue_usd: plannedEconomy.cargoRevenueUsd,
+      onboard_service_revenue_usd: plannedEconomy.onboardServiceRevenueUsd,
+      onboard_sales_revenue_usd: plannedEconomy.onboardSalesRevenueUsd,
+      onboard_service_cost_usd: plannedEconomy.onboardServiceCostUsd,
+      total_cost_usd: plannedEconomy.totalCostUsd,
+      net_profit_usd: plannedEconomy.netProfitUsd,
+      commission_usd: plannedEconomy.pilotPaymentUsd,
+      route_band: plannedEconomy.routeBand,
+      aircraft_compatible: plannedEconomy.aircraftCompatible,
+      compatibility_reason: plannedEconomy.compatibilityReason,
+      simbrief_static_id: simBriefData?.staticId ?? null,
+      simbrief_ofp_id: simBriefData?.staticId ?? null,
+      simbrief_json: simBriefData?.rawOfpJson ?? normalized,
+      simbrief_xml: simBriefData?.rawOfpXml ?? null,
+      ofp_status: "planned",
+      ofp_generated_at: simBriefData?.generatedAtIso ?? now,
+      planned_fuel_kg: simBriefData?.blockFuelKg ?? plannedEconomy.fuelKg,
+      planned_trip_fuel_kg: simBriefData?.tripFuelKg ?? null,
+      planned_block_fuel_kg: simBriefData?.blockFuelKg ?? plannedEconomy.fuelKg,
+      planned_payload_kg: simBriefData?.payloadKg ?? null,
+      planned_pax: simBriefData?.passengerCount ?? plannedEconomy.estimatedPassengers,
+      planned_cargo_kg: simBriefData?.cargoKg ?? plannedEconomy.estimatedCargoKg,
+      planned_block_minutes: simBriefData?.scheduledBlockMinutes ?? simBriefData?.eteMinutes ?? plannedEconomy.blockMinutes,
+      planned_route_text: simBriefData?.routeText ?? null,
+      updated_at: now,
+    };
+
+    try {
+      await supabase
+        .from("flight_reservations")
+        .update(economyReservationPatch)
+        .eq("id", reservationId);
+    } catch (economyErr) {
+      console.warn("[markDispatchPrepared] No se pudo guardar economía OFP planificada en reserva:", economyErr);
+    }
+
+    try {
+      await supabase
+        .from("flight_economy_snapshots")
+        .delete()
+        .eq("reservation_id", reservationId)
+        .eq("economy_source", "simbrief");
+
+      await supabase
+        .from("flight_economy_snapshots")
+        .insert({
+          reservation_id: reservationId,
+          flight_number: reservationFlightNumber || null,
+          pilot_callsign: effectivePilotCallsign || null,
+          aircraft_id: typeof reservationRow?.aircraft_id === "string" ? reservationRow.aircraft_id : null,
+          aircraft_registration: reservationAircraftRegistration || simBriefData?.aircraftRegistration?.trim().toUpperCase() || null,
+          aircraft_type: reservationAircraftType || simBriefData?.airframe?.trim().toUpperCase() || null,
+          operation_type: isCharterReservation ? "charter" : "itinerary",
+          origin_icao: reservationOriginCode,
+          destination_icao: reservationDestinationCode,
+          distance_nm: plannedEconomy.distanceNm,
+          block_minutes_estimated: plannedEconomy.blockMinutes,
+          estimated_passengers: plannedEconomy.estimatedPassengers,
+          estimated_cargo_kg: plannedEconomy.estimatedCargoKg,
+          fuel_kg_estimated: plannedEconomy.fuelKg,
+          fuel_liters_estimated: plannedEconomy.fuelLiters,
+          fuel_price_usd: plannedEconomy.fuelPriceUsdPerKg,
+          fuel_cost_usd: plannedEconomy.fuelCostUsd,
+          passenger_revenue_usd: plannedEconomy.passengerRevenueUsd,
+          cargo_revenue_usd: plannedEconomy.cargoRevenueUsd,
+          onboard_service_revenue_usd: plannedEconomy.onboardServiceRevenueUsd,
+          onboard_sales_revenue_usd: plannedEconomy.onboardSalesRevenueUsd,
+          onboard_service_cost_usd: plannedEconomy.onboardServiceCostUsd,
+          airline_revenue_usd: plannedEconomy.airlineRevenueUsd,
+          pilot_payment_usd: plannedEconomy.pilotPaymentUsd,
+          maintenance_cost_usd: plannedEconomy.maintenanceCostUsd,
+          repair_cost_usd: plannedEconomy.repairReserveUsd,
+          airport_fees_usd: plannedEconomy.airportFeesUsd,
+          handling_cost_usd: plannedEconomy.handlingCostUsd,
+          total_cost_usd: plannedEconomy.totalCostUsd,
+          net_profit_usd: plannedEconomy.netProfitUsd,
+          profit_margin_pct: plannedEconomy.profitMarginPct,
+          economy_source: "simbrief",
+          route_band: plannedEconomy.routeBand,
+          aircraft_compatible: plannedEconomy.aircraftCompatible,
+          compatibility_reason: plannedEconomy.compatibilityReason,
+          practical_range_nm: plannedEconomy.practicalRangeNm,
+          usable_fuel_capacity_kg: plannedEconomy.usableFuelCapacityKg,
+          metadata: {
+            source: "simbrief_ofp_dispatch",
+            static_id: simBriefData?.staticId ?? null,
+            pdf_url: simBriefData?.pdfUrl ?? null,
+            raw_units: simBriefData?.rawUnits ?? null,
+            has_raw_json: Boolean(simBriefData?.rawOfpJson),
+            has_raw_xml: Boolean(simBriefData?.rawOfpXml),
+            trip_fuel_kg: simBriefData?.tripFuelKg ?? null,
+            taxi_fuel_kg: simBriefData?.taxiFuelKg ?? null,
+            reserve_fuel_kg: simBriefData?.reserveFuelKg ?? null,
+            block_fuel_kg: simBriefData?.blockFuelKg ?? null,
+          },
+        });
+    } catch (snapshotErr) {
+      console.warn("[markDispatchPrepared] No se pudo guardar snapshot económico OFP:", snapshotErr);
     }
   }
 

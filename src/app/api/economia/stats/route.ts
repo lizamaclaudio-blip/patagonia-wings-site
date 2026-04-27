@@ -62,13 +62,19 @@ export async function GET() {
     }
 
     const initialCapital = asNumber(byType["initial_capital"]);
-    const totalIncome = asNumber(byType["flight_income"]);
+    const passengerRevenue = asNumber(byType["passenger_revenue"]);
+    const cargoRevenue = asNumber(byType["cargo_revenue"]);
+    const charterRevenue = asNumber(byType["charter_revenue"]);
+    const legacyFlightIncome = asNumber(byType["flight_income"]);
+    const totalIncome = passengerRevenue + cargoRevenue + charterRevenue + legacyFlightIncome;
     const totalFuel = Math.abs(asNumber(byType["fuel_cost"]));
     const totalMaintenance = Math.abs(asNumber(byType["maintenance_cost"]));
     const totalPilotPayments = Math.abs(asNumber(byType["pilot_payment"]));
-    const totalRepairs = Math.abs(asNumber(byType["repair_cost"]));
+    const totalRepairs = Math.abs(asNumber(byType["repair_cost"]) + asNumber(byType["repair_reserve"]));
+    const totalAirportFees = Math.abs(asNumber(byType["airport_fees"]));
+    const totalHandling = Math.abs(asNumber(byType["handling_cost"]));
     const totalSalaries = Math.abs(asNumber(byType["salary_payment"]));
-    const totalCosts = totalFuel + totalMaintenance + totalPilotPayments + totalRepairs + totalSalaries;
+    const totalCosts = totalFuel + totalMaintenance + totalPilotPayments + totalRepairs + totalAirportFees + totalHandling + totalSalaries;
     const netProfit = totalIncome - totalCosts;
 
     const storedBalance = airline ? asNumber(airline.balance_usd) : 0;
@@ -137,10 +143,15 @@ export async function GET() {
       },
       breakdown: {
         income_flights: Math.round(totalIncome * 100) / 100,
+        income_passengers: Math.round(passengerRevenue * 100) / 100,
+        income_cargo: Math.round(cargoRevenue * 100) / 100,
+        income_charter: Math.round(charterRevenue * 100) / 100,
         cost_fuel: Math.round(totalFuel * 100) / 100,
         cost_maintenance: Math.round(totalMaintenance * 100) / 100,
         cost_pilot_payments: Math.round(totalPilotPayments * 100) / 100,
         cost_repairs: Math.round(totalRepairs * 100) / 100,
+        cost_airport_fees: Math.round(totalAirportFees * 100) / 100,
+        cost_handling: Math.round(totalHandling * 100) / 100,
         cost_salaries: Math.round(totalSalaries * 100) / 100,
       },
       payroll: Object.values(payrollByMonth)

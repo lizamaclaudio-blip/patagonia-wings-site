@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage from "@/components/site/ProtectedPage";
 import { supabase } from "@/lib/supabase/browser";
-import { estimateRouteProfitLoss } from "@/lib/pilot-economy";
+import { estimateEconomyRangeForAircraftTypes } from "@/lib/pilot-economy";
 
 type RouteCategory =
   | "regional"
@@ -195,16 +195,37 @@ function formatUsd(value: number | null | undefined) {
   return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
 }
 
-function pickEconomyAircraftType(route: RouteCatalogRow | null) {
-  const types = routeAircraftTypes(route);
-  return types[0] ?? "A320";
-}
-
-function routeEconomyEstimate(route: RouteCatalogRow | null) {
+function routeEconomyRangeEstimate(route: RouteCatalogRow | null) {
   if (!route) return null;
   const distance = toNumber(route.distance_nm);
   if (!distance || distance <= 0) return null;
-  return estimateRouteProfitLoss(distance, pickEconomyAircraftType(route), "CAREER");
+  const types = routeAircraftTypes(route);
+  return estimateEconomyRangeForAircraftTypes({
+    distanceNm: distance,
+    aircraftTypeCodes: types.length ? types : ["A320"],
+    operationType: "CAREER",
+    operationCategory: route.route_category,
+    context: {
+      originCountry: route.origin_country,
+      destinationCountry: route.destination_country,
+      originIcao: route.origin_ident,
+      destinationIcao: route.destination_ident,
+    },
+  });
+}
+
+function formatUsdRange(min: number | null | undefined, max: number | null | undefined) {
+  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "—";
+  const a = formatUsd(min);
+  const b = formatUsd(max);
+  return a === b ? a : `${a} – ${b}`;
+}
+
+function formatNumberRange(min: number | null | undefined, max: number | null | undefined, suffix = "") {
+  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "—";
+  const a = Math.round(min).toLocaleString("es-CL");
+  const b = Math.round(max).toLocaleString("es-CL");
+  return a === b ? `${a}${suffix}` : `${a} – ${b}${suffix}`;
 }
 
 
@@ -217,7 +238,7 @@ function getCategoryMeta(category: string | null | undefined) {
 }
 
 function aircraftSummaryFromTypes(types: string[]) {
-  if (!types.length) return "Sin aeronaves asignadas";
+  if (!types.length) return "Sin aeronaves compatibles reales";
   if (types.length <= 8) return types.join(" · ");
   return `${types.slice(0, 8).join(" · ")} +${types.length - 8}`;
 }
@@ -442,26 +463,45 @@ function DirectionCell({ title, route }: { title: string; route: RouteCatalogRow
       </div>
 
       {(() => {
-        const economy = routeEconomyEstimate(route);
+        const economy = routeEconomyRangeEstimate(route);
         return economy ? (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+          <>
+          <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">Rango según aeronave: {economy.minAircraftTypeCode} → {economy.maxAircraftTypeCode}</div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
             <div className="rounded-xl border border-emerald-300/14 bg-emerald-300/[0.06] px-3 py-2">
               <p className="font-semibold uppercase tracking-[0.14em] text-emerald-100/50">💵 Piloto</p>
-              <p className="mt-1 font-black text-emerald-100">{formatUsd(economy.pilotCommissionUsd)}</p>
+              <p className="mt-1 font-black text-emerald-100">{formatUsdRange(economy.min.pilotCommissionUsd, economy.max.pilotCommissionUsd)}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">👥 Pax est.</p>
+              <p className="mt-1 font-bold text-white/78">{formatNumberRange(economy.min.estimatedPassengers, economy.max.estimatedPassengers)}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">📦 Carga</p>
+              <p className="mt-1 font-bold text-white/78">{formatNumberRange(economy.min.estimatedCargoKg, economy.max.estimatedCargoKg, " kg")}</p>
+            </div>
+            <div className="rounded-xl border border-cyan-300/14 bg-cyan-300/[0.06] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">🏢 Aerolínea</p>
+              <p className="mt-1 font-black text-cyan-100">{formatUsdRange(economy.min.airlineRevenueUsd, economy.max.airlineRevenueUsd)}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">🧾 Operación</p>
+              <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.airportFeesUsd + economy.min.handlingCostUsd + economy.min.repairReserveUsd + economy.min.onboardServiceCostUsd, economy.max.airportFeesUsd + economy.max.handlingCostUsd + economy.max.repairReserveUsd + economy.max.onboardServiceCostUsd)}</p>
             </div>
             <div className="rounded-xl border border-cyan-300/14 bg-cyan-300/[0.06] px-3 py-2">
               <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">📈 Utilidad</p>
-              <p className="mt-1 font-black text-cyan-100">{formatUsd(economy.netProfitUsd)}</p>
+              <p className="mt-1 font-black text-cyan-100">{formatUsdRange(economy.min.netProfitUsd, economy.max.netProfitUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
               <p className="font-semibold uppercase tracking-[0.14em] text-white/36">⛽ Combustible</p>
-              <p className="mt-1 font-bold text-white/78">{formatUsd(economy.fuelCostUsd)}</p>
+              <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.fuelCostUsd, economy.max.fuelCostUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
               <p className="font-semibold uppercase tracking-[0.14em] text-white/36">🛠 Mantención</p>
-              <p className="mt-1 font-bold text-white/78">{formatUsd(economy.maintenanceCostUsd)}</p>
+              <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.maintenanceCostUsd, economy.max.maintenanceCostUsd)}</p>
             </div>
           </div>
+          </>
         ) : (
           <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/48">
             Economía estimada no disponible.
@@ -478,6 +518,8 @@ function RoutePairRow({ pair }: { pair: RoutePair }) {
   const service = mainRoute?.service_type?.toUpperCase() || "PAX";
   const originName = cityLabel(pair.originIdent);
   const destinationName = cityLabel(pair.destinationIdent);
+  const pairEconomy = routeEconomyRangeEstimate(mainRoute);
+  const compatibleAircraftTypes = pairEconomy?.aircraftTypes ?? [];
 
   return (
     <article className="rounded-[24px] border border-white/10 bg-white/[0.05] p-3 shadow-[0_14px_48px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-cyan-200/24 hover:bg-white/[0.07] sm:p-4">
@@ -504,7 +546,12 @@ function RoutePairRow({ pair }: { pair: RoutePair }) {
 
         <div className="rounded-2xl border border-white/8 bg-black/16 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronaves</p>
-          <p className="mt-2 text-sm leading-6 text-white/70">{aircraftSummaryFromTypes(pair.aircraftTypes)}</p>
+          <p className="mt-2 text-sm leading-6 text-white/70">{aircraftSummaryFromTypes(compatibleAircraftTypes)}</p>
+          {pairEconomy?.excludedAircraftTypes?.length ? (
+            <p className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.06] px-3 py-2 text-[11px] leading-5 text-amber-50/70">
+              Excluidas por alcance/rango: {pairEconomy.excludedAircraftTypes.slice(0, 6).join(" · ")}{pairEconomy.excludedAircraftTypes.length > 6 ? ` +${pairEconomy.excludedAircraftTypes.length - 6}` : ""}
+            </p>
+          ) : null}
         </div>
       </div>
     </article>

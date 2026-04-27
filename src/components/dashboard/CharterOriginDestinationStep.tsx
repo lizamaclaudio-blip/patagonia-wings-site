@@ -18,6 +18,21 @@ type FlightEconomyEstimate = {
   pilotPaymentUsd?: number;
   airlineRevenueUsd: number;
   netProfitUsd: number;
+  estimatedPassengers?: number;
+  estimatedCargoKg?: number;
+  airportFeesUsd?: number;
+  handlingCostUsd?: number;
+  repairReserveUsd?: number;
+  onboardServiceRevenueUsd?: number;
+  onboardSalesRevenueUsd?: number;
+  onboardServiceCostUsd?: number;
+  totalCostUsd?: number;
+  profitMarginPct?: number;
+  confidenceLabel?: string;
+  aircraftCompatible?: boolean;
+  compatibilityReason?: string;
+  practicalRangeNm?: number;
+  usableFuelCapacityKg?: number;
 };
 
 type Props = {
@@ -352,6 +367,8 @@ export default function CharterOriginDestinationStep({
   const [loadingAircraft, setLoadingAircraft] = useState(false);
   const [economyEstimate, setEconomyEstimate] = useState<FlightEconomyEstimate | null>(null);
   const [loadingEconomy, setLoadingEconomy] = useState(false);
+  const [typeCompatibility, setTypeCompatibility] = useState<Record<string, { compatible: boolean; reason: string }>>({});
+  const [loadingCompatibility, setLoadingCompatibility] = useState(false);
 
   const normalizedOrigin = useMemo(() => normalizeIcao(originIcao), [originIcao]);
   const normalizedDestination = useMemo(() => normalizeIcao(destinationIcao), [destinationIcao]);
@@ -367,13 +384,69 @@ export default function CharterOriginDestinationStep({
     ).sort();
   }, [aircraft]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    if (!routeReady || aircraftTypes.length === 0) {
+      setTypeCompatibility({});
+      setLoadingCompatibility(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    setLoadingCompatibility(true);
+    Promise.all(
+      aircraftTypes.map(async (code) => {
+        const params = new URLSearchParams({
+          origin: normalizedOrigin,
+          destination: normalizedDestination,
+          aircraftType: code,
+          operationType: "CHARTER",
+        });
+
+        try {
+          const response = await fetch(`/api/economia/estimate-flight?${params.toString()}`);
+          const payload = (await response.json()) as { ok?: boolean; aircraftCompatible?: boolean; compatibilityReason?: string };
+          return [code, { compatible: payload.ok === true && payload.aircraftCompatible !== false, reason: payload.compatibilityReason ?? "Compatible con la ruta." }] as const;
+        } catch {
+          return [code, { compatible: false, reason: "No se pudo validar autonomía para esta ruta." }] as const;
+        }
+      })
+    )
+      .then((entries) => {
+        if (!mounted) return;
+        setTypeCompatibility(Object.fromEntries(entries));
+      })
+      .finally(() => {
+        if (mounted) setLoadingCompatibility(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [aircraftTypes, normalizedDestination, normalizedOrigin, routeReady]);
+
+  const compatibleAircraftTypes = useMemo(() => {
+    if (!routeReady) return aircraftTypes;
+    return aircraftTypes.filter((code) => typeCompatibility[code]?.compatible === true);
+  }, [aircraftTypes, routeReady, typeCompatibility]);
+
+  useEffect(() => {
+    if (!routeReady || !selectedType) return;
+    if (typeCompatibility[selectedType] && typeCompatibility[selectedType].compatible === false) {
+      setSelectedType("");
+      onAircraftChange(null);
+    }
+  }, [onAircraftChange, routeReady, selectedType, typeCompatibility]);
+
   const typeOptions = useMemo(
-    () => aircraftTypes.map((code) => ({
+    () => compatibleAircraftTypes.map((code) => ({
       value: code,
       label: getAircraftTypeLabel(code),
-      description: `${aircraft.filter((item) => getAircraftTypeCode(item) === code).length} matrícula(s) disponible(s)`,
+      description: `${aircraft.filter((item) => getAircraftTypeCode(item) === code).length} matrícula(s) disponible(s) apta(s)`,
     })),
-    [aircraft, aircraftTypes],
+    [aircraft, compatibleAircraftTypes],
   );
 
   const filteredAircraft = useMemo(() => {
@@ -525,12 +598,16 @@ export default function CharterOriginDestinationStep({
             Completa origen, destino y aeronave para calcular.
           </p>
         ) : economyEstimate ? (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["💵 Piloto", formatUsd(economyEstimate.pilotCommissionUsd ?? economyEstimate.pilotPaymentUsd), "text-emerald-100"],
+              ["👥 Pax", String(Math.round((economyEstimate.estimatedPassengers || 0)).toLocaleString("es-CL")), "text-white/82"],
+              ["📦 Carga", String(Math.round((economyEstimate.estimatedCargoKg || 0)).toLocaleString("es-CL")) + " kg", "text-white/82"],
               ["🏢 Aerolínea", formatUsd(economyEstimate.airlineRevenueUsd), "text-cyan-100"],
               ["⛽ Combustible", formatUsd(economyEstimate.fuelCostUsd), "text-amber-100"],
               ["🛠 Mantención", formatUsd(economyEstimate.maintenanceCostUsd), "text-white/82"],
+              ["🧾 Operación", formatUsd((economyEstimate.airportFeesUsd ?? 0) + (economyEstimate.handlingCostUsd ?? 0) + (economyEstimate.repairReserveUsd ?? 0) + (economyEstimate.onboardServiceCostUsd ?? 0)), "text-white/82"],
+              ["🛍 Ventas", formatUsd((economyEstimate.onboardServiceRevenueUsd ?? 0) + (economyEstimate.onboardSalesRevenueUsd ?? 0)), "text-cyan-100"],
               ["📈 Utilidad", formatUsd(economyEstimate.netProfitUsd), economyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100"],
             ].map(([label, value, tone]) => (
               <div key={label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
@@ -541,6 +618,11 @@ export default function CharterOriginDestinationStep({
             <div className="sm:col-span-2 lg:col-span-5 text-xs text-white/44">
               Distancia {Math.round(economyEstimate.distanceNm).toLocaleString("es-CL")} NM · Block {formatMinutes(economyEstimate.blockMinutes)} · Fuel {Math.round(economyEstimate.fuelKg).toLocaleString("es-CL")} kg
             </div>
+            {economyEstimate.aircraftCompatible === false ? (
+              <div className="sm:col-span-2 lg:col-span-5 rounded-[16px] border border-amber-300/20 bg-amber-300/[0.08] px-4 py-3 text-xs font-semibold text-amber-50/80">
+                Aeronave no apta para esta ruta: {economyEstimate.compatibilityReason ?? "revisa alcance, combustible y categoría operacional."}
+              </div>
+            ) : null}
           </div>
         ) : (
           <p className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-white/55">
@@ -557,13 +639,19 @@ export default function CharterOriginDestinationStep({
             <h3 className="mt-2 text-xl font-semibold text-white">Selección de aeronave</h3>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-semibold text-white/55">
-            {loadingAircraft ? "Cargando" : `${aircraft.length} disponibles`}
+            {loadingAircraft || loadingCompatibility ? "Cargando" : `${aircraft.length} disponibles`}
           </span>
         </div>
 
         <p className="mt-2 text-sm text-white/55">
-          Solo aparecen aeronaves compatibles con el rango/licencia del piloto y ubicadas en {normalizedOrigin || "el origen"}.
+          Solo aparecen aeronaves compatibles con el rango/licencia del piloto, ubicadas en {normalizedOrigin || "el origen"} y con autonomía suficiente para el destino.
         </p>
+
+        {routeReady && !loadingCompatibility && compatibleAircraftTypes.length === 0 ? (
+          <div className="mt-4 rounded-[16px] border border-amber-300/18 bg-amber-300/[0.08] px-4 py-3 text-sm text-amber-50/80">
+            No hay aeronaves aptas para esta ruta desde {normalizedOrigin}. Selecciona una ruta más corta o una aeronave de mayor alcance.
+          </div>
+        ) : null}
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <DarkDropdown
@@ -571,7 +659,7 @@ export default function CharterOriginDestinationStep({
             placeholder="— Elige tipo —"
             value={selectedType}
             options={typeOptions}
-            disabled={!routeReady || loadingAircraft || aircraftTypes.length === 0}
+            disabled={!routeReady || loadingAircraft || loadingCompatibility || compatibleAircraftTypes.length === 0}
             onChange={(value) => {
               setSelectedType(value);
               onAircraftChange(null);

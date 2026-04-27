@@ -3,6 +3,29 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
+import { supabase } from "@/lib/supabase/browser";
+
+
+const DEFAULT_OWNER_CALLSIGNS = ["PWG001"];
+
+function parseOwnerList(value: string | undefined, fallback: string[]) {
+  const parsed = (value ?? "")
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean);
+  return parsed.length > 0 ? parsed : fallback;
+}
+
+function isOwnerIdentity(callsign?: string | null, email?: string | null) {
+  const ownerCallsigns = parseOwnerList(process.env.NEXT_PUBLIC_PWG_OWNER_CALLSIGNS, DEFAULT_OWNER_CALLSIGNS);
+  const ownerEmails = parseOwnerList(process.env.NEXT_PUBLIC_PWG_OWNER_EMAILS, []);
+  const normalizedCallsign = (callsign ?? "").trim().toUpperCase();
+  const normalizedEmail = (email ?? "").trim().toUpperCase();
+  return Boolean(
+    (normalizedCallsign && ownerCallsigns.includes(normalizedCallsign)) ||
+    (normalizedEmail && ownerEmails.includes(normalizedEmail))
+  );
+}
 
 type Section = {
   id: string;
@@ -19,110 +42,83 @@ const SECTIONS: Section[] = [
     title: "Billetera del piloto",
     color: "from-emerald-400/10 to-transparent",
     items: [
-      {
-        heading: "Saldo inicial",
-        text: "Todo piloto registrado en Patagonia Wings recibe automáticamente $1,000 USD en su billetera virtual al momento de crear su cuenta.",
-      },
-      {
-        heading: "Cómo aumenta",
-        text: "El saldo crece con cada vuelo completado (comisión por vuelo) y con el sueldo base mensual cuando se cumplen los 5 vuelos requeridos.",
-      },
-      {
-        heading: "Cómo disminuye",
-        text: "Se descuenta el costo de traslados entre aeropuertos y el 10% del costo estimado de reparación cuando hay daño grave a la aeronave.",
-      },
-      {
-        heading: "Visibilidad",
-        text: "Tu saldo actual siempre aparece en el panel de traslados del dashboard. No es dinero real — es parte de la simulación de aerolínea virtual.",
-      },
+      { heading: "Saldo inicial", text: "Todo piloto recibe una billetera virtual operacional. El saldo sirve para traslados, licencias, pruebas teóricas, checkrides y habilitaciones." },
+      { heading: "Cómo aumenta", text: "Aumenta con el pago por vuelos completados, nómina mensual y bonos operativos cuando correspondan." },
+      { heading: "Cómo disminuye", text: "Disminuye por gastos personales del piloto: traslados, licencias, pruebas, habilitaciones, entrenamientos recurrentes y deducciones por daño si aplica." },
+      { heading: "Trazabilidad", text: "Cada gasto queda registrado en pilot_expense_ledger y cada ingreso se acumula en pilot_salary_ledger para liquidaciones mensuales." },
+    ],
+  },
+  {
+    id: "modelo-realista",
+    icon: "📊",
+    title: "Economía operacional realista",
+    color: "from-sky-400/10 to-transparent",
+    items: [
+      { heading: "Estimación previa", text: "Antes del vuelo, el sistema estima pasajeros, carga, combustible, tasas, handling, servicio a bordo, pago piloto y utilidad usando la ruta y la aeronave compatible seleccionada." },
+      { heading: "Planificación OFP", text: "Cuando hay OFP SimBrief, pasajeros, carga, payload, combustible y block time planificados reemplazan la estimación genérica." },
+      { heading: "Cierre real", text: "Al cerrar con ACARS/PIREP, la web recalcula economía oficial con datos reales disponibles: fuel usado, block real, daño, ventas a bordo y desempeño operacional." },
+      { heading: "Registro global", text: "Los movimientos quedan en airline_ledger y flight_economy_snapshots para métricas mensuales/anuales: pax, carga, combustible, ingresos, costos, utilidad, rutas y aeronaves." },
     ],
   },
   {
     id: "comisiones",
     icon: "✈️",
-    title: "Comisión por vuelo",
+    title: "Pago piloto por vuelo",
     color: "from-cyan-400/10 to-transparent",
     items: [
-      {
-        heading: "Fórmula base",
-        text: "Comisión = (Horas de bloque × $30 + Distancia en NM × $0.06) × Multiplicador aeronave × Multiplicador modo",
-      },
-      {
-        heading: "Multiplicadores por tipo de aeronave",
-        text: "Widebody (B777, B787, A350, A380…): ×2.2 · Narrowbody (B737, A320, B757…): ×1.6 · Regional (CRJ, E170, DHC-8…): ×1.3 · Aviación general / turbohélice: ×0.8",
-      },
-      {
-        heading: "Multiplicadores por modo de vuelo",
-        text: "ITINERARIO (CAREER): ×1.5 — el modo mejor pagado, porque requiere cumplir horarios y rutas fijas · CHARTER: ×1.2 · EVENT: ×0.8 · TRAINING: ×0.5",
-      },
-      {
-        heading: "Rango permitido",
-        text: "Mínimo $15 USD — Máximo $500 USD por vuelo, independiente del resultado del cálculo.",
-      },
-      {
-        heading: "Ejemplo práctico",
-        text: "Vuelo Santiago → Madrid en A330 (narrowbody): 5,760 NM · 13h de bloque → Base = (13×30 + 5760×0.06) = $735 → ×1.6 = $1,176 → tope $500. Comisión final: $500 USD.",
-      },
-      {
-        heading: "Cuándo se acredita",
-        text: "La comisión se acredita inmediatamente en tu billetera al cerrar el vuelo con estado 'completado' en el ACARS.",
-      },
+      { heading: "Fórmula vigente", text: "Pago piloto = base por banda de ruta + horas bloque × tarifa horaria + distancia × tarifa NM. Luego se ajusta por responsabilidad de aeronave y tipo de operación." },
+      { heading: "Bandas de ruta", text: "Local, regional, nacional, internacional, long haul e intercontinental tienen mínimos, máximos y tarifas distintas. Así un regional corto no paga más que un nacional equivalente." },
+      { heading: "Responsabilidad por aeronave", text: "GA/avioneta paga menos; regional queda en nivel medio; narrowbody aumenta por responsabilidad; widebody y long haul pagan más por complejidad." },
+      { heading: "Tipo de operación", text: "Itinerario/Career usa base normal, Charter paga más, Training paga bajo y eventos/tours usan multiplicadores propios. El tope de long haul es mayor que el de vuelos regionales." },
+      { heading: "Costo para aerolínea", text: "El pago piloto es costo operacional para Patagonia Wings y se registra en salary ledger, snapshots y ledger de aerolínea al cierre del vuelo." },
+    ],
+  },
+  {
+    id: "combustible",
+    icon: "⛽",
+    title: "Combustible por ruta y aeropuerto",
+    color: "from-amber-400/10 to-transparent",
+    items: [
+      { heading: "No es estanque lleno", text: "El costo mostrado para una ruta se calcula por combustible estimado de la ruta, no por llenar el avión completo." },
+      { heading: "Qué incluye", text: "Trip fuel estimado, taxi fuel, contingencia y reserva operacional según distancia y aeronave." },
+      { heading: "Precio local", text: "El precio JetA1 se toma del aeropuerto de origen; si no existe, usa ciudad, país o fallback regional." },
+      { heading: "Validación de autonomía", text: "La capacidad de combustible se usa para validar si una aeronave puede operar la ruta, no para cobrar siempre el estanque lleno." },
+    ],
+  },
+  {
+    id: "aeronaves",
+    icon: "🛫",
+    title: "Aeronaves compatibles y crecimiento",
+    color: "from-teal-400/10 to-transparent",
+    items: [
+      { heading: "Filtro maestro", text: "Las rutas e itinerarios usan filtro piloto → ubicación → ruta → aeronave disponible → autonomía → habilitación → economía." },
+      { heading: "Rango real", text: "Una aeronave solo aparece si su alcance práctico y combustible utilizable alcanzan para la ruta. Long haul/intercontinental no debe mostrar C172, BE58, B350 o ATR72." },
+      { heading: "Compra de flota", text: "La compra real de aeronaves solo la realiza la dirección/owner. Los pilotos ven la explicación y valores, pero no el formulario de compra." },
+      { heading: "Entrega desde fábrica", text: "Cada compra descuenta caja, registra ledger, crea solicitud de compra y entrega la aeronave al hub asignado." },
     ],
   },
   {
     id: "sueldo",
     icon: "📅",
-    title: "Sueldo base mensual",
+    title: "Liquidación mensual del piloto",
     color: "from-violet-400/10 to-transparent",
     items: [
-      {
-        heading: "Condición para recibirlo",
-        text: "Debes completar al menos 5 vuelos en el mes calendario (1° al último día del mes). Si no llegas a 5, igual recibes las comisiones individuales de los vuelos que hayas hecho — solo no recibes el bono base.",
-      },
-      {
-        heading: "Monto del sueldo base",
-        text: "$1,500 USD fijos por mes si cumples los 5 vuelos. Este monto se suma a tus comisiones del mes para calcular el total neto.",
-      },
-      {
-        heading: "Fecha de pago",
-        text: "El pago se procesa el último día hábil (lunes a viernes) de cada mes. Ejemplo: si el último día del mes cae sábado, el pago se realiza el viernes anterior.",
-      },
-      {
-        heading: "Fórmula del total mensual",
-        text: "Total neto = Comisiones del mes + Sueldo base ($1,500 si ≥5 vuelos) − Deducciones por daños del mes",
-      },
-      {
-        heading: "Historial",
-        text: "Cada período queda registrado en tu historial de nómina con estado 'pagado', 'pendiente' o 'sin actividad'. Puedes verlo en el widget de economía del dashboard.",
-      },
+      { heading: "Qué acumula", text: "Vuelos, horas, comisiones, sueldo base si corresponde, bonos, descuentos y gastos del piloto." },
+      { heading: "Cuándo se paga", text: "La nómina mensual se acumula por período y queda con estado pendiente/pagado según el flujo administrativo." },
+      { heading: "Dónde se ve", text: "El piloto revisa su economía y liquidación desde Mi economía en Oficina/Profile." },
+      { heading: "PDF", text: "La liquidación puede imprimirse/guardarse como PDF desde la vista del piloto. La generación binaria directa queda como mejora posterior si se requiere." },
     ],
   },
   {
     id: "danos",
     icon: "🔧",
-    title: "Deducciones por daño a aeronave",
+    title: "Daño, desgaste y reparación",
     color: "from-red-400/10 to-transparent",
     items: [
-      {
-        heading: "Cuándo aplica",
-        text: "Solo se descuenta si durante el vuelo ocurre al menos un evento de daño con severidad 'heavy' (grave) o 'critical' (crítico). Daños leves o medios no generan deducción.",
-      },
-      {
-        heading: "Monto de la deducción",
-        text: "Se descuenta el 10% del costo base estimado de reparación según el tipo de aeronave. No se cobra el 100% — es una penalización parcial.",
-      },
-      {
-        heading: "Costos de reparación base por categoría",
-        text: "Aviación general / turbohélice: $800 USD → descuento $80 · Regional jet: $2,000 USD → descuento $200 · Narrowbody: $5,000 USD → descuento $500 · Widebody: $12,000 USD → descuento $1,200",
-      },
-      {
-        heading: "Cómo evitarla",
-        text: "Aterriza con VS suave, mantén G-force dentro de rangos normales, no toques pista a alta velocidad ni actives reversas de forma abrupta. El sistema ACARS detecta estos eventos en tiempo real.",
-      },
-      {
-        heading: "Efecto en el pago",
-        text: "La deducción se aplica en el momento del cierre del vuelo, reduciendo tu comisión neta de ese vuelo. El total mensual también refleja la suma de todas las deducciones del período.",
-      },
+      { heading: "Desgaste por vuelo", text: "Cada vuelo reduce la condición de la aeronave según operación, tiempo, aterrizaje, incidentes y daño reportado." },
+      { heading: "Costo para aerolínea", text: "Mantenimiento, reserva técnica y reparación se registran como costos operacionales en airline_ledger y snapshots." },
+      { heading: "Deducción al piloto", text: "Solo daños graves o críticos pueden generar deducción al piloto; el costo principal lo asume la aerolínea como operación." },
+      { heading: "Métricas", text: "El historial permitirá detectar aeronaves más costosas, rutas con más desgaste y hubs con mayor carga técnica." },
     ],
   },
   {
@@ -131,34 +127,37 @@ const SECTIONS: Section[] = [
     title: "Traslados entre aeropuertos",
     color: "from-amber-400/10 to-transparent",
     items: [
-      {
-        heading: "Para qué sirven",
-        text: "Si tu aeronave está en un aeropuerto donde no hay rutas disponibles o quieres reposicionarte, puedes trasladarte a otro aeropuerto pagando el costo del traslado.",
-      },
-      {
-        heading: "Tipos de traslado",
-        text: "Terrestre (hasta 250 km): $10–$180 USD según distancia · Vuelo doméstico/regional (80–2,500 km): precio según distancia real · Vuelo internacional: precio fijo según destino continental ($160–$1,150 USD)",
-      },
-      {
-        heading: "Multa por abandono operacional",
-        text: "Si tu aeronave quedó en un aeropuerto que NO es un hub designado de Patagonia Wings, se suma una multa de $350 USD al costo del traslado. Esta multa refleja el costo operacional de reubicar recursos fuera de la red.",
-      },
-      {
-        heading: "Cómo evitar la multa",
-        text: "Siempre que sea posible, termina tus vuelos en un aeropuerto hub. Si por operaciones charter o de entrenamiento debes terminar en un aeropuerto menor, el sistema lo indica al mostrar cada opción de traslado con su desglose de costo.",
-      },
-      {
-        heading: "Sin tiempo de espera",
-        text: "El traslado es instantáneo — se actualiza tu aeropuerto actual de inmediato. Solo tiene costo económico, no de tiempo.",
-      },
-      {
-        heading: "Opciones disponibles",
-        text: "El sistema te muestra automáticamente los 3 aeropuertos más cercanos en terrestre, los 3 más relevantes para vuelo regional, y un hub internacional por continente (Norteamérica, Europa, Asia, etc.).",
-      },
+      { heading: "Para qué sirven", text: "Permiten mover al piloto cuando no está donde necesita operar. No mueven la aeronave automáticamente." },
+      { heading: "Regla hub/no-hub", text: "Si la aeronave queda en hub, no hay multa por abandono. Si queda en aeropuerto no-hub, se aplica costo operacional de recuperación." },
+      { heading: "Costo piloto", text: "Traslados terrestres, domésticos e internacionales tienen costos distintos y se descuentan desde la billetera." },
+      { heading: "Visibilidad", text: "El módulo de traslados se oculta si no hay alternativas reales para evitar parpadeos o cajas vacías." },
+    ],
+  },
+  {
+    id: "gastos-piloto",
+    icon: "🎓",
+    title: "Licencias, habilitaciones y pruebas",
+    color: "from-cyan-400/10 to-transparent",
+    items: [
+      { heading: "Pruebas teóricas", text: "IFR/IMC, regional, narrowbody, widebody y recurrente tienen costo propio y se pagan desde billetera." },
+      { heading: "Pruebas prácticas", text: "Los checkrides liberan operación por categoría de aeronave. Su costo depende de la complejidad operacional." },
+      { heading: "Habilitaciones", text: "Las habilitaciones de tipo permiten acceder a aeronaves y rutas de mayor ingreso, pero son una inversión del piloto." },
+      { heading: "Trazabilidad", text: "Cada gasto queda registrado para métricas por piloto, mes, categoría y progresión operacional." },
+    ],
+  },
+  {
+    id: "costos-fijos",
+    icon: "🏢",
+    title: "Costos fijos de aerolínea",
+    color: "from-slate-400/10 to-transparent",
+    items: [
+      { heading: "Operación mensual", text: "La aerolínea debe cubrir staff, sistemas, hubs, seguros, hangares, flota y mantenimiento programado." },
+      { heading: "Caja operacional", text: "El capital inicial aprobado sirve para operar mientras los vuelos generan ingresos reales y crecimiento de flota." },
+      { heading: "Ledger", text: "Los costos mensuales deben registrarse como movimientos separados para reconstruir el balance desde airline_ledger." },
+      { heading: "Métricas futuras", text: "La página Economía mostrará utilidad mensual/anual, costo por hub, costo por aeronave, rutas rentables y rutas con pérdida." },
     ],
   },
 ];
-
 function SectionCard({ section }: { section: Section }) {
   return (
     <div className={`rounded-[24px] border border-white/10 bg-gradient-to-br ${section.color} bg-white/[0.03] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl`}>
@@ -185,11 +184,12 @@ function SectionCard({ section }: { section: Section }) {
 
 function CommissionTable() {
   const rows = [
-    { ruta: "SCBA → SCTE (Regional)", nm: 140, block: 45, tipo: "DHC-8 (Regional ×1.3)", modo: "CAREER ×1.5", comision: "$43.68" },
-    { ruta: "SCEL → SAEZ (Nacional)", nm: 960, block: 135, tipo: "A320 (Narrowbody ×1.6)", modo: "CAREER ×1.5", comision: "$165.12" },
-    { ruta: "SCEL → SPJC (Internacional)", nm: 2340, block: 290, tipo: "A320 (Narrowbody ×1.6)", modo: "CHARTER ×1.2", comision: "$500.00" },
-    { ruta: "SCEL → EGLL (Long haul)", nm: 7200, block: 780, tipo: "B787 (Widebody ×2.2)", modo: "CAREER ×1.5", comision: "$500.00" },
-    { ruta: "SCPQ → SCTE (Local)", nm: 65, block: 25, tipo: "C208 (GA ×0.8)", modo: "TRAINING ×0.5", comision: "$15.00" },
+    { ruta: "SCTB → SCPF (Local)", nm: 8, block: 27, banda: "Local", avion: "C208 / B350", pago: "$25–45", nota: "mínimo operacional" },
+    { ruta: "SACO → SAZN (Regional)", nm: 498, block: 164, banda: "Regional", avion: "ATR72 / E190", pago: "$90–180", nota: "según aeronave" },
+    { ruta: "SCEL → SCTE (Nacional)", nm: 495, block: 115, banda: "Nacional", avion: "A320 / B738", pago: "$120–260", nota: "rango medio" },
+    { ruta: "SCEL → SPJC (Internacional)", nm: 1_330, block: 225, banda: "Internacional", avion: "A320 / B738", pago: "$250–450", nota: "más responsabilidad" },
+    { ruta: "SCEL → KMIA (Long haul)", nm: 3_600, block: 520, banda: "Long haul", avion: "B789 / A339", pago: "$700–1.300", nota: "sin tope regional" },
+    { ruta: "LFPG → SAEZ (Intercontinental)", nm: 5_994, block: 804, banda: "Intercontinental", avion: "A339 / B789 / B77W", pago: "$1.100–1.800", nota: "solo widebody apto" },
   ];
 
   return (
@@ -200,18 +200,20 @@ function CommissionTable() {
             <th className="px-4 py-3 text-left">Ruta ejemplo</th>
             <th className="px-4 py-3 text-right">NM</th>
             <th className="px-4 py-3 text-right">Block</th>
-            <th className="px-4 py-3 text-left">Aeronave · Modo</th>
-            <th className="px-4 py-3 text-right">Comisión</th>
+            <th className="px-4 py-3 text-left">Banda</th>
+            <th className="px-4 py-3 text-left">Aeronave apta</th>
+            <th className="px-4 py-3 text-right">Pago piloto</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className={`border-b border-white/6 ${i % 2 === 0 ? "bg-white/[0.015]" : ""}`}>
-              <td className="px-4 py-3 font-medium text-white/80">{r.ruta}</td>
+              <td className="px-4 py-3 font-medium text-white/80">{r.ruta}<p className="mt-1 text-[10px] text-white/35">{r.nota}</p></td>
               <td className="px-4 py-3 text-right text-white/60">{r.nm.toLocaleString("es-CL")}</td>
               <td className="px-4 py-3 text-right text-white/60">{r.block} min</td>
-              <td className="px-4 py-3 text-white/60">{r.tipo} · {r.modo}</td>
-              <td className="px-4 py-3 text-right font-black text-emerald-300">{r.comision}</td>
+              <td className="px-4 py-3 text-white/60">{r.banda}</td>
+              <td className="px-4 py-3 text-white/60">{r.avion}</td>
+              <td className="px-4 py-3 text-right font-black text-emerald-300">{r.pago} USD</td>
             </tr>
           ))}
         </tbody>
@@ -219,7 +221,6 @@ function CommissionTable() {
     </div>
   );
 }
-
 // ─── SVG Mini Line Chart ──────────────────────────────────────────────────────
 
 type ChartSeries = { label: string; color: string; values: number[] };
@@ -303,7 +304,7 @@ function MiniLineChart({ series, labels }: { series: ChartSeries[]; labels: stri
 
 type EconomiaStats = {
   airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
-  breakdown: { income_flights: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_salaries: number };
+  breakdown: { income_flights: number; income_passengers?: number; income_cargo?: number; income_charter?: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_airport_fees?: number; cost_handling?: number; cost_salaries: number };
   payroll: Array<{ year: number; month: number; flights: number; commission: number; base_salary: number; net: number; callsigns: string[] }>;
   recentLedger: Array<{ entry_type: string; amount_usd: number; pilot_callsign?: string; description?: string; created_at: string }>;
   topPilots: Array<{ callsign: string; commission: number }>;
@@ -318,6 +319,12 @@ function fmtUsd(n: number) { return `$${fmt(Math.abs(n))} USD`; }
 function entryTypeLabel(t: string) {
   const map: Record<string, string> = {
     flight_income: "Ingreso vuelo",
+    passenger_revenue: "Ingreso pasajeros",
+    cargo_revenue: "Ingreso carga",
+    charter_revenue: "Ingreso chárter",
+    airport_fees: "Tasas aeropuerto",
+    handling_cost: "Handling/rampa",
+    repair_reserve: "Reserva técnica",
     fuel_cost: "Combustible",
     maintenance_cost: "Mantenimiento",
     pilot_payment: "Pago piloto",
@@ -368,10 +375,14 @@ function AirlineFinancePanel() {
     { emoji: "🏦", label: "Balance actual", value: fmtUsd(airline.balance_usd), tone: airline.balance_usd >= 0 ? "text-emerald-300" : "text-rose-300", bg: "from-emerald-500/10" },
     { emoji: "📈", label: "Ingresos totales", value: fmtUsd(airline.total_revenue_usd), tone: "text-sky-300", bg: "from-sky-500/10" },
     { emoji: "📉", label: "Costos totales", value: fmtUsd(airline.total_costs_usd), tone: "text-amber-300", bg: "from-amber-500/10" },
+    { emoji: "👥", label: "Pasajeros", value: fmtUsd(breakdown.income_passengers ?? 0), tone: "text-emerald-300", bg: "from-emerald-500/10" },
+    { emoji: "📦", label: "Carga", value: fmtUsd(breakdown.income_cargo ?? 0), tone: "text-emerald-300", bg: "from-emerald-500/10" },
     { emoji: isProfit ? "✅" : "⚠️", label: isProfit ? "Utilidad neta" : "Pérdida neta", value: `${isProfit ? "+" : "−"}${fmtUsd(airline.net_profit_usd)}`, tone: isProfit ? "text-emerald-300" : "text-rose-300", bg: isProfit ? "from-emerald-500/10" : "from-rose-500/10" },
   ];
 
   const breakdownCards = [
+    { emoji: "🧾", label: "Tasas", value: fmtUsd(breakdown.cost_airport_fees ?? 0), tone: "text-amber-300" },
+    { emoji: "🧳", label: "Handling", value: fmtUsd(breakdown.cost_handling ?? 0), tone: "text-amber-300" },
     { emoji: "✈️", label: "Vuelos completados", value: String(totalFlightsCompleted), tone: "text-white" },
     { emoji: "💵", label: "Ingreso por vuelos", value: fmtUsd(breakdown.income_flights), tone: "text-emerald-300" },
     { emoji: "⛽", label: "Combustible", value: fmtUsd(breakdown.cost_fuel), tone: "text-amber-300" },
@@ -529,6 +540,972 @@ function AirlineFinancePanel() {
   );
 }
 
+
+// ─── Pilot Expense Plan Panel ────────────────────────────────────────────────
+
+type PilotExpenseApiItem = {
+  code: string;
+  category: string;
+  label: string;
+  amountUsd: number;
+  description?: string;
+  phase?: string;
+  requiredFor?: string;
+};
+
+type PilotExpenseApiGroup = {
+  category: string;
+  label: string;
+  totalUsd: number;
+  items: PilotExpenseApiItem[];
+};
+
+type PilotExpenseApiResponse = {
+  ok?: boolean;
+  source?: string;
+  groups?: PilotExpenseApiGroup[];
+};
+
+const EXPENSE_CATEGORY_EMOJI: Record<string, string> = {
+  transfer: "🚌",
+  license: "📄",
+  certification: "🎖️",
+  type_rating: "✈️",
+  theory_exam: "📝",
+  practical_check: "🧑‍✈️",
+  training: "🎓",
+};
+
+function PilotExpensePlanPanel() {
+  const [groups, setGroups] = useState<PilotExpenseApiGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/economia/pilot-expenses")
+      .then((r) => r.json())
+      .then((data: PilotExpenseApiResponse) => {
+        if (data.ok && Array.isArray(data.groups)) setGroups(data.groups);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/42">
+        Cargando plan de gastos del piloto...
+      </div>
+    );
+  }
+
+  if (groups.length === 0) return null;
+
+  const theoryGroup = groups.find((group) => group.category === "theory_exam");
+  const grandTotal = groups.reduce((sum, group) => sum + group.totalUsd, 0);
+
+  return (
+    <section className="rounded-[28px] border border-cyan-400/14 bg-gradient-to-br from-cyan-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Plan económico del piloto</p>
+          <h2 className="mt-1 text-2xl font-black text-white">🎓 Gastos, licencias y pruebas</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+            La billetera del piloto no solo recibe pagos por vuelos: también financia traslados, licencias, habilitaciones, entrenamientos y pruebas teóricas.
+            Estos valores quedan en catálogo para descontarlos después en forma trazable desde la cuenta del piloto.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Catálogo activo</p>
+          <p className="text-xl font-black text-emerald-300">{fmtUsd(grandTotal)}</p>
+          <p className="text-[10px] text-white/38">suma referencial</p>
+        </div>
+      </div>
+
+      {theoryGroup && (
+        <div className="mt-5 rounded-2xl border border-amber-300/18 bg-amber-300/[0.07] p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📝</span>
+            <div>
+              <p className="text-sm font-black text-amber-100">Pruebas teóricas incluidas</p>
+              <p className="text-xs leading-5 text-white/56">
+                IFR/IMC, regional, narrowbody, widebody y recurrente. Cada examen tiene costo propio antes de liberar la habilitación o certificación correspondiente.
+              </p>
+            </div>
+            <span className="ml-auto text-sm font-black text-amber-200">{fmtUsd(theoryGroup.totalUsd)}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {groups.map((group) => (
+          <div key={group.category} className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{EXPENSE_CATEGORY_EMOJI[group.category] ?? "💳"}</span>
+                <p className="text-sm font-black text-white">{group.label}</p>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold text-cyan-200">
+                {fmtUsd(group.totalUsd)}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {group.items.slice(0, 5).map((item) => (
+                <div key={item.code} className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.018] px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white/82">{item.label}</p>
+                    {(item.requiredFor || item.description) && (
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/40">
+                        {item.requiredFor ? `Requerido para ${item.requiredFor}. ` : ""}{item.description ?? ""}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-xs font-black text-emerald-300">{fmtUsd(item.amountUsd)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+// ─── Fleet Assets Panel ───────────────────────────────────────────────────────
+
+type FleetAssetItem = {
+  aircraftType: string;
+  count: number;
+  totalValueUsd: number;
+  monthlyFixedCostUsd: number;
+  hourlyMaintenanceUsd: number;
+  registrations: string[];
+  hubs: string[];
+};
+
+type FleetAssetApiResponse = {
+  ok?: boolean;
+  airline?: {
+    name: string;
+    balanceUsd: number;
+    recommendedReserveUsd: number;
+    purchasingPowerUsd: number;
+  };
+  summary?: {
+    aircraftCount: number;
+    rawAircraftRows?: number;
+    aircraftFleetTableCount?: number;
+    aircraftTableCount?: number;
+    duplicateAircraftRows?: number;
+    typeCount: number;
+    aircraftTypesTableCount?: number;
+    economyProfileTypeCount?: number;
+    assetCatalogTypeCount?: number;
+    expectedAircraftTypeCount?: number;
+    totalFleetValueUsd: number;
+    totalMonthlyFixedCostUsd: number;
+    aircraftPurchaseLedgerUsd: number;
+    source: string;
+    sourceErrors?: string[];
+  };
+  typeAudit?: {
+    expectedTypeCount: number;
+    realFleetTypes: string[];
+    aircraftTypesCatalog: string[];
+    economyProfileTypes: string[];
+    assetCatalogTypes: string[];
+    missingEconomyProfiles: string[];
+    missingAssetValues: string[];
+    fleetTypeCounts: Array<{ aircraftType: string; count: number }>;
+  };
+  fleet?: FleetAssetItem[];
+  catalog?: Array<{
+    aircraftType: string;
+    estimatedPurchasePriceUsd: number;
+    estimatedMonthlyFixedCostUsd: number;
+    estimatedHourlyMaintenanceUsd: number;
+  }>;
+  purchaseOptions?: Array<{
+    aircraftType: string;
+    estimatedPurchasePriceUsd: number;
+    estimatedMonthlyFixedCostUsd: number;
+    estimatedHourlyMaintenanceUsd: number;
+    factory?: string;
+    canBuyWithReserve?: boolean;
+    canBuyCashOnly?: boolean;
+    remainingAfterPurchaseUsd?: number;
+    reserveGapUsd?: number;
+    suggested?: boolean;
+  }>;
+};
+
+function FleetAssetsPanel() {
+  const [data, setData] = useState<FleetAssetApiResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/economia/fleet-assets")
+      .then((r) => r.json())
+      .then((payload: FleetAssetApiResponse) => {
+        if (payload.ok) setData(payload);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/42">
+        Calculando inversión de flota...
+      </div>
+    );
+  }
+
+  if (!data?.summary) return null;
+
+  const summary = data.summary;
+  const airline = data.airline;
+  const fleet = data.fleet ?? [];
+  const catalog = data.catalog ?? [];
+  const visibleRows = fleet.length > 0 ? fleet.slice(0, 6) : catalog.slice(0, 6).map((item) => ({
+    aircraftType: item.aircraftType,
+    count: 0,
+    totalValueUsd: item.estimatedPurchasePriceUsd,
+    monthlyFixedCostUsd: item.estimatedMonthlyFixedCostUsd,
+    hourlyMaintenanceUsd: item.estimatedHourlyMaintenanceUsd,
+    registrations: [],
+    hubs: [],
+  }));
+
+  const sourceLabel = summary.source === "supabase_exact" ? "Base real Supabase" : "Catálogo base";
+  const typeAudit = data.typeAudit;
+  const expectedTypes = summary.expectedAircraftTypeCount ?? typeAudit?.expectedTypeCount ?? 33;
+  const aircraftTypesTableCount = summary.aircraftTypesTableCount ?? typeAudit?.aircraftTypesCatalog?.length ?? summary.typeCount;
+  const typeHealthLabel = aircraftTypesTableCount === expectedTypes ? "Tipos OK" : `Revisar tipos: ${aircraftTypesTableCount}/${expectedTypes}`;
+
+  return (
+    <section className="rounded-[28px] border border-emerald-400/14 bg-gradient-to-br from-emerald-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Activos de aerolínea</p>
+          <h2 className="mt-1 text-2xl font-black text-white">🏦 Flota, inversión y crecimiento</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+            Cada aeronave tiene valor patrimonial, costo fijo mensual y costo técnico por hora. Las nuevas aeronaves deberán comprarse con caja de la aerolínea y serán entregadas al hub asignado desde fábrica.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Fuente</p>
+          <p className="text-sm font-black text-emerald-300">{sourceLabel}</p>
+          <p className="text-[10px] text-white/38">{typeHealthLabel}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { emoji: "✈️", label: "Aeronaves reales", value: String(summary.aircraftCount || "Catálogo") },
+          { emoji: "🧩", label: "Tipos BD", value: `${aircraftTypesTableCount}/${expectedTypes}` },
+          { emoji: "🏷️", label: "Valor flota", value: fmtUsd(summary.totalFleetValueUsd) },
+          { emoji: "📅", label: "Costo fijo mensual", value: fmtUsd(summary.totalMonthlyFixedCostUsd) },
+        ].map((card) => (
+          <div key={card.label} className="rounded-[18px] border border-white/8 bg-black/15 px-4 py-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{card.emoji}</span>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/36">{card.label}</p>
+            </div>
+            <p className="mt-2 text-lg font-black text-white">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-4">
+        {[
+          { label: "aircraft_fleet", value: summary.aircraftFleetTableCount ?? 0 },
+          { label: "aircraft", value: summary.aircraftTableCount ?? 0 },
+          { label: "Duplicados matrícula", value: summary.duplicateAircraftRows ?? 0 },
+          { label: "Tipos con economía", value: summary.economyProfileTypeCount ?? 0 },
+        ].map((item) => (
+          <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/32">{item.label}</p>
+            <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {(typeAudit?.missingEconomyProfiles?.length || typeAudit?.missingAssetValues?.length || summary.sourceErrors?.length) ? (
+        <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/[0.055] p-4 text-xs leading-5 text-amber-50/78">
+          <p className="font-black text-amber-100">Auditoría de tipos de aeronave</p>
+          {typeAudit?.missingEconomyProfiles?.length ? <p className="mt-1">Faltan perfiles económicos: {typeAudit.missingEconomyProfiles.join(", ")}</p> : null}
+          {typeAudit?.missingAssetValues?.length ? <p className="mt-1">Faltan valores patrimoniales: {typeAudit.missingAssetValues.join(", ")}</p> : null}
+          {summary.sourceErrors?.length ? <p className="mt-1">Avisos lectura Supabase: {summary.sourceErrors.join(" · ")}</p> : null}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-emerald-300/14 bg-emerald-300/[0.04] p-4 text-xs leading-5 text-emerald-50/72">
+          Flota leída desde Supabase con paginación completa y deduplicación por matrícula. No se limita a 1000 registros.
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-black text-white">Valor por tipo de aeronave</p>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Top valores</span>
+          </div>
+          <div className="space-y-2">
+            {visibleRows.map((item) => (
+              <div key={item.aircraftType} className="rounded-xl border border-white/5 bg-white/[0.018] px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">{item.aircraftType}</p>
+                    <p className="text-[10px] text-white/40">
+                      {item.count > 0 ? `${item.count} aeronave${item.count !== 1 ? "s" : ""}` : "valor referencial"}
+                      {item.hubs.length > 0 ? ` · Hub ${item.hubs.join(", ")}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-emerald-300">{fmtUsd(item.totalValueUsd)}</p>
+                    <p className="text-[10px] text-white/36">mes {fmtUsd(item.monthlyFixedCostUsd)}</p>
+                  </div>
+                </div>
+                {item.registrations.length > 0 && (
+                  <p className="mt-2 truncate text-[10px] text-white/32">Matrículas: {item.registrations.join(", ")}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <p className="text-sm font-black text-white">Reglas de crecimiento</p>
+          <div className="mt-3 space-y-3 text-xs leading-5 text-white/58">
+            <p><span className="font-bold text-emerald-200">Compra:</span> cada aeronave nueva descuenta caja y queda registrada como inversión de flota.</p>
+            <p><span className="font-bold text-emerald-200">Entrega:</span> se trae desde fábrica al hub asignado, no aparece mágicamente en cualquier aeropuerto.</p>
+            <p><span className="font-bold text-emerald-200">Reserva:</span> mantener 6 meses de costos fijos + reserva técnica antes de compras grandes.</p>
+            <p><span className="font-bold text-emerald-200">Métricas:</span> el valor de flota, costos fijos y mantenimiento alimentarán la economía mensual.</p>
+          </div>
+          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.025] p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Reserva recomendada</p>
+            <p className="mt-1 text-xl font-black text-amber-200">{fmtUsd(airline?.recommendedReserveUsd ?? 0)}</p>
+            <p className="mt-1 text-[10px] leading-4 text-white/42">Caja aerolínea: {fmtUsd(airline?.balanceUsd ?? 0)} · Compras registradas: {fmtUsd(summary.aircraftPurchaseLedgerUsd)}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Aircraft Purchase Panel ──────────────────────────────────────────────────
+
+type PurchaseOption = NonNullable<FleetAssetApiResponse["purchaseOptions"]>[number];
+
+function FleetPurchasePanel() {
+  const [data, setData] = useState<FleetAssetApiResponse | null>(null);
+  const [selectedType, setSelectedType] = useState("");
+  const [targetHub, setTargetHub] = useState("SCEL");
+  const [quantity, setQuantity] = useState(1);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [ownerChecked, setOwnerChecked] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [viewerLabel, setViewerLabel] = useState("Piloto");
+
+  useEffect(() => {
+    fetch("/api/economia/fleet-assets")
+      .then((r) => r.json())
+      .then((payload: FleetAssetApiResponse) => {
+        if (payload.ok) {
+          setData(payload);
+          const firstSuggested = payload.purchaseOptions?.find((item) => item.suggested || item.canBuyWithReserve) ?? payload.purchaseOptions?.[0];
+          if (firstSuggested?.aircraftType) setSelectedType(firstSuggested.aircraftType);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function resolveOwner() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) {
+          if (!active) return;
+          setViewerLabel("Visitante");
+          setIsOwner(false);
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("pilot_profiles")
+          .select("callsign, email")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const callsign = typeof profile?.callsign === "string" ? profile.callsign : "";
+        const email = typeof profile?.email === "string" ? profile.email : user.email ?? "";
+
+        if (!active) return;
+        setViewerLabel(callsign || email || "Piloto");
+        setIsOwner(isOwnerIdentity(callsign, email));
+      } catch {
+        if (!active) return;
+        setIsOwner(false);
+      } finally {
+        if (active) setOwnerChecked(true);
+      }
+    }
+
+    resolveOwner();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const options = data?.purchaseOptions ?? [];
+  const selected = options.find((item) => item.aircraftType === selectedType) ?? options[0];
+  const totalPrice = (selected?.estimatedPurchasePriceUsd ?? 0) * quantity;
+  const canBuy = Boolean(selected?.canBuyCashOnly) && totalPrice > 0;
+
+  async function submitPurchase() {
+    if (!selected?.aircraftType || !targetHub.trim()) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Debes iniciar sesión como administrador para comprar aeronaves.");
+
+      const res = await fetch("/api/economia/aircraft-purchase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ aircraftType: selected.aircraftType, targetHubIcao: targetHub, quantity }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.ok) throw new Error(payload.error ?? "No se pudo registrar la compra.");
+      setMessage(`Compra registrada: ${payload.purchased.quantity}x ${payload.purchased.aircraftType} · matrículas ${payload.purchased.registrations.join(", ")}.`);
+      const refreshed = await fetch("/api/economia/fleet-assets").then((r) => r.json());
+      if (refreshed.ok) setData(refreshed);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "No se pudo registrar la compra.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!data?.airline || options.length === 0) return null;
+
+  if (ownerChecked && !isOwner) {
+    return (
+      <section className="rounded-[28px] border border-sky-400/14 bg-gradient-to-br from-sky-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
+            <h2 className="mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+              Los pilotos pueden revisar cómo Patagonia Wings compra aeronaves, conserva reserva operacional y entrega cada unidad al hub asignado.
+              La compra real queda reservada para la dirección de la aerolínea.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Usuario</p>
+            <p className="text-sm font-black text-sky-200">{viewerLabel}</p>
+            <p className="text-[10px] text-white/38">Modo informativo</p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+            <p className="text-sm font-black text-white">Reglas para pilotos</p>
+            <div className="mt-3 space-y-3 text-xs leading-5 text-white/58">
+              <p><span className="font-bold text-sky-200">Caja:</span> cada compra usa dinero real de la aerolínea acumulado por operaciones.</p>
+              <p><span className="font-bold text-sky-200">Entrega:</span> las aeronaves llegan desde fábrica al hub asignado y no aparecen en cualquier aeropuerto.</p>
+              <p><span className="font-bold text-sky-200">Control:</span> solo PWG001/dirección puede registrar compras para evitar cambios accidentales de flota.</p>
+            </div>
+          </div>
+          <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+            <p className="text-sm font-black text-white">Opciones referenciales</p>
+            <div className="mt-3 space-y-2">
+              {options.slice(0, 5).map((item) => (
+                <div key={item.aircraftType} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.018] px-3 py-2">
+                  <div>
+                    <p className="text-xs font-black text-white">{item.aircraftType}</p>
+                    <p className="text-[10px] text-white/36">Costo fijo mensual {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
+                  </div>
+                  <p className="text-xs font-black text-emerald-300">{fmtUsd(item.estimatedPurchasePriceUsd)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-[28px] border border-sky-400/14 bg-gradient-to-br from-sky-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
+          <h2 className="mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+            La aerolínea compra aeronaves con su caja operacional. Cada compra descuenta el ledger, crea la aeronave en flota y la deja entregada en el hub asignado desde fábrica.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Caja disponible</p>
+          <p className="text-lg font-black text-emerald-300">{fmtUsd(data.airline.balanceUsd)}</p>
+          <p className="text-[10px] text-white/38">Poder compra: {fmtUsd(data.airline.purchasingPowerUsd)}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <p className="text-sm font-black text-white">Registrar compra</p>
+          <div className="mt-4 space-y-3">
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Aeronave</span>
+              <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white outline-none">
+                {options.map((item) => (
+                  <option key={item.aircraftType} value={item.aircraftType}>{item.aircraftType} · {fmtUsd(item.estimatedPurchasePriceUsd)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Hub destino</span>
+              <input value={targetHub} onChange={(e) => setTargetHub(e.target.value.toUpperCase().slice(0, 4))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm font-black uppercase tracking-[0.12em] text-white outline-none" />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Cantidad</span>
+              <input type="number" min={1} max={5} value={quantity} onChange={(e) => setQuantity(Math.min(5, Math.max(1, Number(e.target.value) || 1)))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white outline-none" />
+            </label>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/36">Total compra</p>
+              <p className="text-xl font-black text-white">{fmtUsd(totalPrice)}</p>
+              <p className={`mt-1 text-[11px] ${canBuy ? "text-emerald-300" : "text-amber-300"}`}>{canBuy ? "Caja suficiente para compra operacional." : "Caja insuficiente o bajo reserva recomendada."}</p>
+            </div>
+            <button type="button" disabled={!canBuy || busy} onClick={submitPurchase} className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35">
+              {busy ? "Registrando compra..." : "Comprar aeronave"}
+            </button>
+            {message && <p className="rounded-2xl border border-white/8 bg-black/20 p-3 text-xs leading-5 text-white/70">{message}</p>}
+          </div>
+        </div>
+
+        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <p className="text-sm font-black text-white">Opciones recomendadas</p>
+          <div className="mt-3 space-y-2">
+            {options.slice(0, 7).map((item: PurchaseOption) => (
+              <div key={item.aircraftType} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.018] px-3 py-3">
+                <div>
+                  <p className="text-sm font-black text-white">{item.aircraftType}</p>
+                  <p className="text-[10px] text-white/40">{item.factory ?? "Fábrica fabricante"} · fijo mes {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-emerald-300">{fmtUsd(item.estimatedPurchasePriceUsd)}</p>
+                  <p className="text-[10px] text-white/36">{item.canBuyWithReserve ? "dentro de reserva" : `faltan ${fmtUsd(item.reserveGapUsd ?? 0)}`}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.025] p-3 text-xs leading-5 text-white/56">
+            <p><span className="font-bold text-sky-200">Ledger:</span> la compra se registra como <code>aircraft_purchase</code> y descuenta caja.</p>
+            <p><span className="font-bold text-sky-200">Entrega:</span> se genera matrícula PWG según país del hub y la aeronave queda en el hub destino.</p>
+            <p><span className="font-bold text-sky-200">Control:</span> no comprar si deja la caja bajo reserva operacional salvo decisión administrativa.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+type MonthlyCostItem = {
+  code: string;
+  label: string;
+  amountUsd: number;
+  description: string;
+};
+
+type MonthlyFixedCostsResponse = {
+  ok?: boolean;
+  error?: string;
+  message?: string;
+  status?: string;
+  airline?: { id: string; name: string; balanceUsd: number };
+  period?: { year: number; month: number; code: string };
+  fleet?: { count: number; valueUsd: number; fixedMonthlyUsd: number };
+  hubs?: { count: number };
+  items?: MonthlyCostItem[];
+  totalMonthlyCostUsd?: number;
+  sixMonthReserveUsd?: number;
+  recommendedReserveUsd?: number;
+  alreadyApplied?: boolean;
+};
+
+function MonthlyFixedCostsPanel() {
+  const [data, setData] = useState<MonthlyFixedCostsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [ownerChecked, setOwnerChecked] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  async function loadMonthlyCosts() {
+    setLoading(true);
+    fetch("/api/economia/monthly-fixed-costs")
+      .then((r) => r.json())
+      .then((payload: MonthlyFixedCostsResponse) => setData(payload))
+      .catch((error) => setData({ ok: false, error: error instanceof Error ? error.message : "No se pudieron cargar costos mensuales." }))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    loadMonthlyCosts();
+
+    async function checkOwner() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) {
+          if (!cancelled) {
+            setIsOwner(false);
+            setOwnerChecked(true);
+          }
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("pilot_profiles")
+          .select("callsign, email")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const callsign = typeof profile?.callsign === "string" ? profile.callsign : "";
+        const email = typeof profile?.email === "string" ? profile.email : user.email ?? "";
+        if (!cancelled) {
+          setIsOwner(isOwnerIdentity(callsign, email));
+          setOwnerChecked(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsOwner(false);
+          setOwnerChecked(true);
+        }
+      }
+    }
+
+    checkOwner();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function applyMonthlyCosts() {
+    setApplying(true);
+    setMessage(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Debes iniciar sesión como dirección/owner para aplicar costos mensuales.");
+
+      const response = await fetch("/api/economia/monthly-fixed-costs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          periodYear: data?.period?.year,
+          periodMonth: data?.period?.month,
+        }),
+      });
+      const payload = (await response.json()) as MonthlyFixedCostsResponse;
+      if (!response.ok || payload.ok === false) throw new Error(payload.error || "No se pudo aplicar el cierre mensual.");
+      setData(payload);
+      setMessage(payload.message || "Costos mensuales aplicados correctamente.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo aplicar el cierre mensual.");
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.03] p-7 text-sm text-white/40">
+        Cargando costos fijos mensuales...
+      </div>
+    );
+  }
+
+  const items = data?.items ?? [];
+  const total = data?.totalMonthlyCostUsd ?? 0;
+  const recommendedReserve = data?.recommendedReserveUsd ?? 0;
+  const airlineBalance = data?.airline?.balanceUsd ?? 0;
+  const remainingAfterClose = airlineBalance - total;
+
+  return (
+    <section className="mt-8 rounded-[28px] border border-cyan-300/15 bg-cyan-400/[0.035] p-6 sm:p-7">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/70">Operación mensual</p>
+          <h2 className="mt-1 text-2xl font-black text-white">🏢 Costos fijos de aerolínea</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/64">
+            Estos costos representan la operación mensual de Patagonia Wings: staff, hubs, flota, seguros, sistemas,
+            administración y reserva técnica. Solo la dirección puede aplicar el cierre mensual al ledger.
+          </p>
+        </div>
+        <div className="rounded-[20px] border border-white/10 bg-black/20 px-5 py-4 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Período</p>
+          <p className="mt-1 text-xl font-black text-cyan-200">{data?.period?.code ?? "Actual"}</p>
+          <p className="mt-1 text-[11px] text-white/45">{data?.alreadyApplied ? "Cierre ya aplicado" : "Pendiente de cierre"}</p>
+        </div>
+      </div>
+
+      {data?.ok === false && (
+        <div className="mb-5 rounded-[18px] border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-amber-100">
+          {data.error || "No se pudo cargar el resumen de costos fijos."}
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Caja actual", value: fmtUsd(airlineBalance), tone: airlineBalance >= 0 ? "text-emerald-300" : "text-rose-300" },
+          { label: "Costo mensual", value: fmtUsd(total), tone: "text-amber-200" },
+          { label: "Reserva recomendada", value: fmtUsd(recommendedReserve), tone: "text-cyan-200" },
+          { label: "Caja post cierre", value: fmtUsd(remainingAfterClose), tone: remainingAfterClose >= 0 ? "text-emerald-300" : "text-rose-300" },
+        ].map((card) => (
+          <div key={card.label} className="rounded-[18px] border border-white/10 bg-black/18 px-5 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">{card.label}</p>
+            <p className={`mt-2 text-xl font-black ${card.tone}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
+        {items.map((item) => (
+          <div key={item.code} className="rounded-[18px] border border-white/8 bg-white/[0.025] px-4 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-black text-white">{item.label}</p>
+                <p className="mt-1 text-xs leading-5 text-white/52">{item.description}</p>
+              </div>
+              <p className="shrink-0 text-sm font-black text-amber-200">{fmtUsd(item.amountUsd)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 rounded-[20px] border border-white/10 bg-black/20 p-5">
+        <p className="text-sm font-black text-white">Regla de cierre mensual</p>
+        <p className="mt-2 text-xs leading-6 text-white/58">
+          El cierre mensual descuenta movimientos separados en airline_ledger para poder reconstruir el balance por categoría.
+          No se duplica si el período ya fue aplicado. Los pilotos pueden ver la explicación; solo owner/dirección puede ejecutar el cargo.
+        </p>
+        {message && <p className="mt-3 rounded-[14px] border border-cyan-300/20 bg-cyan-300/8 px-4 py-3 text-xs text-cyan-100">{message}</p>}
+        {ownerChecked && isOwner && (
+          <button
+            type="button"
+            onClick={applyMonthlyCosts}
+            disabled={applying || Boolean(data?.alreadyApplied)}
+            className="mt-4 rounded-2xl border border-cyan-300/30 bg-cyan-300/14 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {data?.alreadyApplied ? "Cierre mensual ya aplicado" : applying ? "Aplicando cierre..." : "Aplicar costos fijos del mes"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+type EconomyHistoricalMetricsResponse = {
+  ok?: boolean;
+  totals?: {
+    flights: number;
+    distanceNm: number;
+    blockHours: number;
+    passengers: number;
+    cargoKg: number;
+    fuelKg: number;
+    revenueUsd: number;
+    costUsd: number;
+    profitUsd: number;
+  };
+  monthly?: Array<{
+    month: string;
+    label: string;
+    flights: number;
+    passengers: number;
+    cargoKg: number;
+    fuelKg: number;
+    airlineRevenueUsd: number;
+    totalCostUsd: number;
+    netProfitUsd: number;
+    profitMarginPct: number;
+  }>;
+  ledgerTrend?: Array<{ key: string; label: string; incomeUsd: number; costUsd: number; netUsd: number }>;
+  topRoutes?: Array<{ route: string; flights: number; revenueUsd: number; costUsd: number; profitUsd: number; passengers: number; cargoKg: number; distanceNm: number }>;
+  lossRoutes?: Array<{ route: string; flights: number; revenueUsd: number; costUsd: number; profitUsd: number; passengers: number; cargoKg: number; distanceNm: number }>;
+  topAircraft?: Array<{ aircraftType: string; flights: number; revenueUsd: number; costUsd: number; profitUsd: number; fuelKg: number; distanceNm: number }>;
+  topPilots?: Array<{ callsign: string; flights: number; commissionUsd: number; hours: number }>;
+  pilotExpenses?: Array<{ category: string; amountUsd: number; count: number }>;
+  dataHealth?: { monthlyRows: number; snapshotRows: number; ledgerRows: number; expenseRows: number; salaryRows: number };
+};
+
+function EconomyHistoricalMetricsPanel() {
+  const [data, setData] = useState<EconomyHistoricalMetricsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/economia/metrics")
+      .then((r) => r.json())
+      .then((payload: EconomyHistoricalMetricsResponse) => {
+        if (active && payload.ok) setData(payload);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="mb-8 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45">
+        Cargando métricas históricas...
+      </section>
+    );
+  }
+
+  if (!data?.totals) {
+    return (
+      <section className="mb-8 rounded-[28px] border border-cyan-400/12 bg-cyan-400/[0.04] p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Métricas históricas</p>
+        <h2 className="mt-1 text-xl font-black text-white">📈 Centro de métricas listo</h2>
+        <p className="mt-2 text-sm leading-6 text-white/58">
+          Cuando existan cierres ACARS y snapshots económicos, esta sección mostrará pasajeros, carga, combustible, rutas rentables, aeronaves y pilotos productivos.
+        </p>
+      </section>
+    );
+  }
+
+  const totals = data.totals;
+  const monthly = data.monthly ?? [];
+  const trend = monthly.slice(-12);
+  const labels = trend.map((row) => row.label);
+  const hasTrend = trend.length >= 2;
+
+  const kpis = [
+    { icon: "✈️", label: "Vuelos", value: fmt(totals.flights), tone: "text-white" },
+    { icon: "👥", label: "Pax trasladados", value: fmt(totals.passengers), tone: "text-emerald-300" },
+    { icon: "📦", label: "Carga", value: `${fmt(totals.cargoKg)} kg`, tone: "text-cyan-300" },
+    { icon: "⛽", label: "Fuel", value: `${fmt(totals.fuelKg)} kg`, tone: "text-amber-300" },
+    { icon: "🧭", label: "Distancia", value: `${fmt(totals.distanceNm)} NM`, tone: "text-sky-300" },
+    { icon: "🕒", label: "Horas", value: `${fmt(totals.blockHours)} h`, tone: "text-violet-300" },
+    { icon: "🏢", label: "Ingresos", value: fmtUsd(totals.revenueUsd), tone: "text-emerald-300" },
+    { icon: "📈", label: "Utilidad", value: `${totals.profitUsd >= 0 ? "+" : "−"}${fmtUsd(totals.profitUsd)}`, tone: totals.profitUsd >= 0 ? "text-emerald-300" : "text-rose-300" },
+  ];
+
+  return (
+    <section className="mb-10 rounded-[30px] border border-emerald-400/14 bg-gradient-to-br from-emerald-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Métricas históricas</p>
+          <h2 className="mt-1 text-2xl font-black text-white">📊 Operación acumulada Patagonia Wings</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+            Lectura consolidada desde snapshots económicos, ledger, nómina y gastos piloto. Permite auditar pasajeros, carga, combustible, utilidad, rutas, aeronaves y pilotos.
+          </p>
+        </div>
+        {data.dataHealth && (
+          <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Fuente</p>
+            <p className="text-sm font-black text-emerald-300">Supabase</p>
+            <p className="text-[10px] text-white/38">{data.dataHealth.snapshotRows} snapshots · {data.dataHealth.ledgerRows} ledger</p>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {kpis.map((item) => (
+          <div key={item.label} className="rounded-[18px] border border-white/8 bg-black/15 p-4">
+            <div className="flex items-center gap-2">
+              <span>{item.icon}</span>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/38">{item.label}</p>
+            </div>
+            <p className={`mt-2 text-lg font-black ${item.tone}`}>{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {hasTrend && (
+        <div className="mt-5 rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Tendencia mensual</p>
+          <h3 className="mt-1 text-base font-bold text-white">Ingresos · Costos · Utilidad</h3>
+          <div className="mt-4">
+            <MiniLineChart
+              labels={labels}
+              series={[
+                { label: "Ingresos", color: "#34d399", values: trend.map((row) => row.airlineRevenueUsd) },
+                { label: "Costos", color: "#f59e0b", values: trend.map((row) => row.totalCostUsd) },
+                { label: "Utilidad", color: "#38bdf8", values: trend.map((row) => row.netProfitUsd) },
+              ]}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <MetricList title="🏆 Rutas más rentables" rows={(data.topRoutes ?? []).slice(0, 5).map((row) => ({ main: row.route, sub: `${row.flights} vuelos · ${fmt(row.passengers)} pax · ${fmt(row.cargoKg)} kg`, value: `${row.profitUsd >= 0 ? "+" : "−"}${fmtUsd(row.profitUsd)}`, tone: row.profitUsd >= 0 ? "text-emerald-300" : "text-rose-300" }))} />
+        <MetricList title="⚠️ Rutas con pérdida" rows={(data.lossRoutes ?? []).filter((row) => row.profitUsd < 0).slice(0, 5).map((row) => ({ main: row.route, sub: `${row.flights} vuelos · costos ${fmtUsd(row.costUsd)}`, value: `−${fmtUsd(row.profitUsd)}`, tone: "text-rose-300" }))} empty="Sin rutas con pérdida registradas." />
+        <MetricList title="🛫 Aeronaves productivas" rows={(data.topAircraft ?? []).slice(0, 5).map((row) => ({ main: row.aircraftType, sub: `${row.flights} vuelos · ${fmt(row.distanceNm)} NM · ${fmt(row.fuelKg)} kg fuel`, value: `${row.profitUsd >= 0 ? "+" : "−"}${fmtUsd(row.profitUsd)}`, tone: row.profitUsd >= 0 ? "text-emerald-300" : "text-rose-300" }))} />
+        <MetricList title="👨‍✈️ Pilotos productivos" rows={(data.topPilots ?? []).slice(0, 5).map((row) => ({ main: row.callsign, sub: `${row.flights} vuelos · ${fmt(row.hours)} h`, value: fmtUsd(row.commissionUsd), tone: "text-cyan-300" }))} />
+      </div>
+
+      {(data.pilotExpenses ?? []).length > 0 && (
+        <div className="mt-5 rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Gastos de pilotos</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {(data.pilotExpenses ?? []).slice(0, 8).map((row) => (
+              <div key={row.category} className="rounded-2xl border border-white/7 bg-white/[0.025] p-3">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-white/38">{row.category}</p>
+                <p className="mt-1 text-base font-black text-amber-300">{fmtUsd(row.amountUsd)}</p>
+                <p className="text-[10px] text-white/38">{row.count} movimiento{row.count !== 1 ? "s" : ""}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MetricList({ title, rows, empty = "Sin datos suficientes todavía." }: { title: string; rows: Array<{ main: string; sub: string; value: string; tone: string }>; empty?: string }) {
+  return (
+    <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+      <p className="text-sm font-black text-white">{title}</p>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-xs leading-5 text-white/42">{empty}</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {rows.map((row, index) => (
+            <div key={`${row.main}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl border border-white/6 bg-white/[0.025] px-3 py-3">
+              <div>
+                <p className="text-sm font-black text-white">{row.main}</p>
+                <p className="text-[10px] text-white/42">{row.sub}</p>
+              </div>
+              <p className={`shrink-0 text-sm font-black ${row.tone}`}>{row.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EconomiaPage() {
   return (
     <div className="min-h-screen bg-[#030e1a]">
@@ -576,6 +1553,17 @@ export default function EconomiaPage() {
         {/* Airline live financial panel */}
         <AirlineFinancePanel />
 
+        {/* Historical economy metrics */}
+        <EconomyHistoricalMetricsPanel />
+
+        {/* Fleet assets and airline growth */}
+        <FleetAssetsPanel />
+        <FleetPurchasePanel />
+        <MonthlyFixedCostsPanel />
+
+        {/* Pilot wallet expenses and certification costs */}
+        <PilotExpensePlanPanel />
+
         {/* Sections */}
         <div className="space-y-6">
           {SECTIONS.map((s) => (
@@ -588,7 +1576,7 @@ export default function EconomiaPage() {
           <div className="mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Referencia rápida</p>
             <h2 className="mt-1 text-xl font-bold text-white">📊 Ejemplos de comisión por ruta</h2>
-            <p className="mt-1 text-sm text-white/48">Los valores al tope $500 aplican cuando la fórmula supera ese máximo.</p>
+            <p className="mt-1 text-sm text-white/48">Los valores se calculan por banda de ruta, aeronave y operación; long haul e intercontinental tienen topes superiores a rutas regionales.</p>
           </div>
           <CommissionTable />
         </div>

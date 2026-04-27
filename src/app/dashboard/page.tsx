@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/site/PublicHeader";
 import CharterDispatchPanel from "@/components/dashboard/CharterDispatchPanel";
@@ -34,7 +34,7 @@ import {
   type SimbriefOfpSummary,
 } from "@/lib/simbrief";
 import { supabase } from "@/lib/supabase/browser";
-import { estimateRouteProfitLoss } from "@/lib/pilot-economy";
+import { estimateFlightEconomy, estimateSimbriefFlightEconomy } from "@/lib/pilot-economy";
 import { resolvePatagoniaScore } from "@/lib/sur-score";
 
 type DashboardMetrics = {
@@ -2839,12 +2839,7 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
   return warnings;
 }
 
-function buildNewsItems(
-  _airportCode?: string,
-  _pilotsOnField?: number,
-  _activeFlights?: unknown[],
-  _recentFlights?: unknown[],
-): NewsItem[] {
+function buildNewsItems(..._args: unknown[]): NewsItem[] {
   // El panel visible usa /api/news/local. Se mantiene la función para
   // compatibilidad con CentralOverview, sin tarjetas estáticas antiguas.
   return [];
@@ -3993,15 +3988,28 @@ function OfficeEconomyPanel() {
 // We use a child-component approach: CentralTransfersSection returns null when empty,
 // so we pre-check using a shared state exposed via callback.
 function CentralTransfersSectionWrapper({ central }: { central: CentralOverview }) {
-  const [hasContent, setHasContent] = useState<boolean | null>(null);
+  const [hasContent, setHasContent] = useState(false);
+
+  const handleEmpty = useCallback(() => {
+    setHasContent(false);
+  }, []);
+
+  const handleHasContent = useCallback(() => {
+    setHasContent(true);
+  }, []);
+
+  useEffect(() => {
+    setHasContent(false);
+  }, [central.airportCode]);
+
   return (
     <>
-      {hasContent !== false && <CentralSectionDivider />}
+      {hasContent && <CentralSectionDivider />}
       <CentralTransfersSectionControlled
         airportCode={central.airportCode}
         options={central.transferOptions}
-        onEmpty={() => setHasContent(false)}
-        onHasContent={() => setHasContent(true)}
+        onEmpty={handleEmpty}
+        onHasContent={handleHasContent}
       />
     </>
   );
@@ -4144,8 +4152,10 @@ function CentralTransfersSectionControlled({
     }
   }
 
-  // Completely hide when no destinations and no messages
-  if (!isLoadingTransfers && destinations.length === 0 && !transferMessage && !transferError) {
+  // Hide the whole transfers block while loading or when there are no destinations.
+  // This prevents the dashboard from flashing a temporary empty transfers card
+  // when the API returns no options or when auth/session refresh triggers a re-fetch.
+  if (destinations.length === 0 && !transferMessage) {
     return null;
   }
 
@@ -4988,21 +4998,58 @@ function formatEconomyUsd(value: number | null | undefined) {
   return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
 }
 
-function buildEconomyEstimate(distanceNm: number | null | undefined, aircraftTypeCode?: string | null, mode: "CAREER" | "CHARTER" = "CAREER") {
+function buildEconomyEstimate({
+  distanceNm,
+  aircraftTypeCode,
+  mode = "CAREER",
+  originIcao,
+  destinationIcao,
+  originCountry,
+  destinationCountry,
+  operationCategory,
+}: {
+  distanceNm: number | null | undefined;
+  aircraftTypeCode?: string | null;
+  mode?: "CAREER" | "CHARTER";
+  originIcao?: string | null;
+  destinationIcao?: string | null;
+  originCountry?: string | null;
+  destinationCountry?: string | null;
+  operationCategory?: string | null;
+}) {
   if (!distanceNm || distanceNm <= 0) return null;
-  return estimateRouteProfitLoss(distanceNm, aircraftTypeCode ?? "A320", mode);
+  return estimateFlightEconomy({
+    distanceNm,
+    aircraftTypeCode: aircraftTypeCode ?? "A320",
+    operationType: mode,
+    originIcao,
+    destinationIcao,
+    originCountry,
+    destinationCountry,
+    operationCategory,
+  });
 }
 
 function EconomyMiniGrid({
   distanceNm,
   aircraftTypeCode,
   mode = "CAREER",
+  originIcao,
+  destinationIcao,
+  originCountry,
+  destinationCountry,
+  operationCategory,
 }: {
   distanceNm: number | null | undefined;
   aircraftTypeCode?: string | null;
   mode?: "CAREER" | "CHARTER";
+  originIcao?: string | null;
+  destinationIcao?: string | null;
+  originCountry?: string | null;
+  destinationCountry?: string | null;
+  operationCategory?: string | null;
 }) {
-  const estimate = buildEconomyEstimate(distanceNm, aircraftTypeCode, mode);
+  const estimate = buildEconomyEstimate({ distanceNm, aircraftTypeCode, mode, originIcao, destinationIcao, originCountry, destinationCountry, operationCategory });
   if (!estimate) {
     return (
       <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/50">
@@ -5013,14 +5060,18 @@ function EconomyMiniGrid({
 
   const values = [
     { label: "💵 Piloto", value: formatEconomyUsd(estimate.pilotCommissionUsd), tone: "text-emerald-100" },
+    { label: "👥 Pax", value: estimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
+    { label: "📦 Carga", value: String(estimate.estimatedCargoKg.toLocaleString("es-CL")) + " kg", tone: "text-white/82" },
     { label: "🏢 Aerolínea", value: formatEconomyUsd(estimate.airlineRevenueUsd), tone: "text-cyan-100" },
     { label: "⛽ Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
     { label: "🛠 Mantención", value: formatEconomyUsd(estimate.maintenanceCostUsd), tone: "text-white/82" },
+    { label: "🧾 Operación", value: formatEconomyUsd(estimate.airportFeesUsd + estimate.handlingCostUsd + estimate.repairReserveUsd + estimate.onboardServiceCostUsd), tone: "text-white/82" },
+    { label: "🛍 Ventas", value: formatEconomyUsd(estimate.onboardServiceRevenueUsd + estimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
     { label: "📈 Utilidad", value: formatEconomyUsd(estimate.netProfitUsd), tone: estimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
   ];
 
   return (
-    <div className="grid gap-2 sm:grid-cols-5">
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       {values.map((item) => (
         <div key={item.label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{item.label}</p>
@@ -5172,7 +5223,16 @@ function DispatchItineraryTable({
                   {/* ECONOMIA */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     {(() => {
-                      const estimate = buildEconomyEstimate(distanceNm, selectedAircraftTypeCode, "CAREER");
+                      const estimate = buildEconomyEstimate({
+                        distanceNm,
+                        aircraftTypeCode: selectedAircraftTypeCode,
+                        mode: "CAREER",
+                        originIcao: originCode,
+                        destinationIcao: destinationCode,
+                        originCountry: originCountryCode,
+                        destinationCountry: destinationCountryCode,
+                        operationCategory: getItineraryRouteCategory(row),
+                      });
                       return estimate ? (
                         <div className="text-xs leading-5">
                           <p className="font-black text-emerald-100">💵 {formatEconomyUsd(estimate.pilotCommissionUsd)}</p>
@@ -7318,8 +7378,7 @@ function DashboardWorkspace({
     }
 
     if (!navigraphConnected) {
-      setNavigraphErrorMessage("Primero conecta Navigraph antes de abrir el plan OFP / SimBrief.");
-      return;
+      setNavigraphInfoMessage("SimBrief se abrirá con los datos de Patagonia Wings. Si solicita sesión, inicia con tu cuenta Navigraph/SimBrief y luego vuelve para cargar el OFP.");
     }
 
     setSyncingSimbrief(true);
@@ -7387,7 +7446,7 @@ function DashboardWorkspace({
       }
 
       setSimbriefStaticId(data.staticId);
-      setNavigraphInfoMessage("Plan OFP preparado. Completa el despacho en SimBrief y luego usa 'Importar OFP'.");
+      setNavigraphInfoMessage("Plan OFP preparado con datos Patagonia Wings. Genera/guarda el plan en SimBrief y luego usa 'Cargar OFP automático'.");
       window.open(data.generateUrl || data.editUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
       setNavigraphErrorMessage(
@@ -7460,7 +7519,7 @@ function DashboardWorkspace({
       setNavigraphInfoMessage("");
       void refreshNavigraphStatus(true);
     } else if (simbriefReturn === "1") {
-      setNavigraphInfoMessage("Volviste desde SimBrief. Ahora importa el OFP para validar el despacho.");
+      setNavigraphInfoMessage("Volviste desde SimBrief. Ahora usa Cargar OFP automático para traer el plan generado y validar el despacho.");
     }
   }, [activeTab, searchParams]);
 
@@ -7760,6 +7819,40 @@ function DashboardWorkspace({
     () => getSimbriefFlightNumberValidationValue(simbriefSummary?.flightNumber, simbriefAirlineIcaoForDispatch),
     [simbriefAirlineIcaoForDispatch, simbriefSummary?.flightNumber],
   );
+  const simbriefEconomyEstimate = useMemo(() => {
+    if (!simbriefSummary) return null;
+    return estimateSimbriefFlightEconomy({
+      distanceNm: simbriefSummary.distanceNm ?? webDispatchDistanceNm ?? null,
+      blockMinutes: simbriefSummary.eteMinutes ?? webDispatchDurationMinutes ?? null,
+      aircraftTypeCode: simbriefSummary.airframe ?? selectedAircraftRecord?.aircraft_type_code ?? selectedAircraftRecord?.aircraft_code ?? null,
+      operationType: isCharterLikeDispatch ? "CHARTER" : "CAREER",
+      operationCategory: isCharterLikeDispatch ? "charter" : selectedItineraryRecord?.route_category ?? selectedItineraryRecord?.service_profile ?? null,
+      originIcao: simbriefSummary.origin ?? webOriginCode,
+      destinationIcao: simbriefSummary.destination ?? webDestinationCode,
+      originCountry: simbriefOriginCountryCode,
+      destinationCountry: simbriefDestinationCountryCode,
+      passengerCount: simbriefSummary.pax ?? null,
+      cargoKg: simbriefSummary.cargoKg ?? null,
+      payloadKg: simbriefSummary.payloadKg ?? null,
+      tripFuelKg: simbriefSummary.tripFuelKg ?? null,
+      taxiFuelKg: simbriefSummary.taxiFuelKg ?? null,
+      reserveFuelKg: simbriefSummary.reserveFuelKg ?? null,
+      blockFuelKg: simbriefSummary.blockFuelKg ?? null,
+    });
+  }, [
+    isCharterLikeDispatch,
+    selectedAircraftRecord?.aircraft_code,
+    selectedAircraftRecord?.aircraft_type_code,
+    selectedItineraryRecord?.route_category,
+    selectedItineraryRecord?.service_profile,
+    simbriefDestinationCountryCode,
+    simbriefOriginCountryCode,
+    simbriefSummary,
+    webDestinationCode,
+    webDispatchDistanceNm,
+    webDispatchDurationMinutes,
+    webOriginCode,
+  ]);
   const dispatchValidationItems = useMemo<DispatchValidationItem[]>(() => {
     const summary = simbriefSummary;
     const expectedFlightNumber = normalizePatagoniaFlightIdentifier(webFlightNumberValidationValue);
@@ -8077,7 +8170,7 @@ function DashboardWorkspace({
       setDispatchReady(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
-      setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para traer el OFP.");
+      setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para cargar el OFP automático.");
       setSummaryInfoMessage("");
       setSummaryErrorMessage("");
       return;
@@ -8094,6 +8187,10 @@ function DashboardWorkspace({
       const search = new URLSearchParams({
         username: profile.simbrief_username.trim(),
       });
+
+      if (simbriefStaticId) {
+        search.set("static_id", simbriefStaticId);
+      }
 
       const response = await fetch(`/api/simbrief/ofp?${search.toString()}`, {
         method: "GET",
@@ -8112,7 +8209,7 @@ function DashboardWorkspace({
 
       setSimbriefSummary(data.summary);
       setSimbriefInfoMessage(
-        "Datos de OFP cargados desde SimBrief. Revisa la validación antes de habilitar el resumen."
+        "OFP cargado automáticamente desde SimBrief. Revisa la validación antes de continuar al resumen."
       );
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
@@ -8120,7 +8217,7 @@ function DashboardWorkspace({
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage(
-        error instanceof Error ? error.message : "No se pudo cargar el OFP desde SimBrief."
+        error instanceof Error ? error.message : "No se pudo cargar el OFP automático desde SimBrief."
       );
       setPreparedReservationId(null);
     } finally {
@@ -8132,7 +8229,7 @@ function DashboardWorkspace({
     if (!simbriefSummary) {
       setDispatchReady(false);
       setSimbriefInfoMessage("");
-      setSimbriefErrorMessage("Primero debes traer los datos del OFP desde SimBrief.");
+      setSimbriefErrorMessage("Primero debes cargar el OFP automático desde SimBrief.");
       setPreparedReservationId(null);
       setSummaryInfoMessage("");
       setSummaryErrorMessage("");
@@ -8818,6 +8915,11 @@ function DashboardWorkspace({
                               distanceNm={Number(selectedItineraryRecord.distance_nm) || null}
                               aircraftTypeCode={selectedAircraftRecord?.aircraft_type_code ?? selectedAircraftRecord?.aircraft_code ?? null}
                               mode="CAREER"
+                              originIcao={selectedItineraryRecord.origin_icao}
+                              destinationIcao={selectedItineraryRecord.destination_icao}
+                              originCountry={selectedItineraryRecord.origin_country}
+                              destinationCountry={selectedItineraryRecord.destination_country}
+                              operationCategory={selectedItineraryRecord.route_category ?? selectedItineraryRecord.service_profile}
                             />
                           </div>
                         ) : null}
@@ -9000,7 +9102,7 @@ function DashboardWorkspace({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">
                               SimBrief / despacho
                             </p>
-                            <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief obligatorio</h3>
+                            <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief automático</h3>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
                             dispatchReady
@@ -9009,22 +9111,50 @@ function DashboardWorkspace({
                                 ? "border-cyan-300/22 bg-cyan-400/10 text-cyan-100"
                                 : "border-white/10 bg-white/[0.04] text-white/58"
                           }`}>
-                            {dispatchReady ? "Despacho validado" : simbriefSummary ? "OFP importado" : "Pendiente OFP"}
+                            {dispatchReady ? "Despacho validado" : simbriefSummary ? "OFP cargado" : simbriefStaticId ? "SimBrief abierto" : "Pendiente OFP"}
                           </span>
                         </div>
 
                         <p className="mt-3 text-sm text-white/58">
-                          Genera previamente el OFP en SimBrief con el vuelo, origen, destino y airframe correctos. Luego vuelve a esta página, usa Importar OFP y revisa que todo coincida antes de pasar al resumen.
+                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. Genera el plan en SimBrief desde aquí, vuelve a esta página y carga el OFP automáticamente para validar el despacho antes de enviarlo al ACARS.
                         </p>
+
+                        <div className="mt-4 grid gap-3 rounded-[20px] border border-cyan-300/12 bg-cyan-300/[0.045] p-4 md:grid-cols-4">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Vuelo PWG</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{webFlightNumber || "Pendiente"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Ruta</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} → {webDestinationCode}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Airframe</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{webAirframe}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Matrícula</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{selectedAircraftRecord?.tail_number || "Pendiente"}</p>
+                          </div>
+                        </div>
 
                         <div className="mt-4 flex flex-wrap gap-3">
                           <button
                             type="button"
-                            onClick={() => void handleLoadSimbriefData()}
-                            disabled={syncingSimbrief}
-                            className={`py-3 ${syncingSimbrief ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
+                            onClick={() => void handleOpenSimbriefPlanner()}
+                            disabled={syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord}
+                            className={`py-3 ${syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                           >
-                            {syncingSimbrief ? "Importando..." : "Importar OFP"}
+                            {syncingSimbrief ? "Preparando..." : simbriefStaticId ? "Abrir / regenerar OFP SimBrief" : "Generar OFP SimBrief"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleLoadSimbriefData()}
+                            disabled={syncingSimbrief || !profile?.simbrief_username?.trim()}
+                            className={`py-3 ${syncingSimbrief || !profile?.simbrief_username?.trim() ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
+                          >
+                            {syncingSimbrief ? "Cargando..." : "Cargar OFP automático"}
                           </button>
 
                           <button
@@ -9036,6 +9166,12 @@ function DashboardWorkspace({
                             Validar despacho
                           </button>
                         </div>
+
+                        {simbriefStaticId ? (
+                          <div className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-xs leading-6 text-white/58">
+                            <span className="font-semibold text-cyan-100">static_id:</span> {simbriefStaticId}. Este identificador enlaza el OFP de SimBrief con la reserva Patagonia Wings.
+                          </div>
+                        ) : null}
 
                         {simbriefInfoMessage ? (
                           <div className="mt-4 rounded-[18px] border border-cyan-400/18 bg-cyan-500/[0.08] px-4 py-3 text-sm leading-7 text-cyan-100/90">
@@ -9249,6 +9385,37 @@ function DashboardWorkspace({
                             valueClassName={simbriefSummary ? "text-[1.3rem] leading-tight text-emerald-400" : "text-[1.3rem] leading-tight text-white/50"}
                           />
                         </div>
+
+                        {simbriefEconomyEstimate ? (
+                          <div className="mt-4 rounded-[20px] border border-emerald-300/16 bg-emerald-300/[0.045] p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Economía planificada OFP</p>
+                                <p className="mt-1 text-sm text-white/58">Esta planificación usa pax, carga y combustible importados desde SimBrief. El cierre ACARS calculará el resultado real final.</p>
+                              </div>
+                              <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
+                                Fuente: SimBrief/OFP
+                              </span>
+                            </div>
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                              {[
+                                { label: "💵 Piloto", value: formatEconomyUsd(simbriefEconomyEstimate.pilotPaymentUsd), tone: "text-emerald-100" },
+                                { label: "👥 Pax OFP", value: simbriefEconomyEstimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
+                                { label: "📦 Carga OFP", value: `${simbriefEconomyEstimate.estimatedCargoKg.toLocaleString("es-CL")} kg`, tone: "text-white/82" },
+                                { label: "⛽ Combustible OFP", value: `${simbriefEconomyEstimate.fuelKg.toLocaleString("es-CL")} kg / ${formatEconomyUsd(simbriefEconomyEstimate.fuelCostUsd)}`, tone: "text-amber-100" },
+                                { label: "🏢 Ingreso", value: formatEconomyUsd(simbriefEconomyEstimate.airlineRevenueUsd), tone: "text-cyan-100" },
+                                { label: "🧾 Costos", value: formatEconomyUsd(simbriefEconomyEstimate.totalCostUsd), tone: "text-white/82" },
+                                { label: "🛍 Servicio/ventas", value: formatEconomyUsd(simbriefEconomyEstimate.onboardServiceRevenueUsd + simbriefEconomyEstimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
+                                { label: "📈 Utilidad", value: formatEconomyUsd(simbriefEconomyEstimate.netProfitUsd), tone: simbriefEconomyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
+                              ].map((item) => (
+                                <div key={item.label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{item.label}</p>
+                                  <p className={`mt-1 text-sm font-black ${item.tone}`}>{item.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div className="mt-4">
                           <DispatchWideValueStrip

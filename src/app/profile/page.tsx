@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -179,17 +179,91 @@ function readView(value: string | null): ProfileView {
 
 // ─── Pilot Economy Types ──────────────────────────────────────────────────────
 
+type PilotSalaryHistoryItem = {
+  periodYear: number;
+  periodMonth: number;
+  flightsCount: number;
+  blockHoursTotal: number;
+  commissionTotalUsd: number;
+  baseSalaryUsd: number;
+  damageDeductionsUsd: number;
+  expensesTotalUsd: number;
+  netPaidUsd: number;
+  status: string;
+  paidAt: string | null;
+};
+
 type PilotSalaryData = {
   period: { year: number; month: number };
   paymentDate: string;
+  pilot?: { walletBalanceUsd?: number; callsign?: string | null; name?: string | null };
   flightsCount: number;
+  blockMinutesTotal?: number;
+  blockHoursTotal?: number;
   commissionTotalUsd: number;
   damageDeductionsUsd: number;
+  expensesTotalUsd?: number;
+  expensesByCategory?: Record<string, number>;
   baseSalaryUsd: number;
+  grossTotalUsd?: number;
   netPaidUsd: number;
   qualifiesForBase: boolean;
   ledger: Record<string, unknown> | null;
-  recentFlights: Array<{ id: string; commissionUsd: number; damageDeductionUsd: number; completedAt: string }>;
+  recentFlights: Array<{
+    id: string;
+    flightNumber?: string;
+    origin?: string;
+    destination?: string;
+    commissionUsd: number;
+    damageDeductionUsd: number;
+    blockMinutes?: number;
+    completedAt: string;
+  }>;
+  expenses?: Array<{
+    id: string;
+    code: string;
+    category: string;
+    amountUsd: number;
+    description: string;
+    createdAt: string | null;
+  }>;
+  monthlyHistory?: PilotSalaryHistoryItem[];
+};
+
+type PilotExpenseWalletItem = {
+  code: string;
+  category: string;
+  label: string;
+  amountUsd: number;
+  description?: string;
+  phase?: string;
+  requiredFor?: string;
+};
+
+type PilotExpenseWalletGroup = {
+  category: string;
+  label: string;
+  totalUsd: number;
+  items: PilotExpenseWalletItem[];
+};
+
+type PilotExpenseLedgerItem = {
+  id: string;
+  code: string;
+  category: string;
+  amountUsd: number;
+  description: string;
+  createdAt: string | null;
+  label: string;
+  balanceAfterUsd: number;
+};
+
+type PilotExpenseWalletResponse = {
+  ok: boolean;
+  error?: string;
+  walletBalanceUsd?: number;
+  groups?: PilotExpenseWalletGroup[];
+  ledger?: PilotExpenseLedgerItem[];
 };
 
 const MONTH_NAMES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -197,6 +271,153 @@ const MONTH_NAMES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio"
 function fmtUsd(n: number) {
   return `$${Math.abs(n).toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD`;
 }
+
+function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: import("@supabase/supabase-js").Session; initialWalletUsd: number }) {
+  const [groups, setGroups] = useState<PilotExpenseWalletGroup[]>([]);
+  const [ledger, setLedger] = useState<PilotExpenseLedgerItem[]>([]);
+  const [wallet, setWallet] = useState(initialWalletUsd);
+  const [loading, setLoading] = useState(true);
+  const [busyCode, setBusyCode] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function loadExpenses() {
+    setLoading(true);
+    setError("");
+    try {
+      const token = session.access_token ?? "";
+      const res = await fetch("/api/economia/pilot-expenses?mine=1", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as PilotExpenseWalletResponse;
+      if (!json.ok) throw new Error(json.error ?? "No se pudo cargar la billetera operacional.");
+      setGroups(json.groups ?? []);
+      setLedger(json.ledger ?? []);
+      setWallet(toNumber(json.walletBalanceUsd ?? initialWalletUsd));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar gastos del piloto.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadExpenses();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.access_token]);
+
+  async function purchaseExpense(item: PilotExpenseWalletItem) {
+    setBusyCode(item.code);
+    setError("");
+    setMessage("");
+    try {
+      const token = session.access_token ?? "";
+      const res = await fetch("/api/economia/pilot-expenses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: item.code }),
+      });
+      const json = (await res.json()) as { ok: boolean; error?: string; walletBalanceUsd?: number; purchased?: { label?: string; amountUsd?: number } };
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "No se pudo registrar el gasto.");
+      setWallet(toNumber(json.walletBalanceUsd ?? wallet));
+      setMessage(`${json.purchased?.label ?? item.label} descontado correctamente por ${fmtUsd(toNumber(json.purchased?.amountUsd ?? item.amountUsd))}.`);
+      await loadExpenses();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al descontar gasto.");
+    } finally {
+      setBusyCode("");
+    }
+  }
+
+  const recommendedGroups = groups.filter((group) => ["theory_exam", "license", "certification", "type_rating", "training"].includes(group.category));
+
+  return (
+    <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:hidden">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Billetera operacional</p>
+          <h3 className="mt-1 text-lg font-black text-white">Licencias, pruebas y habilitaciones</h3>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-white/50">
+            Usa tu saldo virtual para pagar pruebas teóricas, checkrides, licencias y habilitaciones. Cada movimiento queda registrado para historial y métricas.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/8 px-4 py-3 text-right">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-200/70">Saldo disponible</p>
+          <p className="mt-1 text-xl font-black text-emerald-200">{fmtUsd(wallet)}</p>
+        </div>
+      </div>
+
+      {loading ? <div className="mt-5 text-sm text-white/40">Cargando catálogo operacional...</div> : null}
+      {error ? <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
+      {message ? <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div> : null}
+
+      {!loading && recommendedGroups.length > 0 ? (
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {recommendedGroups.map((group) => (
+            <div key={group.category} className="rounded-[18px] border border-white/8 bg-black/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-white">{group.label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/36">Total {fmtUsd(group.totalUsd)}</p>
+              </div>
+              <div className="mt-3 space-y-2">
+                {group.items.slice(0, 4).map((item) => {
+                  const canPay = wallet >= item.amountUsd;
+                  const busy = busyCode === item.code;
+                  return (
+                    <div key={item.code} className="rounded-2xl border border-white/6 bg-white/[0.018] px-3 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-white/88">{item.label}</p>
+                          <p className="mt-0.5 text-[11px] leading-4 text-white/44">{item.requiredFor ? `${item.requiredFor} · ` : ""}{item.phase ?? "Operación"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-cyan-200">{fmtUsd(item.amountUsd)}</span>
+                          <button
+                            type="button"
+                            onClick={() => purchaseExpense(item)}
+                            disabled={!canPay || Boolean(busyCode)}
+                            className={`rounded-xl border px-3 py-1.5 text-[11px] font-bold transition ${
+                              canPay
+                                ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/40"
+                                : "border-white/8 bg-white/[0.025] text-white/28"
+                            }`}
+                          >
+                            {busy ? "Procesando..." : canPay ? "Pagar" : "Saldo insuf."}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {ledger.length > 0 ? (
+        <div className="mt-5 rounded-[18px] border border-white/8 bg-black/10 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Últimos gastos registrados</p>
+          <div className="mt-3 space-y-2">
+            {ledger.slice(0, 6).map((row) => (
+              <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.015] px-3 py-2 text-xs">
+                <div>
+                  <p className="font-semibold text-white/78">{row.label || row.description}</p>
+                  <p className="text-white/34">{row.createdAt ? new Date(row.createdAt).toLocaleDateString("es-CL") : "Sin fecha"} · {row.category}</p>
+                </div>
+                <p className="font-black text-rose-200">−{fmtUsd(Math.abs(row.amountUsd))}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 
 function PilotEconomyView({ session, profile }: { session: import("@supabase/supabase-js").Session; profile: import("@/lib/pilot-profile").PilotProfileRecord | null }) {
   const [data, setData] = useState<PilotSalaryData | null>(null);
@@ -268,22 +489,32 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
 </body></html>`;
   }
 
-  function handleDownloadPdf() {
+  async function handleDownloadPdf() {
     if (!data) return;
-    const html = buildPdfHtml();
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (win) {
-      win.addEventListener("load", () => URL.revokeObjectURL(url));
-    } else {
-      // Fallback: direct download as HTML if popup blocked
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `liquidacion-${profile?.callsign ?? "piloto"}-${data.period.year}-${String(data.period.month).padStart(2, "0")}.html`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    const token = session.access_token ?? "";
+    const query = new URLSearchParams({
+      year: String(data.period.year),
+      month: String(data.period.month),
+    });
+
+    const res = await fetch(`/api/pilot/salary/monthly/pdf?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      setErrorEco("No se pudo generar el PDF de liquidación.");
+      return;
     }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `liquidacion-${profile?.callsign ?? "piloto"}-${data.period.year}-${String(data.period.month).padStart(2, "0")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
   if (loadingEco) {
@@ -300,7 +531,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
 
   if (!data) return null;
 
-  const walletBalance = toNumber(((profile as unknown) as Record<string, unknown> | null)?.wallet_balance ?? 0);
+  const walletBalance = toNumber(data.pilot?.walletBalanceUsd ?? ((profile as unknown) as Record<string, unknown> | null)?.wallet_balance ?? 0);
   const monthName = MONTH_NAMES_ES[(data.period.month - 1)] ?? "";
   const ledgerStatus = (data.ledger as Record<string, unknown> | null)?.status as string | undefined;
   const isPaid = ledgerStatus === "paid";
@@ -309,8 +540,10 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
   const econCards = [
     { emoji: "💼", label: "Saldo billetera", value: fmtUsd(walletBalance), tone: walletBalance >= 0 ? "text-emerald-300" : "text-rose-300", bg: "from-emerald-500/10" },
     { emoji: "✈️", label: "Vuelos completados", value: String(data.flightsCount), tone: "text-white", bg: "from-sky-500/10" },
+    { emoji: "⏱️", label: "Horas bloque", value: `${formatDecimal(toNumber(data.blockHoursTotal))} h`, tone: "text-white", bg: "from-indigo-500/10" },
     { emoji: "💵", label: "Comisiones del mes", value: fmtUsd(data.commissionTotalUsd), tone: "text-cyan-300", bg: "from-cyan-500/10" },
     { emoji: "📅", label: "Sueldo base", value: data.qualifiesForBase ? fmtUsd(data.baseSalaryUsd) : "No califica (< 5 vuelos)", tone: data.qualifiesForBase ? "text-violet-300" : "text-white/40", bg: "from-violet-500/10" },
+    { emoji: "🎓", label: "Gastos piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "Sin gastos", tone: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-white/40", bg: "from-amber-500/10" },
     { emoji: "🔧", label: "Deducciones daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "Sin deducciones", tone: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40", bg: "from-rose-500/10" },
     { emoji: "🏦", label: "Neto del período", value: fmtUsd(data.netPaidUsd), tone: "text-emerald-300", bg: "from-emerald-500/10" },
   ];
@@ -369,6 +602,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
           {[
             { label: "Comisiones", value: `+${fmtUsd(data.commissionTotalUsd)}`, color: "text-emerald-300" },
             { label: `Sueldo base (${data.qualifiesForBase ? "5+ vuelos ✓" : "< 5 vuelos ✗"})`, value: data.qualifiesForBase ? `+${fmtUsd(data.baseSalaryUsd)}` : "$0 USD", color: data.qualifiesForBase ? "text-violet-300" : "text-white/40" },
+            { label: "Gastos pagados por el piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "$0 USD", color: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-white/40" },
             { label: "Deducciones por daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "$0 USD", color: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40" },
           ].map((row) => (
             <div key={row.label} className="flex justify-between text-sm">
@@ -383,6 +617,8 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
         </div>
       </div>
 
+      <PilotExpenseWalletPanel session={session} initialWalletUsd={walletBalance} />
+
       {/* Recent flights */}
       {data.recentFlights.length > 0 && (
         <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
@@ -394,7 +630,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
                 <div key={i} className="flex items-center justify-between rounded-[10px] border border-white/5 bg-white/[0.015] px-3 py-2 print:border print:border-gray-100">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-white/30 print:text-gray-400">✈</span>
-                    <span className="text-xs text-white/60 print:text-gray-600">{dateStr}</span>
+                    <span className="text-xs text-white/60 print:text-gray-600">{dateStr} · {f.flightNumber ?? "Vuelo"} · {f.origin ?? "---"}-{f.destination ?? "---"}</span>
                   </div>
                   <div className="flex gap-4 text-xs">
                     <span className="text-emerald-300 font-semibold print:text-black">+{fmtUsd(f.commissionUsd)}</span>
@@ -408,6 +644,26 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
           </div>
         </div>
       )}
+
+      {/* Salary history */}
+      {data.monthlyHistory && data.monthlyHistory.length > 0 ? (
+        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Historial mensual</p>
+          <div className="space-y-1.5">
+            {data.monthlyHistory.slice(0, 8).map((row) => {
+              const label = `${MONTH_NAMES_ES[(row.periodMonth - 1)] ?? "Mes"} ${row.periodYear}`;
+              return (
+                <div key={`${row.periodYear}-${row.periodMonth}`} className="grid gap-2 rounded-[12px] border border-white/5 bg-white/[0.015] px-3 py-2 text-xs sm:grid-cols-[1fr_auto_auto_auto] print:border print:border-gray-100">
+                  <span className="font-semibold text-white/72 print:text-black">{label}</span>
+                  <span className="text-white/46 print:text-gray-600">{row.flightsCount} vuelos · {formatDecimal(toNumber(row.blockHoursTotal))} h</span>
+                  <span className="text-emerald-300 font-bold print:text-black">{fmtUsd(row.netPaidUsd)}</span>
+                  <span className="text-white/36 print:text-gray-500">{row.status === "paid" ? "Pagado" : row.status === "skipped" ? "Sin actividad" : "Pendiente"}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* Print footer */}
       <div className="hidden print:block mt-6 text-xs text-gray-500 border-t pt-4">

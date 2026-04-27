@@ -19,15 +19,19 @@ export type SimbriefDispatchPayload = {
   remarks: string;
 };
 
+export type SimbriefDispatchMode = "redirect" | "api";
+
 export type SimbriefDispatchResponse = {
   ok: true;
   staticId: string;
   type: string;
   timestamp: number;
+  mode: SimbriefDispatchMode;
   generateUrl: string;
   outputpage: string;
   fetchUrl: string;
   editUrl: string;
+  warning?: string;
 };
 
 export type SimbriefOfpSummary = {
@@ -324,7 +328,7 @@ export function getEstimatedEnrouteParts(totalMinutes: number) {
   };
 }
 
-export function buildSimbriefRedirectUrl(params: {
+export function buildSimbriefApiLoaderUrl(params: {
   origin: string;
   destination: string;
   type: string;
@@ -407,6 +411,69 @@ export function buildSimbriefRedirectUrl(params: {
   return `https://www.simbrief.com/ofp/ofp.loader.api.php?${search.toString()}`;
 }
 
+export function buildSimbriefDispatchPrefillUrl(params: {
+  origin: string;
+  destination: string;
+  type: string;
+  payload: SimbriefDispatchPayload;
+  staticId: string;
+}) {
+  const departureParts = getHourMinuteUtc(params.payload.scheduledDeparture);
+  const date = formatSimbriefDate(params.payload.scheduledDeparture);
+  const ete = getEstimatedEnrouteParts(params.payload.eteMinutes);
+  const captain = [params.payload.firstName?.trim(), params.payload.lastName?.trim()]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
+
+  const search = new URLSearchParams({
+    airline: "PWG",
+    fltnum: params.payload.flightNumber,
+    type: params.type,
+    orig: normalizeUpper(params.origin),
+    dest: normalizeUpper(params.destination),
+    route: params.payload.routeText,
+    callsign: params.payload.callsign,
+    units: "KGS",
+    navlog: "1",
+    maps: "detail",
+    notams: "1",
+    firnot: "1",
+    static_id: params.staticId,
+    find_sidstar: "1",
+  });
+
+  if (date) search.set("date", date);
+  if (departureParts) {
+    search.set("deph", departureParts.hour);
+    search.set("depm", departureParts.minute);
+  }
+  if (ete.hours && ete.minutes) {
+    search.set("steh", ete.hours);
+    search.set("stem", ete.minutes);
+  }
+  if (params.payload.alternate) search.set("altn", normalizeUpper(params.payload.alternate));
+  if (params.payload.aircraftTailNumber) search.set("reg", params.payload.aircraftTailNumber.toUpperCase());
+  if (params.payload.pax > 0) search.set("pax", String(params.payload.pax));
+  if (params.payload.cargoKg > 0) search.set("cargo", String(params.payload.cargoKg));
+  if (captain) search.set("cpt", captain);
+  if (params.payload.simbriefUsername) search.set("username", params.payload.simbriefUsername);
+  if (params.payload.remarks) search.set("manualrmk", params.payload.remarks);
+
+  return `https://dispatch.simbrief.com/options/custom?${search.toString()}`;
+}
+
+export function resolveSimbriefGenerationMode(input?: string | null): SimbriefDispatchMode {
+  return input?.trim().toLowerCase() === "api" ? "api" : "redirect";
+}
+
+export function isUsableSimbriefApiKey(value?: string | null) {
+  const normalized = value?.trim() ?? "";
+  if (!normalized) return false;
+  if (normalized.includes("XXXX") || normalized.toLowerCase().includes("placeholder")) return false;
+  return normalized.length >= 16;
+}
+
 export function buildSimbriefEditUrl(staticId: string) {
   return `https://www.simbrief.com/system/dispatch.php?editflight=last&static_id=${encodeURIComponent(
     staticId
@@ -417,6 +484,18 @@ export function buildSimbriefFetchUrl(username: string, staticId?: string | null
   const search = new URLSearchParams({
     username,
     json: "1",
+  });
+
+  if (staticId) {
+    search.set("static_id", staticId);
+  }
+
+  return `https://www.simbrief.com/api/xml.fetcher.php?${search.toString()}`;
+}
+
+export function buildSimbriefXmlFetchUrl(username: string, staticId?: string | null) {
+  const search = new URLSearchParams({
+    username,
   });
 
   if (staticId) {
