@@ -469,3 +469,16 @@ Requiere asegurar columnas adicionales en `pilot_salary_ledger` para `expenses_t
 **Regla:** las callbacks Navigraph autorizadas se mantienen para OAuth, pero no deben usarse como API key de SimBrief.
 
 **Validación sugerida:** abrir Despacho → Generar OFP SimBrief. Debe abrir SimBrief con datos prellenados sin mostrar `Invalid API key`. Luego generar el OFP en SimBrief y cargarlo desde Patagonia Wings por `static_id`.
+
+
+---
+
+## Fix urgente — Export compatible `buildSimbriefRedirectUrl`
+
+**Motivo:** el build de Vercel fallaba porque `src/app/dashboard/page.tsx` importaba `buildSimbriefRedirectUrl` desde `@/lib/simbrief`, pero el helper final disponible se llamaba `buildSimbriefDispatchPrefillUrl`.
+
+**Cambio:** `src/lib/simbrief.ts` exporta `buildSimbriefRedirectUrl` como alias compatible de `buildSimbriefDispatchPrefillUrl`, manteniendo intacto el modo seguro `redirect` y el modo `api` con `SIMBRIEF_API_KEY` real.
+
+**Alcance:** fix mínimo de compatibilidad TypeScript. No cambia UI, ACARS, PIREP, economía ni SQL.
+
+**Validación sugerida:** ejecutar `npx tsc --noEmit` y `npm run build`. En Vercel no debe volver a aparecer `has no exported member named 'buildSimbriefRedirectUrl'`.

@@ -463,6 +463,9 @@ export function buildSimbriefDispatchPrefillUrl(params: {
   return `https://dispatch.simbrief.com/options/custom?${search.toString()}`;
 }
 
+
+export const buildSimbriefRedirectUrl = buildSimbriefDispatchPrefillUrl;
+
 export function resolveSimbriefGenerationMode(input?: string | null): SimbriefDispatchMode {
   return input?.trim().toLowerCase() === "api" ? "api" : "redirect";
 }
