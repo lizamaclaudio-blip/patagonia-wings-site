@@ -30,6 +30,7 @@ import {
 import {
   buildSimbriefEditUrl,
   buildSimbriefRedirectUrl,
+  normalizeSimbriefFlightNumber,
   resolveSimbriefType,
   type SimbriefOfpSummary,
 } from "@/lib/simbrief";
@@ -7097,6 +7098,7 @@ function DashboardWorkspace({
   const [dispatchReady, setDispatchReady] = useState(false);
   const [simbriefSummary, setSimbriefSummary] = useState<SimbriefOfpSummary | null>(null);
   const [syncingSimbrief, setSyncingSimbrief] = useState(false);
+  const [simbriefGenerationActive, setSimbriefGenerationActive] = useState(false);
   const [simbriefInfoMessage, setSimbriefInfoMessage] = useState("");
   const [simbriefErrorMessage, setSimbriefErrorMessage] = useState("");
   const [finalizingDispatch, setFinalizingDispatch] = useState(false);
@@ -7358,6 +7360,7 @@ function DashboardWorkspace({
       setSimbriefStaticId(null);
       await refreshNavigraphStatus(true);
     } catch (error) {
+      setSimbriefGenerationActive(false);
       setNavigraphErrorMessage(
         error instanceof Error ? error.message : "No se pudo desconectar Navigraph."
       );
@@ -7386,13 +7389,14 @@ function DashboardWorkspace({
     setNavigraphInfoMessage("");
 
     try {
-      const flightNumber =
+      const flightNumber = normalizeSimbriefFlightNumber(
         isCharterLikeDispatch
-          ? compactFlightIdentifier(profile.callsign) || webFlightNumberValidationValue || "PWG000"
+          ? webFlightNumberValidationValue || compactFlightIdentifier(profile.callsign) || "000"
           : webFlightNumberValidationValue ||
             compactFlightIdentifier(selectedItineraryRecord.flight_designator) ||
             compactFlightIdentifier(selectedItineraryRecord.flight_number) ||
-            `PWG${webFlightNumberValidationValue || "000"}`;
+            "000"
+      );
 
       const payload = {
         userId: profile.id,
@@ -7436,7 +7440,15 @@ function DashboardWorkspace({
       });
 
       const data = (await response.json()) as
-        | { ok: true; staticId: string; generateUrl: string; editUrl: string }
+        | {
+            ok: true;
+            staticId: string;
+            generateUrl: string;
+            editUrl: string;
+            mode?: "api" | "redirect";
+            popupRequired?: boolean;
+            warning?: string;
+          }
         | { error?: string };
 
       if (!response.ok || !("ok" in data)) {
@@ -7446,9 +7458,32 @@ function DashboardWorkspace({
       }
 
       setSimbriefStaticId(data.staticId);
-      setNavigraphInfoMessage("Plan OFP preparado con datos Patagonia Wings. Genera/guarda el plan en SimBrief y luego usa 'Cargar OFP automático'.");
-      window.open(data.generateUrl || data.editUrl, "_blank", "noopener,noreferrer");
+
+      if (data.mode === "api") {
+        setSimbriefGenerationActive(true);
+        setNavigraphInfoMessage(
+          "Generando OFP SimBrief con los datos de Patagonia Wings. La ventana pequeña se cerrará al terminar y luego cargaremos el OFP automáticamente."
+        );
+        const popup = window.open(
+          data.generateUrl,
+          "PWG_SIMBRIEF_GENERATOR",
+          "popup=yes,width=560,height=740,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes"
+        );
+
+        if (!popup) {
+          setSimbriefGenerationActive(false);
+          throw new Error("El navegador bloqueó la ventana de SimBrief. Permite popups para Patagonia Wings e inténtalo nuevamente.");
+        }
+      } else {
+        setSimbriefGenerationActive(false);
+        setNavigraphInfoMessage(
+          data.warning ||
+            "SimBrief se abrirá con los datos prellenados. Genera/guarda el plan y luego usa 'Cargar OFP automático'."
+        );
+        window.open(data.generateUrl || data.editUrl, "_blank", "noopener,noreferrer");
+      }
     } catch (error) {
+      setSimbriefGenerationActive(false);
       setNavigraphErrorMessage(
         error instanceof Error ? error.message : "No se pudo abrir OFP / SimBrief."
       );
@@ -8056,6 +8091,7 @@ function DashboardWorkspace({
       setSelectedAircraft(null);
       setSelectedItinerary(null);
       setDispatchReady(false);
+      setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage("");
@@ -8069,6 +8105,7 @@ function DashboardWorkspace({
     if (selectedItinerary && !selectedItineraryRecord) {
       setSelectedItinerary(null);
       setDispatchReady(false);
+      setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage("");
@@ -8165,9 +8202,10 @@ function DashboardWorkspace({
     setDispatchStep("dispatch_flow");
   };
 
-  async function handleLoadSimbriefData() {
+  async function handleLoadSimbriefData(staticIdOverride?: string | null) {
     if (!profile?.simbrief_username?.trim()) {
       setDispatchReady(false);
+      setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para cargar el OFP automático.");
@@ -8188,8 +8226,9 @@ function DashboardWorkspace({
         username: profile.simbrief_username.trim(),
       });
 
-      if (simbriefStaticId) {
-        search.set("static_id", simbriefStaticId);
+      const effectiveStaticId = staticIdOverride ?? simbriefStaticId;
+      if (effectiveStaticId) {
+        search.set("static_id", effectiveStaticId);
       }
 
       const response = await fetch(`/api/simbrief/ofp?${search.toString()}`, {
@@ -8207,6 +8246,7 @@ function DashboardWorkspace({
         );
       }
 
+      setSimbriefGenerationActive(false);
       setSimbriefSummary(data.summary);
       setSimbriefInfoMessage(
         "OFP cargado automáticamente desde SimBrief. Revisa la validación antes de continuar al resumen."
@@ -8214,6 +8254,7 @@ function DashboardWorkspace({
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
     } catch (error) {
+      setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage(
@@ -8224,6 +8265,34 @@ function DashboardWorkspace({
       setSyncingSimbrief(false);
     }
   }
+
+  useEffect(() => {
+    function handleSimbriefReturn(event: MessageEvent) {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const payload = event.data as
+        | { type?: string; staticId?: string | null; username?: string | null }
+        | null;
+
+      if (!payload || payload.type !== "PWG_SIMBRIEF_OFP_READY") {
+        return;
+      }
+
+      const returnedStaticId = payload.staticId?.trim() || simbriefStaticId;
+      if (returnedStaticId) {
+        setSimbriefStaticId(returnedStaticId);
+      }
+
+      setSimbriefGenerationActive(false);
+      setNavigraphInfoMessage("SimBrief terminó de generar el OFP. Cargando datos automáticamente en Patagonia Wings...");
+      void handleLoadSimbriefData(returnedStaticId);
+    }
+
+    window.addEventListener("message", handleSimbriefReturn);
+    return () => window.removeEventListener("message", handleSimbriefReturn);
+  }, [profile?.simbrief_username, simbriefStaticId]);
 
   function handleValidateDispatch() {
     if (!simbriefSummary) {
@@ -9116,8 +9185,17 @@ function DashboardWorkspace({
                         </div>
 
                         <p className="mt-3 text-sm text-white/58">
-                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. Genera el plan en SimBrief desde aquí, vuelve a esta página y carga el OFP automáticamente para validar el despacho antes de enviarlo al ACARS.
+                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. Con API activa, SimBrief se genera en una ventana pequeña de proceso y vuelve automáticamente para cargar el OFP en esta página.
                         </p>
+
+                        {simbriefGenerationActive ? (
+                          <div className="mt-4 rounded-[20px] border border-emerald-300/20 bg-emerald-400/[0.08] p-4 text-sm text-emerald-50">
+                            <p className="font-semibold">Generando OFP SimBrief...</p>
+                            <p className="mt-1 text-emerald-50/72">
+                              No completes el despacho todavía. Patagonia Wings está esperando el retorno automático de SimBrief para cargar combustible, pax, carga, ruta y tiempos planificados.
+                            </p>
+                          </div>
+                        ) : null}
 
                         <div className="mt-4 grid gap-3 rounded-[20px] border border-cyan-300/12 bg-cyan-300/[0.045] p-4 md:grid-cols-4">
                           <div>
@@ -9145,7 +9223,7 @@ function DashboardWorkspace({
                             disabled={syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord}
                             className={`py-3 ${syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                           >
-                            {syncingSimbrief ? "Preparando..." : simbriefStaticId ? "Abrir / regenerar OFP SimBrief" : "Generar OFP SimBrief"}
+                            {syncingSimbrief ? "Preparando..." : simbriefStaticId ? "Regenerar OFP SimBrief" : "Generar OFP SimBrief"}
                           </button>
 
                           <button

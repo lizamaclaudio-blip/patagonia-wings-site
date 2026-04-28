@@ -482,3 +482,22 @@ Requiere asegurar columnas adicionales en `pilot_salary_ledger` para `expenses_t
 **Alcance:** fix mínimo de compatibilidad TypeScript. No cambia UI, ACARS, PIREP, economía ni SQL.
 
 **Validación sugerida:** ejecutar `npx tsc --noEmit` y `npm run build`. En Vercel no debe volver a aparecer `has no exported member named 'buildSimbriefRedirectUrl'`.
+
+---
+
+## Actualización 17C — SimBrief API real con popup de generación y flight number numérico
+
+**Motivo:** al activar la API de SimBrief, el flujo no debe abrir la pantalla completa de edición como si el piloto tuviera que crear el vuelo manualmente. Además, SimBrief debe recibir `airline=PWG` y `fltnum` solo numérico, no `PWG1301`.
+
+**Cambios:**
+- `src/lib/simbrief.ts`: agrega `normalizeSimbriefFlightNumber()` y aplica `fltnum` numérico en URLs API/redirect.
+- `src/app/api/simbrief/dispatch/route.ts`: usa `outputpage` interno de Patagonia Wings y responde modo API/redirect de forma explícita.
+- `src/app/api/simbrief/return/route.ts`: nueva ruta de retorno para cerrar la ventana de generación y notificar al Dashboard.
+- `src/app/dashboard/page.tsx`: muestra cuadro “Generando OFP SimBrief...”, abre popup pequeño cuando `SIMBRIEF_GENERATION_MODE=api`, escucha retorno automático y carga el OFP por `static_id`.
+
+**Regla:**
+- Con API key real: `SIMBRIEF_GENERATION_MODE=api` abre una ventana pequeña de generación SimBrief, no la pantalla completa de edición.
+- Sin API key: se mantiene fallback seguro `redirect` con datos prellenados.
+- El número de vuelo enviado a SimBrief queda separado: `airline=PWG` + `fltnum=1301`.
+
+**Validación sugerida:** `npx tsc --noEmit`, `npm run build`, probar “Generar OFP SimBrief” y verificar que la URL use `fltnum=1301`, no `fltnum=PWG1301`.

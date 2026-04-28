@@ -6,6 +6,7 @@ import {
   buildSimbriefEditUrl,
   buildSimbriefFetchUrl,
   buildStaticId,
+  normalizeSimbriefFlightNumber,
   isUsableSimbriefApiKey,
   resolveSimbriefGenerationMode,
   resolveSimbriefType,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const type = resolveSimbriefType(payload.aircraftCode);
     const timestamp = Math.floor(Date.now() / 1000);
-    const outputpage = `${request.nextUrl.origin}/dashboard?tab=dispatch&simbrief_return=1&static_id=${encodeURIComponent(
+    const outputpage = `${request.nextUrl.origin}/api/simbrief/return?tab=dispatch&static_id=${encodeURIComponent(
       staticId
     )}&username=${encodeURIComponent(payload.simbriefUsername)}`;
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       simbriefUsername: payload.simbriefUsername,
       firstName: payload.firstName ?? null,
       lastName: payload.lastName ?? null,
-      flightNumber: payload.flightNumber ?? "1000",
+      flightNumber: normalizeSimbriefFlightNumber(payload.flightNumber ?? "1000"),
       origin: payload.origin,
       destination: payload.destination,
       alternate: payload.alternate ?? null,
@@ -107,8 +108,10 @@ export async function POST(request: NextRequest) {
       outputpage,
       fetchUrl: buildSimbriefFetchUrl(payload.simbriefUsername, staticId),
       editUrl: buildSimbriefEditUrl(staticId),
+      generated: false,
+      popupRequired: canUseApiLoader,
       warning: canUseApiLoader
-        ? undefined
+        ? "Se abrirá una ventana pequeña de SimBrief para generar el OFP. Al terminar, volverá automáticamente a Patagonia Wings."
         : "Modo seguro sin API key: se abrirá SimBrief prellenado. Para generación API con retorno automático, configura SIMBRIEF_GENERATION_MODE=api y una SIMBRIEF_API_KEY válida.",
     };
 

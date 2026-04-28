@@ -31,6 +31,8 @@ export type SimbriefDispatchResponse = {
   outputpage: string;
   fetchUrl: string;
   editUrl: string;
+  generated?: boolean;
+  popupRequired?: boolean;
   warning?: string;
 };
 
@@ -328,6 +330,23 @@ export function getEstimatedEnrouteParts(totalMinutes: number) {
   };
 }
 
+export function normalizeSimbriefFlightNumber(value: string | null | undefined) {
+  const compact = (value ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const withoutPrefix = compact.replace(/^(PWG|PGW)/, "");
+  const digitsOnly = withoutPrefix.replace(/\D/g, "");
+
+  if (digitsOnly) {
+    return digitsOnly.slice(0, 6);
+  }
+
+  const fallbackDigits = compact.replace(/\D/g, "");
+  if (fallbackDigits) {
+    return fallbackDigits.slice(0, 6);
+  }
+
+  return "000";
+}
+
 export function buildSimbriefApiLoaderUrl(params: {
   origin: string;
   destination: string;
@@ -348,7 +367,7 @@ export function buildSimbriefApiLoaderUrl(params: {
 
   const search = new URLSearchParams({
     airline: "PWG",
-    fltnum: params.payload.flightNumber,
+    fltnum: normalizeSimbriefFlightNumber(params.payload.flightNumber),
     type: params.type,
     orig: normalizeUpper(params.origin),
     dest: normalizeUpper(params.destination),
@@ -428,7 +447,7 @@ export function buildSimbriefDispatchPrefillUrl(params: {
 
   const search = new URLSearchParams({
     airline: "PWG",
-    fltnum: params.payload.flightNumber,
+    fltnum: normalizeSimbriefFlightNumber(params.payload.flightNumber),
     type: params.type,
     orig: normalizeUpper(params.origin),
     dest: normalizeUpper(params.destination),
