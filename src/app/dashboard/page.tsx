@@ -37,6 +37,7 @@ import {
 import { supabase } from "@/lib/supabase/browser";
 import { estimateFlightEconomy, estimateSimbriefFlightEconomy } from "@/lib/pilot-economy";
 import { resolvePatagoniaScore } from "@/lib/sur-score";
+import { getRankInsignia } from "@/lib/rank-insignias";
 
 type DashboardMetrics = {
   pilotStatus: string;
@@ -47,6 +48,7 @@ type DashboardMetrics = {
   totalHours: number;
   patagoniaScore: number;
   walletBalance: number;
+  careerRankCode: string;
   careerRank: string;
 };
 
@@ -1841,6 +1843,7 @@ const EMPTY_METRICS: DashboardMetrics = {
   totalHours: 0,
   patagoniaScore: 0,
   walletBalance: 0,
+  careerRankCode: "CADET",
   careerRank: "Cadet",
 };
 
@@ -2018,18 +2021,6 @@ function getProfileWallet(profile: PilotProfileRecord | null) {
   };
 
   return toSafeNumber(raw.wallet_balance);
-}
-
-function formatRankLabel(value: string | null | undefined) {
-  const normalized = (value ?? "CADET").trim();
-  if (!normalized) {
-    return "Cadet";
-  }
-
-  return normalized
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/(^|\s)\w/g, (letter) => letter.toUpperCase());
 }
 
 function buildMonthLabel() {
@@ -3115,7 +3106,8 @@ async function loadDashboardMetrics(profile: PilotProfileRecord) {
     totalPireps: pirepCountRes.count ?? 0,
     totalHours,
     walletBalance: getProfileWallet(profile),
-    careerRank: formatRankLabel(profile.career_rank_code ?? profile.rank_code),
+    careerRankCode: profile.career_rank_code ?? profile.rank_code ?? "CADET",
+    careerRank: getRankInsignia(profile.career_rank_code ?? profile.rank_code).name,
   } satisfies DashboardMetrics;
 }
 
@@ -3317,10 +3309,14 @@ function AnimatedMetricValue({
 function PilotStatsRail({
   items,
   animationSeed,
+  rankCode,
 }: {
   items: MetricDisplayItem[];
   animationSeed: string;
+  rankCode: string;
 }) {
+  const rank = getRankInsignia(rankCode);
+
   return (
     <aside className="order-1 xl:order-2">
       <div className="glass-panel rounded-[30px] p-4 sm:p-5">
@@ -3337,6 +3333,15 @@ function PilotStatsRail({
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
                 {item.label}
               </span>
+              {item.label === "Rango" ? (
+                <img
+                  src={rank.asset}
+                  alt={`Insignia ${rank.name}`}
+                  className="mt-2 h-20 w-20 object-contain sm:h-24 sm:w-24"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : null}
               <span className="mt-2 text-xl font-semibold tracking-tight text-white">
                 <AnimatedMetricValue item={item} animateKey={animationSeed} />
               </span>
@@ -4200,7 +4205,7 @@ function CentralTransfersSectionControlled({
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <div className="mt-5 grid gap-3 lg:grid-cols-3">
         {visibleOptions.map((option, optionIndex) => {
           const optionDestinations = destinations
             .filter((item) => normalizeTransferModeForUi(item.mode) === option.mode)
@@ -4209,67 +4214,75 @@ function CentralTransfersSectionControlled({
           return (
             <article
               key={`${option.mode}-${optionIndex}`}
-              className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5"
+              className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4"
             >
-              <div className="flex items-center justify-between">
-                <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
                   {option.title}
                 </div>
               </div>
-              <p className="mt-3 text-xs leading-5 text-white/52">{option.subtitle}</p>
+              <p className="mt-3 text-[11px] leading-5 text-white/52">{option.subtitle}</p>
 
-              <div className="mt-5 space-y-3">
-                {isLoadingTransfers ? (
-                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
-                    Calculando alternativas...
-                  </div>
-                ) : optionDestinations.length === 0 ? (
-                  <div className="rounded-2xl border border-white/8 bg-[#031428]/55 px-3 py-4 text-xs font-semibold text-white/50">
-                    Sin alternativas desde esta ubicación.
-                  </div>
-                ) : (
-                  optionDestinations.map((destination, destinationIndex) => {
-                    const submitKey = `${destination.mode}:${destination.destination_ident}`;
-                    const renderKey = `${option.mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
-                    const isSubmitting = submittingKey === submitKey;
-                    const blocked = isSubmitting || !destination.can_afford;
-                    const hasPenalty = destination.abandonment_penalty_usd > 0;
+              <div className="mt-4 rounded-xl border border-white/8 bg-[#031428]/30 px-3 py-2">
+                <div className="hidden grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/34 md:grid">
+                  <span>Aeropuerto</span>
+                  <span>Tarifa</span>
+                  <span className="text-right">Acción</span>
+                </div>
 
-                    return (
-                      <div
-                        key={renderKey}
-                        className="rounded-2xl border border-white/8 bg-[#031428]/55 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-xs font-bold text-white">{destination.destination_ident}</p>
-                            <p className="mt-0.5 text-[10px] text-white/48">{destination.destination_name}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-xs font-black ${destination.can_afford ? "text-emerald-300" : "text-rose-300"}`}>
-                              {formatTransferUsd(destination.total_cost_usd)}
-                            </p>
-                            {hasPenalty && (
-                              <p className="text-[10px] text-amber-300">+${destination.abandonment_penalty_usd} multa</p>
-                            )}
+                <div className="mt-0 space-y-2 md:mt-2">
+                  {isLoadingTransfers ? (
+                    <div className="rounded-xl border border-white/8 bg-[#031428]/55 px-3 py-3 text-[11px] font-semibold text-white/50">
+                      Calculando alternativas...
+                    </div>
+                  ) : optionDestinations.length === 0 ? (
+                    <div className="rounded-xl border border-white/8 bg-[#031428]/55 px-3 py-3 text-[11px] font-semibold text-white/50">
+                      Sin alternativas desde esta ubicación.
+                    </div>
+                  ) : (
+                    optionDestinations.map((destination, destinationIndex) => {
+                      const submitKey = `${destination.mode}:${destination.destination_ident}`;
+                      const renderKey = `${option.mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
+                      const isSubmitting = submittingKey === submitKey;
+                      const blocked = isSubmitting || !destination.can_afford;
+                      const hasPenalty = destination.abandonment_penalty_usd > 0;
+
+                      return (
+                        <div
+                          key={renderKey}
+                          className="rounded-xl border border-white/8 bg-[#031428]/58"
+                        >
+                          <div className="grid gap-2 px-3 py-2.5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-bold text-white">{destination.destination_ident}</p>
+                              <p className="mt-0.5 truncate text-[10px] text-white/48">{destination.destination_name}</p>
+                            </div>
+                            <div className="text-left md:text-right">
+                              <p className={`text-xs font-black ${destination.can_afford ? "text-emerald-300" : "text-rose-300"}`}>
+                                {formatTransferUsd(destination.total_cost_usd)}
+                              </p>
+                              {hasPenalty ? <p className="text-[10px] text-amber-300">incluye multa</p> : null}
+                            </div>
+                            <div className="md:text-right">
+                              <button
+                                type="button"
+                                disabled={blocked}
+                                onClick={() => void submitTransfer(destination)}
+                                className={`inline-flex h-9 min-w-[136px] items-center justify-center rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
+                                  blocked
+                                    ? "cursor-not-allowed border border-white/8 bg-white/[0.03] text-white/32"
+                                    : "border border-emerald-400/18 bg-emerald-500/[0.06] text-emerald-200 hover:bg-emerald-500/10"
+                                }`}
+                              >
+                                {isSubmitting ? "Trasladando..." : destination.can_afford ? "Trasladar" : "Sin saldo"}
+                              </button>
+                            </div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          disabled={blocked}
-                          onClick={() => void submitTransfer(destination)}
-                          className={`mt-3 w-full rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                            blocked
-                              ? "cursor-not-allowed border border-white/8 bg-white/[0.03] text-white/32"
-                              : "border border-emerald-400/18 bg-emerald-500/[0.06] text-emerald-200 hover:bg-emerald-500/10"
-                          }`}
-                        >
-                          {isSubmitting ? "Trasladando..." : destination.can_afford ? "Confirmar traslado" : "Saldo insuficiente"}
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </article>
           );
@@ -5123,10 +5136,23 @@ function DispatchItineraryTable({
           </thead>
 
           <tbody>
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               const isSelected = selectedItineraryId === row.itinerary_id;
               const originCode = row.origin_icao.trim().toUpperCase();
               const destinationCode = row.destination_icao.trim().toUpperCase();
+              const rowKey = [
+                row.itinerary_id,
+                row.itinerary_code,
+                row.flight_number,
+                row.flight_designator,
+                row.aircraft_type_code,
+                row.compatible_aircraft_types?.join("_"),
+                originCode,
+                destinationCode,
+                index,
+              ]
+                .filter(Boolean)
+                .join("-");
               const originAirport = airportsByIcao[originCode];
               const destinationAirport = airportsByIcao[destinationCode];
               const originCity = getOriginCityLabel(
@@ -5169,7 +5195,7 @@ function DispatchItineraryTable({
 
               return (
                 <tr
-                  key={row.itinerary_id}
+                  key={rowKey}
                   className={`border-t border-white/8 align-middle transition ${
                     isSelected ? "bg-emerald-500/[0.08]" : ""
                   }`}
@@ -7129,6 +7155,7 @@ function DashboardWorkspace({
   const [selectedTrainingCheckride, setSelectedTrainingCheckride] = useState<TrainingCheckrideCatalogItem | null>(null);
   const [selectedTrainingTheoryExam, setSelectedTrainingTheoryExam] = useState<TrainingTheoryExam | null>(null);
   const [trainingTheoryAttempts, setTrainingTheoryAttempts] = useState<Record<string, TrainingTheoryAttemptSummary>>({});
+  const rank = getRankInsignia(metrics.careerRankCode);
 
   function openTrainingPlanner(aircraft: TrainingAircraftProgress) {
     setTrainingPlannerAircraft(aircraft);
@@ -7732,6 +7759,33 @@ function DashboardWorkspace({
     () => filteredItineraries.find((option) => option.itinerary_id === selectedItinerary) ?? null,
     [filteredItineraries, selectedItinerary],
   );
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+
+    console.debug("[dispatch-filter]", {
+      scope: "dashboard",
+      flightType: selectedFlightType,
+      flightMode: dispatchFlightMode,
+      airport: central.airportCode,
+      aircraftTotal: availableAircraft.length,
+      itinerariesTotal: availableItineraries.length,
+      filteredItineraries: filteredItineraries.length,
+      selectedAircraftType:
+        selectedAircraftRecord?.aircraft_type_code ??
+        selectedAircraftRecord?.aircraft_code ??
+        null,
+    });
+  }, [
+    availableAircraft.length,
+    availableItineraries.length,
+    central.airportCode,
+    dispatchFlightMode,
+    filteredItineraries.length,
+    selectedAircraftRecord,
+    selectedFlightType,
+  ]);
+
   const charterSelectedItineraryRecord = useMemo(() => {
     if (!isCharterLikeDispatch || !charterOperation) {
       return null;
@@ -8881,7 +8935,7 @@ function DashboardWorkspace({
                               ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}.`
                               : availableAircraft.length > 0
                                 ? "Escoge una aeronave de la tabla para continuar al itinerario."
-                                : `No hay aeronaves disponibles en ${central.airportCode} para esta etapa.`}
+                                : "No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual."}
                           </p>
 
                           <div className="flex flex-wrap gap-3">
@@ -8973,7 +9027,7 @@ function DashboardWorkspace({
                             ? `Itinerario activo: ${selectedItineraryRecord.itinerary_code} ${selectedItineraryRecord.origin_icao}-${selectedItineraryRecord.destination_icao}.`
                             : filteredItineraries.length > 0
                               ? `${filteredItineraries.length} itinerario(s) disponibles para esta combinacion.`
-                              : "No hay itinerarios compatibles para la combinacion actual."}
+                              : "No hay itinerarios compatibles con esta aeronave desde tu ubicacion actual."}
                         </div>
 
                         {selectedItineraryRecord ? (
@@ -9642,7 +9696,14 @@ function DashboardWorkspace({
                         : profile.callsign}
                     </h2>
                     <p className="mt-0.5 text-sm text-white/54">{profile.callsign}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <img
+                        src={rank.asset}
+                        alt={`Insignia ${rank.name}`}
+                        className="h-12 w-12 object-contain"
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-0.5 text-[11px] font-semibold text-white/80">
                         {metrics.careerRank}
                       </span>
@@ -9734,13 +9795,22 @@ function DashboardWorkspace({
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Patagonia Score", value: formatDecimal(metrics.patagoniaScore), accent: "#67d7ff" },
-                { label: "Rango", value: metrics.careerRank, accent: "#ffffff" },
+                { label: "Rango", value: metrics.careerRank, accent: "#ffffff", rankAsset: rank.asset, rankName: rank.name },
                 { label: "Estado", value: metrics.pilotStatus, accent: "#0ca66b" },
                 { label: "Billetera", value: formatCurrency(metrics.walletBalance), accent: "#0ca66b" },
               ].map((m) => (
                 <div key={m.label} className="surface-outline rounded-[20px] p-5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
-                  <p className="mt-2 text-3xl font-semibold" style={{ color: m.accent }}>{m.value}</p>
+                  {"rankAsset" in m ? (
+                    <img
+                      src={m.rankAsset}
+                      alt={`Insignia ${m.rankName}`}
+                      className="mt-2 h-20 w-20 object-contain"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : null}
+                  <p className={`mt-2 font-semibold ${"rankAsset" in m ? "text-lg" : "text-3xl"}`} style={{ color: m.accent }}>{m.value}</p>
                 </div>
               ))}
             </div>
@@ -10545,7 +10615,8 @@ function DashboardContent() {
         monthLabel: buildMonthLabel(),
         totalHours: getProfileTotalHours(nextProfile),
         walletBalance: getProfileWallet(nextProfile),
-        careerRank: formatRankLabel(nextProfile.career_rank_code ?? nextProfile.rank_code),
+        careerRankCode: nextProfile.career_rank_code ?? nextProfile.rank_code ?? "CADET",
+        careerRank: getRankInsignia(nextProfile.career_rank_code ?? nextProfile.rank_code).name,
       }));
       setCentral((current) => ({
         ...current,
@@ -10579,7 +10650,8 @@ function DashboardContent() {
             monthLabel: buildMonthLabel(),
             totalHours: getProfileTotalHours(nextProfile),
             walletBalance: getProfileWallet(nextProfile),
-            careerRank: formatRankLabel(nextProfile.career_rank_code ?? nextProfile.rank_code),
+            careerRankCode: nextProfile.career_rank_code ?? nextProfile.rank_code ?? "CADET",
+            careerRank: getRankInsignia(nextProfile.career_rank_code ?? nextProfile.rank_code).name,
           }));
 
           setCentral((current) => ({
@@ -10675,7 +10747,11 @@ function DashboardContent() {
           />
         </div>
 
-        <PilotStatsRail items={compactMetrics} animationSeed={animationSeed} />
+        <PilotStatsRail
+          items={compactMetrics}
+          animationSeed={animationSeed}
+          rankCode={metrics.careerRankCode}
+        />
       </div>
 
     </div>

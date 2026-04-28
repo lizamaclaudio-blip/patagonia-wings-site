@@ -115,6 +115,7 @@ export default function CharterDispatchPanel({
   return (
     <div className="grid gap-5">
       <CharterOriginDestinationStep
+        profile={profile}
         originIcao={originIcao}
         destinationIcao={destinationIcao}
         scheduledDeparture={scheduledDeparture}

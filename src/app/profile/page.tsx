@@ -12,6 +12,7 @@ import {
   updatePilotProfile,
   type PilotProfileRecord,
 } from "@/lib/pilot-profile";
+import { getRankInsignia } from "@/lib/rank-insignias";
 import { supabase } from "@/lib/supabase/browser";
 import { resolveSurScore } from "@/lib/sur-score";
 
@@ -105,18 +106,6 @@ function formatNavigraphExpiry(value: string | null | undefined) {
 }
 
 
-function formatRankLabel(value: string | null | undefined) {
-  const normalized = (value ?? "CADET").trim();
-  if (!normalized) {
-    return "Cadet";
-  }
-
-  return normalized
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/(^|\s)\w/g, (letter) => letter.toUpperCase());
-}
-
 function getTotalHours(profile: PilotProfileRecord | null) {
   if (!profile) {
     return 0;
@@ -139,36 +128,6 @@ function getTotalHours(profile: PilotProfileRecord | null) {
 function getPilotName(form: ProfileFormState) {
   const value = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(" ");
   return value || form.callsign || "Piloto Patagonia Wings";
-}
-
-function getRankBadge(rank: string | null | undefined) {
-  const code = (rank ?? "CADET").trim().toUpperCase();
-
-  if (code.includes("LEGEND")) {
-    return { symbol: "✦", label: "Leyenda Patagonia" };
-  }
-
-  if (code.includes("INSPECTOR") || code.includes("CHECK") || code.includes("MASTER")) {
-    return { symbol: "★", label: "Inspector de línea" };
-  }
-
-  if (code.includes("COMMANDER")) {
-    return { symbol: "◆", label: "Comandante regional" };
-  }
-
-  if (code.includes("CAPTAIN")) {
-    return { symbol: "▲", label: "Capitán de línea" };
-  }
-
-  if (code.includes("FIRST_OFFICER")) {
-    return { symbol: "■", label: "Primer oficial" };
-  }
-
-  if (code.includes("SECOND_OFFICER")) {
-    return { symbol: "●", label: "Segundo oficial" };
-  }
-
-  return { symbol: "◈", label: "Cadete" };
 }
 
 function readView(value: string | null): ProfileView {
@@ -894,15 +853,15 @@ function ProfileContent() {
     }
   }
 
-  const rankBadge = useMemo(
-    () => getRankBadge(profile?.career_rank_code ?? profile?.rank_code),
+  const rankInsignia = useMemo(
+    () => getRankInsignia(profile?.career_rank_code ?? profile?.rank_code),
     [profile?.career_rank_code, profile?.rank_code]
   );
 
   const pilotName = useMemo(() => getPilotName(form), [form]);
   const rankLabel = useMemo(
-    () => formatRankLabel(profile?.career_rank_code ?? profile?.rank_code),
-    [profile?.career_rank_code, profile?.rank_code]
+    () => rankInsignia.name,
+    [rankInsignia.name]
   );
 
   return (
@@ -973,12 +932,17 @@ function ProfileContent() {
                   {pilotName}
                 </h2>
 
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/16 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-100">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base">
-                    {rankBadge.symbol}
-                  </span>
-                  <span className="font-semibold">{rankBadge.label}</span>
+                <div className="mt-5 flex items-center justify-center">
+                  <img
+                    src={rankInsignia.asset}
+                    alt={`Insignia ${rankInsignia.name}`}
+                    className="h-24 w-24 object-contain sm:h-32 sm:w-32"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
+
+                <p className="mt-3 text-sm font-semibold text-cyan-100">{rankInsignia.name}</p>
 
                 <p className="mt-3 text-sm text-white/66">Foto de piloto pendiente por cargar</p>
               </div>
@@ -1242,4 +1206,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

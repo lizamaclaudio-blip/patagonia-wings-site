@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import {
   listCharterAircraftAtOrigin,
   searchCharterAirports,
@@ -45,6 +46,7 @@ type Props = {
   onScheduledDepartureChange: (value: string) => void;
   onAircraftChange: (aircraft: CharterAircraftOption | null) => void;
   originLocked?: boolean;
+  profile?: PilotProfileRecord | null;
 };
 
 const AIRCRAFT_TYPE_LABELS: Record<string, string> = {
@@ -361,6 +363,7 @@ export default function CharterOriginDestinationStep({
   onScheduledDepartureChange,
   onAircraftChange,
   originLocked = true,
+  profile = null,
 }: Props) {
   const [aircraft, setAircraft] = useState<CharterAircraftOption[]>([]);
   const [selectedType, setSelectedType] = useState("");
@@ -476,7 +479,7 @@ export default function CharterOriginDestinationStep({
     }
 
     setLoadingAircraft(true);
-    listCharterAircraftAtOrigin(normalizedOrigin)
+    listCharterAircraftAtOrigin(normalizedOrigin, profile)
       .then((items) => {
         if (!mounted) return;
 
@@ -504,7 +507,7 @@ export default function CharterOriginDestinationStep({
     return () => {
       mounted = false;
     };
-  }, [normalizedOrigin, onAircraftChange, selectedAircraftId]);
+  }, [normalizedOrigin, onAircraftChange, profile, selectedAircraftId]);
 
 
   const selectedAircraft = useMemo(
@@ -553,6 +556,29 @@ export default function CharterOriginDestinationStep({
       mounted = false;
     };
   }, [normalizedDestination, normalizedOrigin, routeReady, selectedAircraft, selectedType]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+
+    console.debug("[dispatch-filter]", {
+      scope: "charter",
+      origin: normalizedOrigin,
+      destination: normalizedDestination,
+      routeReady,
+      aircraftCount: aircraft.length,
+      aircraftTypes: aircraftTypes.length,
+      compatibleAircraftTypes: compatibleAircraftTypes.length,
+      selectedType,
+    });
+  }, [
+    aircraft.length,
+    aircraftTypes.length,
+    compatibleAircraftTypes.length,
+    normalizedDestination,
+    normalizedOrigin,
+    routeReady,
+    selectedType,
+  ]);
 
   return (
     <div className="grid gap-5">
@@ -681,7 +707,7 @@ export default function CharterOriginDestinationStep({
 
         {!loadingAircraft && aircraft.length === 0 ? (
           <p className="mt-5 rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
-            No hay aeronaves disponibles para tu rango/licencia en el origen seleccionado.
+            No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual.
           </p>
         ) : null}
       </div>

@@ -1,5 +1,6 @@
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import {
+  listAvailableAircraft,
   type AvailableAircraftOption,
   type FlightOperationRecord,
 } from "@/lib/flight-ops";
@@ -136,9 +137,21 @@ export async function searchCharterAirports(query: string, limit = 20) {
   return rows.map((row) => toAirportOption(row as Record<string, unknown>)).filter((row) => row.icao);
 }
 
-export async function listCharterAircraftAtOrigin(originIcao: string) {
+export async function listCharterAircraftAtOrigin(originIcao: string, profile?: PilotProfileRecord | null) {
   const origin = normalizeIcao(originIcao);
   if (!origin) return [] as CharterAircraftOption[];
+
+  if (profile) {
+    const rows = await listAvailableAircraft(profile);
+    return rows
+      .filter((row) => normalizeIcao(row.current_airport_icao) === origin && row.selectable)
+      .map((row) => ({
+        ...row,
+        license_status: null,
+        license_granted_at: null,
+      }))
+      .filter((row) => row.aircraft_id);
+  }
 
   const { data, error } = await supabase.rpc("pw_list_charter_aircraft", {
     p_origin_icao: origin,

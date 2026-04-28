@@ -520,6 +520,91 @@ Requiere asegurar columnas adicionales en `pilot_salary_ledger` para `expenses_t
 
 ---
 
+## Bloque 21 - Fix dashboard keys y cierre ACARS caja negra
+
+**Cambio:**
+- Web: `DispatchItineraryTable` usa key compuesta por itinerario, vuelo, aeronave, origen/destino e indice fallback para evitar keys duplicadas.
+- ACARS: avatar local color para piloto sin foto, insignia de rango preservada en dashboard/perfil, stats Horas/PW Score centrados y LEDs de telemetria con verde/rojo.
+- ACARS: cierre de vuelo queda como PIREP RAW para evaluacion server-side; se desactiva scoring local final.
+- ACARS: version local actualizada a `6.0.3` / revision `2026.4.28.21` y manifest local `Web/autoupdater.xml` alineado.
+
+**Validacion:**
+- Web: `npm run build` OK.
+- ACARS: MSBuild `Release|x64` OK, con warnings nullable existentes.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 20 - Auditoria operacional despacho por rango, aeronave y autonomia
+
+**Base oficial respetada:** ultima base local vigente, sin push, commit ni remoto Git.
+
+**Cambio:**
+- `src/lib/flight-ops.ts`
+  - se fuerza el filtro local por ubicacion, rango y permisos tambien sobre `pw_list_dispatch_aircraft`;
+  - los itinerarios de `pw_list_dispatch_itineraries` dejan de saltarse permisos locales salvo que vengan marcados explicitamente como `server_rank_filtered`;
+  - se mantiene el filtro de autonomia/capacidad ya existente via economia por `distance_nm`.
+- `src/lib/charter-ops.ts`
+  - charter puede reutilizar `listAvailableAircraft(profile)` para respetar rango/habilitaciones antes de validar origen/destino.
+- `src/components/dashboard/CharterDispatchPanel.tsx`
+  - se pasa el perfil al selector charter.
+- `src/components/dashboard/CharterOriginDestinationStep.tsx`
+  - la lista charter queda filtrada por perfil y autonomia;
+  - se agrega diagnostico `[dispatch-filter]` solo en desarrollo;
+  - se ajusta mensaje cuando no hay aeronaves habilitadas.
+- `src/app/dashboard/page.tsx`
+  - se agrega diagnostico no productivo del filtro operacional;
+  - se ajustan mensajes de aeronaves/rutas incompatibles.
+
+**SQL:** no se aplico SQL nuevo; no hay `DATABASE_URL`, service role, `psql` ni Supabase CLI configurados en la maquina para ejecutar DDL remoto.
+
+---
+
+## Bloque 20B - SQL server-side despacho, charter, rango y autonomia
+
+**Base oficial respetada:** ultima base local vigente, sin push, commit ni remoto Git.
+
+**Auditoria:**
+- Se auditaron firmas RPC expuestas por PostgREST:
+  - `pw_list_dispatch_aircraft(p_origin_icao text)`
+  - `pw_list_charter_aircraft(p_origin_icao text)`
+  - `pw_list_dispatch_itineraries(p_origin_icao text)`
+- Se revisaron columnas reales expuestas en:
+  - `pilot_profiles`
+  - `aircraft`
+  - `aircraft_models`
+  - `aircraft_economy_profiles`
+  - `network_routes`
+  - `network_route_aircraft`
+  - `pilot_rank_aircraft_permissions`
+  - `pw_pilot_rank_aircraft_families`
+  - `pw_aircraft_family_variants`
+  - `flight_reservations`
+- El CSV entregado de funciones publicas no contiene RPC administrativa para ejecutar DDL/SQL remoto.
+
+**Archivo creado:**
+- `supabase/migrations/202604281717_bloque_20b_dispatch_server_side_filters.sql`
+
+**Contenido de migracion:**
+- Helpers SQL `pw_20b_*` para normalizar codigos, resolver piloto autenticado, permisos por rango, distancia entre aeropuertos y compatibilidad por tipo.
+- `create or replace function` para:
+  - `pw_list_dispatch_aircraft`
+  - `pw_list_charter_aircraft`
+  - `pw_list_charter_aircraft_for_route`
+  - `pw_list_dispatch_itineraries`
+- Indices `if not exists` para filtros de flota, rutas, perfiles economia y permisos.
+- Validaciones SQL comentadas dentro de la migracion.
+
+**SQL:** aplicado desde Codex con `pw_admin_exec_sql(sql_text text)`.
+- Primer intento rechazado por PostgreSQL al cambiar `RETURNS TABLE` de RPC existente; se ajusto migracion para dropear/recrear solo wrappers RPC por firma, sin datos.
+- Aplicacion exitosa auditada: `3db3baa6-a97e-427c-bed5-31a4efceb09c`.
+- Validacion server-side exitosa auditada: `6087c336-85fb-41a1-b188-5d68ed8c864c`.
+- Se validaron permisos `CADET`, bloqueo de long-haul/heavy para piloto bajo, distancia SCEL-KMIA y bloqueo C208 por autonomia en charter/itinerario.
+- RPC temporal `pw_admin_exec_sql` eliminada despues de aplicar; `pw_admin_drop_exec_sql` queda expuesta.
+
+---
+
 ## Actualización 17D — Integración Navigraph/SimBrief movida a portada pública
 
 **Objetivo:** sacar la vitrina de partners del dashboard y llevar la comunicación de integración a la página de inicio pública, antes del login, con mejor presencia visual y mensaje operacional claro.
@@ -921,5 +1006,26 @@ El número 28 venía de contar todos los modelos únicos cargados desde la base 
   - se eliminó el CTA final `#contacto`;
   - se eliminó solo el botón de acceso al panel dentro de Servicios;
   - se mantiene intacto el resto del contenido de la landing.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17X — Traslados más compactos tipo tabla
+
+**Base oficial respetada:** última base vigente con `public.zip` + actualizaciones ya aplicadas en esta conversación, sin retroceder cambios previos.
+
+**Cambio solicitado:**
+- hacer las ventanas de traslados más pequeñas;
+- reducir el tamaño visual de los botones;
+- compactar la presentación para que se vea más como tabla y menos como tarjetas grandes.
+
+**Archivo modificado:**
+- `src/app/dashboard/page.tsx`
+  - se compacta el bloque `Reposicionamiento`;
+  - se reduce padding y altura visual de las tres columnas de traslado;
+  - cada alternativa ahora se muestra en filas más compactas tipo tabla;
+  - el botón deja de ocupar todo el ancho y pasa a tamaño más contenido;
+  - se acortan textos de acción a `Trasladar` / `Sin saldo` para que el bloque se vea más limpio.
 
 **SQL:** no requiere.

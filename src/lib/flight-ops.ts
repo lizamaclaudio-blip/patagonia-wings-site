@@ -1348,7 +1348,11 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
 
     if (!error && Array.isArray(data) && data.length > 0) {
       return await attachAircraftCondition(
-        mapDisplayRows((data ?? []) as GenericRecord[])
+        filterAircraftRowsForPilot(
+          mapDisplayRows((data ?? []) as GenericRecord[]),
+          profile,
+          permittedTypes
+        )
       );
     }
   } catch {
@@ -1562,9 +1566,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         const rawCompatibleAircraftTypes = parseCompatibleAircraftTypes(
           row.compatible_aircraft_types ?? row.aircraft_type_code
         );
-        const serverFiltered =
-          row.server_rank_filtered === true ||
-          row.source === "DISPATCH_ITINERARIES";
+        const serverFiltered = row.server_rank_filtered === true;
 
         const compatibleAircraftTypes = serverFiltered
           ? rawCompatibleAircraftTypes.map((type) => normalizeUpper(type)).filter(Boolean)
