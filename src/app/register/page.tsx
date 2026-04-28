@@ -145,6 +145,7 @@ export default function RegisterPage() {
   const [signupHubs, setSignupHubs] = useState<SignupHub[]>(FALLBACK_SIGNUP_HUBS);
   const [loadingSignupHubs, setLoadingSignupHubs] = useState(true);
   const [simulator, setSimulator] = useState("MSFS 2020");
+  const [simbriefUsername, setSimbriefUsername] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -221,6 +222,7 @@ export default function RegisterPage() {
           country,
           base_hub: baseHub,
           simulator,
+          simbrief_username: simbriefUsername.trim() || null,
         },
       },
     });
@@ -372,7 +374,7 @@ export default function RegisterPage() {
                       {[
                         { icon: "✦", label: "Callsign PWG oficial" },
                         { icon: "✈", label: "ACARS en tiempo real" },
-                        { icon: "📋", label: "Despacho SimBrief" },
+                        { icon: "🗺️", label: "Navigraph + SimBrief" },
                         { icon: "🌍", label: "Comunidad naciente" },
                       ].map(({ icon, label }) => (
                         <span
@@ -516,6 +518,20 @@ export default function RegisterPage() {
                         <option value="X-Plane">X-Plane</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="field-label">Usuario Navigraph / SimBrief</label>
+                    <input
+                      className="input-premium"
+                      type="text"
+                      placeholder="Tu usuario de Navigraph o SimBrief"
+                      value={simbriefUsername}
+                      onChange={(e) => setSimbriefUsername(e.target.value)}
+                    />
+                    <p className="mt-2 text-[11px] leading-5 text-white/45">
+                      Recomendado para usar el despacho integrado de Patagonia Wings. Para generar OFP y aprovechar la integración web debes contar con suscripción activa de Navigraph.
+                    </p>
                   </div>
 
                   {errorMessage ? (

@@ -7459,29 +7459,36 @@ function DashboardWorkspace({
 
       setSimbriefStaticId(data.staticId);
 
-      if (data.mode === "api") {
-        setSimbriefGenerationActive(true);
-        setNavigraphInfoMessage(
-          "Generando OFP SimBrief con los datos de Patagonia Wings. La ventana pequeña se cerrará al terminar y luego cargaremos el OFP automáticamente."
-        );
-        const popup = window.open(
-          data.generateUrl,
-          "PWG_SIMBRIEF_GENERATOR",
-          "popup=yes,width=560,height=740,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes"
-        );
+      const popupName = data.mode === "api" ? "PWG_SIMBRIEF_GENERATOR" : "PWG_SIMBRIEF_PREFILL";
+      const popupFeatures = data.mode === "api"
+        ? "popup=yes,width=560,height=740,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes"
+        : "popup=yes,width=1280,height=860,menubar=no,toolbar=yes,location=yes,status=yes,scrollbars=yes,resizable=yes";
 
-        if (!popup) {
-          setSimbriefGenerationActive(false);
-          throw new Error("El navegador bloqueó la ventana de SimBrief. Permite popups para Patagonia Wings e inténtalo nuevamente.");
-        }
-      } else {
+      setSimbriefGenerationActive(true);
+      setNavigraphInfoMessage(
+        data.mode === "api"
+          ? "Generando OFP SimBrief con los datos de Patagonia Wings. La ventana pequeña volverá automáticamente al finalizar."
+          : "SimBrief se abrió prellenado. Revisa el vuelo, presiona Generate Flight en SimBrief y luego vuelve a Patagonia Wings para cargar el OFP automático."
+      );
+
+      const popup = window.open(data.generateUrl || data.editUrl, popupName, popupFeatures);
+
+      if (!popup) {
         setSimbriefGenerationActive(false);
-        setNavigraphInfoMessage(
-          data.warning ||
-            "SimBrief se abrirá con los datos prellenados. Genera/guarda el plan y luego usa 'Cargar OFP automático'."
-        );
-        window.open(data.generateUrl || data.editUrl, "_blank", "noopener,noreferrer");
+        throw new Error("El navegador bloqueó la ventana de SimBrief. Permite popups para Patagonia Wings e inténtalo nuevamente.");
       }
+
+      const popupMonitor = window.setInterval(() => {
+        if (popup.closed) {
+          window.clearInterval(popupMonitor);
+          setSimbriefGenerationActive(false);
+          setNavigraphInfoMessage(
+            data.mode === "api"
+              ? "La ventana de SimBrief se cerró. Usa Cargar OFP automático para recuperar el plan si no se cargó solo."
+              : "Cuando hayas presionado Generate Flight en SimBrief, usa Cargar OFP automático para traer el plan a Patagonia Wings."
+          );
+        }
+      }, 1200);
     } catch (error) {
       setSimbriefGenerationActive(false);
       setNavigraphErrorMessage(
@@ -9185,14 +9192,14 @@ function DashboardWorkspace({
                         </div>
 
                         <p className="mt-3 text-sm text-white/58">
-                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. Con API activa, SimBrief se genera en una ventana pequeña de proceso y vuelve automáticamente para cargar el OFP en esta página.
+                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. En modo seguro, SimBrief se abre prellenado: el piloto solo revisa, presiona Generate Flight y luego carga el OFP automático en esta página.
                         </p>
 
                         {simbriefGenerationActive ? (
                           <div className="mt-4 rounded-[20px] border border-emerald-300/20 bg-emerald-400/[0.08] p-4 text-sm text-emerald-50">
                             <p className="font-semibold">Generando OFP SimBrief...</p>
                             <p className="mt-1 text-emerald-50/72">
-                              No completes el despacho todavía. Patagonia Wings está esperando el retorno automático de SimBrief para cargar combustible, pax, carga, ruta y tiempos planificados.
+                              No completes el despacho todavía. Si estás en SimBrief, genera/guarda el vuelo y luego vuelve a Patagonia Wings para cargar combustible, pax, carga, ruta y tiempos planificados.
                             </p>
                           </div>
                         ) : null}
@@ -10671,7 +10678,6 @@ function DashboardContent() {
         <PilotStatsRail items={compactMetrics} animationSeed={animationSeed} />
       </div>
 
-      <DashboardPartnersShowcase />
     </div>
   );
 }

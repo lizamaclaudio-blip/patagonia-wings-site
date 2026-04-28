@@ -8,16 +8,24 @@ import { ACARS_VERSION, ACARS_BACKEND, ACARS_RELEASE_NOTES, ACARS_DOWNLOAD_URL }
 
 const services = [
   {
-    title: "Reserva y despacho web",
-    text: "Prepara tu operación antes del vuelo, desde la reserva hasta el briefing final listo para ACARS.",
+    icon: "🛫",
+    title: "Itinerarios oficiales",
+    text: "Vuela rutas activas de la red Patagonia Wings con aeronaves compatibles, reservas y control operacional desde la web.",
   },
   {
-    title: "Integración Navigraph + SimBrief",
-    text: "Nuestra web ya conversa con el flujo OFP para que el piloto prepare su vuelo con datos prellenados y validación operacional.",
+    icon: "📋",
+    title: "Despacho + SimBrief",
+    text: "Prepara el OFP con datos prellenados, integración Navigraph / SimBrief y validación antes de enviar el vuelo a ACARS.",
   },
   {
-    title: "Perfil y habilitaciones",
-    text: "Gestiona certificaciones, flota habilitada, datos del piloto y estado operacional desde un solo lugar.",
+    icon: "💸",
+    title: "Economía operacional",
+    text: "Revisa ingresos, costos, combustible, comisiones y rentabilidad estimada antes de operar cada vuelo.",
+  },
+  {
+    icon: "👨‍✈️",
+    title: "Perfil y progresión",
+    text: "Sigue horas, rango, billetera, habilitaciones y estado del piloto en una experiencia conectada con la operación real.",
   },
 ];
 
@@ -41,20 +49,70 @@ const heroPoints = [
 
 function OfficialIntegrationLogos({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`flex flex-wrap items-center gap-x-6 gap-y-4 ${compact ? "justify-center" : "justify-start"}`}>
+    <div
+      className={compact ? "flex w-full flex-col items-center justify-center gap-7" : "flex flex-wrap items-center justify-start gap-x-6 gap-y-4"}
+    >
       <img
-        src="/partners/navigraph.png"
+        src="/partners/navigraph-official-horizontal.png"
         alt="Navigraph"
-        className={compact ? "h-11 w-auto object-contain sm:h-13" : "h-14 w-auto object-contain sm:h-16"}
+        className={compact ? "h-[72px] w-auto max-w-full object-contain sm:h-[88px] lg:h-[104px]" : "h-14 w-auto object-contain sm:h-16 lg:h-[72px]"}
       />
-
-      <span className="hidden h-14 w-px rounded-full bg-white/16 sm:block" />
 
       <img
-        src="/branding/Navigraph%20Logos/simbrief-75dpi-horizontal.png"
+        src="/partners/simbrief-by-navigraph-official.png"
         alt="SimBrief by Navigraph"
-        className={compact ? "h-8 w-auto object-contain sm:h-10" : "h-10 w-auto object-contain sm:h-11"}
+        className={compact ? "h-[62px] w-auto max-w-full object-contain sm:h-[76px] lg:h-[90px]" : "h-12 w-auto object-contain sm:h-14 lg:h-16"}
       />
+    </div>
+  );
+}
+
+function HeroIntegrationCard() {
+  return (
+    <div className="home-integration-card w-full max-w-[520px] lg:ml-auto">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.38em] text-cyan-200/72">
+        Integración oficial
+      </p>
+
+      <div className="mt-8 space-y-7">
+        <div>
+          <img
+            src="/partners/navigraph-official-horizontal.png"
+            alt="Navigraph"
+            className="home-logo-navigraph h-16 w-auto object-contain sm:h-[74px] lg:h-[84px]"
+          />
+          <p className="mt-3 text-[15px] leading-7 text-white/72 sm:text-base">
+            Cartas, AIRAC y planificación profesional
+          </p>
+        </div>
+
+        <div className="h-px w-full bg-gradient-to-r from-white/20 via-white/8 to-transparent" />
+
+        <div>
+          <img
+            src="/partners/simbrief-by-navigraph-official.png"
+            alt="SimBrief by Navigraph"
+            className="home-logo-simbrief h-[64px] w-auto max-w-full object-contain sm:h-[76px] lg:h-[88px]"
+          />
+          <p className="mt-3 text-[15px] leading-7 text-white/72 sm:text-base">
+            OFP, plan de vuelo y despacho integrado
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-8 space-y-6">
+        {heroPoints.map((item) => (
+          <div key={item.title} className="flex items-start gap-4">
+            <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-300/28 bg-emerald-400/10 text-sm font-semibold text-emerald-200">
+              ✓
+            </span>
+            <div>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-cyan-100/82">{item.title}</p>
+              <p className="mt-2 text-[15px] leading-7 text-white/76 sm:text-[16px]">{item.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -74,68 +132,35 @@ export default async function HomePage() {
         <div className="parallax-bg" />
         <div className="parallax-wing" />
         <div className="parallax-overlay" />
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(circle_at_14%_28%,rgba(8,108,162,0.18),transparent_28%),linear-gradient(90deg,rgba(3,14,31,0.94)_0%,rgba(3,14,31,0.84)_20%,rgba(3,14,31,0.44)_46%,rgba(3,14,31,0.28)_68%,rgba(3,14,31,0.36)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(circle_at_16%_30%,rgba(8,108,162,0.16),transparent_26%),linear-gradient(90deg,rgba(3,14,31,0.92)_0%,rgba(3,14,31,0.86)_20%,rgba(3,14,31,0.48)_46%,rgba(3,14,31,0.10)_72%,rgba(3,14,31,0.08)_100%)]" />
 
         <div className="relative z-20 flex min-h-screen flex-col">
           <header className="pw-container pt-5">
             <PublicHeader />
           </header>
 
-          {/* ── Hero grid: left = identity + title + CTAs · right = logos panel ── */}
-          <div id="inicio" className="pw-container relative grid min-h-[calc(100vh-116px)] flex-1 items-center gap-12 py-10 sm:py-14 lg:grid-cols-[1fr_440px] lg:gap-16 lg:py-16 xl:grid-cols-[1fr_500px] xl:py-20">
+          <div id="inicio" className="home-hero-grid pw-container relative grid min-h-[calc(100vh-116px)] flex-1 items-center gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(420px,560px)_minmax(360px,520px)] lg:gap-16 lg:py-16 xl:grid-cols-[minmax(460px,620px)_minmax(420px,540px)] xl:py-20">
+            <div className="home-hero-left max-w-[620px]">
+              <p className="home-hero-eyebrow text-[12px] font-semibold uppercase tracking-[0.34em] text-cyan-200/78">
+                Patagonia Wings
+              </p>
+              <p className="mt-2 text-lg font-medium text-white/84 sm:text-2xl">
+                Virtual Airline Operations
+              </p>
 
-            {/* ── LEFT: Brand identity, headline, CTA ── */}
-            <div>
-              {/* Logo + brand name */}
-              <div className="mb-9 flex items-center gap-5 sm:gap-7">
-                <img
-                  src="/branding/patagonia-logo.png"
-                  alt="Logo Patagonia Wings"
-                  className="h-[86px] w-[86px] shrink-0 object-contain drop-shadow-[0_22px_48px_rgba(0,0,0,0.48)] sm:h-[104px] sm:w-[104px] lg:h-[116px] lg:w-[116px]"
-                />
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.38em] text-cyan-200/72">
-                    Patagonia Wings
-                  </p>
-                  <p className="mt-1.5 text-lg font-medium leading-snug text-white/80 sm:text-2xl lg:text-[26px]">
-                    Virtual Airline Operations
-                  </p>
-                </div>
-              </div>
-
-              {/* Main headline */}
-              <h1 className="font-serif text-[72px] font-medium leading-[0.88] tracking-[-0.055em] text-white drop-shadow-[0_16px_38px_rgba(0,0,0,0.42)] sm:text-[102px] lg:text-[118px] xl:text-[132px]">
+              <h1 className="home-hero-title mt-7 max-w-[720px] font-serif text-[66px] font-medium leading-[0.9] tracking-[-0.055em] text-white drop-shadow-[0_14px_34px_rgba(0,0,0,0.40)] sm:text-[96px] lg:text-[108px] xl:text-[122px]">
                 Patagonia
                 <br />
                 Wings
               </h1>
 
-              {/* Slogan */}
-              <p className="mt-5 text-[22px] font-medium leading-tight text-cyan-200 drop-shadow-[0_8px_18px_rgba(0,0,0,0.32)] sm:text-[28px] lg:text-[32px]">
+              <p className="home-hero-slogan mt-5 max-w-[720px] text-[24px] font-medium leading-tight text-cyan-200 drop-shadow-[0_8px_18px_rgba(0,0,0,0.32)] sm:text-[32px] lg:text-[36px]">
                 Tu conexión aérea en la Patagonia
               </p>
 
-              {/* Gradient separator */}
-              <div className="mt-6 h-[2px] w-44 rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-transparent sm:w-56" />
+              <div className="mt-6 h-[2px] w-40 rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-transparent sm:w-52" />
 
-              {/* Integration description — clean, no card */}
-              <p className="mt-9 max-w-[600px] text-[16px] leading-[1.85] text-white/76 lg:text-[17px]">
-                Patagonia Wings se integra con{" "}
-                <span className="font-semibold text-white">Navigraph</span> y{" "}
-                <span className="font-semibold text-white">SimBrief</span> para planificación de vuelo,
-                cartas y despacho operacional conectados directamente desde la plataforma.
-              </p>
-
-              {/* Mobile-only: logos inline (no card, just logos) */}
-              <div className="mt-8 lg:hidden">
-                <p className="mb-5 text-[10px] font-semibold uppercase tracking-[0.40em] text-cyan-200/56">
-                  Integración oficial
-                </p>
-                <OfficialIntegrationLogos />
-              </div>
-
-              {/* CTA buttons */}
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-9 flex flex-wrap gap-4">
                 <Link href="/register" className="button-primary px-8 py-4 text-base">
                   Crear cuenta
                 </Link>
@@ -146,57 +171,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* ── RIGHT: Integration logos + requirements (desktop only) ── */}
-            <div className="hidden lg:flex lg:flex-col lg:justify-center">
-              <div className="rounded-[32px] border border-white/[0.11] bg-[linear-gradient(160deg,rgba(4,22,48,0.62),rgba(3,14,32,0.44))] px-10 py-10 shadow-[0_28px_80px_rgba(0,0,0,0.30)] backdrop-blur-2xl xl:px-12 xl:py-12">
-
-                <p className="text-[9px] font-semibold uppercase tracking-[0.46em] text-cyan-200/56">
-                  Integración oficial
-                </p>
-
-                {/* Navigraph — full size */}
-                <div className="mt-8">
-                  <img
-                    src="/partners/navigraph.png"
-                    alt="Navigraph"
-                    className="h-[68px] w-auto object-contain xl:h-[78px]"
-                  />
-                </div>
-
-                {/* Divider */}
-                <div className="my-7 h-px bg-gradient-to-r from-white/14 via-white/8 to-transparent" />
-
-                {/* SimBrief — full size */}
-                <div>
-                  <img
-                    src="/branding/Navigraph%20Logos/simbrief-75dpi-horizontal.png"
-                    alt="SimBrief by Navigraph"
-                    className="h-[48px] w-auto object-contain xl:h-[54px]"
-                  />
-                </div>
-
-                {/* Requirements as clean bullets */}
-                <div className="mt-9 space-y-5">
-                  {heroPoints.map((item) => (
-                    <div key={item.title} className="flex items-start gap-3.5">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-cyan-300/24 bg-cyan-400/[0.12] text-[10px] font-bold text-cyan-200">
-                        ✓
-                      </span>
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/84">
-                          {item.title}
-                        </p>
-                        <p className="mt-1 text-[13px] leading-[1.65] text-white/60">
-                          {item.text}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-            </div>
-
+            <HeroIntegrationCard />
           </div>
         </div>
       </section>
@@ -209,8 +184,8 @@ export default async function HomePage() {
 
       <section id="integraciones" className="border-b border-white/8 bg-[rgba(5,20,40,0.92)] py-20 sm:py-24">
         <div className="pw-container">
-          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-            <div>
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch">
+            <div className="flex h-full flex-col">
               <div className="parallax-chip">Integración oficial</div>
               <h2 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 Patagonia Wings se conecta con Navigraph y SimBrief antes del login operacional
@@ -242,10 +217,10 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_36%),linear-gradient(180deg,rgba(8,30,58,0.92),rgba(3,15,28,0.92))] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10">
+            <div className="relative flex h-full min-h-[560px] overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_36%),linear-gradient(180deg,rgba(8,30,58,0.92),rgba(3,15,28,0.92))] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:min-h-full">
               <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cyan-300/10 to-transparent" />
-              <div className="relative z-10">
-                <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative z-10 flex h-full w-full flex-col justify-between">
+                <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200/72">
                       Ecosistema operativo
@@ -258,12 +233,14 @@ export default async function HomePage() {
                   <img
                     src="/branding/patagonia-logo.png"
                     alt="Patagonia Wings"
-                    className="h-20 w-20 object-contain opacity-95 drop-shadow-[0_16px_34px_rgba(0,0,0,0.35)]"
+                    className="h-40 w-40 object-contain opacity-95 drop-shadow-[0_18px_42px_rgba(0,0,0,0.38)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
                   />
                 </div>
 
                 <div className="mt-10 flex justify-center">
-                  <OfficialIntegrationLogos compact />
+                  <div className="w-full max-w-[500px]">
+                    <OfficialIntegrationLogos compact />
+                  </div>
                 </div>
 
                 <div className="mt-10 space-y-4 text-center">
@@ -305,18 +282,18 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <div className="relative overflow-hidden rounded-[24px]">
+          <div className="overflow-hidden rounded-[34px] border border-white/10 bg-white/5 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-sm">
+            <div className="relative aspect-video overflow-hidden rounded-[26px]">
               <img
-                src="/branding/nosotros-ops-room.svg"
-                alt="Sala de operaciones de Patagonia Wings con pilotos reunidos frente a una pantalla de trafico y briefing"
+                src="/branding/nosotros-ops-room-photo.png"
+                alt="Centro de operaciones de Patagonia Wings con pilotos y despachadores monitoreando vuelos frente a la plataforma"
                 className="h-full w-full object-cover"
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f] via-[#03162f]/72 to-transparent px-6 pb-5 pt-12">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/78">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f] via-[#03162f]/78 to-transparent px-7 pb-6 pt-14">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
                   Comunidad Patagonia Wings
                 </p>
-                <p className="mt-2 text-lg font-semibold text-white">
+                <p className="mt-2 text-lg font-semibold text-white sm:text-xl">
                   Briefing, inmersión y operación compartida
                 </p>
               </div>
@@ -328,20 +305,25 @@ export default async function HomePage() {
       <section id="servicios" className="border-y border-white/8 bg-[rgba(6,24,48,0.78)] py-20 backdrop-blur-sm">
         <div className="pw-container">
           <div className="parallax-chip">Servicios</div>
-          <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Una portada mucho más web, más comercial y más Patagonia Wings
-            </h2>
-            <Link href="/dashboard" className="button-primary w-fit">
-              Ver panel de piloto
-            </Link>
-          </div>
+          <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+                Operación web, economía y despacho en una sola plataforma
+              </h2>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/78">
+                Patagonia Wings conecta la reserva, el OFP, la economía del vuelo y la progresión del piloto en un flujo simple para operar con más realismo.
+              </p>
+            </div>
+</div>
 
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {services.map((item) => (
-              <article key={item.title} className="rounded-[28px] border border-white/10 bg-white/[0.06] p-7 backdrop-blur-md">
-                <div className="mb-5 h-1.5 w-16 rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300" />
-                <h3 className="text-2xl font-semibold text-white">{item.title}</h3>
+              <article key={item.title} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] p-7 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200/16 bg-cyan-300/10 text-2xl">
+                  {item.icon}
+                </div>
+                <div className="mt-5 h-1.5 w-16 rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300" />
+                <h3 className="mt-5 text-2xl font-semibold text-white">{item.title}</h3>
                 <p className="mt-4 text-base leading-7 text-slate-200/82">{item.text}</p>
               </article>
             ))}
@@ -351,13 +333,40 @@ export default async function HomePage() {
 
       <section id="flota" className="pw-container py-20 sm:py-24">
         <div className="parallax-chip">Flota</div>
-        <div className="mt-5 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div className="overflow-hidden rounded-[34px] border border-white/10 bg-white/4 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <img
-              src="/branding/hero-banner.png"
-              alt="Flota Patagonia Wings"
-              className="h-full w-full rounded-[26px] object-cover"
-            />
+        <div className="mt-6 grid gap-9 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-stretch">
+          <div className="flex h-full flex-col">
+            <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+              Flota Patagonia Wings en preparación operacional
+            </h2>
+
+            <div className="mt-7 overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_22px_80px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-[26px]">
+                <img
+                  src="/branding/hero-banner.png"
+                  alt="Aeronave con livery Patagonia Wings en vuelo"
+                  className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f]/72 via-[#03162f]/24 to-transparent px-6 pb-5 pt-16">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200/82">
+                    Liveries oficiales
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-white">
+                    Identidad propia para cada aeronave certificada
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-7 space-y-4 text-lg leading-8 text-slate-200/82">
+              <p>
+                Estamos preparando una flota conectada a la operación real de Patagonia Wings: aeronaves compatibles,
+                addons definidos, liveries oficiales y disponibilidad actualizada desde la base de datos.
+              </p>
+              <p>
+                La idea es que cada avión tenga identidad, rol operativo y presencia visual dentro de la aerolínea,
+                desde la planificación web hasta el cierre del vuelo en ACARS.
+              </p>
+            </div>
           </div>
 
           <HomeFleetShowcase />
@@ -367,18 +376,41 @@ export default async function HomePage() {
       <section id="certificaciones" className="border-y border-white/8 bg-[rgba(5,19,39,0.92)] py-20">
         <div className="pw-container">
           <div className="parallax-chip">Certificaciones</div>
-          <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-            Certificaciones, habilitaciones y operación previa al vuelo
+          <h2 className="mt-5 max-w-5xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+            Checkrides, habilitaciones y teoría para volar con estándar Patagonia Wings
           </h2>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">
+            El ingreso a la operación se apoya en formación teórica, evaluación práctica y habilitaciones progresivas,
+            para que cada piloto avance con criterio operacional y una base sólida antes de despegar.
+          </p>
+
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {[
-              "Perfil piloto completo",
-              "Habilitación IFR y ratings",
-              "Reserva, despacho y briefing final",
+              {
+                icon: "🛫",
+                title: "Checkride práctico",
+                text: "Evaluaciones de cabina y vuelo para validar SOP, maniobras, criterios operacionales y dominio básico de la aeronave.",
+              },
+              {
+                icon: "📘",
+                title: "Teóricas y habilitaciones",
+                text: "Módulos teóricos, ratings IFR y habilitaciones por aeronave para avanzar por etapas con reglas claras y progresión real.",
+              },
+              {
+                icon: "✅",
+                title: "Previo al vuelo",
+                text: "Reserva, despacho, briefing final y revisión operacional listos para llegar al ACARS con la operación bien preparada.",
+              },
             ].map((item) => (
-              <div key={item} className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.04] px-6 py-7">
-                <div className="mb-4 h-10 w-10 rounded-2xl bg-gradient-to-br from-cyan-300/35 to-emerald-300/25" />
-                <p className="text-lg font-semibold text-white">{item}</p>
+              <div
+                key={item.title}
+                className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.04] px-6 py-7 shadow-[0_18px_46px_rgba(0,0,0,0.18)]"
+              >
+                <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/18 bg-gradient-to-br from-cyan-300/24 to-emerald-300/16 text-2xl shadow-[0_10px_30px_rgba(25,186,200,0.12)]">
+                  <span aria-hidden>{item.icon}</span>
+                </div>
+                <p className="text-lg font-semibold text-white">{item.title}</p>
+                <p className="mt-3 text-[15px] leading-7 text-slate-200/78">{item.text}</p>
               </div>
             ))}
           </div>
@@ -512,28 +544,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="contacto" className="pw-container py-20 sm:py-24">
-        <div className="grid gap-6 rounded-[34px] border border-white/10 bg-gradient-to-r from-[rgba(9,38,78,0.84)] to-[rgba(8,89,82,0.74)] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.28)] lg:grid-cols-[1fr_auto] lg:items-center lg:p-10">
-          <div>
-            <div className="parallax-chip">Contacto</div>
-            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Siguiente paso: llevar este look al resto de la web
-            </h2>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/84">
-              Ingresa con tu cuenta Patagonia Wings para operar reservas, despacho y seguimiento real.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <Link href="/login" className="button-primary">
-              Ir a login
-            </Link>
-            <Link href="/register" className="parallax-outline-button">
-              Crear cuenta
-            </Link>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

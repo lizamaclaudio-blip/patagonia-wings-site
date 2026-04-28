@@ -103,12 +103,12 @@ canvas {
 .parallax-hero .parallax-bg {
   z-index: 0;
   background-image:
-    linear-gradient(90deg, rgba(3, 17, 34, 0.97) 0%, rgba(3, 17, 34, 0.86) 22%, rgba(3, 17, 34, 0.44) 46%, rgba(3, 17, 34, 0.26) 66%, rgba(3, 17, 34, 0.38) 100%),
+    linear-gradient(90deg, rgba(3, 17, 34, 0.96) 0%, rgba(3, 17, 34, 0.84) 23%, rgba(3, 17, 34, 0.42) 50%, rgba(3, 17, 34, 0.14) 72%, rgba(3, 17, 34, 0.26) 100%),
     url("/branding/home-hero-4k.jpg");
   background-size: cover;
   background-position: center center;
   transform: scale(1.02);
-  filter: saturate(1.10) contrast(1.06) brightness(0.96);
+  filter: saturate(1.06) contrast(1.08) brightness(0.98);
 }
 
 .parallax-hero .parallax-wing {
@@ -862,4 +862,186 @@ canvas {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: rgba(148, 163, 184, 0.88);
+}
+/* -------------------------------------------------------------------------- */
+/* PWG responsive scale guard                                                  */
+/* -------------------------------------------------------------------------- */
+/*
+  El navegador no permite controlar correctamente el zoom del usuario sin
+  romper accesibilidad. Estas reglas compensan viewports CSS muy anchos
+  (por ejemplo, navegador con zoom out o monitores ultra-wide) para que la UI
+  no quede microscópica ni perdida al centro.
+*/
+@media (min-width: 1680px) {
+  html {
+    font-size: 17px;
+  }
+
+  .pw-container {
+    width: min(100% - 8vw, 1640px);
+  }
+
+  .public-site-header {
+    border-radius: 34px;
+    padding-inline: clamp(2rem, 2.2vw, 3rem) !important;
+    padding-block: clamp(1.15rem, 1.05vw, 1.55rem) !important;
+  }
+
+  .public-header-logo {
+    height: clamp(72px, 4.3vw, 92px) !important;
+    width: clamp(72px, 4.3vw, 92px) !important;
+  }
+
+  .public-header-nav {
+    gap: clamp(1.8rem, 2vw, 2.8rem) !important;
+    font-size: clamp(0.95rem, 0.52vw, 1.08rem) !important;
+  }
+
+  .public-header-actions {
+    min-width: clamp(240px, 15vw, 320px) !important;
+  }
+
+  .home-hero-grid {
+    grid-template-columns: minmax(520px, 0.96fr) minmax(500px, 0.9fr) !important;
+    gap: clamp(5rem, 6vw, 9rem) !important;
+  }
+
+  .home-hero-left {
+    max-width: clamp(620px, 38vw, 780px) !important;
+  }
+
+  .home-hero-title {
+    font-size: clamp(7rem, 7vw, 10.5rem) !important;
+  }
+
+  .home-hero-slogan {
+    font-size: clamp(2rem, 2vw, 2.8rem) !important;
+  }
+
+  .home-integration-card {
+    max-width: clamp(560px, 32vw, 720px) !important;
+  }
+
+  .home-logo-navigraph {
+    height: clamp(86px, 4.8vw, 120px) !important;
+  }
+
+  .home-logo-simbrief {
+    height: clamp(92px, 5.1vw, 128px) !important;
+  }
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 19px;
+  }
+
+  .pw-container {
+    width: min(100% - 10vw, 1960px);
+  }
+
+  .parallax-hero .parallax-bg {
+    background-size: cover;
+    transform: scale(1.03);
+  }
+
+  .grid-overlay [class*="max-w-[1680px]"],
+  .grid-overlay [class*="max-w-[1440px]"] {
+    max-width: min(92vw, 2040px) !important;
+  }
+}
+
+@media (min-width: 2800px) {
+  html {
+    font-size: 22px;
+  }
+
+  .pw-container {
+    width: min(100% - 12vw, 2320px);
+  }
+
+  .home-hero-grid {
+    grid-template-columns: minmax(700px, 0.92fr) minmax(650px, 0.82fr) !important;
+  }
+
+  .grid-overlay [class*="max-w-[1680px]"],
+  .grid-overlay [class*="max-w-[1440px]"] {
+    max-width: min(92vw, 2380px) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* PWG button readability guard                                                */
+/* -------------------------------------------------------------------------- */
+/*
+  Ajuste global no destructivo: evita que textos como "Registrarme ahora",
+  "Confirmar traslado" o "Generar OFP SimBrief" queden pegados a los bordes.
+  Respeta botones w-full y estados disabled; solo mejora padding, ancho mínimo
+  y legibilidad general.
+*/
+.parallax-outline-button,
+.parallax-login-button,
+.button-primary,
+.button-secondary,
+.button-ghost {
+  min-height: 52px;
+  min-width: 156px;
+  padding-block: 0.88rem;
+  padding-inline: 1.7rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-align: center;
+  text-decoration: none;
+  overflow: visible;
+}
+
+.parallax-login-button,
+.button-primary {
+  padding-inline: 1.85rem;
+}
+
+.parallax-outline-button,
+.button-secondary,
+.button-ghost {
+  padding-inline: 1.7rem;
+}
+
+button.button-primary,
+button.button-secondary,
+button.button-ghost,
+a.button-primary,
+a.button-secondary,
+a.button-ghost,
+a.parallax-outline-button,
+a.parallax-login-button {
+  max-width: 100%;
+}
+
+.button-primary.w-fit,
+.button-secondary.w-fit,
+.button-ghost.w-fit,
+.parallax-outline-button.w-fit,
+.parallax-login-button.w-fit {
+  width: fit-content;
+}
+
+.button-primary.w-full,
+.button-secondary.w-full,
+.button-ghost.w-full,
+.parallax-outline-button.w-full,
+.parallax-login-button.w-full {
+  width: 100%;
+}
+
+@media (max-width: 420px) {
+  .parallax-outline-button,
+  .parallax-login-button,
+  .button-primary,
+  .button-secondary,
+  .button-ghost {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+    padding-inline: 1.25rem;
+  }
 }

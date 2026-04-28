@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BrandLogo } from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase/browser";
 
 const navItems = [
@@ -71,15 +71,22 @@ export default function PublicHeader() {
   }
 
   return (
-    <header className="parallax-nav flex items-center justify-between gap-5 overflow-visible rounded-[30px] px-5 py-5 lg:px-8 lg:py-6">
+    <header className="public-site-header parallax-nav flex items-center justify-between gap-5 overflow-visible rounded-[30px] px-5 py-5 lg:px-8 lg:py-6">
 
       {/* Logo */}
       <Link href={isAuthenticated ? "/dashboard" : "/"} className="relative z-10 -my-4 shrink-0 py-1">
-        <BrandLogo />
+        <Image
+          src="/branding/patagonia-logo.png"
+          alt="Patagonia Wings"
+          width={96}
+          height={96}
+          className="public-header-logo h-14 w-14 object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.32)] lg:h-[72px] lg:w-[72px]"
+          priority
+        />
       </Link>
 
       {/* Nav links */}
-      <nav className="hidden items-center gap-7 text-sm font-semibold tracking-[0.01em] text-white/94 lg:flex xl:gap-9 xl:text-[15px]">
+      <nav className="public-header-nav hidden items-center gap-7 text-sm font-semibold tracking-[0.01em] text-white/94 lg:flex xl:gap-9 xl:text-[15px]">
         {navItems.map((item) => {
           const active = isPublicNavActive(pathname, item.href);
           return (
@@ -95,7 +102,7 @@ export default function PublicHeader() {
       </nav>
 
       {/* Right-side buttons */}
-      <div className="hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[220px] lg:gap-3">
+      <div className="public-header-actions hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[220px] lg:gap-3">
 
         {isAuthenticated ? (
           /* ── LOGGED IN: dropdown with direct "Dashboard" as primary action ── */

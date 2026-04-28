@@ -14,6 +14,26 @@ import {
   type SimbriefDispatchResponse,
 } from "@/lib/simbrief";
 
+function cleanBaseUrl(value: string | undefined | null) {
+  const trimmed = value?.trim().replace(/\/+$/, "") ?? "";
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+function resolveReturnBaseUrl(request: NextRequest) {
+  return (
+    cleanBaseUrl(process.env.SIMBRIEF_RETURN_BASE_URL) ??
+    cleanBaseUrl(process.env.NEXT_PUBLIC_APP_URL) ??
+    request.nextUrl.origin
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.SIMBRIEF_API_KEY?.trim();
@@ -46,7 +66,8 @@ export async function POST(request: NextRequest) {
 
     const type = resolveSimbriefType(payload.aircraftCode);
     const timestamp = Math.floor(Date.now() / 1000);
-    const outputpage = `${request.nextUrl.origin}/api/simbrief/return?tab=dispatch&static_id=${encodeURIComponent(
+    const returnBaseUrl = resolveReturnBaseUrl(request);
+    const outputpage = `${returnBaseUrl}/api/simbrief/return?tab=dispatch&static_id=${encodeURIComponent(
       staticId
     )}&username=${encodeURIComponent(payload.simbriefUsername)}`;
 

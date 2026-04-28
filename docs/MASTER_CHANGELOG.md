@@ -501,3 +501,425 @@ Requiere asegurar columnas adicionales en `pilot_salary_ledger` para `expenses_t
 - El número de vuelo enviado a SimBrief queda separado: `airline=PWG` + `fltnum=1301`.
 
 **Validación sugerida:** `npx tsc --noEmit`, `npm run build`, probar “Generar OFP SimBrief” y verificar que la URL use `fltnum=1301`, no `fltnum=PWG1301`.
+---
+
+## Actualización 17C — Modal oficial SimBrief seguro
+
+**Objetivo:** dejar el flujo SimBrief integrado sin iframe ni automatización insegura del DOM externo.
+
+**Cambios:**
+- SimBrief se abre como ventana/popup oficial prellenada desde Patagonia Wings cuando se usa modo redirect.
+- Patagonia Wings mantiene un estado visual de espera mientras el piloto genera el OFP en SimBrief.
+- Al cerrar la ventana, la UI indica cargar el OFP automático con `static_id`.
+- El modo API queda preparado para cuando exista una SimBrief API Key real de generación.
+- `outputpage` usa `SIMBRIEF_RETURN_BASE_URL`, luego `NEXT_PUBLIC_APP_URL`, y solo como último recurso el origen de la request.
+
+**Regla:** no se usa iframe ni scripts para presionar botones dentro de SimBrief. El piloto debe generar el OFP dentro de SimBrief salvo que exista una API Key de generación válida.
+
+**SQL:** no requiere.
+
+---
+
+## Actualización 17D — Integración Navigraph/SimBrief movida a portada pública
+
+**Objetivo:** sacar la vitrina de partners del dashboard y llevar la comunicación de integración a la página de inicio pública, antes del login, con mejor presencia visual y mensaje operacional claro.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se rehizo el hero público con logo grande de Patagonia Wings, título/slogan más potentes y mejor presencia visual.
+  - se agregaron logos transparentes de Navigraph y SimBrief en la portada, integrados al hero y a una sección pública nueva de integración.
+  - se añadió sección `#integraciones` explicando que Patagonia Wings está integrada con Navigraph y SimBrief.
+  - se dejó explícito que para usar el flujo completo se requiere suscripción activa de Navigraph.
+  - se dejó explícito que el usuario debe registrar su usuario Navigraph / SimBrief al crear su cuenta.
+- `src/app/dashboard/page.tsx`
+  - se dejó de renderizar la vitrina `DashboardPartnersShowcase`, eliminando esa comunicación del dashboard privado.
+- `src/app/register/page.tsx`
+  - se agregó campo opcional `Usuario Navigraph / SimBrief` en el registro.
+  - ese valor se guarda en metadata como `simbrief_username` para que luego el perfil piloto y el despacho puedan reutilizarlo.
+  - se actualizó el panel visual del registro para remarcar la integración `Navigraph + SimBrief`.
+
+**Regla funcional:**
+- La integración se comunica ahora desde la portada pública.
+- El dashboard ya no muestra esa sección de publicidad/integraciones.
+- El registro ya permite dejar el usuario que alimentará el flujo OFP/dispatch.
+
+**SQL:** no requiere.
+
+**Validación sugerida:**
+1. abrir `/` y verificar hero nuevo + logos Navigraph/SimBrief + sección pública de integración.
+2. abrir `/dashboard` y confirmar que ya no aparece la vitrina de partners.
+3. abrir `/register` y confirmar el nuevo campo `Usuario Navigraph / SimBrief`.
+4. ejecutar `npx tsc --noEmit` y `npm run build`.
+
+### Ajuste visual 17D.1 — Hero rehecho estilo referencia
+- Se rehízo nuevamente el hero de `src/app/page.tsx` para acercarlo mucho más a la primera referencia aprobada.
+- Se eliminó el look anterior tipo bloque/chips pequeños y se reemplazó por una composición hero más limpia y editorial:
+  - isotipo Patagonia Wings grande a la izquierda,
+  - título grande “Patagonia Wings”,
+  - slogan destacado,
+  - logos Navigraph y SimBrief integrados sin recuadros,
+  - mensajes de suscripción/usuario con íconos circulares,
+  - CTA principal “Comienza tu viaje”.
+- `HomeStatsBar` se movió fuera del hero para que la cabecera no se vea comprimida.
+
+---
+
+## Actualización 17E — Corrección visual hero portada estilo referencia
+
+**Objetivo:** corregir el primer rediseño de portada porque quedó demasiado centrado, pequeño y visualmente débil. Se ajusta el hero para acercarlo a la referencia aprobada: logo grande, título elegante, slogan protagonista e integración Navigraph/SimBrief limpia sin recuadros.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se reorganizó el hero para que el contenido vuelva a sentirse grande, premium y hacia el lado izquierdo.
+  - se aumentó el logo principal de Patagonia Wings junto al título.
+  - se cambió el título a estilo serif/elegante y de mayor tamaño.
+  - se recuperó un slogan visible tipo referencia: `Tu conexión aérea en la Patagonia`.
+  - se reemplazaron los logos en recuadros por una marca limpia construida en la UI: `Navigraph | SimBrief`, sin cajas pesadas ni fondos negros.
+  - se movió la barra de estadísticas fuera del primer fold para no ensuciar la portada principal.
+  - se mantuvo la sección pública de integración y el texto de requisito de suscripción Navigraph.
+
+**Regla visual:**
+- La portada debe sentirse más como la referencia visual premium, no como un bloque pequeño centrado.
+- Los logos de integración deben verse limpios, sin recuadro pesado ni imagen con fondo.
+
+**SQL:** no requiere.
+
+---
+
+## Actualización 17F — Hero público premium con logos oficiales Navigraph / SimBrief
+
+**Objetivo:** corregir la portada pública para dejarla mucho más cercana a la referencia aprobada, evitando un layout cargado y respetando los logos oficiales de Navigraph y SimBrief sin redibujarlos.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se rehízo el hero público completo para darle una composición más limpia, grande y equilibrada en formato landscape.
+  - se eliminó el pseudo-logo dibujado de Navigraph y se reemplazó por los archivos oficiales reales desde `public/partners/navigraph.png` y `public/branding/Navigraph Logos/simbrief-75dpi-horizontal.png`.
+  - se reorganizó el contenido en un bloque premium más amplio, con mejor jerarquía visual, logo Patagonia Wings protagonista, título más grande y mejor distribución del espacio.
+  - se simplificó el mensaje del hero con dos tarjetas informativas en vez de varias líneas apretadas e iconografía recargada.
+  - se mantuvo la sección pública de integración antes del login, pero con apoyo visual más limpio.
+- `src/app/globals.css`
+  - se ajustó el fondo del hero para usar una versión más premium (`home-hero-4k.jpg`) con nueva gradiente y mejor balance para pantallas anchas.
+- `docs/MASTER_CHANGELOG.md`
+  - se agregó el registro acumulativo de esta iteración.
+
+**Regla aplicada:**
+- No se modifican ni reinterpretan los logos oficiales de SimBrief o Navigraph; solo se usan sus assets oficiales y se ajustan tamaños/composición.
+
+**SQL:** no requiere.
+
+**Validación sugerida:**
+1. abrir `/` y revisar el hero en pantalla completa desktop.
+2. verificar que los logos mostrados sean los oficiales.
+3. confirmar que el contenido ya no se vea pequeño ni amontonado al lado izquierdo.
+4. ejecutar `npx tsc --noEmit` y `npm run build`.
+
+---
+
+## Actualización 17G — Cuadro de integración más grande con logos subidos por Claudio
+
+**Objetivo:** agrandar el cuadro de integración del hero y usar los logos correctos subidos por Claudio para Navigraph y SimBrief.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se reemplazó el bloque anterior del hero por un cuadro de integración más grande y mejor proporcionado.
+  - se usaron los logos oficiales subidos por Claudio para `Navigraph` y `SimBrief by Navigraph`.
+  - se reorganizó el cuadro con dos bloques de logos más visibles y textos descriptivos debajo.
+  - se mantuvieron los puntos de “Suscripción requerida” y “Usuario vinculado”, ahora con mejor lectura.
+- `public/partners/navigraph-official-horizontal.png`
+  - nuevo asset oficial subido por Claudio.
+- `public/partners/simbrief-by-navigraph-official.png`
+  - nuevo asset oficial subido por Claudio.
+- `docs/MASTER_CHANGELOG.md`
+  - se agregó esta actualización al log maestro.
+
+**SQL:** no requiere.
+
+---
+
+## Actualización 17H — Hero sin recuadros + bloque paralelo limpio + logo menú solo ícono
+
+**Objetivo:** dejar el hero más limpio y elegante, moviendo la integración en paralelo al título principal, sin recuadros, con logos más grandes y simplificando el logo del menú superior.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se eliminó el logo Patagonia Wings que aparecía dentro del contenido del hero.
+  - se reorganizó el hero en dos columnas: a la izquierda el título principal y a la derecha la integración oficial.
+  - se eliminó el cuadro/contenedor del bloque de integración para que todo quede directamente sobre el fondo del hero.
+  - se quitaron los recuadros internos de los logos y se dejaron los logos oficiales mucho más grandes y visibles.
+  - se mantuvieron los textos clave de Navigraph / SimBrief, suscripción requerida y usuario vinculado, pero en un layout más limpio.
+- `src/components/site/PublicHeader.tsx`
+  - se agrandó el logo del menú superior.
+  - se eliminaron las letras del branding del header, dejando solo el ícono de Patagonia Wings.
+- `docs/MASTER_CHANGELOG.md`
+  - se agregó esta actualización al log maestro.
+
+**SQL:** no requiere.
+
+---
+
+## Actualización 17I — Responsive global anti-zoom-out
+
+**Objetivo:** evitar que la web se vea excesivamente pequeña, centrada y perdida cuando el navegador está con zoom out o cuando se abre en viewports/monitores ultra-wide.
+
+**Cambios:**
+- `src/app/globals.css`
+  - se agregaron reglas globales progresivas para viewports anchos (`1680px`, `2200px`, `2800px`).
+  - se escala el `font-size` base de forma controlada en pantallas muy anchas.
+  - se amplía `.pw-container` para usar mejor el ancho disponible.
+  - se refuerza el tamaño del header público, logo, navegación y acciones.
+  - se agregan reglas específicas del hero para que título, slogan, bloque de integración y logos no queden microscópicos.
+  - se agregan reglas generales para contenedores privados grandes dentro de `.grid-overlay`.
+- `src/app/page.tsx`
+  - se agregaron clases semánticas al hero (`home-hero-grid`, `home-hero-title`, `home-integration-card`, etc.) para controlar el escalado sin hacks ni zoom forzado.
+- `src/components/site/PublicHeader.tsx`
+  - se agregaron clases semánticas al header público (`public-site-header`, `public-header-logo`, `public-header-nav`, `public-header-actions`) para permitir escalado responsive global.
+
+**Regla aplicada:**
+- No se bloquea el zoom del navegador.
+- No se usa `body zoom` ni `transform scale` global.
+- La solución respeta accesibilidad y compensa viewports enormes con reglas responsive.
+
+**SQL:** no requiere.
+
+**Validación sugerida:**
+1. abrir `/` en zoom 100%, 80%, 67% y 50%.
+2. verificar que el hero, logos y header no queden microscópicos.
+3. revisar dashboard y páginas principales para confirmar que los contenedores usen mejor el ancho.
+4. ejecutar `npx tsc --noEmit` y `npm run build`.
+
+---
+
+## Bloque 17M — Imagen real en cuadro de comunidad / nosotros
+
+**Base oficial respetada:** `public.zip` subida por Claudio.
+
+**Objetivo:**
+- reemplazar la ilustración del bloque de comunidad por la imagen real del centro de operaciones enviada por Claudio;
+- ajustar el cuadro para que acompañe mejor la proporción horizontal de la nueva imagen.
+
+**Archivos modificados:**
+- `src/app/page.tsx`
+  - se reemplaza la imagen `/branding/nosotros-ops-room.svg` por la nueva imagen real `nosotros-ops-room-photo.png`;
+  - se ajusta el contenedor visual del bloque `Nosotros` usando un marco más limpio y una proporción `aspect-video` para que el cuadro se adapte a la imagen.
+- `public/branding/nosotros-ops-room-photo.png`
+  - nueva imagen real del centro de operaciones Patagonia Wings.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17N — Servicios landing actualizados
+
+**Base oficial respetada:** `public.zip` subida por Claudio.
+
+**Objetivo:** actualizar la sección pública `Servicios` para reflejar el estado actual de Patagonia Wings: itinerarios, despacho/OFP, economía operacional y progresión del piloto.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - se cambia el título de la sección por una propuesta más actual y orientada a landing page;
+  - se agregan textos cortos explicativos para itinerarios oficiales, despacho SimBrief, economía operacional y perfil/progresión;
+  - se incorporan emojis/íconos visuales por card;
+  - se ajusta el grid a 4 cards en desktop, 2 en tablet y 1 en mobile.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17O — Integración oficial homogénea y logo Patagonia Wings ampliado
+
+**Base oficial respetada:** `public.zip` subida por Claudio.
+
+**Objetivo:** ajustar la sección pública de Integración Oficial para que el bloque derecho de ecosistema operativo tenga una presencia visual más homogénea con el contenido izquierdo.
+
+**Cambios:**
+- `src/app/page.tsx`
+  - la grilla de Integración Oficial pasa a dos columnas equivalentes en desktop.
+  - el bloque derecho `Ecosistema operativo` queda estirado a la misma altura visual del contenido izquierdo.
+  - el logo Patagonia Wings del bloque derecho se amplía de forma importante para mejorar presencia de marca.
+  - se mantiene el flujo y contenido existente sin tocar lógica ni rutas.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17P — Logos Navigraph / SimBrief más grandes y apilados
+
+**Base oficial respetada:** última base vigente con bloque 17O aplicado.
+
+**Objetivo:**
+- agrandar visualmente los logos de Navigraph y SimBrief dentro del panel derecho de integración oficial;
+- apilarlos uno sobre otro para llenar mejor la ventana y evitar sensación de vacío;
+- mantener intacto el flujo y la estructura general de la landing.
+
+**Archivos modificados:**
+- `src/app/page.tsx`
+  - el componente `OfficialIntegrationLogos` en modo `compact` ahora muestra los logos en columna;
+  - se aumentó el tamaño visual de ambos logos en la tarjeta derecha;
+  - se agregó un ancho máximo controlado para que el bloque de logos quede más presente y equilibrado.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17Q — Sección Flota conectada sin scroll y mejor layout landing
+
+**Base oficial respetada:** última base vigente derivada de `public.zip` y bloques posteriores aplicados en esta conversación.
+
+**Objetivo:**
+- reorganizar la sección de Flota de la landing para que el título quede arriba de la imagen tipo tablet;
+- mover el texto descriptivo bajo la imagen;
+- dejar el listado de aeronaves a la derecha, alineado con la altura general del bloque;
+- quitar el scroll interno del listado para mostrar todas las aeronaves disponibles;
+- mantener conexión con Supabase y actualización automática por realtime.
+
+**Archivos modificados:**
+- `src/app/page.tsx`
+  - reestructura el bloque `#flota` en dos columnas equilibradas;
+  - título y visual principal quedan a la izquierda;
+  - descripción queda debajo de la imagen;
+  - listado conectado queda a la derecha.
+- `src/components/site/HomeFleetShowcase.tsx`
+  - deja el componente enfocado en lista de aeronaves conectada;
+  - mantiene carga desde `aircraft` y `aircraft_fleet` en Supabase;
+  - mantiene realtime para actualizar automáticamente;
+  - elimina `max-height` y `overflow-y-auto` para no tener scroll interno;
+  - mueve los botones debajo de la lista;
+  - mejora visual con card premium y separador verde.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17R — Flota landing en 3 columnas y texto operacional
+
+**Base oficial respetada:** última base vigente de Claudio.
+
+**Objetivo:**
+- hacer más compacta la lista de aeronaves de la landing;
+- evitar que el usuario vea mensajes técnicos sobre Supabase;
+- reemplazar el contador confuso de modelos por una etiqueta operacional.
+
+**Archivos modificados:**
+- `src/components/site/HomeFleetShowcase.tsx`
+  - la lista de aeronaves ahora usa 3 columnas en pantallas grandes para reducir altura;
+  - se reemplazó el texto técnico sobre Supabase por un texto corto orientado a operación, habilitaciones y liveries oficiales;
+  - se cambió el indicador `28 modelos` por `Flota en certificación`, evitando mostrar un número que puede variar según catálogo/base/fallback.
+- `docs/MASTER_CHANGELOG.md`
+  - se registra esta actualización.
+
+**Nota:**
+El número 28 venía de contar todos los modelos únicos cargados desde la base operacional o, si no había lectura disponible, desde el fallback local de flota.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17S — Flota certificada desde Supabase + Sukhoi + carga optimizada
+
+**Base oficial respetada:** `public.zip` subida por Claudio.
+
+**Objetivo:**
+- tomar como certificados todos los modelos activos que existan en Supabase;
+- incluir correctamente el Sukhoi/Sukhoi Superjet 100 cuando exista en catálogo;
+- optimizar la carga de la sección de flota para que responda más rápido y con menos ambigüedad.
+
+**Archivos modificados:**
+- `src/components/site/HomeFleetShowcase.tsx`
+  - la lista principal ahora se arma desde `aircraft_models` activos, usando `aircraft` solo para enriquecer nombres y addons cuando existan;
+  - se reemplaza la lectura mezclada de `aircraft_fleet` por una fuente más clara para catálogo/modelos certificados;
+  - se agrega mapeo de `SU95` -> `Sukhoi Superjet 100`;
+  - el badge ahora muestra `N modelos certificados` según lo cargado realmente;
+  - se ajusta la suscripción realtime para escuchar `aircraft_models` y `aircraft`;
+  - se reduce el debounce de refresco para que los cambios entren más rápido;
+  - se actualiza el fallback incluyendo Sukhoi.
+
+**Nota operativa:**
+- si el navegador o el entorno local muestran números antiguos, limpiar `.next` y recargar ayuda a evitar lecturas cacheadas.
+
+**Validación local:**
+- la base subida no trae dependencias instaladas completas para ejecutar `tsc` aquí, así que no pude validar compilación completa en el contenedor.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17T — Flota certificada real desde aircraft_models y carga optimizada
+
+**Base oficial respetada:** última base vigente enviada por Claudio y CSV exportado desde Supabase.
+
+**Hallazgo del CSV:**
+- `aircraft_models` tiene 33 modelos activos, incluyendo `SU95` / Sukhoi SuperJet 100.
+- La columna correcta para nombre visible no es `name`; es `display_name` / `variant_name`.
+- La landing estaba consultando también `aircraft`, tabla que contiene 4.261 filas, lo que hacía más lenta la carga y podía mezclar datos operativos con modelos certificados.
+
+**Cambios:**
+- `src/components/site/HomeFleetShowcase.tsx`
+  - ahora lee la flota certificada directamente desde `public.aircraft_models`.
+  - usa `display_name`, `variant_name`, `display_category`, `manufacturer`, `code` e `is_active`.
+  - deja de consultar la tabla pesada `aircraft` para la landing.
+  - mantiene actualización automática solo escuchando cambios de `aircraft_models`.
+  - el contador queda basado en modelos activos reales.
+  - actualiza fallback local a 33 modelos certificados, incluyendo `B736`, `B748`, `B77F`, `C172`, `DHC6`, `E170` y `SU95`.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17U — Fix runtime HomeFleetShowcase tags undefined
+
+**Base oficial respetada:** `public.zip` + últimos parches de flota.
+
+**Motivo:**
+- En desarrollo apareció `Runtime TypeError: Cannot read properties of undefined (reading 'length')` dentro de `HomeFleetShowcase.tsx` al evaluar `entry.tags.length`.
+- El componente debe ser tolerante si una fila/fallback llega sin `tags` por cache, datos incompletos o mezcla temporal de versiones.
+
+**Cambio:**
+- `src/components/site/HomeFleetShowcase.tsx`
+  - se agrega `safeTags = Array.isArray(entry.tags) ? entry.tags.filter(Boolean) : []` antes de renderizar badges;
+  - se evita leer `.length` sobre `undefined`;
+  - se agrega fallback visual para nombre/código de aeronave.
+
+**SQL:** no requiere.
+
+---
+
+## Bloque 17V — Certificaciones landing con foco en checkrides, teóricas y habilitaciones
+
+**Base oficial respetada:** última base vigente con `public.zip` + parches actuales ya trabajados en esta conversación.
+
+**Cambio solicitado:**
+- reemplazar el bloque genérico de certificaciones de la landing por contenido más alineado con la operación real de Patagonia Wings;
+- hablar explícitamente de checkrides, teóricas y habilitaciones;
+- usar iconos/emojis y tarjetas más explicativas, pero con texto corto de landing page.
+
+**Archivo modificado:**
+- `src/app/page.tsx`
+  - se actualiza el título de la sección a un enfoque más operacional;
+  - se agrega texto introductorio corto;
+  - se reemplazan las tres cards por:
+    - `🛫 Checkride práctico`
+    - `📘 Teóricas y habilitaciones`
+    - `✅ Previo al vuelo`
+  - cada card ahora incluye icono/emojis, título y descripción breve más clara para el usuario final.
+
+**SQL:** no requiere.
+
+
+---
+
+## Bloque 17W — Eliminación CTA final y botón panel piloto
+
+**Base oficial respetada:** última base vigente con `public.zip` + actualizaciones aplicadas hasta el bloque 17V.
+
+**Objetivo:**
+- eliminar la sección final tipo contacto/CTA que decía “Siguiente paso: llevar este look al resto de la web”;
+- eliminar el botón “Ver panel de piloto” de la sección Servicios;
+- no tocar ni revertir las actualizaciones visuales y funcionales ya aplicadas.
+
+**Archivo modificado:**
+- `src/app/page.tsx`
+  - se eliminó el CTA final `#contacto`;
+  - se eliminó solo el botón de acceso al panel dentro de Servicios;
+  - se mantiene intacto el resto del contenido de la landing.
+
+**SQL:** no requiere.
