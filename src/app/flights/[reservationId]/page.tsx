@@ -37,6 +37,28 @@ type FlightReservationResultRow = {
   fuel_cost_usd?: number | null;
   maintenance_cost_usd?: number | null;
   distance_nm?: number | null;
+  net_profit_usd?: number | null;
+};
+
+type FlightEconomySnapshotRow = {
+  economy_source?: string | null;
+  fuel_kg_estimated?: number | null;
+  fuel_kg_actual?: number | null;
+  block_minutes_estimated?: number | null;
+  block_minutes_actual?: number | null;
+  passenger_revenue_usd?: number | null;
+  cargo_revenue_usd?: number | null;
+  onboard_service_revenue_usd?: number | null;
+  onboard_sales_revenue_usd?: number | null;
+  fuel_cost_usd?: number | null;
+  maintenance_cost_usd?: number | null;
+  airport_fees_usd?: number | null;
+  handling_cost_usd?: number | null;
+  total_cost_usd?: number | null;
+  net_profit_usd?: number | null;
+  pilot_payment_usd?: number | null;
+  repair_cost_usd?: number | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type FlightScoreReportRow = {
@@ -164,6 +186,10 @@ function FlightResultContent() {
   const [saveMessage, setSaveMessage] = useState("");
   const [reservation, setReservation] = useState<FlightReservationResultRow | null>(null);
   const [scoreReport, setScoreReport] = useState<FlightScoreReportRow | null>(null);
+  const [plannedSnapshot, setPlannedSnapshot] = useState<FlightEconomySnapshotRow | null>(null);
+  const [actualSnapshot, setActualSnapshot] = useState<FlightEconomySnapshotRow | null>(null);
+  const [hasLedgerEntry, setHasLedgerEntry] = useState(false);
+  const [hasSalaryEntry, setHasSalaryEntry] = useState(false);
   const [pilotCallsign, setPilotCallsign] = useState("");
   const [appealCategory, setAppealCategory] = useState<AppealCategory>("score");
   const [appealReason, setAppealReason] = useState("");
@@ -232,6 +258,38 @@ function FlightResultContent() {
     };
   }, [reservationId, session]);
 
+  useEffect(() => {
+    if (!reservationId) return;
+    let cancelled = false;
+    async function loadEconomyRows() {
+      const [economyRes, ledgerRes, salaryRes] = await Promise.all([
+        supabase
+          .from("flight_economy_snapshots")
+          .select("economy_source,fuel_kg_estimated,fuel_kg_actual,block_minutes_estimated,block_minutes_actual,passenger_revenue_usd,cargo_revenue_usd,onboard_service_revenue_usd,onboard_sales_revenue_usd,fuel_cost_usd,maintenance_cost_usd,airport_fees_usd,handling_cost_usd,total_cost_usd,net_profit_usd,pilot_payment_usd,repair_cost_usd,metadata")
+          .eq("reservation_id", reservationId)
+          .in("economy_source", ["simbrief", "estimate", "actual"])
+          .order("created_at", { ascending: false }),
+        supabase.from("airline_ledger").select("id", { count: "exact", head: true }).eq("reservation_id", reservationId),
+        supabase.from("pilot_salary_ledger").select("id", { count: "exact", head: true }).eq("reservation_id", reservationId),
+      ]);
+      if (cancelled) return;
+      const rows = (economyRes.data ?? []) as FlightEconomySnapshotRow[];
+      const actual = rows.find((row) => asText(row.economy_source).toLowerCase() === "actual") ?? null;
+      const planned = rows.find((row) => {
+        const source = asText(row.economy_source).toLowerCase();
+        return source === "simbrief" || source === "estimate";
+      }) ?? null;
+      setActualSnapshot(actual);
+      setPlannedSnapshot(planned);
+      setHasLedgerEntry((ledgerRes.count ?? 0) > 0);
+      setHasSalaryEntry((salaryRes.count ?? 0) > 0);
+    }
+    void loadEconomyRows();
+    return () => {
+      cancelled = true;
+    };
+  }, [reservationId]);
+
   const mergedScorePayload = useMemo(() => {
     const reservationPayload = asObject(reservation?.score_payload);
     const reportPayload = asObject(scoreReport?.score_payload);
@@ -289,6 +347,9 @@ function FlightResultContent() {
     asText(scoreReport?.notes) ||
     asText(mergedScorePayload.procedural_summary) ||
     asText(mergedScorePayload.summary);
+  const actualMeta = asObject(actualSnapshot?.metadata);
+  const plannedRevenue = asNumber(plannedSnapshot?.passenger_revenue_usd) + asNumber(plannedSnapshot?.cargo_revenue_usd) + asNumber(plannedSnapshot?.onboard_service_revenue_usd) + asNumber(plannedSnapshot?.onboard_sales_revenue_usd);
+  const actualRevenue = asNumber(actualSnapshot?.passenger_revenue_usd) + asNumber(actualSnapshot?.cargo_revenue_usd) + asNumber(actualSnapshot?.onboard_service_revenue_usd) + asNumber(actualSnapshot?.onboard_sales_revenue_usd);
 
   async function handleAppealSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -600,6 +661,35 @@ function FlightResultContent() {
             </div>
           </section>
           ) : null}
+
+          <section className="glass-panel rounded-[30px] p-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Planificado vs real</p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: "Fuel (kg)", value: `${Math.round(asNumber(plannedSnapshot?.fuel_kg_estimated)) || 0} / ${Math.round(asNumber(actualSnapshot?.fuel_kg_actual)) || 0}` },
+                { label: "Block", value: `${formatMinutes(asNumber(plannedSnapshot?.block_minutes_estimated))} / ${formatMinutes(asNumber(actualSnapshot?.block_minutes_actual) || reservation?.actual_block_minutes)}` },
+                { label: "Ingresos USD", value: `${plannedRevenue ? `$${plannedRevenue.toFixed(0)}` : "Pendiente"} / ${actualRevenue ? `$${actualRevenue.toFixed(0)}` : "Pendiente"}` },
+                { label: "Costos USD", value: `${asNumber(plannedSnapshot?.total_cost_usd) ? `$${asNumber(plannedSnapshot?.total_cost_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.total_cost_usd) ? `$${asNumber(actualSnapshot?.total_cost_usd).toFixed(0)}` : "Pendiente"}` },
+                { label: "Utilidad USD", value: `${asNumber(plannedSnapshot?.net_profit_usd) ? `$${asNumber(plannedSnapshot?.net_profit_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.net_profit_usd) ? `$${asNumber(actualSnapshot?.net_profit_usd).toFixed(0)}` : "Pendiente"}` },
+                { label: "Comisión USD", value: `${asNumber(plannedSnapshot?.pilot_payment_usd) ? `$${asNumber(plannedSnapshot?.pilot_payment_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd) ? `$${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd).toFixed(0)}` : "Pendiente"}` },
+                { label: "Ventas a bordo", value: `${asNumber(plannedSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Pendiente"}` },
+                { label: "Servicio a bordo", value: `${asNumber(plannedSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Pendiente"}` },
+              ].map((item) => (
+                <div key={item.label} className="surface-outline rounded-[22px] px-5 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">{item.label}</p>
+                  <p className="mt-2 text-base font-semibold text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Snapshot: {actualSnapshot ? "Creado" : "Pendiente"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Ledger: {hasLedgerEntry ? "Creado" : "Pendiente"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary acumulado: {hasSalaryEntry ? "Sí" : "Pendiente"}</p>
+            </div>
+            <p className="mt-3 text-sm text-white/66">
+              {asText(actualMeta.onboard_quality_reason) || "Sin motivo operacional adicional para ajuste de ventas/servicio."}
+            </p>
+          </section>
 
           {canSeeAppeal ? (
           <section className="glass-panel rounded-[30px] p-7">

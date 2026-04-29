@@ -1078,3 +1078,19 @@ El número 28 venía de contar todos los modelos únicos cargados desde la base 
   - `20260429_18b_rls_accounting_guard.sql`
   - `20260429_18b_post_audit.sql`
 - Build validado con `npm run build` sin errores TypeScript.
+
+---
+
+## 2026-04-30 - Fases A y 6 parcial (route learning + planned vs real)
+
+Cambios:
+- Route learning activo: nueva API `POST /api/dispatch/route-learning` para guardar rutas limpias por origen/destino/nivel/tipo y aumentar `usage_count`.
+- Route Finder prioriza coincidencias por tipo/nivel/categoria y devuelve metadata de uso.
+- Dashboard: al usar ruta o validar OFP se persiste aprendizaje de ruta; se muestra tarjeta de sugerencia con fuente/uso.
+- Cierre real ACARS: factores deterministas de ventas/servicio a bordo por calidad operacional (seed por reserva) para evitar variacion en reintentos.
+- Detalle de vuelo: nueva seccion Planificado vs Real con fuel, block, ingresos, costos, utilidad, comision y estado contable (snapshot/ledger/salary).
+- Nueva migracion: `supabase/migrations/20260430_pilot_progression_catalog_and_ledger_columns.sql` para columnas de trazabilidad y catalogo minimo de progresion piloto (idempotente).
+
+Notas:
+- No se modifico bloque 18B contable.
+- `npm run build` OK.
