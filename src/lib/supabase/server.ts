@@ -2,11 +2,27 @@ import { createClient, type SupabaseClient, type User } from "@supabase/supabase
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function assertServerEnv() {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY.");
   }
+}
+
+export function createSupabaseAdminClient(): SupabaseClient {
+  assertServerEnv();
+
+  if (!supabaseServiceRoleKey) {
+    throw new Error("Falta SUPABASE_SERVICE_ROLE_KEY para escrituras contables server-side.");
+  }
+
+  return createClient(supabaseUrl as string, supabaseServiceRoleKey as string, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
 
 export function createSupabaseServerClient(accessToken?: string): SupabaseClient {

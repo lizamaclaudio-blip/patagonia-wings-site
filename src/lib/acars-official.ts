@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculateFlightCommission, calculateDamageDeduction, estimateFlightEconomy } from "@/lib/pilot-economy";
 
 export type OfficialFlightStatus =
@@ -314,7 +314,7 @@ function isMissingRelationError(error: unknown) {
 }
 
 async function maybeInsert(table: string, payload: Record<string, unknown> | Record<string, unknown>[]) {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from(table).insert(payload);
   if (error && !isMissingRelationError(error)) {
     throw error;
@@ -322,7 +322,7 @@ async function maybeInsert(table: string, payload: Record<string, unknown> | Rec
 }
 
 async function maybeUpsert(table: string, payload: Record<string, unknown>, onConflict?: string) {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from(table).upsert(payload, onConflict ? { onConflict } : undefined);
   if (error && !isMissingRelationError(error)) {
     throw error;
@@ -331,7 +331,7 @@ async function maybeUpsert(table: string, payload: Record<string, unknown>, onCo
 
 async function maybeDeleteByReservationId(table: string, reservationId: string) {
   if (!reservationId) return;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from(table).delete().eq("reservation_id", reservationId);
   if (error && !isMissingRelationError(error)) {
     throw error;
@@ -340,7 +340,7 @@ async function maybeDeleteByReservationId(table: string, reservationId: string) 
 
 async function maybeUpsertReservationRow(table: string, reservationId: string, payload: Record<string, unknown>) {
   if (!reservationId) return;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data, error: selectError } = await supabase
     .from(table)
     .select("id")
@@ -366,7 +366,7 @@ async function maybeUpsertReservationRow(table: string, reservationId: string, p
 
 async function maybeRecalculateAirlineBalance(airlineId: string) {
   if (!airlineId) return;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
 
   const rpcResult = await supabase.rpc("pw_recalculate_airline_balance", { p_airline_id: airlineId });
   if (!rpcResult.error) return;
@@ -1011,6 +1011,7 @@ export async function persistOfficialCloseout(params: {
 }) {
   const official = evaluateOfficialCloseout(params);
   const supabase = createSupabaseServerClient(params.accessToken);
+  const accountingSupabase = createSupabaseAdminClient();
   const nowIso = new Date().toISOString();
   const reservationId = asText(params.reservation.id);
   const existingPayload = asObject(params.reservation.score_payload);
@@ -1123,8 +1124,6 @@ export async function persistOfficialCloseout(params: {
       aircraftTypeCode
     );
 
-    const netEarned = Math.max(0, commissionUsd - damageDeductionUsd);
-    const currentBalance = asNumber(params.profile.wallet_balance);
     const pilotProfilePatch = rewardsAlreadyApplied
       ? {
           current_airport_code: official.aircraftLocation,
@@ -1136,7 +1135,6 @@ export async function persistOfficialCloseout(params: {
           current_airport_icao: official.aircraftLocation,
           total_hours: currentHours + blockHours,
           career_hours: currentCareerHours + blockHours,
-          wallet_balance: Math.round((currentBalance + netEarned) * 100) / 100,
           updated_at: nowIso,
         };
 
@@ -1343,7 +1341,7 @@ export async function persistOfficialCloseout(params: {
     await maybeUpsertReservationRow("flight_economy_snapshots", reservationId, economySnapshotPayload);
 
     const pilotCallsign = asText(params.profile.callsign);
-    const airlineRow = await supabase.from("airlines").select("id").limit(1).maybeSingle();
+    const airlineRow = await accountingSupabase.from("airlines").select("id").limit(1).maybeSingle();
     const airlineId = asText(airlineRow.data?.id) || null;
     if (airlineId) {
       const ledgerEntries = [
@@ -1371,7 +1369,7 @@ export async function persistOfficialCloseout(params: {
       const now = new Date(nowIso);
       const periodYear = now.getUTCFullYear();
       const periodMonth = now.getUTCMonth() + 1;
-      const { data: existingLedger } = await supabase
+      const { data: existingLedger } = await accountingSupabase
         .from("pilot_salary_ledger")
         .select("id, flights_count, commission_total_usd, damage_deductions_usd, net_paid_usd, block_hours_total")
         .eq("pilot_id", params.user.id)
@@ -1380,7 +1378,7 @@ export async function persistOfficialCloseout(params: {
         .maybeSingle();
 
       if (existingLedger) {
-        await supabase
+        await accountingSupabase
           .from("pilot_salary_ledger")
           .update({
             flights_count: asNumber(existingLedger.flights_count) + 1,
@@ -1392,7 +1390,7 @@ export async function persistOfficialCloseout(params: {
           })
           .eq("id", existingLedger.id);
       } else {
-        await supabase.from("pilot_salary_ledger").insert({
+        await accountingSupabase.from("pilot_salary_ledger").insert({
           pilot_id: params.user.id,
           pilot_callsign: asText(params.profile.callsign) || null,
           period_year: periodYear,

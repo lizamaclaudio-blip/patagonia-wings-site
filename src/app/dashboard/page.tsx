@@ -2831,10 +2831,49 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
   return warnings;
 }
 
-function buildNewsItems(..._args: unknown[]): NewsItem[] {
-  // El panel visible usa /api/news/local. Se mantiene la función para
-  // compatibilidad con CentralOverview, sin tarjetas estáticas antiguas.
-  return [];
+function buildNewsItems(
+  airportCode: string,
+  pilotsOnField: number,
+  activeFlights: FlightReservationRow[],
+  recentFlights: FlightReservationRow[],
+): NewsItem[] {
+  const items: NewsItem[] = [];
+
+  items.push({
+    tag: `NOTAM PWG · ${airportCode}`,
+    title: `Boletín operacional ${airportCode}`,
+    body:
+      "Revisa METAR, QNH, combustible, pista en uso y restricciones internas antes de abrir SimBrief o iniciar el ACARS.",
+  });
+
+  if (pilotsOnField > 0) {
+    items.push({
+      tag: "Plataforma",
+      title: `${formatInteger(pilotsOnField)} piloto(s) en esta ubicación`,
+      body:
+        "La central detecta pilotos posicionados en este aeropuerto. Ideal para coordinar salidas, vuelos de entrenamiento o eventos.",
+    });
+  }
+
+  if (activeFlights.length > 0) {
+    items.push({
+      tag: "Operación viva",
+      title: `${formatInteger(activeFlights.length)} vuelo(s) activo(s)`,
+      body:
+        "Hay reservas despachadas o vuelos en progreso. Revisa la actividad del aeropuerto antes de programar una nueva salida.",
+    });
+  }
+
+  if (recentFlights.length > 0) {
+    items.push({
+      tag: "Historial",
+      title: "Últimos cierres disponibles",
+      body:
+        "La oficina mantiene los PIREPs recientes para comparar score, procedimientos, performance y estado del reporte.",
+    });
+  }
+
+  return items.slice(0, 5);
 }
 
 function formatFlightModeLabel(mode?: string | null) {
@@ -3318,40 +3357,56 @@ function PilotStatsRail({
   const rank = getRankInsignia(rankCode);
 
   return (
-    <aside className="order-1 xl:order-2">
-      <div className="glass-panel rounded-[30px] p-4 sm:p-5">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-          Estadísticas del piloto
-        </p>
+    <section className="mt-5 glass-panel rounded-[30px] p-4 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            Estadísticas del piloto
+          </p>
+          <p className="mt-1 text-sm leading-6 text-white/56">
+            Resumen operacional rápido al estilo sala de despacho: estado, rango, horas, score y billetera.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+          Panel vivo
+        </span>
+      </div>
 
-        <div className="mt-4 grid gap-3">
-          {items.map((item) => (
-            <div
-              key={item.label}
-              className="flex min-h-[82px] flex-col items-center justify-center rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-4 text-center"
-            >
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                {item.label}
-              </span>
-              {item.label === "Rango" ? (
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="flex min-h-[104px] flex-col justify-between rounded-[20px] border border-white/8 bg-white/[0.035] px-4 py-4"
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">
+              {item.label}
+            </span>
+            {item.label === "Rango" ? (
+              <div className="mt-2 flex items-center gap-3">
                 <img
                   src={rank.asset}
                   alt={`Insignia ${rank.name}`}
-                  className="mt-2 h-20 w-20 object-contain sm:h-24 sm:w-24"
+                  className="h-12 w-12 object-contain"
                   loading="lazy"
                   decoding="async"
                 />
-              ) : null}
-              <span className="mt-2 text-xl font-semibold tracking-tight text-white">
+                <span className="text-base font-semibold leading-tight text-white">
+                  <AnimatedMetricValue item={item} animateKey={animationSeed} />
+                </span>
+              </div>
+            ) : (
+              <span className="mt-4 text-2xl font-semibold tracking-tight text-white">
                 <AnimatedMetricValue item={item} animateKey={animationSeed} />
               </span>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
-    </aside>
+    </section>
   );
 }
+
 
 function CentralSectionDivider() {
   return <div className="my-6 h-px w-full bg-white/10" />;
@@ -3473,6 +3528,10 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
     resolvedImageUrl && failedImageUrl !== resolvedImageUrl ? resolvedImageUrl : null;
   const showPexelsAttribution = heroImage?.source === "pexels" && Boolean(heroImage.photographerName);
   const metar = buildDispatchMetarSummary(central.metarText);
+  const metarPending = /pendiente/i.test(metar.raw);
+  const advisoryText = metarPending
+    ? `Sin METAR actualizado para ${central.airportCode}. Antes de despachar, confirma meteorología, pista en uso, combustible y alternativo.`
+    : `METAR disponible para ${central.airportCode}. Confirma QNH ${metar.qnh}, viento ${metar.wind}, visibilidad ${metar.visibility} y restricciones internas antes del push.`;
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.9),rgba(4,15,30,0.94))]">
@@ -3615,6 +3674,27 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               </p>
             </div>
 
+            <div className="rounded-[24px] border border-amber-300/16 bg-amber-300/[0.055] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200/18 bg-amber-300/[0.12] text-lg">
+                  🔔
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-100/72">
+                      NOTAM PWG · {central.airportCode}
+                    </p>
+                    <span className="rounded-full border border-amber-200/18 bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-100/72">
+                      Operacional interno
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-white/76">
+                    {advisoryText}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
@@ -3645,70 +3725,211 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
   );
 }
 
-function CentralNewsSection({ liveNews }: { items: CentralOverview["newsItems"]; liveNews: Array<{ title: string; description: string | null; url: string; publishedAt: string; source: string }> | null }) {
-  if (!liveNews || liveNews.length === 0) {
-    return (
-      <section className="rounded-[24px] border border-white/8 bg-white/[0.025] p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Noticias locales</p>
-            <h3 className="mt-1 text-2xl font-semibold text-white">Sin noticias disponibles</h3>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/48">
-            Local
-          </span>
-        </div>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/52">
-          Cuando exista conexión con la API de noticias o se publiquen novedades para la ciudad actual del piloto, aparecerán aquí en una ventana limpia.
-        </p>
-      </section>
-    );
+function CentralAirportActivityBoard({ central }: { central: CentralOverview }) {
+  const airportCode = central.airportCode.trim().toUpperCase();
+  const uniqueRows = new Map<string, FlightReservationRow>();
+
+  for (const row of [...central.activeFlights, ...central.recentFlights]) {
+    const key = row.id ?? `${row.pilot_callsign ?? "PWG"}-${row.flight_number ?? row.route_code ?? "ROUTE"}-${row.origin_ident ?? "---"}-${row.destination_ident ?? "---"}-${row.status ?? "status"}`;
+    if (!uniqueRows.has(key)) {
+      uniqueRows.set(key, row);
+    }
   }
 
-  return (
-    <section>
-      <div className="mb-5 flex items-center gap-3">
+  const movementRows = Array.from(uniqueRows.values());
+  const departures = movementRows
+    .filter((row) => row.origin_ident?.trim().toUpperCase() === airportCode)
+    .slice(0, 6);
+  const arrivals = movementRows
+    .filter((row) => row.destination_ident?.trim().toUpperCase() === airportCode)
+    .slice(0, 6);
+
+  const renderMovement = (row: FlightReservationRow, direction: "departure" | "arrival", index: number) => {
+    const otherAirport = direction === "departure" ? row.destination_ident : row.origin_ident;
+    const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
+    const aircraft = row.aircraft_type_code?.trim()?.split("_")[0] || row.aircraft_registration?.trim() || "---";
+    const status = formatFlightStatusLabel(row.status);
+    const active = ["dispatched", "dispatch_ready", "in_progress", "in_flight"].includes((row.status ?? "").trim().toLowerCase());
+
+    return (
+      <div
+        key={`${direction}-${row.id ?? routeLabel}-${index}`}
+        className="grid grid-cols-[76px_minmax(0,1fr)_72px] items-center gap-3 rounded-[18px] border border-white/8 bg-[#031428]/58 px-3 py-3"
+      >
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-            Noticias locales
-          </p>
-          <h3 className="mt-1 text-2xl font-semibold text-white">Actualidad cerca de tu base</h3>
+          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.13em] ${active ? "border-emerald-300/18 bg-emerald-400/[0.09] text-emerald-200" : "border-white/10 bg-white/[0.04] text-white/58"}`}>
+            {status}
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
-          Live
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-white">{routeLabel}</p>
+          <p className="mt-1 truncate text-[11px] text-white/48">
+            {aircraft} · {formatFlightModeLabel(row.flight_mode_code)}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-black text-white">{otherAirport?.trim().toUpperCase() ?? "---"}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/34">
+            {direction === "departure" ? "Destino" : "Origen"}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderColumn = (
+    title: string,
+    subtitle: string,
+    rows: FlightReservationRow[],
+    direction: "departure" | "arrival",
+    icon: string,
+  ) => (
+    <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/48">{subtitle}</p>
+          <h4 className="mt-1 text-lg font-semibold text-white">{icon} {title}</h4>
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-bold text-white/72">
+          {formatInteger(rows.length)}
         </span>
       </div>
 
-      <div className="space-y-2">
-        {liveNews.slice(0, 5).map((article, i) => {
-          const dateStr = article.publishedAt
-            ? new Date(article.publishedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
-            : "";
-          return (
-            <a
-              key={`${article.url}-${i}`}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-[18px] border border-white/8 bg-white/[0.035] p-4 transition hover:border-cyan-300/24 hover:bg-cyan-300/[0.045]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
-                    {article.source || "Fuente local"} {dateStr ? `· ${dateStr}` : ""}
-                  </p>
-                  <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white">
-                    {article.title}
-                  </h4>
-                </div>
-                <span className="shrink-0 text-white/35">↗</span>
-              </div>
-              {article.description ? (
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
-              ) : null}
-            </a>
-          );
-        })}
+      <div className="mt-4 space-y-2">
+        {rows.length ? (
+          rows.map((row, index) => renderMovement(row, direction, index))
+        ) : (
+          <div className="rounded-[18px] border border-dashed border-white/10 bg-[#031428]/45 px-4 py-6 text-center text-sm text-white/46">
+            Sin movimientos registrados para esta lectura.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.018))] p-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            Actividad del aeropuerto
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">Movimientos en {airportCode}</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">
+            Vista inspirada en una sala de despacho: separa salidas, arribos y control operacional usando reservas y vuelos recientes de Patagonia Wings.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.055] px-4 py-3 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/54">ATC/VATSIM</p>
+          <p className="mt-1 text-sm font-semibold text-cyan-100">Preparado para integración</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        {renderColumn("Partidas", "Desde la posición actual", departures, "departure", "🛫")}
+        {renderColumn("Arribos", "Hacia la posición actual", arrivals, "arrival", "🛬")}
+      </div>
+    </section>
+  );
+}
+
+function CentralNewsSection({
+  items,
+  liveNews,
+}: {
+  items: CentralOverview["newsItems"];
+  liveNews: Array<{ title: string; description: string | null; url: string; publishedAt: string; source: string }> | null;
+}) {
+  const hasLiveNews = Boolean(liveNews && liveNews.length > 0);
+
+  return (
+    <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="rounded-[24px] border border-white/8 bg-white/[0.025] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Novedades operacionales
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold text-white">Comunicados de la central</h3>
+          </div>
+          <span className="rounded-full border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
+            PWG
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {items.length ? (
+            items.map((item, index) => (
+              <article
+                key={`${item.tag}-${item.title}-${index}`}
+                className="rounded-[18px] border border-white/8 bg-[#031428]/55 p-4"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/56">
+                  {item.tag}
+                </p>
+                <h4 className="mt-1 text-sm font-semibold leading-5 text-white">{item.title}</h4>
+                <p className="mt-2 text-xs leading-5 text-white/52">{item.body}</p>
+              </article>
+            ))
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-white/10 bg-[#031428]/45 px-4 py-6 text-sm leading-6 text-white/48">
+              Sin comunicados internos para esta lectura operacional.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-[24px] border border-white/8 bg-white/[0.025] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              Noticias locales
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold text-white">Actualidad cerca de tu base</h3>
+          </div>
+          <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${hasLiveNews ? "border-cyan-300/18 bg-cyan-400/[0.08] text-cyan-100" : "border-white/10 bg-white/[0.045] text-white/48"}`}>
+            {hasLiveNews ? "Live" : "Local"}
+          </span>
+        </div>
+
+        {hasLiveNews ? (
+          <div className="mt-4 space-y-2">
+            {liveNews!.slice(0, 5).map((article, i) => {
+              const dateStr = article.publishedAt
+                ? new Date(article.publishedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
+                : "";
+              return (
+                <a
+                  key={`${article.url}-${i}`}
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-[18px] border border-white/8 bg-[#031428]/55 p-4 transition hover:border-cyan-300/24 hover:bg-cyan-300/[0.045]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
+                        {article.source || "Fuente local"} {dateStr ? `· ${dateStr}` : ""}
+                      </p>
+                      <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white">
+                        {article.title}
+                      </h4>
+                    </div>
+                    <span className="shrink-0 text-white/35">↗</span>
+                  </div>
+                  {article.description ? (
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
+                  ) : null}
+                </a>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-[18px] border border-dashed border-white/10 bg-[#031428]/45 px-4 py-6 text-sm leading-6 text-white/48">
+            Cuando exista conexión con la API de noticias o se publiquen novedades para la ciudad actual del piloto, aparecerán aquí.
+          </p>
+        )}
       </div>
     </section>
   );
@@ -4346,6 +4567,9 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
   return (
     <div className="space-y-6">
       <CentralAirportHero central={central} />
+
+      <CentralSectionDivider />
+      <CentralAirportActivityBoard central={central} />
 
       <CentralTransfersSectionWrapper central={central} />
 
@@ -10732,25 +10956,23 @@ function DashboardContent() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
-        <div className="order-2 xl:order-1">
-          <DashboardWorkspace
-            userId={session.user.id}
-            profile={profile}
-            activeTab={activeTab}
-            onChangeTab={setActiveTab}
-            metrics={metrics}
-            central={central}
-            availableAircraft={availableAircraft}
-            availableItineraries={availableItineraries}
-            trainingAircraftProgress={trainingAircraftProgress}
-          />
-        </div>
+      <PilotStatsRail
+        items={compactMetrics}
+        animationSeed={animationSeed}
+        rankCode={metrics.careerRankCode}
+      />
 
-        <PilotStatsRail
-          items={compactMetrics}
-          animationSeed={animationSeed}
-          rankCode={metrics.careerRankCode}
+      <div className="mt-6">
+        <DashboardWorkspace
+          userId={session.user.id}
+          profile={profile}
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          metrics={metrics}
+          central={central}
+          availableAircraft={availableAircraft}
+          availableItineraries={availableItineraries}
+          trainingAircraftProgress={trainingAircraftProgress}
         />
       </div>
 

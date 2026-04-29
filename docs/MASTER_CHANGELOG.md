@@ -1029,3 +1029,52 @@ El número 28 venía de contar todos los modelos únicos cargados desde la base 
   - se acortan textos de acción a `Trasladar` / `Sin saldo` para que el bloque se vea más limpio.
 
 **SQL:** no requiere.
+
+---
+
+## Bloque 18A — Central operacional inspirada en SUR Air
+
+**Base oficial respetada:** ZIP vigente entregado en la conversación (`README_BLOQUE_23_DISTANCIA_ACARS.zip`) con los bloques previos de distancia ACARS y cierre automático por crash.
+
+**Objetivo:**
+- tomar lo mejor observado en la página operativa de SUR Air sin copiar código ni estructura legacy;
+- reforzar la sensación de “sala de despacho” en Patagonia Wings Web;
+- mantener el diseño premium actual, líneas verdes, cards limpias y estadísticas horizontales bajo la bienvenida.
+
+**Archivo modificado:**
+- `src/app/dashboard/page.tsx`
+
+**Cambios aplicados:**
+- Las estadísticas del piloto dejan de ir en columna lateral y pasan a una franja horizontal bajo la bienvenida.
+- Se agrega un boletín tipo `NOTAM PWG` dentro de la tarjeta del aeropuerto actual, usando el METAR disponible y dejando claro que es un aviso operacional interno.
+- Se agrega la sección `Actividad del aeropuerto`, separando:
+  - partidas desde el aeropuerto actual;
+  - arribos hacia el aeropuerto actual;
+  - estado de la integración ATC/VATSIM preparada para una futura conexión.
+- Se reactiva el bloque de comunicados operacionales internos para que la central muestre novedades aunque no exista API de noticias disponible.
+- La sección de noticias locales queda separada de los comunicados PWG, evitando mezclar NOTAM interno, actualidad local y avisos de operación.
+- Se mantiene intacto el flujo principal de despacho, reservas, SimBrief, economía, ACARS, traslados y oficina.
+
+**SQL:** no requiere.
+
+**Notas:**
+- No se copió código de SUR Air.
+- El bloque queda preparado para una futura tabla Supabase de NOTAMs internos por aeropuerto y para una futura integración VATSIM real.
+
+
+## Bloque 18B · Conector contable economía/ACARS · 2026-04-29
+
+- Se agrega `createSupabaseAdminClient()` en `src/lib/supabase/server.ts` para escrituras contables server-side con `SUPABASE_SERVICE_ROLE_KEY`.
+- El cierre `/api/acars/finalize` mantiene validación del piloto con bearer token, pero snapshots, ledger, balance y acumulado salarial pasan a cliente admin server-side.
+- Objetivo: corregir el bloqueo detectado por RLS activo sin policies en `flight_economy_snapshots`, `airline_ledger`, `pilot_salary_ledger` y tablas económicas sensibles.
+- Regla contable: al finalizar vuelo se devenga comisión/costos; el pago al wallet se deja para liquidación mensual, no por vuelo.
+- No se cambia flujo interno de despacho, SimBrief ni ACARS.
+
+## Bloque 18B-18F · Ajuste final de implementación · 2026-04-29
+
+- `src/lib/acars-official.ts`: se elimina pago vuelo-a-vuelo a `pilot_profiles.wallet_balance` en finalize; la comisión queda devengada en `pilot_salary_ledger`.
+- `src/app/api/pilot/salary/monthly/route.ts`: liquidación mensual con escritura `service role` para `pilot_salary_ledger` y pago de wallet solo en cierre mensual.
+- Migraciones SQL nuevas en `supabase/migrations`:
+  - `20260429_18b_rls_accounting_guard.sql`
+  - `20260429_18b_post_audit.sql`
+- Build validado con `npm run build` sin errores TypeScript.

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient, getUserFromAccessToken } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient, getUserFromAccessToken } from "@/lib/supabase/server";
 import { lastBusinessDayLabel } from "@/lib/pilot-economy";
 
 function getBearerToken(request: NextRequest) {
@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
 
   const data = loaded.data;
   const supabase = createSupabaseServerClient(token);
+  const admin = createSupabaseAdminClient();
 
   const { data: existing } = await supabase
     .from("pilot_salary_ledger")
@@ -244,7 +245,7 @@ export async function POST(request: NextRequest) {
     return json({ error: "Este período ya fue pagado." }, 409);
   }
 
-  const { data: ledger, error: ledgerError } = await supabase
+  const { data: ledger, error: ledgerError } = await admin
     .from("pilot_salary_ledger")
     .upsert(
       {
@@ -273,15 +274,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (data.netPaidUsd > 0) {
-    const currentBalance = data.pilot.walletBalanceUsd;
-    await supabase
+    await admin
       .from("pilot_profiles")
       .update({
-        wallet_balance: roundMoney(currentBalance + data.netPaidUsd),
+        wallet_balance: roundMoney(data.pilot.walletBalanceUsd + data.netPaidUsd),
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id);
   }
 
-  return json({ success: true, ledger });
+  return json({ success: true, ledger, manualRun: true });
 }
