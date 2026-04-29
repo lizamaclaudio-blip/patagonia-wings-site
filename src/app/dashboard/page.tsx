@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -143,18 +143,18 @@ type DashboardPartner = {
 const DASHBOARD_PARTNERS: DashboardPartner[] = [
   {
     name: "Navigraph",
-    eyebrow: "Cartas, AIRAC y planificación",
+    eyebrow: "Cartas, AIRAC y planificaciÃ³n",
     description:
-      "Cartas, datos de navegación y planificación profesional para preparar vuelos IFR con mayor realismo.",
+      "Cartas, datos de navegaciÃ³n y planificaciÃ³n profesional para preparar vuelos IFR con mayor realismo.",
     logoPath: "/partners/navigraph.png",
     href: "https://navigraph.com/downloads",
     cta: "Descargar Navigraph",
   },
   {
     name: "SayIntentions.AI",
-    eyebrow: "ATC e inmersión con IA",
+    eyebrow: "ATC e inmersiÃ³n con IA",
     description:
-      "Ecosistema de comunicaciones, ATC, copiloto y apoyo operacional para simulación avanzada.",
+      "Ecosistema de comunicaciones, ATC, copiloto y apoyo operacional para simulaciÃ³n avanzada.",
     logoPath: "/partners/sayintentions.png",
     href: "https://portal.sayintentions.ai/download/",
     cta: "Descargar SayIntentions",
@@ -255,7 +255,7 @@ type TrainingCheckrideCatalogItem = {
   title: string;
   description: string;
   category: string;
-  status: "Disponible" | "Próximo bloque" | "Próximamente";
+  status: "Disponible" | "PrÃ³ximo bloque" | "PrÃ³ximamente";
   recommendedRank: string;
   presetFile: string;
   heroImagePath: string;
@@ -311,7 +311,7 @@ type TrainingTheoryExam = {
   durationMinutes: number;
   passScore: number;
   imagePath: string;
-  status: "Disponible" | "Próximo bloque";
+  status: "Disponible" | "PrÃ³ximo bloque";
   questions: TrainingTheoryQuestion[];
 };
 
@@ -376,7 +376,7 @@ function getTheoryAttemptGate(attempt?: TrainingTheoryAttemptSummary | null) {
       locked: false,
       label: "Disponible",
       tone: "available" as const,
-      helper: "Puedes iniciar un intento cuando estés listo.",
+      helper: "Puedes iniciar un intento cuando estÃ©s listo.",
     };
   }
 
@@ -385,7 +385,7 @@ function getTheoryAttemptGate(attempt?: TrainingTheoryAttemptSummary | null) {
       locked: true,
       label: "Aprobada",
       tone: "passed" as const,
-      helper: `Evaluación aprobada con ${attempt.score_percent}%. No requiere nuevo intento.`,
+      helper: `EvaluaciÃ³n aprobada con ${attempt.score_percent}%. No requiere nuevo intento.`,
     };
   }
 
@@ -405,7 +405,7 @@ function getTheoryAttemptGate(attempt?: TrainingTheoryAttemptSummary | null) {
     locked: false,
     label: "Reintento disponible",
     tone: "retry" as const,
-    helper: "Ya pasaron los 7 días de espera. Puedes realizar un nuevo intento.",
+    helper: "Ya pasaron los 7 dÃ­as de espera. Puedes realizar un nuevo intento.",
   };
 }
 
@@ -457,84 +457,84 @@ const TRAINING_AIRCRAFT_IMAGE_FALLBACK = "/dispatch/flight-types/training.png";
 const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
   {
     code: "HAB-IFR",
-    title: "Habilitación IFR / IMC",
-    description: "Chequeo inicial para validar operación instrumental básica, navegación y aproximación estabilizada en condiciones IMC.",
+    title: "HabilitaciÃ³n IFR / IMC",
+    description: "Chequeo inicial para validar operaciÃ³n instrumental bÃ¡sica, navegaciÃ³n y aproximaciÃ³n estabilizada en condiciones IMC.",
     category: "Base instrumental",
     status: "Disponible",
-    recommendedRank: "Cadete avanzado / transición regional",
+    recommendedRank: "Cadete avanzado / transiciÃ³n regional",
     presetFile: "PWG_Checkride_IFR_IMC.WPR",
     heroImagePath: "/checkrides/hab-ifr-imc.jpg",
-    weatherGoal: "IMC controlado: techo bajo, visibilidad reducida y viento suave. La intención es evaluar procedimientos IFR, no viento cruzado ni mínimos CAT II.",
+    weatherGoal: "IMC controlado: techo bajo, visibilidad reducida y viento suave. La intenciÃ³n es evaluar procedimientos IFR, no viento cruzado ni mÃ­nimos CAT II.",
     introduction:
-      "Esta habilitación certifica que el piloto puede planificar y ejecutar un vuelo instrumental base manteniendo orden de cabina, disciplina de procedimientos y una aproximación estabilizada hasta la toma.",
+      "Esta habilitaciÃ³n certifica que el piloto puede planificar y ejecutar un vuelo instrumental base manteniendo orden de cabina, disciplina de procedimientos y una aproximaciÃ³n estabilizada hasta la toma.",
     approvalNote:
-      "Aprobás con 85/100 o más, usando una de las aeronaves oficiales, el preset climático obligatorio y completando la ruta del checkride sin modificar las condiciones meteorológicas.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, usando una de las aeronaves oficiales, el preset climÃ¡tico obligatorio y completando la ruta del checkride sin modificar las condiciones meteorolÃ³gicas.",
     weatherConditions: {
       ceiling: "Techo principal bajo, alrededor de 800 a 1.200 ft AGL, suficiente para obligar trabajo IFR real durante la llegada.",
       visibility: "Visibilidad reducida, normalmente entre 5 y 8 km, sin llegar a baja visibilidad CAT.",
-      wind: "Viento suave a moderado, con componente cruzada baja para no contaminar la evaluación instrumental.",
-      precipitation: "Llovizna o lluvia ligera opcional; sin tormenta ni fenómenos severos.",
+      wind: "Viento suave a moderado, con componente cruzada baja para no contaminar la evaluaciÃ³n instrumental.",
+      precipitation: "Llovizna o lluvia ligera opcional; sin tormenta ni fenÃ³menos severos.",
       qnh: "El QNH lo entrega el preset oficial del checkride y debe mantenerse sin cambios durante toda la prueba.",
       lockedPreset: "El clima del checkride debe mantenerse exactamente como fue cargado al iniciar el vuelo. Cualquier cambio manual antes o durante la prueba deja el chequeo como no conforme.",
-      operationalFocus: "Salida IFR, navegación básica, interceptación de aproximación y estabilización a 1.000 ft AGL.",
+      operationalFocus: "Salida IFR, navegaciÃ³n bÃ¡sica, interceptaciÃ³n de aproximaciÃ³n y estabilizaciÃ³n a 1.000 ft AGL.",
     },
     route: {
       origin: "SCTE",
       destination: "SCIE",
-      label: "Puerto Montt → Concepción",
-      remarks: "Tramo corto y controlado para revisar salida instrumental, navegación en ruta y llegada estabilizada.",
+      label: "Puerto Montt â†’ ConcepciÃ³n",
+      remarks: "Tramo corto y controlado para revisar salida instrumental, navegaciÃ³n en ruta y llegada estabilizada.",
     },
     routeWaypoints: [
       { ident: "SCTE", label: "Puerto Montt", type: "Salida", active: true },
-      { ident: "IFR", label: "Navegación instrumental", type: "En ruta" },
-      { ident: "APP", label: "Aproximación publicada", type: "Llegada" },
-      { ident: "SCIE", label: "Concepción", type: "Destino", active: true },
+      { ident: "IFR", label: "NavegaciÃ³n instrumental", type: "En ruta" },
+      { ident: "APP", label: "AproximaciÃ³n publicada", type: "Llegada" },
+      { ident: "SCIE", label: "ConcepciÃ³n", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "C208", display_name: "Cessna 208 Grand Caravan", requirement: "Opción oficial para chequeo instrumental básico", badge: "C208" },
-      { aircraft_type_code: "B350", display_name: "Beechcraft King Air 350", requirement: "Opción oficial para transición IFR bimotor", badge: "B350" },
+      { aircraft_type_code: "C208", display_name: "Cessna 208 Grand Caravan", requirement: "OpciÃ³n oficial para chequeo instrumental bÃ¡sico", badge: "C208" },
+      { aircraft_type_code: "B350", display_name: "Beechcraft King Air 350", requirement: "OpciÃ³n oficial para transiciÃ³n IFR bimotor", badge: "B350" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_IFR_IMC.WPR.",
-      "Cualquiera de las dos aeronaves asignadas es válida para aprobar la habilitación.",
-      "La aproximación debe estar estabilizada a 1.000 ft AGL.",
-      "Si el clima se modifica manualmente, el checkride queda inválido.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_IFR_IMC.WPR.",
+      "Cualquiera de las dos aeronaves asignadas es vÃ¡lida para aprobar la habilitaciÃ³n.",
+      "La aproximaciÃ³n debe estar estabilizada a 1.000 ft AGL.",
+      "Si el clima se modifica manualmente, el checkride queda invÃ¡lido.",
     ],
     evaluationCriteria: [
       {
         title: "Procedimientos operacionales",
         bullets: [
-          "Cumplir flujo normal de salida, ascenso y navegación IFR.",
-          "Mantener configuración coherente y gestión de energía estable.",
+          "Cumplir flujo normal de salida, ascenso y navegaciÃ³n IFR.",
+          "Mantener configuraciÃ³n coherente y gestiÃ³n de energÃ­a estable.",
         ],
       },
       {
-        title: "Navegación y llegada",
+        title: "NavegaciÃ³n y llegada",
         bullets: [
-          "Seguir la ruta indicada y entrar a la aproximación publicada de forma ordenada.",
-          "Mantener interceptación y descenso controlados hasta mínimos.",
+          "Seguir la ruta indicada y entrar a la aproximaciÃ³n publicada de forma ordenada.",
+          "Mantener interceptaciÃ³n y descenso controlados hasta mÃ­nimos.",
         ],
       },
       {
         title: "Aterrizaje",
         bullets: [
           "Llegar estabilizado a 1.000 ft AGL.",
-          "Toma segura, centrada y sin excursión de pista.",
+          "Toma segura, centrada y sin excursiÃ³n de pista.",
         ],
       },
       {
         title: "Control del clima",
         bullets: [
           "El preset oficial debe permanecer sin alteraciones durante toda la prueba.",
-          "La meteorología debe coincidir con la condición cargada al iniciar el vuelo.",
+          "La meteorologÃ­a debe coincidir con la condiciÃ³n cargada al iniciar el vuelo.",
         ],
       },
     ],
     flightPlan: [
-      { title: "Preparación", description: "Cargar el preset oficial IFR / IMC, revisar la ruta y preparar la cabina para salida instrumental." },
-      { title: "Salida", description: "Despegar desde SCTE cumpliendo el flujo normal y estableciendo la navegación IFR." },
-      { title: "En ruta", description: "Mantener navegación ordenada, altitudes correctas y conciencia situacional hasta la llegada." },
-      { title: "Aproximación", description: "Interceptar la aproximación publicada, configurar a tiempo y estabilizar a 1.000 ft AGL." },
+      { title: "PreparaciÃ³n", description: "Cargar el preset oficial IFR / IMC, revisar la ruta y preparar la cabina para salida instrumental." },
+      { title: "Salida", description: "Despegar desde SCTE cumpliendo el flujo normal y estableciendo la navegaciÃ³n IFR." },
+      { title: "En ruta", description: "Mantener navegaciÃ³n ordenada, altitudes correctas y conciencia situacional hasta la llegada." },
+      { title: "AproximaciÃ³n", description: "Interceptar la aproximaciÃ³n publicada, configurar a tiempo y estabilizar a 1.000 ft AGL." },
       { title: "Cierre", description: "Completar aterrizaje seguro, rodaje normal y cierre del vuelo sin alterar el clima del checkride." },
     ],
     scoring: {
@@ -543,75 +543,75 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
       items: [
         "Clima oficial correcto y sin cambios.",
         "Uso de una de las aeronaves oficiales.",
-        "Ruta y aproximación IFR correctamente ejecutadas.",
+        "Ruta y aproximaciÃ³n IFR correctamente ejecutadas.",
         "Aterrizaje seguro y estabilizado.",
       ],
     },
   },
   {
     code: "HAB-CAT-I",
-    title: "Habilitación CAT I",
-    description: "Chequeo de aproximación de precisión para mínimos estándar y operación IFR regular en flota regional/comercial.",
+    title: "HabilitaciÃ³n CAT I",
+    description: "Chequeo de aproximaciÃ³n de precisiÃ³n para mÃ­nimos estÃ¡ndar y operaciÃ³n IFR regular en flota regional/comercial.",
     category: "Aproximaciones",
     status: "Disponible",
     recommendedRank: "Piloto regional / Primer Oficial",
     presetFile: "PWG_Checkride_CAT_I.WPR",
     heroImagePath: "/checkrides/hab-cat-i.jpg",
-    weatherGoal: "IFR de precisión con techo bajo y visibilidad reducida, pero aún dentro del entorno normal de una aproximación CAT I.",
+    weatherGoal: "IFR de precisiÃ³n con techo bajo y visibilidad reducida, pero aÃºn dentro del entorno normal de una aproximaciÃ³n CAT I.",
     introduction:
-      "La habilitación CAT I valida que el piloto pueda briefear, interceptar y aterrizar en una aproximación de precisión manteniendo mínimos, estabilización y criterio de continuación o frustrada.",
+      "La habilitaciÃ³n CAT I valida que el piloto pueda briefear, interceptar y aterrizar en una aproximaciÃ³n de precisiÃ³n manteniendo mÃ­nimos, estabilizaciÃ³n y criterio de continuaciÃ³n o frustrada.",
     approvalNote:
-      "Aprobás con 85/100 o más, volando con una de las dos aeronaves oficiales y cumpliendo los mínimos CAT I, sin modificar el clima del checkride.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, volando con una de las dos aeronaves oficiales y cumpliendo los mÃ­nimos CAT I, sin modificar el clima del checkride.",
     weatherConditions: {
-      ceiling: "Techo bajo compatible con operación CAT I, lo bastante exigente para requerir disciplina de mínimos y monitoreo constante.",
-      visibility: "Visibilidad/RVR reducida pero suficiente para una aproximación CAT I bien volada.",
-      wind: "Viento bajo a moderado, sin componente extrema, para enfocar el chequeo en la aproximación de precisión.",
-      precipitation: "Bruma, niebla o lluvia ligera según el preset oficial; sin fenómenos severos.",
+      ceiling: "Techo bajo compatible con operaciÃ³n CAT I, lo bastante exigente para requerir disciplina de mÃ­nimos y monitoreo constante.",
+      visibility: "Visibilidad/RVR reducida pero suficiente para una aproximaciÃ³n CAT I bien volada.",
+      wind: "Viento bajo a moderado, sin componente extrema, para enfocar el chequeo en la aproximaciÃ³n de precisiÃ³n.",
+      precipitation: "Bruma, niebla o lluvia ligera segÃºn el preset oficial; sin fenÃ³menos severos.",
       qnh: "El QNH del checkride lo fija el preset oficial y debe respetarse durante todo el vuelo.",
-      lockedPreset: "Las condiciones meteorológicas deben mantenerse iguales desde el briefing hasta el cierre. Cualquier modificación invalida la prueba.",
-      operationalFocus: "Briefing de precisión, mínimos CAT I, continuidad o frustrada y aterrizaje dentro de zona.",
+      lockedPreset: "Las condiciones meteorolÃ³gicas deben mantenerse iguales desde el briefing hasta el cierre. Cualquier modificaciÃ³n invalida la prueba.",
+      operationalFocus: "Briefing de precisiÃ³n, mÃ­nimos CAT I, continuidad o frustrada y aterrizaje dentro de zona.",
     },
     route: {
       origin: "SCEL",
       destination: "SCTE",
-      label: "Santiago → Puerto Montt",
-      remarks: "Perfil comercial nacional para practicar briefing, interceptación y decisión en mínimos CAT I.",
+      label: "Santiago â†’ Puerto Montt",
+      remarks: "Perfil comercial nacional para practicar briefing, interceptaciÃ³n y decisiÃ³n en mÃ­nimos CAT I.",
     },
     routeWaypoints: [
       { ident: "SCEL", label: "Santiago", type: "Salida", active: true },
       { ident: "STAR", label: "Llegada instrumentada", type: "En ruta" },
-      { ident: "ILS", label: "Aproximación de precisión", type: "Final" },
+      { ident: "ILS", label: "AproximaciÃ³n de precisiÃ³n", type: "Final" },
       { ident: "SCTE", label: "Puerto Montt", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "ATR72", display_name: "ATR 72", requirement: "Opción oficial turbohélice regional para CAT I", badge: "ATR72" },
-      { aircraft_type_code: "E175", display_name: "Embraer E175", requirement: "Opción oficial jet regional para CAT I", badge: "E175" },
+      { aircraft_type_code: "ATR72", display_name: "ATR 72", requirement: "OpciÃ³n oficial turbohÃ©lice regional para CAT I", badge: "ATR72" },
+      { aircraft_type_code: "E175", display_name: "Embraer E175", requirement: "OpciÃ³n oficial jet regional para CAT I", badge: "E175" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_CAT_I.WPR.",
-      "ATR72 y E175 son las dos aeronaves válidas para este checkride.",
-      "Si se pierde estabilización por debajo de mínimos, corresponde frustrar.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_CAT_I.WPR.",
+      "ATR72 y E175 son las dos aeronaves vÃ¡lidas para este checkride.",
+      "Si se pierde estabilizaciÃ³n por debajo de mÃ­nimos, corresponde frustrar.",
       "Modificar el clima deja el chequeo como no conforme.",
     ],
     evaluationCriteria: [
       {
-        title: "Briefing y preparación",
+        title: "Briefing y preparaciÃ³n",
         bullets: [
-          "Revisar mínimos, ayudas y procedimiento de llegada antes de iniciar el descenso.",
-          "Preparar la aeronave a tiempo y con configuración ordenada.",
+          "Revisar mÃ­nimos, ayudas y procedimiento de llegada antes de iniciar el descenso.",
+          "Preparar la aeronave a tiempo y con configuraciÃ³n ordenada.",
         ],
       },
       {
-        title: "Aproximación de precisión",
+        title: "AproximaciÃ³n de precisiÃ³n",
         bullets: [
           "Interceptar el procedimiento correctamente.",
-          "Mantener senda, eje y velocidad dentro de parámetros normales.",
+          "Mantener senda, eje y velocidad dentro de parÃ¡metros normales.",
         ],
       },
       {
-        title: "Decisión en mínimos",
+        title: "DecisiÃ³n en mÃ­nimos",
         bullets: [
-          "Continuar solo si la operación está estabilizada y visualmente apta.",
+          "Continuar solo si la operaciÃ³n estÃ¡ estabilizada y visualmente apta.",
           "Frustrar si no se cumplen los criterios de seguridad.",
         ],
       },
@@ -619,85 +619,85 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
         title: "Integridad del checkride",
         bullets: [
           "El preset oficial debe permanecer intacto.",
-          "Se evalúa el uso correcto del entorno CAT I, no viento cruzado ni LVO avanzada.",
+          "Se evalÃºa el uso correcto del entorno CAT I, no viento cruzado ni LVO avanzada.",
         ],
       },
     ],
     flightPlan: [
-      { title: "Briefing", description: "Preparar la aproximación CAT I, repasar mínimos y configurar radioayudas o FMC según la aeronave." },
-      { title: "Crucero y descenso", description: "Llegar al descenso con el checkride ordenado y la llegada prevista con anticipación." },
-      { title: "Intercepción", description: "Capturar localizador/senda o guía equivalente manteniendo energía controlada." },
-      { title: "Mínimos", description: "Tomar la decisión correcta en mínimos: continuar si está apto o frustrar si no lo está." },
-      { title: "Finalización", description: "Aterrizar dentro de zona y cerrar el vuelo manteniendo el clima del preset sin alteraciones." },
+      { title: "Briefing", description: "Preparar la aproximaciÃ³n CAT I, repasar mÃ­nimos y configurar radioayudas o FMC segÃºn la aeronave." },
+      { title: "Crucero y descenso", description: "Llegar al descenso con el checkride ordenado y la llegada prevista con anticipaciÃ³n." },
+      { title: "IntercepciÃ³n", description: "Capturar localizador/senda o guÃ­a equivalente manteniendo energÃ­a controlada." },
+      { title: "MÃ­nimos", description: "Tomar la decisiÃ³n correcta en mÃ­nimos: continuar si estÃ¡ apto o frustrar si no lo estÃ¡." },
+      { title: "FinalizaciÃ³n", description: "Aterrizar dentro de zona y cerrar el vuelo manteniendo el clima del preset sin alteraciones." },
     ],
     scoring: {
       maxScore: 100,
       passScore: 85,
       items: [
         "Preset CAT I correcto.",
-        "Briefing y preparación completos.",
-        "Aproximación estabilizada y decisión correcta.",
+        "Briefing y preparaciÃ³n completos.",
+        "AproximaciÃ³n estabilizada y decisiÃ³n correcta.",
         "Touchdown seguro dentro de zona.",
       ],
     },
   },
   {
     code: "HAB-CAT-II",
-    title: "Habilitación CAT II",
-    description: "Chequeo de baja visibilidad para flota comercial con mayor exigencia técnica, control operacional y cumplimiento de SOP.",
+    title: "HabilitaciÃ³n CAT II",
+    description: "Chequeo de baja visibilidad para flota comercial con mayor exigencia tÃ©cnica, control operacional y cumplimiento de SOP.",
     category: "Aproximaciones",
-    status: "Próximo bloque",
-    recommendedRank: "Piloto comercial jet / Capitán junior",
+    status: "PrÃ³ximo bloque",
+    recommendedRank: "Piloto comercial jet / CapitÃ¡n junior",
     presetFile: "PWG_Checkride_CAT_II.WPR",
     heroImagePath: "/checkrides/hab-cat-ii.jpg",
-    weatherGoal: "Baja visibilidad y techo muy bajo para validar el uso correcto de automatización, mínimos CAT II y criterio operacional.",
+    weatherGoal: "Baja visibilidad y techo muy bajo para validar el uso correcto de automatizaciÃ³n, mÃ­nimos CAT II y criterio operacional.",
     introduction:
-      "La habilitación CAT II confirma que el piloto puede conducir una aproximación de baja visibilidad con flota jet certificada, respetando briefing, automatización y monitoreo hasta mínimos.",
+      "La habilitaciÃ³n CAT II confirma que el piloto puede conducir una aproximaciÃ³n de baja visibilidad con flota jet certificada, respetando briefing, automatizaciÃ³n y monitoreo hasta mÃ­nimos.",
     approvalNote:
-      "Aprobás con 85/100 o más, manteniendo la aproximación dentro de SOP, con una de las dos aeronaves oficiales y el clima del checkride sin modificaciones.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, manteniendo la aproximaciÃ³n dentro de SOP, con una de las dos aeronaves oficiales y el clima del checkride sin modificaciones.",
     weatherConditions: {
-      ceiling: "Techo muy bajo, compatible con una operación CAT II realista.",
+      ceiling: "Techo muy bajo, compatible con una operaciÃ³n CAT II realista.",
       visibility: "RVR reducida propia de baja visibilidad, sin llegar al entorno CAT III.",
       wind: "Viento leve para no mezclar la prueba con un chequeo de crosswind.",
-      precipitation: "Bruma, llovizna o niebla según el preset oficial; sin fenómeno convectivo severo.",
+      precipitation: "Bruma, llovizna o niebla segÃºn el preset oficial; sin fenÃ³meno convectivo severo.",
       qnh: "El QNH se toma del preset oficial y debe conservarse sin ajustes manuales externos al procedimiento normal.",
-      lockedPreset: "El clima del checkride queda fijado al iniciar la prueba. Si el usuario altera visibilidad, viento, presión o nubosidad, la habilitación se invalida.",
-      operationalFocus: "Automatización, callouts, mínimos CAT II, decisión y aterrizaje seguro en baja visibilidad.",
+      lockedPreset: "El clima del checkride queda fijado al iniciar la prueba. Si el usuario altera visibilidad, viento, presiÃ³n o nubosidad, la habilitaciÃ³n se invalida.",
+      operationalFocus: "AutomatizaciÃ³n, callouts, mÃ­nimos CAT II, decisiÃ³n y aterrizaje seguro en baja visibilidad.",
     },
     route: {
       origin: "SAEZ",
       destination: "SCEL",
-      label: "Buenos Aires Ezeiza → Santiago",
-      remarks: "Perfil internacional corto para practicar baja visibilidad en operación comercial jet.",
+      label: "Buenos Aires Ezeiza â†’ Santiago",
+      remarks: "Perfil internacional corto para practicar baja visibilidad en operaciÃ³n comercial jet.",
     },
     routeWaypoints: [
       { ident: "SAEZ", label: "Ezeiza", type: "Salida", active: true },
       { ident: "STAR", label: "Llegada instrumentada", type: "En ruta" },
-      { ident: "CAT II", label: "Aproximación de baja visibilidad", type: "Final" },
+      { ident: "CAT II", label: "AproximaciÃ³n de baja visibilidad", type: "Final" },
       { ident: "SCEL", label: "Santiago", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "Opción oficial de flota comercial para CAT II", badge: "A320" },
-      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "Opción oficial de flota comercial para CAT II", badge: "B738" },
+      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "OpciÃ³n oficial de flota comercial para CAT II", badge: "A320" },
+      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "OpciÃ³n oficial de flota comercial para CAT II", badge: "B738" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_CAT_II.WPR.",
-      "A320 Fenix y B738 PMDG son las dos aeronaves válidas para esta habilitación.",
-      "La aproximación debe mantenerse estabilizada y conforme a SOP.",
-      "Modificar el clima del checkride deja la evaluación inválida.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_CAT_II.WPR.",
+      "A320 Fenix y B738 PMDG son las dos aeronaves vÃ¡lidas para esta habilitaciÃ³n.",
+      "La aproximaciÃ³n debe mantenerse estabilizada y conforme a SOP.",
+      "Modificar el clima del checkride deja la evaluaciÃ³n invÃ¡lida.",
     ],
     evaluationCriteria: [
       {
-        title: "Automatización y monitoreo",
+        title: "AutomatizaciÃ³n y monitoreo",
         bullets: [
-          "Usar correctamente FD/AP según SOP de la aeronave.",
-          "Monitorear la aproximación y resolver desviaciones a tiempo.",
+          "Usar correctamente FD/AP segÃºn SOP de la aeronave.",
+          "Monitorear la aproximaciÃ³n y resolver desviaciones a tiempo.",
         ],
       },
       {
-        title: "Mínimos CAT II",
+        title: "MÃ­nimos CAT II",
         bullets: [
-          "Respetar mínimos operacionales y criterio de continuación o frustrada.",
+          "Respetar mÃ­nimos operacionales y criterio de continuaciÃ³n o frustrada.",
           "Mantener estabilidad y conciencia situacional hasta la toma.",
         ],
       },
@@ -712,86 +712,86 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
         title: "Integridad del clima",
         bullets: [
           "El preset oficial debe permanecer intacto.",
-          "No se permite alterar visibilidad, nubes, presión o viento durante la prueba.",
+          "No se permite alterar visibilidad, nubes, presiÃ³n o viento durante la prueba.",
         ],
       },
     ],
     flightPlan: [
-      { title: "Preparación", description: "Cargar el preset CAT II, revisar ayudas y preparar briefing completo de baja visibilidad." },
-      { title: "Descenso", description: "Gestionar descenso y energía con anticipación, llegando estable a la fase terminal." },
-      { title: "Final", description: "Capturar la aproximación CAT II con monitoreo activo y configuración completa." },
-      { title: "Mínimos", description: "Continuar o frustrar según SOP y estado real de la aproximación." },
-      { title: "Post vuelo", description: "Completar toma y rodaje manteniendo el checkride válido hasta el cierre del vuelo." },
+      { title: "PreparaciÃ³n", description: "Cargar el preset CAT II, revisar ayudas y preparar briefing completo de baja visibilidad." },
+      { title: "Descenso", description: "Gestionar descenso y energÃ­a con anticipaciÃ³n, llegando estable a la fase terminal." },
+      { title: "Final", description: "Capturar la aproximaciÃ³n CAT II con monitoreo activo y configuraciÃ³n completa." },
+      { title: "MÃ­nimos", description: "Continuar o frustrar segÃºn SOP y estado real de la aproximaciÃ³n." },
+      { title: "Post vuelo", description: "Completar toma y rodaje manteniendo el checkride vÃ¡lido hasta el cierre del vuelo." },
     ],
     scoring: {
       maxScore: 100,
       passScore: 85,
       items: [
         "Preset CAT II correcto.",
-        "Uso correcto de automatización.",
-        "Mínimos y estabilidad respetados.",
+        "Uso correcto de automatizaciÃ³n.",
+        "MÃ­nimos y estabilidad respetados.",
         "Toma segura y controlada.",
       ],
     },
   },
   {
     code: "HAB-CAT-III",
-    title: "Habilitación CAT III",
-    description: "Chequeo LVO avanzado para pilotos comerciales con operación de precisión y cumplimiento estricto de procedimientos.",
+    title: "HabilitaciÃ³n CAT III",
+    description: "Chequeo LVO avanzado para pilotos comerciales con operaciÃ³n de precisiÃ³n y cumplimiento estricto de procedimientos.",
     category: "Aproximaciones",
-    status: "Próximo bloque",
-    recommendedRank: "Capitán comercial avanzado",
+    status: "PrÃ³ximo bloque",
+    recommendedRank: "CapitÃ¡n comercial avanzado",
     presetFile: "PWG_Checkride_CAT_III.WPR",
     heroImagePath: "/checkrides/hab-cat-iii.jpg",
-    weatherGoal: "Entorno LVO severo para validar operación CAT III/autoland con flota comercial preparada para esa exigencia.",
+    weatherGoal: "Entorno LVO severo para validar operaciÃ³n CAT III/autoland con flota comercial preparada para esa exigencia.",
     introduction:
-      "La habilitación CAT III es un chequeo avanzado de precisión. Requiere disciplina total de procedimientos, uso adecuado de automatización y control operacional en condiciones de visibilidad mínima.",
+      "La habilitaciÃ³n CAT III es un chequeo avanzado de precisiÃ³n. Requiere disciplina total de procedimientos, uso adecuado de automatizaciÃ³n y control operacional en condiciones de visibilidad mÃ­nima.",
     approvalNote:
-      "Aprobás con 85/100 o más, volando con una de las dos aeronaves oficiales, manteniendo la aproximación conforme a SOP y sin modificar el preset climático.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, volando con una de las dos aeronaves oficiales, manteniendo la aproximaciÃ³n conforme a SOP y sin modificar el preset climÃ¡tico.",
     weatherConditions: {
       ceiling: "Techo extremadamente bajo, cercano a cero operativo, propio de una prueba CAT III.",
-      visibility: "Visibilidad muy reducida / RVR muy baja, en un entorno de operación LVO avanzada.",
-      wind: "Viento suave, sin componente extrema, para concentrar la prueba en automatización y monitoreo.",
-      precipitation: "Niebla densa o humedad persistente según preset oficial.",
+      visibility: "Visibilidad muy reducida / RVR muy baja, en un entorno de operaciÃ³n LVO avanzada.",
+      wind: "Viento suave, sin componente extrema, para concentrar la prueba en automatizaciÃ³n y monitoreo.",
+      precipitation: "Niebla densa o humedad persistente segÃºn preset oficial.",
       qnh: "El QNH debe mantenerse como lo entrega el preset oficial del checkride.",
-      lockedPreset: "La condición meteorológica del checkride debe permanecer intacta. Cualquier cambio deja el chequeo como inválido.",
-      operationalFocus: "Configuración CAT III/autoland, monitoreo, touchdown y rollout seguros.",
+      lockedPreset: "La condiciÃ³n meteorolÃ³gica del checkride debe permanecer intacta. Cualquier cambio deja el chequeo como invÃ¡lido.",
+      operationalFocus: "ConfiguraciÃ³n CAT III/autoland, monitoreo, touchdown y rollout seguros.",
     },
     route: {
       origin: "SCEL",
       destination: "SAEZ",
-      label: "Santiago → Buenos Aires Ezeiza",
-      remarks: "Vuelo comercial de precisión para evaluar un perfil LVO completo.",
+      label: "Santiago â†’ Buenos Aires Ezeiza",
+      remarks: "Vuelo comercial de precisiÃ³n para evaluar un perfil LVO completo.",
     },
     routeWaypoints: [
       { ident: "SCEL", label: "Santiago", type: "Salida", active: true },
-      { ident: "STAR", label: "Llegada de precisión", type: "En ruta" },
+      { ident: "STAR", label: "Llegada de precisiÃ³n", type: "En ruta" },
       { ident: "CAT III", label: "Autoland / LVO", type: "Final" },
       { ident: "SAEZ", label: "Ezeiza", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "Opción oficial para operación CAT III", badge: "A320" },
-      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "Opción oficial para operación CAT III", badge: "B738" },
+      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "OpciÃ³n oficial para operaciÃ³n CAT III", badge: "A320" },
+      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "OpciÃ³n oficial para operaciÃ³n CAT III", badge: "B738" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_CAT_III.WPR.",
-      "A320 Fenix y B738 PMDG son las opciones válidas del checkride.",
-      "La automatización y monitoreo deben seguir SOP de CAT III.",
-      "Modificar el clima invalida la habilitación.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_CAT_III.WPR.",
+      "A320 Fenix y B738 PMDG son las opciones vÃ¡lidas del checkride.",
+      "La automatizaciÃ³n y monitoreo deben seguir SOP de CAT III.",
+      "Modificar el clima invalida la habilitaciÃ³n.",
     ],
     evaluationCriteria: [
       {
-        title: "Configuración LVO",
+        title: "ConfiguraciÃ³n LVO",
         bullets: [
-          "Preparar la aeronave para operación CAT III/autoland según su SOP.",
-          "Configurar correctamente sistemas, mínimos y ayudas disponibles.",
+          "Preparar la aeronave para operaciÃ³n CAT III/autoland segÃºn su SOP.",
+          "Configurar correctamente sistemas, mÃ­nimos y ayudas disponibles.",
         ],
       },
       {
-        title: "Monitoreo de aproximación",
+        title: "Monitoreo de aproximaciÃ³n",
         bullets: [
-          "Supervisar estabilidad, guías y estado del sistema hasta touchdown.",
-          "Resolver cualquier desviación con criterio operacional seguro.",
+          "Supervisar estabilidad, guÃ­as y estado del sistema hasta touchdown.",
+          "Resolver cualquier desviaciÃ³n con criterio operacional seguro.",
         ],
       },
       {
@@ -805,23 +805,23 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
         title: "Integridad del clima",
         bullets: [
           "El preset oficial debe seguir activo y sin cambios hasta el cierre.",
-          "No se permite alterar la meteorología ni usar clima externo para facilitar la prueba.",
+          "No se permite alterar la meteorologÃ­a ni usar clima externo para facilitar la prueba.",
         ],
       },
     ],
     flightPlan: [
-      { title: "Briefing LVO", description: "Preparar la aproximación CAT III, revisar mínimos, automatización y procedimientos de contingencia." },
+      { title: "Briefing LVO", description: "Preparar la aproximaciÃ³n CAT III, revisar mÃ­nimos, automatizaciÃ³n y procedimientos de contingencia." },
       { title: "Descenso y llegada", description: "Llegar al entorno terminal con la aeronave totalmente preparada para baja visibilidad." },
-      { title: "Aproximación", description: "Monitorear la captura y el comportamiento del sistema hasta la fase crítica." },
+      { title: "AproximaciÃ³n", description: "Monitorear la captura y el comportamiento del sistema hasta la fase crÃ­tica." },
       { title: "Rollout", description: "Completar touchdown y rollout conforme al perfil CAT III de la aeronave." },
-      { title: "Cierre", description: "Cerrar el vuelo sin perder la validez del preset climático ni del procedimiento." },
+      { title: "Cierre", description: "Cerrar el vuelo sin perder la validez del preset climÃ¡tico ni del procedimiento." },
     ],
     scoring: {
       maxScore: 100,
       passScore: 85,
       items: [
         "Preset CAT III correcto.",
-        "Configuración y monitoreo adecuados.",
+        "ConfiguraciÃ³n y monitoreo adecuados.",
         "Touchdown y rollout seguros.",
         "SOP cumplidos en LVO.",
       ],
@@ -829,69 +829,69 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
   },
   {
     code: "HAB-XWIND",
-    title: "Habilitación viento cruzado 30 kt",
-    description: "Chequeo específico para ampliar límites operacionales de viento cruzado en flota comercial.",
+    title: "HabilitaciÃ³n viento cruzado 30 kt",
+    description: "Chequeo especÃ­fico para ampliar lÃ­mites operacionales de viento cruzado en flota comercial.",
     category: "Performance",
     status: "Disponible",
-    recommendedRank: "Piloto comercial / transición a jet",
+    recommendedRank: "Piloto comercial / transiciÃ³n a jet",
     presetFile: "PWG_Checkride_XWIND.WPR",
     heroImagePath: "/checkrides/hab-crosswind.jpg",
-    weatherGoal: "Viento cruzado fuerte y sostenido en pista seca. La prueba está pensada para aeronaves comerciales compatibles con este rango de crosswind.",
+    weatherGoal: "Viento cruzado fuerte y sostenido en pista seca. La prueba estÃ¡ pensada para aeronaves comerciales compatibles con este rango de crosswind.",
     introduction:
-      "Esta habilitación valida la técnica del piloto para despegar y aterrizar con viento cruzado fuerte, manteniendo eje de pista, control direccional y una toma segura dentro de los límites operacionales.",
+      "Esta habilitaciÃ³n valida la tÃ©cnica del piloto para despegar y aterrizar con viento cruzado fuerte, manteniendo eje de pista, control direccional y una toma segura dentro de los lÃ­mites operacionales.",
     approvalNote:
-      "Aprobás con 85/100 o más, usando cualquiera de las dos aeronaves oficiales del checkride, respetando la técnica de crosswind y manteniendo el clima del preset sin cambios.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, usando cualquiera de las dos aeronaves oficiales del checkride, respetando la tÃ©cnica de crosswind y manteniendo el clima del preset sin cambios.",
     weatherConditions: {
-      ceiling: "Condición VMC o con nubes altas, para concentrar la evaluación en la técnica de viento cruzado.",
+      ceiling: "CondiciÃ³n VMC o con nubes altas, para concentrar la evaluaciÃ³n en la tÃ©cnica de viento cruzado.",
       visibility: "Visibilidad alta y pista visualmente disponible durante toda la prueba.",
-      wind: "Componente cruzada fuerte y estable, del orden del preset oficial, compatible con aeronaves comerciales y evaluación de técnica.",
-      precipitation: "Sin precipitación significativa y con pista seca.",
+      wind: "Componente cruzada fuerte y estable, del orden del preset oficial, compatible con aeronaves comerciales y evaluaciÃ³n de tÃ©cnica.",
+      precipitation: "Sin precipitaciÃ³n significativa y con pista seca.",
       qnh: "El QNH queda fijado por el preset oficial del checkride y debe mantenerse sin cambios.",
-      lockedPreset: "Si el viento, la dirección o cualquier otra variable del preset se alteran antes o durante el vuelo, el checkride queda inválido.",
-      operationalFocus: "Corrección lateral, control de eje, técnica de flare y control direccional después de la toma.",
+      lockedPreset: "Si el viento, la direcciÃ³n o cualquier otra variable del preset se alteran antes o durante el vuelo, el checkride queda invÃ¡lido.",
+      operationalFocus: "CorrecciÃ³n lateral, control de eje, tÃ©cnica de flare y control direccional despuÃ©s de la toma.",
     },
     route: {
       origin: "SCEL",
       destination: "SCIE",
-      label: "Santiago → Concepción",
-      remarks: "Perfil corto con enfoque en técnica de viento cruzado durante aproximación, flare y aterrizaje.",
+      label: "Santiago â†’ ConcepciÃ³n",
+      remarks: "Perfil corto con enfoque en tÃ©cnica de viento cruzado durante aproximaciÃ³n, flare y aterrizaje.",
     },
     routeWaypoints: [
       { ident: "SCEL", label: "Santiago", type: "Salida", active: true },
       { ident: "DCT", label: "Tramo corto", type: "En ruta" },
-      { ident: "FINAL", label: "Aproximación crosswind", type: "Final" },
-      { ident: "SCIE", label: "Concepción", type: "Destino", active: true },
+      { ident: "FINAL", label: "AproximaciÃ³n crosswind", type: "Final" },
+      { ident: "SCIE", label: "ConcepciÃ³n", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "Opción oficial comercial para crosswind fuerte", badge: "A320" },
-      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "Opción oficial comercial para crosswind fuerte", badge: "B738" },
+      { aircraft_type_code: "A320_FENIX", display_name: "Airbus A320 Fenix", requirement: "OpciÃ³n oficial comercial para crosswind fuerte", badge: "A320" },
+      { aircraft_type_code: "B738_PMDG", display_name: "Boeing 737-800 PMDG", requirement: "OpciÃ³n oficial comercial para crosswind fuerte", badge: "B738" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_XWIND.WPR.",
-      "A320 Fenix y B738 PMDG son las dos aeronaves válidas para esta habilitación.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_XWIND.WPR.",
+      "A320 Fenix y B738 PMDG son las dos aeronaves vÃ¡lidas para esta habilitaciÃ³n.",
       "El foco del checkride es control lateral, eje de pista y touchdown seguro.",
-      "Cambiar el viento o cualquier condición del preset invalida la prueba.",
+      "Cambiar el viento o cualquier condiciÃ³n del preset invalida la prueba.",
     ],
     evaluationCriteria: [
       {
         title: "Despegue y llegada",
         bullets: [
           "Mantener control direccional desde la carrera de despegue hasta la salida inicial.",
-          "Planificar una llegada ordenada con corrección lateral apropiada.",
+          "Planificar una llegada ordenada con correcciÃ³n lateral apropiada.",
         ],
       },
       {
-        title: "Técnica de crosswind",
+        title: "TÃ©cnica de crosswind",
         bullets: [
           "Mantener eje de pista en corta final y durante el flare.",
-          "Aplicar técnica de crab/de-crab o wing-low según corresponda a la aeronave.",
+          "Aplicar tÃ©cnica de crab/de-crab o wing-low segÃºn corresponda a la aeronave.",
         ],
       },
       {
         title: "Touchdown",
         bullets: [
           "Toma segura, centrada y controlada.",
-          "Sin pérdida de control ni excursión de pista.",
+          "Sin pÃ©rdida de control ni excursiÃ³n de pista.",
         ],
       },
       {
@@ -903,9 +903,9 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
       },
     ],
     flightPlan: [
-      { title: "Preparación", description: "Cargar el preset de crosswind y revisar técnica, velocidad y configuración de aterrizaje." },
+      { title: "PreparaciÃ³n", description: "Cargar el preset de crosswind y revisar tÃ©cnica, velocidad y configuraciÃ³n de aterrizaje." },
       { title: "Salida", description: "Despegar manteniendo control direccional y conciencia del viento durante el ascenso inicial." },
-      { title: "En ruta", description: "Preparar con anticipación la llegada y el perfil de aproximación con viento cruzado." },
+      { title: "En ruta", description: "Preparar con anticipaciÃ³n la llegada y el perfil de aproximaciÃ³n con viento cruzado." },
       { title: "Final", description: "Entrar a final estabilizado, corrigiendo eje y deriva de forma continua." },
       { title: "Aterrizaje", description: "Tocar dentro de zona, mantener el control y completar el rodaje sin perder la validez del checkride." },
     ],
@@ -915,92 +915,92 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
       items: [
         "Preset crosswind correcto.",
         "Uso de una aeronave oficial del checkride.",
-        "Técnica de viento cruzado correcta.",
+        "TÃ©cnica de viento cruzado correcta.",
         "Touchdown seguro y con control direccional.",
       ],
     },
   },
   {
     code: "HAB-SPECIAL",
-    title: "Habilitación aeropuertos especiales",
-    description: "Chequeo de operación en entorno exigente, con meteorología patagónica y toma de decisiones conservadora.",
-    category: "Operación especial",
-    status: "Próximamente",
+    title: "HabilitaciÃ³n aeropuertos especiales",
+    description: "Chequeo de operaciÃ³n en entorno exigente, con meteorologÃ­a patagÃ³nica y toma de decisiones conservadora.",
+    category: "OperaciÃ³n especial",
+    status: "PrÃ³ximamente",
     recommendedRank: "Piloto regional consolidado",
     presetFile: "PWG_Checkride_SPECIAL_AIRPORT.WPR",
     heroImagePath: "/checkrides/hab-special-airport.jpg",
-    weatherGoal: "Entorno patagónico con viento moderado, nubosidad baja y lluvia ligera para practicar criterio y técnica en aeropuerto especial.",
+    weatherGoal: "Entorno patagÃ³nico con viento moderado, nubosidad baja y lluvia ligera para practicar criterio y tÃ©cnica en aeropuerto especial.",
     introduction:
-      "La habilitación de aeropuertos especiales valida que el piloto pueda operar con criterio conservador en un escenario exigente, combinando meteorología variable, gestión de energía y conciencia de terreno.",
+      "La habilitaciÃ³n de aeropuertos especiales valida que el piloto pueda operar con criterio conservador en un escenario exigente, combinando meteorologÃ­a variable, gestiÃ³n de energÃ­a y conciencia de terreno.",
     approvalNote:
-      "Aprobás con 85/100 o más, usando una de las dos aeronaves oficiales del checkride y manteniendo el clima del preset sin alteraciones.",
+      "AprobÃ¡s con 85/100 o mÃ¡s, usando una de las dos aeronaves oficiales del checkride y manteniendo el clima del preset sin alteraciones.",
     weatherConditions: {
-      ceiling: "Nubosidad baja o fragmentada, típica de operación patagónica exigente.",
+      ceiling: "Nubosidad baja o fragmentada, tÃ­pica de operaciÃ³n patagÃ³nica exigente.",
       visibility: "Visibilidad suficiente para operar con cautela, sin transformarlo en un chequeo LVO.",
       wind: "Viento moderado con componente cruzada administrable para C208 y B350.",
-      precipitation: "Lluvia ligera o chubascos débiles según el preset oficial.",
-      qnh: "El QNH del checkride lo determina el preset oficial y debe respetarse durante toda la operación.",
-      lockedPreset: "La meteorología del aeropuerto especial debe mantenerse igual al preset original del checkride. Cambiarla invalida la prueba.",
-      operationalFocus: "Briefing de terreno, aproximación conservadora, posibilidad de frustrada y toma de decisiones seguras.",
+      precipitation: "Lluvia ligera o chubascos dÃ©biles segÃºn el preset oficial.",
+      qnh: "El QNH del checkride lo determina el preset oficial y debe respetarse durante toda la operaciÃ³n.",
+      lockedPreset: "La meteorologÃ­a del aeropuerto especial debe mantenerse igual al preset original del checkride. Cambiarla invalida la prueba.",
+      operationalFocus: "Briefing de terreno, aproximaciÃ³n conservadora, posibilidad de frustrada y toma de decisiones seguras.",
     },
     route: {
       origin: "SCTE",
       destination: "SCCI",
-      label: "Puerto Montt → Punta Arenas",
-      remarks: "Perfil patagónico para evaluar planeamiento, meteorología y criterio de seguridad en entorno especial.",
+      label: "Puerto Montt â†’ Punta Arenas",
+      remarks: "Perfil patagÃ³nico para evaluar planeamiento, meteorologÃ­a y criterio de seguridad en entorno especial.",
     },
     routeWaypoints: [
       { ident: "SCTE", label: "Puerto Montt", type: "Salida", active: true },
-      { ident: "PAT", label: "Tramo patagónico", type: "En ruta" },
-      { ident: "SPECIAL", label: "Aproximación especial", type: "Llegada" },
+      { ident: "PAT", label: "Tramo patagÃ³nico", type: "En ruta" },
+      { ident: "SPECIAL", label: "AproximaciÃ³n especial", type: "Llegada" },
       { ident: "SCCI", label: "Punta Arenas", type: "Destino", active: true },
     ],
     aircraftOptions: [
-      { aircraft_type_code: "C208", display_name: "Cessna 208 Grand Caravan", requirement: "Opción oficial utilitaria para aeropuerto especial", badge: "C208" },
-      { aircraft_type_code: "B350", display_name: "Beechcraft King Air 350", requirement: "Opción oficial regional para aeropuerto especial", badge: "B350" },
+      { aircraft_type_code: "C208", display_name: "Cessna 208 Grand Caravan", requirement: "OpciÃ³n oficial utilitaria para aeropuerto especial", badge: "C208" },
+      { aircraft_type_code: "B350", display_name: "Beechcraft King Air 350", requirement: "OpciÃ³n oficial regional para aeropuerto especial", badge: "B350" },
     ],
     specialRules: [
-      "Usá exclusivamente el preset PWG_Checkride_SPECIAL_AIRPORT.WPR.",
-      "C208 y B350 son las dos aeronaves válidas para esta habilitación.",
-      "La evaluación considera criterio conservador y posibilidad de frustrada temprana.",
-      "Modificar el clima deja la habilitación como inválida.",
+      "UsÃ¡ exclusivamente el preset PWG_Checkride_SPECIAL_AIRPORT.WPR.",
+      "C208 y B350 son las dos aeronaves vÃ¡lidas para esta habilitaciÃ³n.",
+      "La evaluaciÃ³n considera criterio conservador y posibilidad de frustrada temprana.",
+      "Modificar el clima deja la habilitaciÃ³n como invÃ¡lida.",
     ],
     evaluationCriteria: [
       {
         title: "Planeamiento y briefing",
         bullets: [
-          "Revisar meteorología, terreno y estrategia de aproximación antes del descenso.",
+          "Revisar meteorologÃ­a, terreno y estrategia de aproximaciÃ³n antes del descenso.",
           "Llegar con conciencia situacional y criterio conservador.",
         ],
       },
       {
-        title: "Gestión operacional",
+        title: "GestiÃ³n operacional",
         bullets: [
-          "Controlar energía, configuración y perfil durante la llegada.",
-          "Mantener margen para frustrar si la aproximación no está estable.",
+          "Controlar energÃ­a, configuraciÃ³n y perfil durante la llegada.",
+          "Mantener margen para frustrar si la aproximaciÃ³n no estÃ¡ estable.",
         ],
       },
       {
         title: "Aterrizaje",
         bullets: [
-          "Aterrizaje seguro, centrado y coherente con la situación meteorológica.",
-          "No forzar la operación si las condiciones dejan de ser favorables.",
+          "Aterrizaje seguro, centrado y coherente con la situaciÃ³n meteorolÃ³gica.",
+          "No forzar la operaciÃ³n si las condiciones dejan de ser favorables.",
         ],
       },
       {
         title: "Integridad del clima",
         bullets: [
           "El preset oficial debe mantenerse igual al inicio del checkride.",
-          "La evaluación considera la meteorología original del escenario, sin ayudas externas.",
+          "La evaluaciÃ³n considera la meteorologÃ­a original del escenario, sin ayudas externas.",
         ],
       },
     ],
     flightPlan: [
-      { title: "Planeamiento", description: "Cargar el preset oficial y revisar el escenario especial, su meteorología y el perfil de llegada." },
+      { title: "Planeamiento", description: "Cargar el preset oficial y revisar el escenario especial, su meteorologÃ­a y el perfil de llegada." },
       { title: "Salida", description: "Despegar y establecer el vuelo con margen operacional y conciencia del terreno." },
-      { title: "Ruta", description: "Mantener un vuelo ordenado, gestionando meteorología y combustible según el escenario." },
-      { title: "Llegada", description: "Desarrollar una aproximación conservadora, preparada para frustrar si la situación lo exige." },
-      { title: "Cierre", description: "Completar aterrizaje y rodaje solo si la operación permanece segura y el checkride sigue conforme." },
+      { title: "Ruta", description: "Mantener un vuelo ordenado, gestionando meteorologÃ­a y combustible segÃºn el escenario." },
+      { title: "Llegada", description: "Desarrollar una aproximaciÃ³n conservadora, preparada para frustrar si la situaciÃ³n lo exige." },
+      { title: "Cierre", description: "Completar aterrizaje y rodaje solo si la operaciÃ³n permanece segura y el checkride sigue conforme." },
     ],
     scoring: {
       maxScore: 100,
@@ -1008,7 +1008,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
       items: [
         "Preset especial correcto.",
         "Planeamiento y briefing completos.",
-        "Operación conservadora y estabilizada.",
+        "OperaciÃ³n conservadora y estabilizada.",
         "Decisiones seguras durante la llegada.",
       ],
     },
@@ -1057,7 +1057,7 @@ function buildTrainingTheoryQuestions(
 const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
   {
     code: "T1",
-    title: "Teórica 1",
+    title: "TeÃ³rica 1",
     description: "Reglamento operativo base, flujo web, despacho, reservas y uso inicial del ACARS Patagonia Wings.",
     durationMinutes: 15,
     passScore: 85,
@@ -1065,24 +1065,24 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T1", TRAINING_THEORY_ASSETS.briefing, [
       {
-        topic: "Operación base",
-        prompt: "¿Cuál es el objetivo principal de una evaluación teórica Patagonia Wings?",
+        topic: "OperaciÃ³n base",
+        prompt: "Â¿CuÃ¡l es el objetivo principal de una evaluaciÃ³n teÃ³rica Patagonia Wings?",
         options: [
-          "Validar conocimiento y criterio antes de avanzar a etapas prácticas.",
-          "Cambiar automáticamente el rango del piloto sin volar.",
+          "Validar conocimiento y criterio antes de avanzar a etapas prÃ¡cticas.",
+          "Cambiar automÃ¡ticamente el rango del piloto sin volar.",
           "Reemplazar al ACARS durante todos los vuelos.",
           "Eliminar la necesidad de realizar briefing antes del despacho.",
         ],
         correctIndex: 0,
-        explanation: "La teórica valida conocimiento operacional antes de habilitar pasos prácticos o checkrides.",
+        explanation: "La teÃ³rica valida conocimiento operacional antes de habilitar pasos prÃ¡cticos o checkrides.",
       },
       {
         topic: "Flujo operacional",
-        prompt: "¿Cuál es el flujo general recomendado antes de iniciar un vuelo en Patagonia Wings?",
+        prompt: "Â¿CuÃ¡l es el flujo general recomendado antes de iniciar un vuelo en Patagonia Wings?",
         options: [
-          "Despegar primero y crear el despacho después.",
+          "Despegar primero y crear el despacho despuÃ©s.",
           "Seleccionar modalidad, preparar despacho/OFP, conectar ACARS, volar y cerrar.",
-          "Crear varias reservas para elegir una después.",
+          "Crear varias reservas para elegir una despuÃ©s.",
           "Volar sin briefing para ahorrar tiempo.",
         ],
         correctIndex: 1,
@@ -1104,11 +1104,11 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
       },
       {
         topic: "Callsign",
-        prompt: "En entrenamiento, el número de vuelo debe mantenerse como:",
+        prompt: "En entrenamiento, el nÃºmero de vuelo debe mantenerse como:",
         options: [
           "001 sin prefijo.",
           "El callsign completo del piloto, por ejemplo PWG001.",
-          "Una matrícula de aeronave física.",
+          "Una matrÃ­cula de aeronave fÃ­sica.",
           "Cualquier texto libre que acepte SimBrief.",
         ],
         correctIndex: 1,
@@ -1118,21 +1118,21 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
         topic: "OFP",
         prompt: "Si el origen o destino del OFP no coincide con el despacho web, el piloto debe:",
         options: [
-          "Continuar igual y corregir después del aterrizaje.",
+          "Continuar igual y corregir despuÃ©s del aterrizaje.",
           "Corregir el OFP o el despacho antes de iniciar el vuelo.",
-          "Cambiar de avión sin actualizar la web.",
+          "Cambiar de aviÃ³n sin actualizar la web.",
           "Reportar manualmente sin datos.",
         ],
         correctIndex: 1,
-        explanation: "Las discrepancias deben corregirse antes de volar para evitar rechazo o revisión manual.",
+        explanation: "Las discrepancias deben corregirse antes de volar para evitar rechazo o revisiÃ³n manual.",
         imagePath: TRAINING_THEORY_ASSETS.dispatch,
       },
       {
         topic: "Entrenamiento",
-        prompt: "La matrícula 'Avion de entrenamiento' significa que:",
+        prompt: "La matrÃ­cula 'Avion de entrenamiento' significa que:",
         options: [
-          "Es una aeronave física que queda movida de aeropuerto.",
-          "Es un registro genérico de entrenamiento, no una aeronave física de la aerolínea.",
+          "Es una aeronave fÃ­sica que queda movida de aeropuerto.",
+          "Es un registro genÃ©rico de entrenamiento, no una aeronave fÃ­sica de la aerolÃ­nea.",
           "El vuelo no debe conectarse al ACARS.",
           "El piloto queda libre de procedimientos.",
         ],
@@ -1144,17 +1144,17 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
         topic: "Progreso",
         prompt: "Para que un entrenamiento aporte al progreso del piloto, debe estar principalmente:",
         options: [
-          "Completado o validado según los criterios del sistema.",
+          "Completado o validado segÃºn los criterios del sistema.",
           "Cancelado antes de despegar.",
           "Creado dos veces para la misma ruta.",
           "Sin origen ni destino definidos.",
         ],
         correctIndex: 0,
-        explanation: "El progreso se alimenta de vuelos completados o válidos, no de cancelaciones.",
+        explanation: "El progreso se alimenta de vuelos completados o vÃ¡lidos, no de cancelaciones.",
       },
       {
         topic: "Integridad",
-        prompt: "Durante una evaluación o checkride, ¿qué conducta deja la prueba como no conforme?",
+        prompt: "Durante una evaluaciÃ³n o checkride, Â¿quÃ© conducta deja la prueba como no conforme?",
         options: [
           "Leer el briefing antes de iniciar.",
           "Mantener el procedimiento estabilizado.",
@@ -1162,16 +1162,16 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
           "Usar la aeronave oficial indicada.",
         ],
         correctIndex: 2,
-        explanation: "Alterar condiciones obligatorias afecta la integridad de la evaluación.",
+        explanation: "Alterar condiciones obligatorias afecta la integridad de la evaluaciÃ³n.",
         imagePath: TRAINING_THEORY_ASSETS.safety,
       },
       {
         topic: "Despacho",
-        prompt: "¿Para qué sirve el despacho operacional?",
+        prompt: "Â¿Para quÃ© sirve el despacho operacional?",
         options: [
           "Para definir vuelo, ruta, aeronave, modalidad y reglas antes de ACARS.",
           "Solo para decorar el dashboard.",
-          "Para cambiar el rango del piloto automáticamente.",
+          "Para cambiar el rango del piloto automÃ¡ticamente.",
           "Para evitar que el piloto planifique combustible.",
         ],
         correctIndex: 0,
@@ -1182,8 +1182,8 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
         topic: "ACARS",
         prompt: "El ACARS debe leer principalmente:",
         options: [
-          "Solo la foto del avión.",
-          "La reserva/despacho activo y la telemetría del simulador.",
+          "Solo la foto del aviÃ³n.",
+          "La reserva/despacho activo y la telemetrÃ­a del simulador.",
           "Un vuelo inventado si no hay despacho.",
           "Cualquier aeropuerto aunque no coincida.",
         ],
@@ -1193,7 +1193,7 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
       },
       {
         topic: "SimBrief",
-        prompt: "¿Por qué se usa SimBrief/OFP dentro del flujo operacional?",
+        prompt: "Â¿Por quÃ© se usa SimBrief/OFP dentro del flujo operacional?",
         options: [
           "Para planificar ruta, combustible y datos operacionales del vuelo.",
           "Para reemplazar completamente al ACARS.",
@@ -1201,39 +1201,39 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
           "Para omitir el despacho.",
         ],
         correctIndex: 0,
-        explanation: "El OFP entrega datos de planificación que deben ser coherentes con la reserva/despacho.",
+        explanation: "El OFP entrega datos de planificaciÃ³n que deben ser coherentes con la reserva/despacho.",
         imagePath: TRAINING_THEORY_ASSETS.dispatch,
       },
       {
         topic: "Cierre",
-        prompt: "¿Cuándo se puede finalizar una evaluación teórica?",
+        prompt: "Â¿CuÃ¡ndo se puede finalizar una evaluaciÃ³n teÃ³rica?",
         options: [
-          "Después de responder y finalizar, o cuando se acabe el tiempo.",
+          "DespuÃ©s de responder y finalizar, o cuando se acabe el tiempo.",
           "Antes de leer las preguntas para guardar el resultado.",
-          "Cuando el piloto cambie de pestaña.",
-          "Después de borrar la reserva activa.",
+          "Cuando el piloto cambie de pestaÃ±a.",
+          "DespuÃ©s de borrar la reserva activa.",
         ],
         correctIndex: 0,
-        explanation: "La evaluación se cierra por finalización manual o por término automático del tiempo.",
+        explanation: "La evaluaciÃ³n se cierra por finalizaciÃ³n manual o por tÃ©rmino automÃ¡tico del tiempo.",
       },
       {
-        topic: "Aprobación",
-        prompt: "Con 15 preguntas y aprobación mínima de 85%, el piloto debe lograr al menos:",
+        topic: "AprobaciÃ³n",
+        prompt: "Con 15 preguntas y aprobaciÃ³n mÃ­nima de 85%, el piloto debe lograr al menos:",
         options: ["8 correctas.", "10 correctas.", "13 correctas.", "15 obligatoriamente."],
         correctIndex: 2,
-        explanation: "85% de 15 preguntas exige 13 respuestas correctas o más.",
+        explanation: "85% de 15 preguntas exige 13 respuestas correctas o mÃ¡s.",
       },
       {
         topic: "Reintento",
-        prompt: "Si un piloto reprueba una teórica, el sistema debe:",
+        prompt: "Si un piloto reprueba una teÃ³rica, el sistema debe:",
         options: [
           "Permitir intentos ilimitados inmediatos.",
-          "Bloquear el reintento por 7 días.",
-          "Aprobarlo automáticamente.",
+          "Bloquear el reintento por 7 dÃ­as.",
+          "Aprobarlo automÃ¡ticamente.",
           "Eliminar su cuenta.",
         ],
         correctIndex: 1,
-        explanation: "El bloqueo de 7 días evita intentos repetitivos sin estudio.",
+        explanation: "El bloqueo de 7 dÃ­as evita intentos repetitivos sin estudio.",
         imagePath: TRAINING_THEORY_ASSETS.safety,
       },
       {
@@ -1243,7 +1243,7 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
           "Mantener coherencia entre web, OFP, simulador, ACARS y cierre.",
           "Cambiar datos en cada etapa.",
           "Volar sin reserva para ahorrar pasos.",
-          "Usar siempre matrícula genérica en itinerarios.",
+          "Usar siempre matrÃ­cula genÃ©rica en itinerarios.",
         ],
         correctIndex: 0,
         explanation: "La coherencia de datos es la base del sistema Patagonia Wings.",
@@ -1252,132 +1252,132 @@ const TRAINING_THEORY_EXAMS: TrainingTheoryExam[] = [
   },
   {
     code: "T2",
-    title: "Teórica 2",
-    description: "Meteorología básica, METAR/TAF, mínimos, viento y toma de decisiones operacionales.",
+    title: "TeÃ³rica 2",
+    description: "MeteorologÃ­a bÃ¡sica, METAR/TAF, mÃ­nimos, viento y toma de decisiones operacionales.",
     durationMinutes: 15,
     passScore: 85,
     imagePath: TRAINING_THEORY_ASSETS.weather,
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T2", TRAINING_THEORY_ASSETS.weather, [
-      { topic: "METAR", prompt: "¿Qué representa principalmente un METAR?", options: ["Pronóstico mensual.", "Reporte meteorológico observado de un aeródromo.", "Plan de vuelo operacional.", "Carta de aproximación."], correctIndex: 1, explanation: "El METAR describe condiciones observadas en un aeródromo en un momento determinado." },
-      { topic: "TAF", prompt: "¿Qué entrega un TAF?", options: ["Pronóstico meteorológico para un aeródromo.", "Peso máximo de despegue.", "Código de reserva.", "Estado de mantenimiento."], correctIndex: 0, explanation: "El TAF es un pronóstico aeronáutico usado para planificación." },
-      { topic: "Techo", prompt: "En operación IFR, un techo bajo afecta principalmente:", options: ["El color de la librea.", "La planificación de mínimos y aproximación.", "El callsign del piloto.", "El número de pasajeros web."], correctIndex: 1, explanation: "El techo bajo obliga a revisar mínimos y capacidad de aproximación." },
-      { topic: "Visibilidad", prompt: "La visibilidad reducida exige al piloto:", options: ["Mayor disciplina de procedimiento y decisión de mínimos.", "Aumentar velocidad de aproximación sin cálculo.", "Ignorar cartas.", "Apagar luces de aterrizaje siempre."], correctIndex: 0, explanation: "La visibilidad reducida aumenta la exigencia de estabilización y decisión." },
-      { topic: "QNH", prompt: "El QNH se utiliza para:", options: ["Ajustar el altímetro a presión local.", "Calcular matrícula.", "Crear una ruta en SimBrief automáticamente.", "Elegir textura de nube."], correctIndex: 0, explanation: "El QNH permite que el altímetro indique altitud referida al nivel medio del mar." },
-      { topic: "Viento cruzado", prompt: "Un viento cruzado fuerte requiere:", options: ["Técnica adecuada y verificación de límites de aeronave/piloto.", "Aterrizar siempre sin flaps.", "Cerrar ACARS antes del final.", "Cambiar a VFR aunque esté IMC."], correctIndex: 0, explanation: "La componente cruzada debe compararse con límites y técnica disponible." },
-      { topic: "Viento de cola", prompt: "Un viento de cola en aterrizaje normalmente:", options: ["Reduce distancia de aterrizaje.", "Aumenta distancia requerida y puede penalizar la operación.", "No afecta a ninguna aeronave.", "Hace innecesario revisar pista."], correctIndex: 1, explanation: "El viento de cola incrementa distancia y riesgo operacional." },
-      { topic: "Lluvia", prompt: "La pista mojada implica revisar:", options: ["Solo el logo de la aerolínea.", "Distancia de aterrizaje, frenado y técnica de aproximación.", "El color del menú.", "El número de vuelo únicamente."], correctIndex: 1, explanation: "La pista contaminada o mojada altera frenado y performance." },
-      { topic: "Alterno", prompt: "La meteorología de destino deteriorada puede exigir:", options: ["Planificar alterno y combustible adicional.", "Eliminar el OFP.", "Volver a iniciar la cuenta de piloto.", "Usar cualquier avión sin habilitación."], correctIndex: 0, explanation: "El alterno es parte clave de la planificación con meteorología marginal." },
-      { topic: "CAT I", prompt: "Una aproximación CAT I corresponde a:", options: ["Aproximación de precisión con mínimos estándar.", "Vuelo sin instrumentos.", "Autoland obligatorio siempre.", "Rodaje visual solamente."], correctIndex: 0, explanation: "CAT I es una aproximación de precisión con mínimos menos restrictivos que CAT II/III." },
-      { topic: "CAT II/III", prompt: "CAT II y CAT III requieren principalmente:", options: ["Menor preparación.", "Aeronave, piloto y procedimiento aptos para baja visibilidad.", "Solo viento calma.", "No usar cartas."], correctIndex: 1, explanation: "Las categorías avanzadas exigen equipamiento, habilitación y mínimos específicos." },
-      { topic: "Tormenta", prompt: "Ante tormenta o cizalladura reportada en final, la decisión conservadora es:", options: ["Continuar siempre.", "Evaluar demora, alterno o frustrada según corresponda.", "Apagar transponder.", "Cambiar matrícula."], correctIndex: 1, explanation: "La seguridad operacional prima ante fenómenos severos." },
-      { topic: "Bruma/niebla", prompt: "La niebla afecta principalmente:", options: ["La percepción visual de pista y referencias externas.", "La cantidad de pasajeros del sistema.", "El nombre del piloto.", "El tipo de combustible cargado en la web."], correctIndex: 0, explanation: "La niebla reduce referencias visuales críticas en aproximación y aterrizaje." },
-      { topic: "Briefing meteo", prompt: "Antes de un checkride meteorológico, el piloto debe:", options: ["Revisar condiciones, mínimos y limitaciones antes de iniciar.", "Cambiar el preset para hacerlo más fácil.", "Volar sin briefing.", "Usar una ruta distinta sin aviso."], correctIndex: 0, explanation: "La revisión previa permite decidir si la operación es segura y válida." },
-      { topic: "Integridad", prompt: "Si la evaluación exige un preset meteorológico, el piloto debe:", options: ["Mantenerlo sin cambios durante toda la prueba.", "Modificarlo al llegar a final.", "Cambiarlo si no ve la pista.", "Usar clima externo no autorizado."], correctIndex: 0, explanation: "Cambiar condiciones obligatorias invalida la comparación justa de la evaluación." },
+      { topic: "METAR", prompt: "Â¿QuÃ© representa principalmente un METAR?", options: ["PronÃ³stico mensual.", "Reporte meteorolÃ³gico observado de un aerÃ³dromo.", "Plan de vuelo operacional.", "Carta de aproximaciÃ³n."], correctIndex: 1, explanation: "El METAR describe condiciones observadas en un aerÃ³dromo en un momento determinado." },
+      { topic: "TAF", prompt: "Â¿QuÃ© entrega un TAF?", options: ["PronÃ³stico meteorolÃ³gico para un aerÃ³dromo.", "Peso mÃ¡ximo de despegue.", "CÃ³digo de reserva.", "Estado de mantenimiento."], correctIndex: 0, explanation: "El TAF es un pronÃ³stico aeronÃ¡utico usado para planificaciÃ³n." },
+      { topic: "Techo", prompt: "En operaciÃ³n IFR, un techo bajo afecta principalmente:", options: ["El color de la librea.", "La planificaciÃ³n de mÃ­nimos y aproximaciÃ³n.", "El callsign del piloto.", "El nÃºmero de pasajeros web."], correctIndex: 1, explanation: "El techo bajo obliga a revisar mÃ­nimos y capacidad de aproximaciÃ³n." },
+      { topic: "Visibilidad", prompt: "La visibilidad reducida exige al piloto:", options: ["Mayor disciplina de procedimiento y decisiÃ³n de mÃ­nimos.", "Aumentar velocidad de aproximaciÃ³n sin cÃ¡lculo.", "Ignorar cartas.", "Apagar luces de aterrizaje siempre."], correctIndex: 0, explanation: "La visibilidad reducida aumenta la exigencia de estabilizaciÃ³n y decisiÃ³n." },
+      { topic: "QNH", prompt: "El QNH se utiliza para:", options: ["Ajustar el altÃ­metro a presiÃ³n local.", "Calcular matrÃ­cula.", "Crear una ruta en SimBrief automÃ¡ticamente.", "Elegir textura de nube."], correctIndex: 0, explanation: "El QNH permite que el altÃ­metro indique altitud referida al nivel medio del mar." },
+      { topic: "Viento cruzado", prompt: "Un viento cruzado fuerte requiere:", options: ["TÃ©cnica adecuada y verificaciÃ³n de lÃ­mites de aeronave/piloto.", "Aterrizar siempre sin flaps.", "Cerrar ACARS antes del final.", "Cambiar a VFR aunque estÃ© IMC."], correctIndex: 0, explanation: "La componente cruzada debe compararse con lÃ­mites y tÃ©cnica disponible." },
+      { topic: "Viento de cola", prompt: "Un viento de cola en aterrizaje normalmente:", options: ["Reduce distancia de aterrizaje.", "Aumenta distancia requerida y puede penalizar la operaciÃ³n.", "No afecta a ninguna aeronave.", "Hace innecesario revisar pista."], correctIndex: 1, explanation: "El viento de cola incrementa distancia y riesgo operacional." },
+      { topic: "Lluvia", prompt: "La pista mojada implica revisar:", options: ["Solo el logo de la aerolÃ­nea.", "Distancia de aterrizaje, frenado y tÃ©cnica de aproximaciÃ³n.", "El color del menÃº.", "El nÃºmero de vuelo Ãºnicamente."], correctIndex: 1, explanation: "La pista contaminada o mojada altera frenado y performance." },
+      { topic: "Alterno", prompt: "La meteorologÃ­a de destino deteriorada puede exigir:", options: ["Planificar alterno y combustible adicional.", "Eliminar el OFP.", "Volver a iniciar la cuenta de piloto.", "Usar cualquier aviÃ³n sin habilitaciÃ³n."], correctIndex: 0, explanation: "El alterno es parte clave de la planificaciÃ³n con meteorologÃ­a marginal." },
+      { topic: "CAT I", prompt: "Una aproximaciÃ³n CAT I corresponde a:", options: ["AproximaciÃ³n de precisiÃ³n con mÃ­nimos estÃ¡ndar.", "Vuelo sin instrumentos.", "Autoland obligatorio siempre.", "Rodaje visual solamente."], correctIndex: 0, explanation: "CAT I es una aproximaciÃ³n de precisiÃ³n con mÃ­nimos menos restrictivos que CAT II/III." },
+      { topic: "CAT II/III", prompt: "CAT II y CAT III requieren principalmente:", options: ["Menor preparaciÃ³n.", "Aeronave, piloto y procedimiento aptos para baja visibilidad.", "Solo viento calma.", "No usar cartas."], correctIndex: 1, explanation: "Las categorÃ­as avanzadas exigen equipamiento, habilitaciÃ³n y mÃ­nimos especÃ­ficos." },
+      { topic: "Tormenta", prompt: "Ante tormenta o cizalladura reportada en final, la decisiÃ³n conservadora es:", options: ["Continuar siempre.", "Evaluar demora, alterno o frustrada segÃºn corresponda.", "Apagar transponder.", "Cambiar matrÃ­cula."], correctIndex: 1, explanation: "La seguridad operacional prima ante fenÃ³menos severos." },
+      { topic: "Bruma/niebla", prompt: "La niebla afecta principalmente:", options: ["La percepciÃ³n visual de pista y referencias externas.", "La cantidad de pasajeros del sistema.", "El nombre del piloto.", "El tipo de combustible cargado en la web."], correctIndex: 0, explanation: "La niebla reduce referencias visuales crÃ­ticas en aproximaciÃ³n y aterrizaje." },
+      { topic: "Briefing meteo", prompt: "Antes de un checkride meteorolÃ³gico, el piloto debe:", options: ["Revisar condiciones, mÃ­nimos y limitaciones antes de iniciar.", "Cambiar el preset para hacerlo mÃ¡s fÃ¡cil.", "Volar sin briefing.", "Usar una ruta distinta sin aviso."], correctIndex: 0, explanation: "La revisiÃ³n previa permite decidir si la operaciÃ³n es segura y vÃ¡lida." },
+      { topic: "Integridad", prompt: "Si la evaluaciÃ³n exige un preset meteorolÃ³gico, el piloto debe:", options: ["Mantenerlo sin cambios durante toda la prueba.", "Modificarlo al llegar a final.", "Cambiarlo si no ve la pista.", "Usar clima externo no autorizado."], correctIndex: 0, explanation: "Cambiar condiciones obligatorias invalida la comparaciÃ³n justa de la evaluaciÃ³n." },
     ]),
   },
   {
     code: "T3",
-    title: "Teórica 3",
+    title: "TeÃ³rica 3",
     description: "Despacho, combustible, peso, alternate, coherencia OFP-web y validaciones previas al vuelo.",
     durationMinutes: 15,
     passScore: 85,
     imagePath: TRAINING_THEORY_ASSETS.dispatch,
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T3", TRAINING_THEORY_ASSETS.dispatch, [
-      { topic: "Despacho", prompt: "El despacho debe prepararse:", options: ["Antes de iniciar el vuelo y antes de conectar ACARS.", "Después de aterrizar.", "Solo si el piloto quiere.", "Cuando el avión ya está en crucero."], correctIndex: 0, explanation: "El despacho define los datos base que ACARS debe validar." },
-      { topic: "Combustible", prompt: "El combustible cargado debe ser coherente con:", options: ["El OFP y las tolerancias definidas.", "El color de la cabina.", "El último video visto.", "Una cifra al azar."], correctIndex: 0, explanation: "La coherencia de combustible evita ventajas o errores operacionales." },
-      { topic: "ZFW", prompt: "El ZFW sirve para validar principalmente:", options: ["Peso sin combustible y coherencia de carga/payload.", "Código de aeropuerto.", "Nombre de la librea.", "Hora local del usuario."], correctIndex: 0, explanation: "El ZFW ayuda a contrastar carga real versus planificación." },
-      { topic: "Alternate", prompt: "Un alterno se considera especialmente cuando:", options: ["La meteorología o combustible lo requieren.", "El usuario quiere cambiar el menú.", "El avión tiene pintura blanca.", "El callsign termina en 1."], correctIndex: 0, explanation: "El alterno aporta margen de seguridad en planificación." },
-      { topic: "OFP", prompt: "El OFP debe coincidir con la web en:", options: ["Número de vuelo/callsign, origen, destino y aeronave cuando aplique.", "Solo el color del mapa.", "Solo la hora local del navegador.", "Nada, porque son sistemas separados."], correctIndex: 0, explanation: "La validación cruzada reduce errores antes del vuelo." },
-      { topic: "Ruta", prompt: "Si el piloto cambia origen en SimBrief pero no en la web:", options: ["Se genera inconsistencia operacional.", "La reserva se corrige sola siempre.", "No importa en ACARS.", "Aumenta automáticamente el score."], correctIndex: 0, explanation: "El sistema espera que ambos lados representen el mismo vuelo." },
-      { topic: "Aeronave", prompt: "La aeronave seleccionada debe ser:", options: ["Compatible con el tipo de operación y el despacho.", "Siempre la más grande disponible.", "Una cualquiera aunque no exista.", "La del último piloto conectado."], correctIndex: 0, explanation: "La compatibilidad evita operaciones irreales o fuera de rango." },
+      { topic: "Despacho", prompt: "El despacho debe prepararse:", options: ["Antes de iniciar el vuelo y antes de conectar ACARS.", "DespuÃ©s de aterrizar.", "Solo si el piloto quiere.", "Cuando el aviÃ³n ya estÃ¡ en crucero."], correctIndex: 0, explanation: "El despacho define los datos base que ACARS debe validar." },
+      { topic: "Combustible", prompt: "El combustible cargado debe ser coherente con:", options: ["El OFP y las tolerancias definidas.", "El color de la cabina.", "El Ãºltimo video visto.", "Una cifra al azar."], correctIndex: 0, explanation: "La coherencia de combustible evita ventajas o errores operacionales." },
+      { topic: "ZFW", prompt: "El ZFW sirve para validar principalmente:", options: ["Peso sin combustible y coherencia de carga/payload.", "CÃ³digo de aeropuerto.", "Nombre de la librea.", "Hora local del usuario."], correctIndex: 0, explanation: "El ZFW ayuda a contrastar carga real versus planificaciÃ³n." },
+      { topic: "Alternate", prompt: "Un alterno se considera especialmente cuando:", options: ["La meteorologÃ­a o combustible lo requieren.", "El usuario quiere cambiar el menÃº.", "El aviÃ³n tiene pintura blanca.", "El callsign termina en 1."], correctIndex: 0, explanation: "El alterno aporta margen de seguridad en planificaciÃ³n." },
+      { topic: "OFP", prompt: "El OFP debe coincidir con la web en:", options: ["NÃºmero de vuelo/callsign, origen, destino y aeronave cuando aplique.", "Solo el color del mapa.", "Solo la hora local del navegador.", "Nada, porque son sistemas separados."], correctIndex: 0, explanation: "La validaciÃ³n cruzada reduce errores antes del vuelo." },
+      { topic: "Ruta", prompt: "Si el piloto cambia origen en SimBrief pero no en la web:", options: ["Se genera inconsistencia operacional.", "La reserva se corrige sola siempre.", "No importa en ACARS.", "Aumenta automÃ¡ticamente el score."], correctIndex: 0, explanation: "El sistema espera que ambos lados representen el mismo vuelo." },
+      { topic: "Aeronave", prompt: "La aeronave seleccionada debe ser:", options: ["Compatible con el tipo de operaciÃ³n y el despacho.", "Siempre la mÃ¡s grande disponible.", "Una cualquiera aunque no exista.", "La del Ãºltimo piloto conectado."], correctIndex: 0, explanation: "La compatibilidad evita operaciones irreales o fuera de rango." },
       { topic: "Horario", prompt: "El horario de salida planificado sirve para:", options: ["Medir orden operacional y preparar el vuelo.", "Borrar los vuelos antiguos.", "Cambiar el hub base.", "Evitar usar OFP."], correctIndex: 0, explanation: "El horario forma parte de la disciplina de despacho." },
-      { topic: "Estado", prompt: "Una reserva completada no debe:", options: ["Volver a aparecer como reserva activa.", "Quedar en historial si es válida.", "Tener reporte asociado.", "Mostrar ruta final."], correctIndex: 0, explanation: "Las reservas finalizadas no deben bloquear nuevos vuelos." },
-      { topic: "Cancelación", prompt: "Cancelar una reserva activa debe:", options: ["Liberar el flujo para preparar una nueva reserva.", "Duplicar el vuelo.", "Aprobar una teórica.", "Cambiar la carrera del piloto."], correctIndex: 0, explanation: "La cancelación ordenada libera el estado operativo." },
-      { topic: "Itinerario", prompt: "En itinerarios, la aeronave física normalmente:", options: ["Queda ubicada donde terminó el vuelo.", "Vuelve siempre al hub sin regla.", "No tiene aeropuerto.", "Se ignora completamente."], correctIndex: 0, explanation: "La ubicación de flota es clave para una aerolínea persistente." },
-      { topic: "Entrenamiento", prompt: "En entrenamiento, el registro de aeronave es:", options: ["Genérico por tipo/modelo, sin matrícula física.", "Siempre CC-PWG0001.", "La matrícula real del itinerario.", "Un campo prohibido."], correctIndex: 0, explanation: "El entrenamiento evalúa progreso sin mover la flota real." },
-      { topic: "Errores", prompt: "Si aparece un error de columna en Supabase al reservar, corresponde:", options: ["Revisar función/tabla y adaptar al esquema real.", "Ignorarlo y seguir volando.", "Eliminar toda la base.", "Cambiar la foto del avión."], correctIndex: 0, explanation: "Los errores de esquema deben corregirse en SQL o código antes de continuar." },
-      { topic: "Trazabilidad", prompt: "La trazabilidad se mantiene cuando:", options: ["Cada etapa conserva los mismos datos operacionales.", "Cada sistema usa datos distintos.", "No se guarda historial.", "Se desactiva ACARS."], correctIndex: 0, explanation: "La consistencia es necesaria para historial, score y auditoría." },
-      { topic: "Buenas prácticas", prompt: "Antes de finalizar un despacho, el piloto debe revisar:", options: ["Ruta, aeronave, combustible, hora, OFP y condiciones.", "Solo el botón final.", "Solo el color del avión.", "Nada si ya tiene experiencia."], correctIndex: 0, explanation: "La revisión previa evita errores que luego impactan ACARS y reporte." },
+      { topic: "Estado", prompt: "Una reserva completada no debe:", options: ["Volver a aparecer como reserva activa.", "Quedar en historial si es vÃ¡lida.", "Tener reporte asociado.", "Mostrar ruta final."], correctIndex: 0, explanation: "Las reservas finalizadas no deben bloquear nuevos vuelos." },
+      { topic: "CancelaciÃ³n", prompt: "Cancelar una reserva activa debe:", options: ["Liberar el flujo para preparar una nueva reserva.", "Duplicar el vuelo.", "Aprobar una teÃ³rica.", "Cambiar la carrera del piloto."], correctIndex: 0, explanation: "La cancelaciÃ³n ordenada libera el estado operativo." },
+      { topic: "Itinerario", prompt: "En itinerarios, la aeronave fÃ­sica normalmente:", options: ["Queda ubicada donde terminÃ³ el vuelo.", "Vuelve siempre al hub sin regla.", "No tiene aeropuerto.", "Se ignora completamente."], correctIndex: 0, explanation: "La ubicaciÃ³n de flota es clave para una aerolÃ­nea persistente." },
+      { topic: "Entrenamiento", prompt: "En entrenamiento, el registro de aeronave es:", options: ["GenÃ©rico por tipo/modelo, sin matrÃ­cula fÃ­sica.", "Siempre CC-PWG0001.", "La matrÃ­cula real del itinerario.", "Un campo prohibido."], correctIndex: 0, explanation: "El entrenamiento evalÃºa progreso sin mover la flota real." },
+      { topic: "Errores", prompt: "Si aparece un error de columna en Supabase al reservar, corresponde:", options: ["Revisar funciÃ³n/tabla y adaptar al esquema real.", "Ignorarlo y seguir volando.", "Eliminar toda la base.", "Cambiar la foto del aviÃ³n."], correctIndex: 0, explanation: "Los errores de esquema deben corregirse en SQL o cÃ³digo antes de continuar." },
+      { topic: "Trazabilidad", prompt: "La trazabilidad se mantiene cuando:", options: ["Cada etapa conserva los mismos datos operacionales.", "Cada sistema usa datos distintos.", "No se guarda historial.", "Se desactiva ACARS."], correctIndex: 0, explanation: "La consistencia es necesaria para historial, score y auditorÃ­a." },
+      { topic: "Buenas prÃ¡cticas", prompt: "Antes de finalizar un despacho, el piloto debe revisar:", options: ["Ruta, aeronave, combustible, hora, OFP y condiciones.", "Solo el botÃ³n final.", "Solo el color del aviÃ³n.", "Nada si ya tiene experiencia."], correctIndex: 0, explanation: "La revisiÃ³n previa evita errores que luego impactan ACARS y reporte." },
     ]),
   },
   {
     code: "T4",
-    title: "Teórica 4",
-    description: "Procedimientos IFR, navegación, aproximaciones, estabilización y operación instrumental.",
+    title: "TeÃ³rica 4",
+    description: "Procedimientos IFR, navegaciÃ³n, aproximaciones, estabilizaciÃ³n y operaciÃ³n instrumental.",
     durationMinutes: 15,
     passScore: 85,
     imagePath: TRAINING_THEORY_ASSETS.procedures,
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T4", TRAINING_THEORY_ASSETS.procedures, [
-      { topic: "IFR", prompt: "Volar IFR implica principalmente:", options: ["Seguir procedimientos instrumentales y autorizaciones.", "Volar sin instrumentos.", "Ignorar cartas.", "Elegir rumbo al azar."], correctIndex: 0, explanation: "IFR exige disciplina de navegación, altitudes y procedimientos." },
+      { topic: "IFR", prompt: "Volar IFR implica principalmente:", options: ["Seguir procedimientos instrumentales y autorizaciones.", "Volar sin instrumentos.", "Ignorar cartas.", "Elegir rumbo al azar."], correctIndex: 0, explanation: "IFR exige disciplina de navegaciÃ³n, altitudes y procedimientos." },
       { topic: "SID", prompt: "Una SID corresponde a:", options: ["Salida instrumental publicada.", "Carta de estacionamiento.", "Reporte de mantenimiento.", "Tipo de combustible."], correctIndex: 0, explanation: "La SID ordena la salida desde el aeropuerto." },
-      { topic: "STAR", prompt: "Una STAR se usa para:", options: ["Ordenar la llegada hacia el área terminal.", "Definir el color de luces.", "Calcular salario del piloto.", "Omitir el descenso."], correctIndex: 0, explanation: "La STAR conecta ruta con aproximación o llegada terminal." },
-      { topic: "ILS", prompt: "El ILS entrega principalmente:", options: ["Guía lateral y vertical para aproximación de precisión.", "Solo temperatura exterior.", "Cantidad de pasajeros.", "Número de hub."], correctIndex: 0, explanation: "Localizador y glideslope guían la aproximación." },
-      { topic: "Estabilización", prompt: "Una aproximación estabilizada exige:", options: ["Configuración, velocidad, senda y potencia controladas.", "Velocidad variable sin límites.", "Cambios bruscos cerca de pista.", "Flaps retraídos siempre."], correctIndex: 0, explanation: "La estabilización reduce riesgo en final." },
-      { topic: "Mínimos", prompt: "Al llegar a mínimos sin referencias suficientes, corresponde:", options: ["Ejecutar frustrada.", "Continuar a ciegas.", "Apagar instrumentos.", "Cambiar destino en la web."], correctIndex: 0, explanation: "Sin referencias válidas, se debe frustrar." },
-      { topic: "Frustrada", prompt: "Una aproximación frustrada debe:", options: ["Seguir el procedimiento publicado o instrucción ATC.", "Ser improvisada sin rumbo.", "Realizarse con tren abajo todo el circuito.", "No registrarse."], correctIndex: 0, explanation: "La frustrada es parte normal y segura de la operación IFR." },
-      { topic: "Briefing", prompt: "El briefing de aproximación debe incluir:", options: ["Procedimiento, mínimos, altitudes, configuración y frustrada.", "Solo el destino.", "Solo la librea.", "Ningún dato si hay piloto automático."], correctIndex: 0, explanation: "Un briefing completo prepara al piloto ante contingencias." },
-      { topic: "Altímetro", prompt: "Cruzar niveles de transición exige revisar:", options: ["Ajuste altimétrico local/estándar según fase.", "La foto del aeropuerto.", "El menú de entrenamiento.", "La contraseña."], correctIndex: 0, explanation: "El ajuste correcto evita errores verticales." },
-      { topic: "Velocidad", prompt: "Bajo 10.000 ft normalmente se controla:", options: ["Límite de 250 kt salvo autorización/regla específica.", "Velocidad libre.", "Mach máximo solamente.", "Ninguna restricción."], correctIndex: 0, explanation: "El control de velocidad es parte del reglaje operacional." },
-      { topic: "Luces", prompt: "El uso correcto de luces en pista y vuelo contribuye a:", options: ["Seguridad, visibilidad y cumplimiento de procedimientos.", "Cambiar el score sin relación.", "Reducir peso del avión.", "Eliminar la necesidad de ATC."], correctIndex: 0, explanation: "Las luces forman parte de SOP y seguridad." },
-      { topic: "Config", prompt: "La configuración para aterrizaje debe completarse:", options: ["Con anticipación suficiente para estabilizar.", "Después de tocar pista.", "Solo al cerrar ACARS.", "Nunca en IFR."], correctIndex: 0, explanation: "Configurar tarde suele causar aproximaciones inestables." },
-      { topic: "Conciencia situacional", prompt: "La conciencia situacional incluye saber:", options: ["Posición, altitud, energía, clima y siguiente acción.", "Solo el color de la web.", "Solo el nombre del avión.", "La cantidad de usuarios online."], correctIndex: 0, explanation: "Mantener el cuadro completo permite anticiparse." },
-      { topic: "Autopilot", prompt: "El piloto automático:", options: ["Ayuda, pero no reemplaza el monitoreo del piloto.", "Elimina toda responsabilidad.", "Permite ignorar mínimos.", "Debe apagarse siempre antes del descenso."], correctIndex: 0, explanation: "El piloto sigue siendo responsable de monitorear y decidir." },
-      { topic: "Cierre IFR", prompt: "Después del aterrizaje, el piloto debe:", options: ["Completar rodaje y cierre según procedimiento.", "Cerrar todo en la pista.", "Cambiar el aeropuerto de destino manualmente.", "Borrar el vuelo."], correctIndex: 0, explanation: "El cierre ordenado completa la trazabilidad del vuelo." },
+      { topic: "STAR", prompt: "Una STAR se usa para:", options: ["Ordenar la llegada hacia el Ã¡rea terminal.", "Definir el color de luces.", "Calcular salario del piloto.", "Omitir el descenso."], correctIndex: 0, explanation: "La STAR conecta ruta con aproximaciÃ³n o llegada terminal." },
+      { topic: "ILS", prompt: "El ILS entrega principalmente:", options: ["GuÃ­a lateral y vertical para aproximaciÃ³n de precisiÃ³n.", "Solo temperatura exterior.", "Cantidad de pasajeros.", "NÃºmero de hub."], correctIndex: 0, explanation: "Localizador y glideslope guÃ­an la aproximaciÃ³n." },
+      { topic: "EstabilizaciÃ³n", prompt: "Una aproximaciÃ³n estabilizada exige:", options: ["ConfiguraciÃ³n, velocidad, senda y potencia controladas.", "Velocidad variable sin lÃ­mites.", "Cambios bruscos cerca de pista.", "Flaps retraÃ­dos siempre."], correctIndex: 0, explanation: "La estabilizaciÃ³n reduce riesgo en final." },
+      { topic: "MÃ­nimos", prompt: "Al llegar a mÃ­nimos sin referencias suficientes, corresponde:", options: ["Ejecutar frustrada.", "Continuar a ciegas.", "Apagar instrumentos.", "Cambiar destino en la web."], correctIndex: 0, explanation: "Sin referencias vÃ¡lidas, se debe frustrar." },
+      { topic: "Frustrada", prompt: "Una aproximaciÃ³n frustrada debe:", options: ["Seguir el procedimiento publicado o instrucciÃ³n ATC.", "Ser improvisada sin rumbo.", "Realizarse con tren abajo todo el circuito.", "No registrarse."], correctIndex: 0, explanation: "La frustrada es parte normal y segura de la operaciÃ³n IFR." },
+      { topic: "Briefing", prompt: "El briefing de aproximaciÃ³n debe incluir:", options: ["Procedimiento, mÃ­nimos, altitudes, configuraciÃ³n y frustrada.", "Solo el destino.", "Solo la librea.", "NingÃºn dato si hay piloto automÃ¡tico."], correctIndex: 0, explanation: "Un briefing completo prepara al piloto ante contingencias." },
+      { topic: "AltÃ­metro", prompt: "Cruzar niveles de transiciÃ³n exige revisar:", options: ["Ajuste altimÃ©trico local/estÃ¡ndar segÃºn fase.", "La foto del aeropuerto.", "El menÃº de entrenamiento.", "La contraseÃ±a."], correctIndex: 0, explanation: "El ajuste correcto evita errores verticales." },
+      { topic: "Velocidad", prompt: "Bajo 10.000 ft normalmente se controla:", options: ["LÃ­mite de 250 kt salvo autorizaciÃ³n/regla especÃ­fica.", "Velocidad libre.", "Mach mÃ¡ximo solamente.", "Ninguna restricciÃ³n."], correctIndex: 0, explanation: "El control de velocidad es parte del reglaje operacional." },
+      { topic: "Luces", prompt: "El uso correcto de luces en pista y vuelo contribuye a:", options: ["Seguridad, visibilidad y cumplimiento de procedimientos.", "Cambiar el score sin relaciÃ³n.", "Reducir peso del aviÃ³n.", "Eliminar la necesidad de ATC."], correctIndex: 0, explanation: "Las luces forman parte de SOP y seguridad." },
+      { topic: "Config", prompt: "La configuraciÃ³n para aterrizaje debe completarse:", options: ["Con anticipaciÃ³n suficiente para estabilizar.", "DespuÃ©s de tocar pista.", "Solo al cerrar ACARS.", "Nunca en IFR."], correctIndex: 0, explanation: "Configurar tarde suele causar aproximaciones inestables." },
+      { topic: "Conciencia situacional", prompt: "La conciencia situacional incluye saber:", options: ["PosiciÃ³n, altitud, energÃ­a, clima y siguiente acciÃ³n.", "Solo el color de la web.", "Solo el nombre del aviÃ³n.", "La cantidad de usuarios online."], correctIndex: 0, explanation: "Mantener el cuadro completo permite anticiparse." },
+      { topic: "Autopilot", prompt: "El piloto automÃ¡tico:", options: ["Ayuda, pero no reemplaza el monitoreo del piloto.", "Elimina toda responsabilidad.", "Permite ignorar mÃ­nimos.", "Debe apagarse siempre antes del descenso."], correctIndex: 0, explanation: "El piloto sigue siendo responsable de monitorear y decidir." },
+      { topic: "Cierre IFR", prompt: "DespuÃ©s del aterrizaje, el piloto debe:", options: ["Completar rodaje y cierre segÃºn procedimiento.", "Cerrar todo en la pista.", "Cambiar el aeropuerto de destino manualmente.", "Borrar el vuelo."], correctIndex: 0, explanation: "El cierre ordenado completa la trazabilidad del vuelo." },
     ]),
   },
   {
     code: "T5",
-    title: "Teórica 5",
-    description: "CRM, seguridad operacional, gestión de amenazas y errores, disciplina de cabina y toma de decisiones.",
+    title: "TeÃ³rica 5",
+    description: "CRM, seguridad operacional, gestiÃ³n de amenazas y errores, disciplina de cabina y toma de decisiones.",
     durationMinutes: 15,
     passScore: 85,
     imagePath: TRAINING_THEORY_ASSETS.safety,
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T5", TRAINING_THEORY_ASSETS.safety, [
-      { topic: "CRM", prompt: "CRM significa principalmente:", options: ["Gestión de recursos de cabina/tripulación.", "Cambio rápido de matrícula.", "Control remoto de mapa.", "Código de reserva manual."], correctIndex: 0, explanation: "CRM busca usar todos los recursos disponibles para una operación segura." },
-      { topic: "TEM", prompt: "TEM se enfoca en:", options: ["Amenazas, errores y manejo de estados no deseados.", "Solo estética de cabina.", "Ranking de pilotos por likes.", "Eliminar briefing."], correctIndex: 0, explanation: "Threat and Error Management permite anticipar y corregir riesgos." },
+      { topic: "CRM", prompt: "CRM significa principalmente:", options: ["GestiÃ³n de recursos de cabina/tripulaciÃ³n.", "Cambio rÃ¡pido de matrÃ­cula.", "Control remoto de mapa.", "CÃ³digo de reserva manual."], correctIndex: 0, explanation: "CRM busca usar todos los recursos disponibles para una operaciÃ³n segura." },
+      { topic: "TEM", prompt: "TEM se enfoca en:", options: ["Amenazas, errores y manejo de estados no deseados.", "Solo estÃ©tica de cabina.", "Ranking de pilotos por likes.", "Eliminar briefing."], correctIndex: 0, explanation: "Threat and Error Management permite anticipar y corregir riesgos." },
       { topic: "Amenaza", prompt: "Un ejemplo de amenaza operacional es:", options: ["Clima deteriorado en destino.", "Un fondo bonito en la web.", "El nombre del piloto.", "Una imagen de entrenamiento."], correctIndex: 0, explanation: "El clima adverso es una amenaza que debe gestionarse." },
-      { topic: "Error", prompt: "Si el piloto detecta que cargó mal el combustible antes de salir, debe:", options: ["Corregir antes de iniciar o continuar la operación.", "Ignorarlo para no atrasarse.", "Cambiar el reporte final.", "Desactivar ACARS."], correctIndex: 0, explanation: "Detectar y corregir errores temprano es una conducta segura." },
-      { topic: "Decisión", prompt: "Una decisión conservadora es preferible cuando:", options: ["La seguridad o los mínimos están comprometidos.", "El piloto quiere más puntos a toda costa.", "La pista no importa.", "El tiempo se acaba en la web."], correctIndex: 0, explanation: "La seguridad prevalece sobre puntualidad o score." },
-      { topic: "Fatiga", prompt: "La fatiga puede afectar:", options: ["Atención, memoria, reacción y toma de decisiones.", "Solo el color del monitor.", "La matrícula del avión.", "El nombre del aeropuerto."], correctIndex: 0, explanation: "La fatiga es un factor humano crítico." },
-      { topic: "Briefing", prompt: "Un buen briefing ayuda a:", options: ["Alinear plan, amenazas, roles y contingencias.", "Evitar leer procedimientos.", "Cambiar la meteorología.", "Aumentar el rango automáticamente."], correctIndex: 0, explanation: "El briefing anticipa escenarios y reduce improvisación." },
-      { topic: "Comunicación", prompt: "La comunicación operacional debe ser:", options: ["Clara, breve y verificable.", "Ambigua.", "Solo visual.", "Innecesaria si hay piloto automático."], correctIndex: 0, explanation: "La comunicación clara reduce malentendidos." },
-      { topic: "Go-around", prompt: "Una frustrada debe verse como:", options: ["Una maniobra normal de seguridad.", "Un fracaso del piloto.", "Algo prohibido.", "Una forma de evitar reporte."], correctIndex: 0, explanation: "Frustrar a tiempo es una decisión profesional." },
-      { topic: "Procedimientos", prompt: "Los SOP existen para:", options: ["Estandarizar y reducir variabilidad operacional.", "Hacer más lenta la web.", "Evitar capacitación.", "Reemplazar criterio."], correctIndex: 0, explanation: "Los SOP entregan una base común de operación." },
+      { topic: "Error", prompt: "Si el piloto detecta que cargÃ³ mal el combustible antes de salir, debe:", options: ["Corregir antes de iniciar o continuar la operaciÃ³n.", "Ignorarlo para no atrasarse.", "Cambiar el reporte final.", "Desactivar ACARS."], correctIndex: 0, explanation: "Detectar y corregir errores temprano es una conducta segura." },
+      { topic: "DecisiÃ³n", prompt: "Una decisiÃ³n conservadora es preferible cuando:", options: ["La seguridad o los mÃ­nimos estÃ¡n comprometidos.", "El piloto quiere mÃ¡s puntos a toda costa.", "La pista no importa.", "El tiempo se acaba en la web."], correctIndex: 0, explanation: "La seguridad prevalece sobre puntualidad o score." },
+      { topic: "Fatiga", prompt: "La fatiga puede afectar:", options: ["AtenciÃ³n, memoria, reacciÃ³n y toma de decisiones.", "Solo el color del monitor.", "La matrÃ­cula del aviÃ³n.", "El nombre del aeropuerto."], correctIndex: 0, explanation: "La fatiga es un factor humano crÃ­tico." },
+      { topic: "Briefing", prompt: "Un buen briefing ayuda a:", options: ["Alinear plan, amenazas, roles y contingencias.", "Evitar leer procedimientos.", "Cambiar la meteorologÃ­a.", "Aumentar el rango automÃ¡ticamente."], correctIndex: 0, explanation: "El briefing anticipa escenarios y reduce improvisaciÃ³n." },
+      { topic: "ComunicaciÃ³n", prompt: "La comunicaciÃ³n operacional debe ser:", options: ["Clara, breve y verificable.", "Ambigua.", "Solo visual.", "Innecesaria si hay piloto automÃ¡tico."], correctIndex: 0, explanation: "La comunicaciÃ³n clara reduce malentendidos." },
+      { topic: "Go-around", prompt: "Una frustrada debe verse como:", options: ["Una maniobra normal de seguridad.", "Un fracaso del piloto.", "Algo prohibido.", "Una forma de evitar reporte."], correctIndex: 0, explanation: "Frustrar a tiempo es una decisiÃ³n profesional." },
+      { topic: "Procedimientos", prompt: "Los SOP existen para:", options: ["Estandarizar y reducir variabilidad operacional.", "Hacer mÃ¡s lenta la web.", "Evitar capacitaciÃ³n.", "Reemplazar criterio."], correctIndex: 0, explanation: "Los SOP entregan una base comÃºn de operaciÃ³n." },
       { topic: "Incidente", prompt: "Si ocurre un incidente, el piloto debe:", options: ["Reportar con transparencia y datos correctos.", "Ocultarlo cambiando datos.", "Cerrar el navegador.", "Crear una nueva reserva encima."], correctIndex: 0, explanation: "La cultura justa requiere reportes honestos para aprender." },
-      { topic: "Presión operacional", prompt: "La presión por llegar a horario no debe:", options: ["Superar mínimos ni seguridad operacional.", "Ser considerada nunca.", "Cambiar la librea.", "Eliminar el despacho."], correctIndex: 0, explanation: "La puntualidad nunca debe estar por sobre seguridad." },
-      { topic: "Automatización", prompt: "El exceso de confianza en automatización puede provocar:", options: ["Pérdida de monitoreo y conciencia situacional.", "Mejoras garantizadas siempre.", "Eliminación de errores humanos.", "Aprobación automática."], correctIndex: 0, explanation: "La automatización debe monitorearse activamente." },
-      { topic: "Checklist", prompt: "Una checklist se usa para:", options: ["Confirmar acciones críticas y evitar omisiones.", "Decorar la cabina.", "Evitar aprender procedimientos.", "Cambiar el callsign."], correctIndex: 0, explanation: "La checklist es una defensa contra errores." },
+      { topic: "PresiÃ³n operacional", prompt: "La presiÃ³n por llegar a horario no debe:", options: ["Superar mÃ­nimos ni seguridad operacional.", "Ser considerada nunca.", "Cambiar la librea.", "Eliminar el despacho."], correctIndex: 0, explanation: "La puntualidad nunca debe estar por sobre seguridad." },
+      { topic: "AutomatizaciÃ³n", prompt: "El exceso de confianza en automatizaciÃ³n puede provocar:", options: ["PÃ©rdida de monitoreo y conciencia situacional.", "Mejoras garantizadas siempre.", "EliminaciÃ³n de errores humanos.", "AprobaciÃ³n automÃ¡tica."], correctIndex: 0, explanation: "La automatizaciÃ³n debe monitorearse activamente." },
+      { topic: "Checklist", prompt: "Una checklist se usa para:", options: ["Confirmar acciones crÃ­ticas y evitar omisiones.", "Decorar la cabina.", "Evitar aprender procedimientos.", "Cambiar el callsign."], correctIndex: 0, explanation: "La checklist es una defensa contra errores." },
       { topic: "Cultura", prompt: "Una cultura operacional madura promueve:", options: ["Seguridad, aprendizaje, disciplina y reporte honesto.", "Ocultar errores.", "Competir sin reglas.", "Modificar evaluaciones."], correctIndex: 0, explanation: "Patagonia Wings debe privilegiar seguridad y aprendizaje." },
     ]),
   },
   {
     code: "T6",
-    title: "Teórica 6",
-    description: "Evaluación integradora previa a checkrides y habilitaciones avanzadas Patagonia Wings.",
+    title: "TeÃ³rica 6",
+    description: "EvaluaciÃ³n integradora previa a checkrides y habilitaciones avanzadas Patagonia Wings.",
     durationMinutes: 15,
     passScore: 85,
     imagePath: TRAINING_THEORY_ASSETS.acars,
     status: "Disponible",
     questions: buildTrainingTheoryQuestions("T6", TRAINING_THEORY_ASSETS.acars, [
-      { topic: "Integración", prompt: "La operación completa Patagonia Wings integra:", options: ["Web, despacho, OFP, simulador, ACARS y reporte final.", "Solo una foto de avión.", "Solo el chat del piloto.", "Un vuelo manual sin datos."], correctIndex: 0, explanation: "El sistema funciona por coherencia entre todas las etapas." },
-      { topic: "Checkride", prompt: "Un checkride práctico evalúa principalmente:", options: ["Ejecución operacional bajo reglas y condiciones definidas.", "Solo la velocidad de internet.", "La cantidad de skins instaladas.", "El tamaño de la pantalla."], correctIndex: 0, explanation: "El checkride valida desempeño práctico y criterio." },
-      { topic: "Teórica", prompt: "Una teórica aprobada debe:", options: ["Bloquearse para evitar repetirla innecesariamente.", "Repetirse cada minuto.", "Eliminar el historial.", "Crear una reserva física."], correctIndex: 0, explanation: "Al aprobar, el piloto ya cumplió esa etapa formativa." },
-      { topic: "Reprobación", prompt: "Una reprobación debe generar:", options: ["Espera de 7 días antes de nuevo intento.", "Aprobación automática.", "Borrado de piloto.", "Ascenso de rango."], correctIndex: 0, explanation: "El período de espera fomenta estudio antes del reintento." },
-      { topic: "ACARS", prompt: "Si ACARS no coincide con el despacho, el vuelo puede quedar:", options: ["Observado, rechazado o en revisión según regla.", "Siempre aprobado.", "Sin registro.", "Convertido en tour."], correctIndex: 0, explanation: "La inconsistencia afecta la validación del vuelo." },
-      { topic: "Score", prompt: "El Patagonia Score debe reflejar:", options: ["Procedimientos, performance, incidentes y bonificaciones/penalizaciones.", "Solo distancia recorrida.", "Solo gusto personal.", "Solo la matrícula."], correctIndex: 0, explanation: "El score debe representar calidad operacional integral." },
-      { topic: "Habilitación", prompt: "Una habilitación práctica se debe asignar según:", options: ["Aeronave/sistema, meteorología, rango y criterios definidos.", "Azar.", "Color del avión.", "Tamaño del monitor."], correctIndex: 0, explanation: "La habilitación debe ser coherente con capacidad real y entrenamiento." },
-      { topic: "Aeronave oficial", prompt: "Si el checkride ofrece dos aeronaves oficiales:", options: ["Cualquiera de las dos es válida para ese checkride.", "Una debe reprobar automáticamente.", "El piloto debe adivinar la correcta.", "No se puede volar."], correctIndex: 0, explanation: "Las opciones oficiales son válidas por diseño del programa." },
-      { topic: "Preset", prompt: "El preset climático oficial en checkride debe:", options: ["Mantenerse sin cambios para conservar integridad.", "Modificarse si el piloto quiere menos dificultad.", "Borrarse antes de despegar.", "Usarse solo en la web."], correctIndex: 0, explanation: "La condición fija permite evaluar a todos bajo el mismo estándar." },
-      { topic: "Rango", prompt: "Permitir entrenar una categoría antes del rango busca:", options: ["Preparar transición progresiva del piloto.", "Saltarse todo el sistema.", "Evitar evaluación.", "Eliminar horas."], correctIndex: 0, explanation: "La transición anticipada permite aprendizaje antes de habilitación formal." },
-      { topic: "Historial", prompt: "El historial debe mostrar principalmente vuelos:", options: ["Completados o evaluables, no cancelaciones normales.", "Todos los intentos borrados.", "Solo reservas vacías.", "Solo vuelos sin ACARS."], correctIndex: 0, explanation: "El historial debe representar actividad operacional real." },
-      { topic: "Datos vivos", prompt: "Las estadísticas útiles deben basarse en:", options: ["Datos reales de Supabase y vuelos completados/evaluables.", "Mockups permanentes.", "Números inventados.", "Solo texto fijo."], correctIndex: 0, explanation: "El panel debe evolucionar hacia datos vivos confiables." },
-      { topic: "Seguridad", prompt: "Un vuelo con manipulación indebida para obtener ventaja debe:", options: ["Quedar observado, invalidado o penalizado según la regla.", "Premiarse.", "Ignorarse.", "Duplicarse."], correctIndex: 0, explanation: "La integridad operacional protege el sistema de evaluación." },
-      { topic: "Cierre", prompt: "El cierre correcto de un vuelo requiere:", options: ["Completar procedimiento, enviar reporte y liberar estados según corresponda.", "Apagar el PC sin cerrar.", "Crear otra reserva encima.", "Cambiar destino después."], correctIndex: 0, explanation: "El cierre ordenado mantiene historial y flota consistentes." },
-      { topic: "Criterio", prompt: "El criterio operacional correcto ante duda crítica es:", options: ["Elegir la opción más segura y revisar antes de continuar.", "Improvisar para ahorrar tiempo.", "Forzar la operación.", "Cambiar los datos finales."], correctIndex: 0, explanation: "La toma de decisiones conservadora es clave en la filosofía Patagonia Wings." },
+      { topic: "IntegraciÃ³n", prompt: "La operaciÃ³n completa Patagonia Wings integra:", options: ["Web, despacho, OFP, simulador, ACARS y reporte final.", "Solo una foto de aviÃ³n.", "Solo el chat del piloto.", "Un vuelo manual sin datos."], correctIndex: 0, explanation: "El sistema funciona por coherencia entre todas las etapas." },
+      { topic: "Checkride", prompt: "Un checkride prÃ¡ctico evalÃºa principalmente:", options: ["EjecuciÃ³n operacional bajo reglas y condiciones definidas.", "Solo la velocidad de internet.", "La cantidad de skins instaladas.", "El tamaÃ±o de la pantalla."], correctIndex: 0, explanation: "El checkride valida desempeÃ±o prÃ¡ctico y criterio." },
+      { topic: "TeÃ³rica", prompt: "Una teÃ³rica aprobada debe:", options: ["Bloquearse para evitar repetirla innecesariamente.", "Repetirse cada minuto.", "Eliminar el historial.", "Crear una reserva fÃ­sica."], correctIndex: 0, explanation: "Al aprobar, el piloto ya cumpliÃ³ esa etapa formativa." },
+      { topic: "ReprobaciÃ³n", prompt: "Una reprobaciÃ³n debe generar:", options: ["Espera de 7 dÃ­as antes de nuevo intento.", "AprobaciÃ³n automÃ¡tica.", "Borrado de piloto.", "Ascenso de rango."], correctIndex: 0, explanation: "El perÃ­odo de espera fomenta estudio antes del reintento." },
+      { topic: "ACARS", prompt: "Si ACARS no coincide con el despacho, el vuelo puede quedar:", options: ["Observado, rechazado o en revisiÃ³n segÃºn regla.", "Siempre aprobado.", "Sin registro.", "Convertido en tour."], correctIndex: 0, explanation: "La inconsistencia afecta la validaciÃ³n del vuelo." },
+      { topic: "Score", prompt: "El Patagonia Score debe reflejar:", options: ["Procedimientos, performance, incidentes y bonificaciones/penalizaciones.", "Solo distancia recorrida.", "Solo gusto personal.", "Solo la matrÃ­cula."], correctIndex: 0, explanation: "El score debe representar calidad operacional integral." },
+      { topic: "HabilitaciÃ³n", prompt: "Una habilitaciÃ³n prÃ¡ctica se debe asignar segÃºn:", options: ["Aeronave/sistema, meteorologÃ­a, rango y criterios definidos.", "Azar.", "Color del aviÃ³n.", "TamaÃ±o del monitor."], correctIndex: 0, explanation: "La habilitaciÃ³n debe ser coherente con capacidad real y entrenamiento." },
+      { topic: "Aeronave oficial", prompt: "Si el checkride ofrece dos aeronaves oficiales:", options: ["Cualquiera de las dos es vÃ¡lida para ese checkride.", "Una debe reprobar automÃ¡ticamente.", "El piloto debe adivinar la correcta.", "No se puede volar."], correctIndex: 0, explanation: "Las opciones oficiales son vÃ¡lidas por diseÃ±o del programa." },
+      { topic: "Preset", prompt: "El preset climÃ¡tico oficial en checkride debe:", options: ["Mantenerse sin cambios para conservar integridad.", "Modificarse si el piloto quiere menos dificultad.", "Borrarse antes de despegar.", "Usarse solo en la web."], correctIndex: 0, explanation: "La condiciÃ³n fija permite evaluar a todos bajo el mismo estÃ¡ndar." },
+      { topic: "Rango", prompt: "Permitir entrenar una categorÃ­a antes del rango busca:", options: ["Preparar transiciÃ³n progresiva del piloto.", "Saltarse todo el sistema.", "Evitar evaluaciÃ³n.", "Eliminar horas."], correctIndex: 0, explanation: "La transiciÃ³n anticipada permite aprendizaje antes de habilitaciÃ³n formal." },
+      { topic: "Historial", prompt: "El historial debe mostrar principalmente vuelos:", options: ["Completados o evaluables, no cancelaciones normales.", "Todos los intentos borrados.", "Solo reservas vacÃ­as.", "Solo vuelos sin ACARS."], correctIndex: 0, explanation: "El historial debe representar actividad operacional real." },
+      { topic: "Datos vivos", prompt: "Las estadÃ­sticas Ãºtiles deben basarse en:", options: ["Datos reales de Supabase y vuelos completados/evaluables.", "Mockups permanentes.", "NÃºmeros inventados.", "Solo texto fijo."], correctIndex: 0, explanation: "El panel debe evolucionar hacia datos vivos confiables." },
+      { topic: "Seguridad", prompt: "Un vuelo con manipulaciÃ³n indebida para obtener ventaja debe:", options: ["Quedar observado, invalidado o penalizado segÃºn la regla.", "Premiarse.", "Ignorarse.", "Duplicarse."], correctIndex: 0, explanation: "La integridad operacional protege el sistema de evaluaciÃ³n." },
+      { topic: "Cierre", prompt: "El cierre correcto de un vuelo requiere:", options: ["Completar procedimiento, enviar reporte y liberar estados segÃºn corresponda.", "Apagar el PC sin cerrar.", "Crear otra reserva encima.", "Cambiar destino despuÃ©s."], correctIndex: 0, explanation: "El cierre ordenado mantiene historial y flota consistentes." },
+      { topic: "Criterio", prompt: "El criterio operacional correcto ante duda crÃ­tica es:", options: ["Elegir la opciÃ³n mÃ¡s segura y revisar antes de continuar.", "Improvisar para ahorrar tiempo.", "Forzar la operaciÃ³n.", "Cambiar los datos finales."], correctIndex: 0, explanation: "La toma de decisiones conservadora es clave en la filosofÃ­a Patagonia Wings." },
     ]),
   },
 ];
@@ -1463,31 +1463,31 @@ const TRAINING_CATEGORY_META: Record<
 > = {
   school: {
     title: "Escuela base",
-    description: "Primer bloque para practicar fundamentos, procedimientos y adaptación a la red Patagonia Wings.",
+    description: "Primer bloque para practicar fundamentos, procedimientos y adaptaciÃ³n a la red Patagonia Wings.",
     tierLabel: "Base",
     accentClass: "text-emerald-200",
     borderClass: "border-emerald-300/24 bg-emerald-400/[0.06]",
     badgeClass: "border-emerald-300/24 bg-emerald-400/12 text-emerald-100",
   },
   single_turboprop: {
-    title: "Monomotor turbohélice",
-    description: "Transición a operación utilitaria/regional liviana, ideal para reforzar gestión de energía y precisión.",
+    title: "Monomotor turbohÃ©lice",
+    description: "TransiciÃ³n a operaciÃ³n utilitaria/regional liviana, ideal para reforzar gestiÃ³n de energÃ­a y precisiÃ³n.",
     tierLabel: "Tier 1",
     accentClass: "text-cyan-200",
     borderClass: "border-cyan-300/24 bg-cyan-400/[0.055]",
     badgeClass: "border-cyan-300/24 bg-cyan-400/12 text-cyan-100",
   },
   twin_turboprop: {
-    title: "Turbohélice bimotor",
-    description: "Paso natural a plataformas regionales con más performance, procedimientos y gestión de sistemas.",
+    title: "TurbohÃ©lice bimotor",
+    description: "Paso natural a plataformas regionales con mÃ¡s performance, procedimientos y gestiÃ³n de sistemas.",
     tierLabel: "Tier 2",
     accentClass: "text-sky-200",
     borderClass: "border-sky-300/24 bg-sky-400/[0.055]",
     badgeClass: "border-sky-300/24 bg-sky-400/12 text-sky-100",
   },
   piston_twin: {
-    title: "Pistón bimotor",
-    description: "Entrenamiento técnico enfocado en multimotor liviano y dominio fino de performance y navegación.",
+    title: "PistÃ³n bimotor",
+    description: "Entrenamiento tÃ©cnico enfocado en multimotor liviano y dominio fino de performance y navegaciÃ³n.",
     tierLabel: "Tier 2",
     accentClass: "text-teal-200",
     borderClass: "border-teal-300/24 bg-teal-400/[0.055]",
@@ -1495,7 +1495,7 @@ const TRAINING_CATEGORY_META: Record<
   },
   regional_jet: {
     title: "Jet regional",
-    description: "Primer salto al mundo jet: más velocidad, energía y operaciones comerciales con cabina moderna.",
+    description: "Primer salto al mundo jet: mÃ¡s velocidad, energÃ­a y operaciones comerciales con cabina moderna.",
     tierLabel: "Tier 3",
     accentClass: "text-indigo-200",
     borderClass: "border-indigo-300/24 bg-indigo-400/[0.055]",
@@ -1503,7 +1503,7 @@ const TRAINING_CATEGORY_META: Record<
   },
   narrowbody_jet: {
     title: "Jet narrowbody",
-    description: "Bloque operacional para línea principal: más complejidad, más alcance y mayor disciplina de SOP.",
+    description: "Bloque operacional para lÃ­nea principal: mÃ¡s complejidad, mÃ¡s alcance y mayor disciplina de SOP.",
     tierLabel: "Tier 4",
     accentClass: "text-violet-200",
     borderClass: "border-violet-300/24 bg-violet-400/[0.055]",
@@ -1511,7 +1511,7 @@ const TRAINING_CATEGORY_META: Record<
   },
   widebody_jet: {
     title: "Jet widebody",
-    description: "Tope de progresión para largo alcance y cabinas complejas, reservado para pilotos ya consolidados.",
+    description: "Tope de progresiÃ³n para largo alcance y cabinas complejas, reservado para pilotos ya consolidados.",
     tierLabel: "Tier 5",
     accentClass: "text-amber-200",
     borderClass: "border-amber-300/24 bg-amber-400/[0.055]",
@@ -1873,13 +1873,13 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
   {
     id: "career",
     title: "Carrera",
-    description: "Vuelos regulares de la red con progresión, reglas y continuidad operacional.",
+    description: "Vuelos regulares de la red con progresiÃ³n, reglas y continuidad operacional.",
     imageSrc: "/dispatch/flight-types/career.png",
   },
   {
     id: "charter",
-    title: "Chárter",
-    description: "Operación dedicada para vuelos especiales, flexibles y fuera del patrón regular.",
+    title: "ChÃ¡rter",
+    description: "OperaciÃ³n dedicada para vuelos especiales, flexibles y fuera del patrÃ³n regular.",
     imageSrc: "/dispatch/flight-types/charter.png",
   },
   {
@@ -1891,21 +1891,21 @@ const DISPATCH_FLIGHT_TYPE_OPTIONS: Array<{
   {
     id: "event",
     title: "Evento",
-    description: "Bloque reservado para vuelos coordinados, convocatoria interna y operación compartida.",
+    description: "Bloque reservado para vuelos coordinados, convocatoria interna y operaciÃ³n compartida.",
     imageSrc: "/dispatch/flight-types/event.png",
     comingSoon: true,
   },
   {
     id: "special_mission",
-    title: "Misión especial",
-    description: "Misiones puntuales con contexto operacional singular y prioridad específica.",
+    title: "MisiÃ³n especial",
+    description: "Misiones puntuales con contexto operacional singular y prioridad especÃ­fica.",
     imageSrc: "/dispatch/flight-types/special-mission.png",
     comingSoon: true,
   },
   {
     id: "training",
     title: "Entrenamiento",
-    description: "Sesiones de práctica, chequeos y preparación operativa antes de salir a línea.",
+    description: "Sesiones de prÃ¡ctica, chequeos y preparaciÃ³n operativa antes de salir a lÃ­nea.",
     imageSrc: "/dispatch/flight-types/training.png",
     hidden: true,
   },
@@ -1926,8 +1926,8 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
   AR: "Argentina",
   BR: "Brasil",
   CL: "Chile",
-  ES: "España",
-  PE: "Perú",
+  ES: "EspaÃ±a",
+  PE: "PerÃº",
   UK: "Reino Unido",
   US: "Estados Unidos",
 };
@@ -2030,7 +2030,7 @@ function buildMonthLabel() {
 
 function getCountryName(countryCode?: string | null) {
   const normalized = countryCode?.trim().toUpperCase() ?? "";
-  return COUNTRY_NAME_MAP[normalized] || normalized || "Ubicación actual";
+  return COUNTRY_NAME_MAP[normalized] || normalized || "UbicaciÃ³n actual";
 }
 
 function getFlagUrl(countryCode?: string | null) {
@@ -2086,7 +2086,7 @@ function resolveCountryCode(value?: string | null, icao?: string | null) {
 function formatDurationMinutes(value: number | null | undefined) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) {
-    return "—";
+    return "â€”";
   }
 
   const safeMinutes = Math.max(1, Math.round(minutes));
@@ -2191,7 +2191,7 @@ function formatUtcDateTime(value: string | null | undefined) {
 
 function formatNavigraphExpiry(value: string | null | undefined) {
   if (!value) {
-    return "Sin sesión activa";
+    return "Sin sesiÃ³n activa";
   }
 
   const parsed = new Date(value);
@@ -2261,7 +2261,7 @@ function resolveWebDispatchDurationMinutes(
   distanceNm: number | null | undefined,
   aircraftTypeCode?: string | null,
 ): number | null {
-  // Misma prioridad visual usada en la tabla de selección de itinerario.
+  // Misma prioridad visual usada en la tabla de selecciÃ³n de itinerario.
   const scheduledDuration = getPositiveNumber(itinerary?.scheduled_block_min);
   if (scheduledDuration != null) return scheduledDuration;
 
@@ -2330,7 +2330,7 @@ function getDestinationCityLabel(
     return destinationAirport.name.trim();
   }
 
-  const splitByArrow = itinerary.itinerary_name.split("→");
+  const splitByArrow = itinerary.itinerary_name.split("â†’");
   const parsed = splitByArrow.length > 1 ? splitByArrow[splitByArrow.length - 1].trim() : "";
   return parsed || itinerary.destination_icao;
 }
@@ -2542,8 +2542,8 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
   return [
     {
       mode: "ground_taxi",
-      title: "Taxi urbano / interaeródromo",
-      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL ↔ SCTB o SCTE ↔ SCPF.`,
+      title: "Taxi urbano / interaerÃ³dromo",
+      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL â†” SCTB o SCTE â†” SCPF.`,
       accent: "amber",
     },
     {
@@ -2551,13 +2551,13 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
       title: "Traslado terrestre por bus",
       subtitle: isChile
         ? `Traslado interregional desde ${airportCode} hacia capitales regionales o aeropuertos nacionales habilitados.`
-        : `Traslado terrestre doméstico desde ${airportCode} hacia capitales y aeropuertos regionales habilitados.`,
+        : `Traslado terrestre domÃ©stico desde ${airportCode} hacia capitales y aeropuertos regionales habilitados.`,
       accent: "emerald",
     },
     {
       mode: "air_ticket",
-      title: "Ticket aéreo regular",
-      subtitle: "Movimiento aéreo automático hacia hubs principales nacionales o internacionales habilitados por la red.",
+      title: "Ticket aÃ©reo regular",
+      subtitle: "Movimiento aÃ©reo automÃ¡tico hacia hubs principales nacionales o internacionales habilitados por la red.",
       accent: "cyan",
     },
   ];
@@ -2584,7 +2584,7 @@ function formatMetarTemperature(token?: string | null) {
     return "Pendiente";
   }
 
-  return `${sign}${numeric} °C`;
+  return `${sign}${numeric} Â°C`;
 }
 
 function formatMetarWind(rawMetar: string) {
@@ -2594,7 +2594,7 @@ function formatMetarWind(rawMetar: string) {
     return "Pendiente";
   }
 
-  const direction = match[1].toUpperCase() === "VRB" ? "VRB" : `${match[1]}°`;
+  const direction = match[1].toUpperCase() === "VRB" ? "VRB" : `${match[1]}Â°`;
   const speed = `${Number.parseInt(match[2], 10)} kt`;
   const gust = match[4] ? ` G${Number.parseInt(match[4], 10)}` : "";
 
@@ -2673,17 +2673,17 @@ function formatMetarCondition(rawMetar: string) {
 }
 
 const METAR_FALLBACK_BY_AIRPORT: Record<string, string[]> = {
-  // Santiago / Región Metropolitana: aeródromos sin METAR propio toman SCEL.
+  // Santiago / RegiÃ³n Metropolitana: aerÃ³dromos sin METAR propio toman SCEL.
   SCTB: ["SCEL"],
   SCBQ: ["SCEL", "SCTB"],
   SCLC: ["SCEL"],
   SCSN: ["SCEL"],
 
-  // Valparaíso / costa central.
+  // ValparaÃ­so / costa central.
   SCRD: ["SCVM", "SCEL"],
   SCVM: ["SCEL"],
 
-  // Puerto Montt / Patagonia norte: aeródromos cercanos toman SCTE.
+  // Puerto Montt / Patagonia norte: aerÃ³dromos cercanos toman SCTE.
   SCPF: ["SCTE"],
   SCJO: ["SCTE"],
   SCPQ: ["SCTE"],
@@ -2693,7 +2693,7 @@ const METAR_FALLBACK_BY_AIRPORT: Record<string, string[]> = {
   // Patagonia austral.
   SCNT: ["SCCI"],
 
-  // Buenos Aires: aeródromos urbanos toman Aeroparque/Ezeiza.
+  // Buenos Aires: aerÃ³dromos urbanos toman Aeroparque/Ezeiza.
   SADF: ["SABE", "SAEZ"],
   SADM: ["SADF", "SABE", "SAEZ"],
   SADL: ["SADF", "SABE", "SAEZ"],
@@ -2713,7 +2713,7 @@ function buildMetarDisplayText(rawMetar: string, requestedAirport: string, repor
     return rawMetar;
   }
 
-  return `${rawMetar} · Referencia cercana para ${requested}`;
+  return `${rawMetar} Â· Referencia cercana para ${requested}`;
 }
 
 function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSummary {
@@ -2726,7 +2726,7 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
       qnh: "Pendiente",
       wind: "Pendiente",
       visibility: "Pendiente",
-      raw: normalized || "METAR pendiente de actualización",
+      raw: normalized || "METAR pendiente de actualizaciÃ³n",
     };
   }
 
@@ -2746,7 +2746,7 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
 function parseMetarVisibilityMeters(rawMetar: string): number | null {
   const upper = rawMetar.toUpperCase();
   if (upper.includes("CAVOK")) return 9999;
-  // SM (statute miles) — approximate
+  // SM (statute miles) â€” approximate
   const smMatch = rawMetar.match(/\bM?(\d+(?:\/\d+)?)SM\b/i);
   if (smMatch) {
     const smVal = smMatch[1].includes("/") ? 0.5 : Number.parseFloat(smMatch[1]);
@@ -2800,7 +2800,7 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
       if (pilotH < requiredH) {
         warnings.push({
           level: requiredH >= 3 ? "red" : "amber",
-          text: `Visibilidad ${visM < 1000 ? `${visM} m` : `${(visM / 1000).toFixed(1)} km`} requiere habilitación H${requiredH} — tienes H${pilotH}.`,
+          text: `Visibilidad ${visM < 1000 ? `${visM} m` : `${(visM / 1000).toFixed(1)} km`} requiere habilitaciÃ³n H${requiredH} â€” tienes H${pilotH}.`,
         });
       }
     }
@@ -2822,7 +2822,7 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
       if (pilotV < requiredV) {
         warnings.push({
           level: requiredV >= 2 ? "red" : "amber",
-          text: `Viento ${windKt} kt requiere habilitación V${requiredV} — tienes V${pilotV}.`,
+          text: `Viento ${windKt} kt requiere habilitaciÃ³n V${requiredV} â€” tienes V${pilotV}.`,
         });
       }
     }
@@ -2840,8 +2840,8 @@ function buildNewsItems(
   const items: NewsItem[] = [];
 
   items.push({
-    tag: `NOTAM PWG · ${airportCode}`,
-    title: `Boletín operacional ${airportCode}`,
+    tag: `NOTAM PWG Â· ${airportCode}`,
+    title: `BoletÃ­n operacional ${airportCode}`,
     body:
       "Revisa METAR, QNH, combustible, pista en uso y restricciones internas antes de abrir SimBrief o iniciar el ACARS.",
   });
@@ -2849,7 +2849,7 @@ function buildNewsItems(
   if (pilotsOnField > 0) {
     items.push({
       tag: "Plataforma",
-      title: `${formatInteger(pilotsOnField)} piloto(s) en esta ubicación`,
+      title: `${formatInteger(pilotsOnField)} piloto(s) en esta ubicaciÃ³n`,
       body:
         "La central detecta pilotos posicionados en este aeropuerto. Ideal para coordinar salidas, vuelos de entrenamiento o eventos.",
     });
@@ -2857,7 +2857,7 @@ function buildNewsItems(
 
   if (activeFlights.length > 0) {
     items.push({
-      tag: "Operación viva",
+      tag: "OperaciÃ³n viva",
       title: `${formatInteger(activeFlights.length)} vuelo(s) activo(s)`,
       body:
         "Hay reservas despachadas o vuelos en progreso. Revisa la actividad del aeropuerto antes de programar una nueva salida.",
@@ -2867,7 +2867,7 @@ function buildNewsItems(
   if (recentFlights.length > 0) {
     items.push({
       tag: "Historial",
-      title: "Últimos cierres disponibles",
+      title: "Ãšltimos cierres disponibles",
       body:
         "La oficina mantiene los PIREPs recientes para comparar score, procedimientos, performance y estado del reporte.",
     });
@@ -2879,13 +2879,13 @@ function buildNewsItems(
 function formatFlightModeLabel(mode?: string | null) {
   const normalized = (mode ?? "").trim().toUpperCase();
   if (!normalized) {
-    return "Operación";
+    return "OperaciÃ³n";
   }
 
   const map: Record<string, string> = {
-    ASSIGNMENT: "Asignación",
+    ASSIGNMENT: "AsignaciÃ³n",
     CAREER: "Itinerario",
-    CHARTER: "Chárter",
+    CHARTER: "ChÃ¡rter",
     EVENT: "Evento",
     TRAINING: "Entrenamiento",
     TOUR: "Tour",
@@ -2909,13 +2909,13 @@ function formatFlightStatusLabel(status?: string | null) {
     reserved: "Reservado",
   };
 
-  return map[normalized] ?? "Operación";
+  return map[normalized] ?? "OperaciÃ³n";
 }
 
 function formatRouteTag(row: FlightReservationRow) {
   const origin = row.origin_ident?.trim().toUpperCase() ?? "---";
   const destination = row.destination_ident?.trim().toUpperCase() ?? "---";
-  return `${origin} → ${destination}`;
+  return `${origin} â†’ ${destination}`;
 }
 
 function topEntries(
@@ -3017,7 +3017,7 @@ function buildRankingCards(
     (value) => `${formatDecimal(value)} pts`,
   );
 
-  const prefix = variant === "month" ? "Mes" : "Año";
+  const prefix = variant === "month" ? "Mes" : "AÃ±o";
 
   return [
     {
@@ -3237,7 +3237,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
 
   const airport = (airportRes.data ?? null) as AirportRow | null;
 
-  let metarText = `METAR ${currentAirport} — pendiente de actualización`;
+  let metarText = `METAR ${currentAirport} â€” pendiente de actualizaciÃ³n`;
 
   try {
     const metarCandidateIds = buildMetarCandidateIds(currentAirport);
@@ -3257,7 +3257,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
       }
     }
   } catch {
-    metarText = `METAR ${currentAirport} — pendiente de actualización`;
+    metarText = `METAR ${currentAirport} â€” pendiente de actualizaciÃ³n`;
   }
 
   const airportCode = airport?.ident?.trim().toUpperCase() ?? currentAirport;
@@ -3269,7 +3269,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
   return {
     airportCode,
     airportName: airport?.name?.trim() ?? "Aeropuerto actual del piloto",
-    municipality: airport?.municipality?.trim() ?? "Ubicación operativa",
+    municipality: airport?.municipality?.trim() ?? "UbicaciÃ³n operativa",
     countryCode,
     countryName: getCountryName(airport?.iso_country),
     pilotsOnField,
@@ -3361,10 +3361,10 @@ function PilotStatsRail({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-            Estadísticas del piloto
+            EstadÃ­sticas del piloto
           </p>
           <p className="mt-1 text-sm leading-6 text-white/56">
-            Resumen operacional rápido al estilo sala de despacho: estado, rango, horas, score y billetera.
+            Resumen operacional rÃ¡pido al estilo sala de despacho: estado, rango, horas, score y billetera.
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
@@ -3440,7 +3440,7 @@ function CentralRankingGrid({ cards }: { cards: RankingCard[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-white">{entry.label}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/42">
-                    Posición destacada
+                    PosiciÃ³n destacada
                   </p>
                 </div>
 
@@ -3530,7 +3530,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
   const metar = buildDispatchMetarSummary(central.metarText);
   const metarPending = /pendiente/i.test(metar.raw);
   const advisoryText = metarPending
-    ? `Sin METAR actualizado para ${central.airportCode}. Antes de despachar, confirma meteorología, pista en uso, combustible y alternativo.`
+    ? `Sin METAR actualizado para ${central.airportCode}. Antes de despachar, confirma meteorologÃ­a, pista en uso, combustible y alternativo.`
     : `METAR disponible para ${central.airportCode}. Confirma QNH ${metar.qnh}, viento ${metar.wind}, visibilidad ${metar.visibility} y restricciones internas antes del push.`;
 
   return (
@@ -3554,13 +3554,13 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               ) : null}
             </div>
             <p className="mt-2 text-base text-white/78">
-              {central.airportCode} · {central.airportName}
+              {central.airportCode} Â· {central.airportName}
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
-              Pilotos en esta ubicación
+              Pilotos en esta ubicaciÃ³n
             </p>
             <p className="mt-2 text-2xl font-semibold text-white">
               {formatInteger(central.pilotsOnField)}
@@ -3599,12 +3599,12 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               <div className="pointer-events-auto absolute bottom-[72px] left-3 z-10 rounded-full bg-black/45 px-2.5 py-1 text-[10px] leading-none text-white/50 backdrop-blur-sm">
                 {heroImage?.photographerUrl ? (
                   <a href={heroImage.photographerUrl} target="_blank" rel="noreferrer" className="transition hover:text-white/80">
-                    © {heroImage.photographerName}
+                    Â© {heroImage.photographerName}
                   </a>
                 ) : (
-                  <span>© {heroImage?.photographerName}</span>
+                  <span>Â© {heroImage?.photographerName}</span>
                 )}
-                {" "}·{" "}
+                {" "}Â·{" "}
                 {heroImage?.providerUrl ? (
                   <a href={heroImage.providerUrl} target="_blank" rel="noreferrer" className="transition hover:text-white/80">
                     {heroImage?.providerName ?? "Pexels"}
@@ -3621,7 +3621,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                   {central.airportName}
                 </p>
                 <p className="truncate text-[13px] font-medium leading-5 text-white/80">
-                  {central.municipality} · {central.countryName}
+                  {central.municipality} Â· {central.countryName}
                 </p>
               </div>
               {flagUrl ? (
@@ -3641,7 +3641,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               </p>
               <h3 className="mt-3 text-2xl font-semibold text-white">{central.airportName}</h3>
               <p className="mt-2 text-sm leading-7 text-white/74">
-                {central.municipality} · {central.countryName}
+                {central.municipality} Â· {central.countryName}
               </p>
             </div>
 
@@ -3677,12 +3677,12 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
             <div className="rounded-[24px] border border-amber-300/16 bg-amber-300/[0.055] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200/18 bg-amber-300/[0.12] text-lg">
-                  🔔
+                  ðŸ””
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-100/72">
-                      NOTAM PWG · {central.airportCode}
+                      NOTAM PWG Â· {central.airportCode}
                     </p>
                     <span className="rounded-full border border-amber-200/18 bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-100/72">
                       Operacional interno
@@ -3704,7 +3704,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               </div>
               <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                  País / bandera
+                  PaÃ­s / bandera
                 </p>
                 <div className="mt-3 flex items-center gap-3">
                   {flagUrl ? (
@@ -3764,7 +3764,7 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">{routeLabel}</p>
           <p className="mt-1 truncate text-[11px] text-white/48">
-            {aircraft} · {formatFlightModeLabel(row.flight_mode_code)}
+            {aircraft} Â· {formatFlightModeLabel(row.flight_mode_code)}
           </p>
         </div>
         <div className="text-right">
@@ -3822,13 +3822,13 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
 
         <div className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.055] px-4 py-3 text-right">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/54">ATC/VATSIM</p>
-          <p className="mt-1 text-sm font-semibold text-cyan-100">Preparado para integración</p>
+          <p className="mt-1 text-sm font-semibold text-cyan-100">Preparado para integraciÃ³n</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        {renderColumn("Partidas", "Desde la posición actual", departures, "departure", "🛫")}
-        {renderColumn("Arribos", "Hacia la posición actual", arrivals, "arrival", "🛬")}
+        {renderColumn("Partidas", "Desde la posiciÃ³n actual", departures, "departure", "ðŸ›«")}
+        {renderColumn("Arribos", "Hacia la posiciÃ³n actual", arrivals, "arrival", "ðŸ›¬")}
       </div>
     </section>
   );
@@ -3910,13 +3910,13 @@ function CentralNewsSection({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
-                        {article.source || "Fuente local"} {dateStr ? `· ${dateStr}` : ""}
+                        {article.source || "Fuente local"} {dateStr ? `Â· ${dateStr}` : ""}
                       </p>
                       <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white">
                         {article.title}
                       </h4>
                     </div>
-                    <span className="shrink-0 text-white/35">↗</span>
+                    <span className="shrink-0 text-white/35">â†—</span>
                   </div>
                   {article.description ? (
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
@@ -3927,7 +3927,7 @@ function CentralNewsSection({
           </div>
         ) : (
           <p className="mt-4 rounded-[18px] border border-dashed border-white/10 bg-[#031428]/45 px-4 py-6 text-sm leading-6 text-white/48">
-            Cuando exista conexión con la API de noticias o se publiquen novedades para la ciudad actual del piloto, aparecerán aquí.
+            Cuando exista conexiÃ³n con la API de noticias o se publiquen novedades para la ciudad actual del piloto, aparecerÃ¡n aquÃ­.
           </p>
         )}
       </div>
@@ -3946,8 +3946,8 @@ function CentralFlightsTable({
 }) {
   const headers =
     variant === "active"
-      ? ["Piloto", "Vuelo", "Aeronave", "Matrícula", "Origen", "Destino", "Estado", "Tipo"]
-      : ["Piloto", "Vuelo", "Aeronave", "Matrícula", "Origen", "Destino", "Score", "Tipo", ""];
+      ? ["Piloto", "Vuelo", "Aeronave", "MatrÃ­cula", "Origen", "Destino", "Estado", "Tipo"]
+      : ["Piloto", "Vuelo", "Aeronave", "MatrÃ­cula", "Origen", "Destino", "Score", "Tipo", ""];
 
   const statusTone = (status?: string | null) => {
     const normalized = (status ?? "").trim().toLowerCase();
@@ -4007,7 +4007,7 @@ function CentralFlightsTable({
             {rows.length ? (
               rows.map((row, index) => {
                 const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
-                // Show just the ICAO model code, not the addon suffix (A319_FENIX → A319)
+                // Show just the ICAO model code, not the addon suffix (A319_FENIX â†’ A319)
                 const rawTypeCode = row.aircraft_type_code?.trim() || "";
                 const aircraftPrimary = rawTypeCode
                   ? rawTypeCode.split("_")[0]
@@ -4035,7 +4035,7 @@ function CentralFlightsTable({
 
                     <td className="px-4 py-3">
                       <div className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
-                        {registration ?? "—"}
+                        {registration ?? "â€”"}
                       </div>
                     </td>
 
@@ -4058,7 +4058,7 @@ function CentralFlightsTable({
                         <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
                           {toSafeNumber(row.procedure_score) > 0
                             ? `${formatDecimal(toSafeNumber(row.procedure_score))} pts`
-                            : "—"}
+                            : "â€”"}
                         </span>
                       )}
                     </td>
@@ -4079,7 +4079,7 @@ function CentralFlightsTable({
                             className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/12 bg-white/[0.05] text-white/54 transition hover:border-sky-400/30 hover:bg-sky-500/10 hover:text-sky-300"
                             title="Ver resumen de vuelo"
                           >
-                            <span className="text-sm">👁</span>
+                            <span className="text-sm">ðŸ‘</span>
                           </a>
                         ) : null}
                       </td>
@@ -4101,7 +4101,7 @@ function CentralFlightsTable({
   );
 }
 
-// ─── Office Economy Panel ─────────────────────────────────────────────────────
+// â”€â”€â”€ Office Economy Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type EconStats = {
   airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number; initial_capital_usd?: number; has_real_ledger?: boolean };
@@ -4126,8 +4126,8 @@ function OfficeEconomyPanel() {
   if (loadingStats) {
     return (
       <div className="surface-outline rounded-[24px] p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Economía aerolínea</p>
-        <p className="mt-3 text-sm text-white/36">Cargando estadísticas...</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">EconomÃ­a aerolÃ­nea</p>
+        <p className="mt-3 text-sm text-white/36">Cargando estadÃ­sticas...</p>
       </div>
     );
   }
@@ -4163,16 +4163,16 @@ function OfficeEconomyPanel() {
     <div className="surface-outline rounded-[24px] p-6">
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">💰 Economía aerolínea</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">ðŸ’° EconomÃ­a aerolÃ­nea</p>
           <h3 className="mt-1 text-lg font-semibold text-white">{airline.name}</h3>
           {airline.has_real_ledger === false ? (
             <p className="mt-2 max-w-xl text-xs leading-5 text-white/48">
-              Capital inicial operativo cargado. Sin operaciones registradas aún.
+              Capital inicial operativo cargado. Sin operaciones registradas aÃºn.
             </p>
           ) : null}
         </div>
         <Link href="/economia" className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90">
-          Ver completo →
+          Ver completo â†’
         </Link>
       </div>
 
@@ -4182,7 +4182,7 @@ function OfficeEconomyPanel() {
           { label: "Balance", value: fmtU(airline.balance_usd), color: airline.balance_usd >= 0 ? "#34d399" : "#f87171" },
           { label: "Ingresos", value: fmtU(airline.total_revenue_usd), color: "#38bdf8" },
           { label: "Costos", value: fmtU(airline.total_costs_usd), color: "#fbbf24" },
-          { label: isProfit ? "Utilidad" : "Pérdida", value: `${isProfit ? "+" : "−"}${fmtU(airline.net_profit_usd)}`, color: isProfit ? "#34d399" : "#f87171" },
+          { label: isProfit ? "Utilidad" : "PÃ©rdida", value: `${isProfit ? "+" : "âˆ’"}${fmtU(airline.net_profit_usd)}`, color: isProfit ? "#34d399" : "#f87171" },
         ].map((k) => (
           <div key={k.label} className="rounded-[16px] border border-white/8 bg-white/[0.02] px-4 py-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{k.label}</p>
@@ -4281,7 +4281,7 @@ function CentralTransfersSectionControlled({
         const token = sessionData.session?.access_token;
 
         if (!token) {
-          throw new Error("No se encontró una sesión activa para consultar traslados.");
+          throw new Error("No se encontrÃ³ una sesiÃ³n activa para consultar traslados.");
         }
 
         const response = await fetch("/api/pilot/transfer", {
@@ -4339,7 +4339,7 @@ function CentralTransfersSectionControlled({
       const token = sessionData.session?.access_token;
 
       if (!token) {
-        throw new Error("No se encontró una sesión activa para ejecutar el traslado.");
+        throw new Error("No se encontrÃ³ una sesiÃ³n activa para ejecutar el traslado.");
       }
 
       const response = await fetch("/api/pilot/transfer", {
@@ -4398,18 +4398,18 @@ function CentralTransfersSectionControlled({
             {!isLoadingTransfers && destinations.length > 0 && (
               hasAbandonmentPenalty ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200">
-                  ⚠ Aeropuerto no-hub · +$350 multa
+                  âš  Aeropuerto no-hub Â· +$350 multa
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-                  ✓ Hub designado · sin multa
+                  âœ“ Hub designado Â· sin multa
                 </span>
               )
             )}
           </div>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
-            Reposiciónate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
-            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional — partís desde un hub."}
+            ReposiciÃ³nate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
+            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional â€” partÃ­s desde un hub."}
           </p>
         </div>
       </div>
@@ -4448,7 +4448,7 @@ function CentralTransfersSectionControlled({
                 <div className="hidden grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/34 md:grid">
                   <span>Aeropuerto</span>
                   <span>Tarifa</span>
-                  <span className="text-right">Acción</span>
+                  <span className="text-right">AcciÃ³n</span>
                 </div>
 
                 <div className="mt-0 space-y-2 md:mt-2">
@@ -4458,7 +4458,7 @@ function CentralTransfersSectionControlled({
                     </div>
                   ) : optionDestinations.length === 0 ? (
                     <div className="rounded-xl border border-white/8 bg-[#031428]/55 px-3 py-3 text-[11px] font-semibold text-white/50">
-                      Sin alternativas desde esta ubicación.
+                      Sin alternativas desde esta ubicaciÃ³n.
                     </div>
                   ) : (
                     optionDestinations.map((destination, destinationIndex) => {
@@ -4513,7 +4513,7 @@ function CentralTransfersSectionControlled({
   );
 }
 
-// ─── News section wrapper ─────────────────────────────────────────────────────
+// â”€â”€â”€ News section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type LiveNewsArticle = {
   title: string;
@@ -4605,7 +4605,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Rankings anuales
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del año</h3>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del aÃ±o</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -4628,12 +4628,12 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Pilotos volando
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Operación viva</h3>
+            <h3 className="mt-2 text-2xl font-semibold text-white">OperaciÃ³n viva</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              Tráfico activo
+              TrÃ¡fico activo
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.activeFlights.length)} movimiento(s)</p>
           </div>
@@ -4642,7 +4642,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="mt-5">
           <CentralFlightsTable
             rows={central.activeFlights}
-            emptyLabel="Aún no hay pilotos volando en esta lectura del panel."
+            emptyLabel="AÃºn no hay pilotos volando en esta lectura del panel."
             variant="active"
           />
         </div>
@@ -4653,14 +4653,14 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-              Últimos 20 vuelos
+              Ãšltimos 20 vuelos
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              Últimos cierres
+              Ãšltimos cierres
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.recentFlights.length)} registro(s)</p>
           </div>
@@ -4669,7 +4669,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="mt-5">
           <CentralFlightsTable
             rows={central.recentFlights}
-            emptyLabel="Todavía no hay vuelos recientes para mostrar."
+            emptyLabel="TodavÃ­a no hay vuelos recientes para mostrar."
             variant="recent"
           />
         </div>
@@ -4724,11 +4724,11 @@ function DispatchOverviewHeader({
           Workspace Dispatch
         </p>
         <h3 className="mt-2 text-xl font-semibold text-white sm:text-[28px]">
-          Flujo central reutilizando la lógica real del despacho
+          Flujo central reutilizando la lÃ³gica real del despacho
         </h3>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
-          Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no está
-          elegido o marcado como listo. Así mantenemos orden operativo dentro del dashboard.
+          Dejamos el flujo secuencial y bloqueado. No se puede avanzar al siguiente paso si el actual no estÃ¡
+          elegido o marcado como listo. AsÃ­ mantenemos orden operativo dentro del dashboard.
         </p>
       </div>
 
@@ -4845,8 +4845,8 @@ function DispatchAircraftCascadeSelector({
 }) {
   const available = useMemo(() => rows.filter((r) => r.selectable), [rows]);
 
-  // modelCode = aircraft_model_code (e.g. "C208", "A320") — agrupador real del Step 1
-  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") — agrupador del Step 2
+  // modelCode = aircraft_model_code (e.g. "C208", "A320") â€” agrupador real del Step 1
+  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") â€” agrupador del Step 2
   const [selModelCode, setSelModelCode] = useState<string>("");
   const [selVariantKey, setSelVariantKey] = useState<string>("");
 
@@ -4860,9 +4860,9 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selectedAircraftId, available]);
 
-  // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320…)
+  // Step 1: modelos Ãºnicos agrupados por aircraft_model_code (B737, C208, A320â€¦)
   const uniqueModels = useMemo(() => {
-    const seen = new Map<string, string>(); // modelCode → displayName
+    const seen = new Map<string, string>(); // modelCode â†’ displayName
     for (const r of available) {
       // aircraft_variant_code en la BD contiene el model_code (e.g. "C208")
       const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
@@ -4875,10 +4875,10 @@ function DispatchAircraftCascadeSelector({
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [available]);
 
-  // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
-  // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
+  // Deriva el nombre del addon desde aircraft_type_code si addon_provider estÃ¡ vacÃ­o
+  // Ej: "B737_PMDG" â†’ "PMDG" | "C208_BLACKSQUARE" â†’ "Black Square" | "ATR72_MSFS" â†’ "EstÃ¡ndar"
   const deriveAddonLabel = (typeCode: string | undefined | null): string => {
-    if (!typeCode) return "Estándar";
+    if (!typeCode) return "EstÃ¡ndar";
     const suffix = typeCode.split("_").pop()?.toUpperCase() ?? "";
     const addonMap: Record<string, string> = {
       PMDG: "PMDG",
@@ -4891,22 +4891,22 @@ function DispatchAircraftCascadeSelector({
       HEADWIND: "Headwind",
       FLIGHTSIM: "FlightSim Studio",
       LVFR: "LVFR",
-      MSFS: "Estándar",
-      NATIVE: "Estándar",
+      MSFS: "EstÃ¡ndar",
+      NATIVE: "EstÃ¡ndar",
     };
     return addonMap[suffix] ?? suffix;
   };
 
-  // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
+  // Step 2: variantes Ãºnicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
     if (!selModelCode) return [];
-    // key → { addonLabel, displayName }
+    // key â†’ { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
       (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      // Preferir addon_provider → variant_name → derivar de aircraft_type_code
+      // Preferir addon_provider â†’ variant_name â†’ derivar de aircraft_type_code
       const addonLabel =
         r.addon_provider?.trim() ||
         r.variant_name?.trim() ||
@@ -4915,7 +4915,7 @@ function DispatchAircraftCascadeSelector({
       if (!seen.has(key)) seen.set(key, { addonLabel, displayName });
     }
     // Si hay varias entradas con el mismo addon (ej. B737-600 y B737-700 ambos "PMDG"),
-    // usar el displayName del avión para diferenciarlas
+    // usar el displayName del aviÃ³n para diferenciarlas
     const addonCounts = new Map<string, number>();
     for (const { addonLabel } of seen.values())
       addonCounts.set(addonLabel, (addonCounts.get(addonLabel) ?? 0) + 1);
@@ -4934,8 +4934,8 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selModelCode, uniqueVariants, selVariantKey]);
 
-  // Step 3: matrículas disponibles para modelo + variante seleccionada
-  // Matrículas: filtra por modelo; variante es opcional y solo pre-filtra la lista
+  // Step 3: matrÃ­culas disponibles para modelo + variante seleccionada
+  // MatrÃ­culas: filtra por modelo; variante es opcional y solo pre-filtra la lista
   const registrations = useMemo(() => {
     if (!selModelCode) return [];
     return available.filter((r) => {
@@ -4957,7 +4957,7 @@ function DispatchAircraftCascadeSelector({
     }
   }, [registrations, selectedAircraftId, onSelect]);
 
-  // Cuando se selecciona matrícula, sincronizar variante con su aircraft_type_code
+  // Cuando se selecciona matrÃ­cula, sincronizar variante con su aircraft_type_code
   useEffect(() => {
     if (!selectedAircraftId) return;
     const found = available.find((r) => r.aircraft_id === selectedAircraftId);
@@ -4967,7 +4967,7 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selectedAircraftId, available, selVariantKey]);
 
-  // Si cambió el modelo o la variante y la matrícula ya no pertenece a la lista visible, limpiarla.
+  // Si cambiÃ³ el modelo o la variante y la matrÃ­cula ya no pertenece a la lista visible, limpiarla.
   useEffect(() => {
     if (!selectedAircraftId) return;
     const stillVisible = registrations.some((r) => r.aircraft_id === selectedAircraftId);
@@ -4998,17 +4998,17 @@ function DispatchAircraftCascadeSelector({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-3">
-        {/* 1 · Tipo de aeronave (modelo) */}
+        {/* 1 Â· Tipo de aeronave (modelo) */}
         <div className="flex flex-col gap-2">
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/54">
-            1 · Tipo de aeronave
+            1 Â· Tipo de aeronave
           </label>
           <select
             value={selModelCode}
             onChange={(e) => handleModelChange(e.target.value)}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
           >
-            <option value="">— Elige tipo —</option>
+            <option value="">â€” Elige tipo â€”</option>
             {uniqueModels.map((t) => (
               <option key={t.code} value={t.code}>
                 {t.name}
@@ -5017,14 +5017,14 @@ function DispatchAircraftCascadeSelector({
           </select>
         </div>
 
-        {/* 2 · N° de registro */}
+        {/* 2 Â· NÂ° de registro */}
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
               selModelCode ? "text-white/54" : "text-white/24"
             }`}
           >
-            2 · N° de registro
+            2 Â· NÂ° de registro
           </label>
           <select
             value={selectedAircraftId ?? ""}
@@ -5034,7 +5034,7 @@ function DispatchAircraftCascadeSelector({
             disabled={!selModelCode}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
           >
-            <option value="">— Elige matrícula —</option>
+            <option value="">â€” Elige matrÃ­cula â€”</option>
             {registrations.map((r) => (
               <option key={r.aircraft_id} value={r.aircraft_id}>
                 {r.tail_number}
@@ -5048,10 +5048,10 @@ function DispatchAircraftCascadeSelector({
       {selectedReg ? (
         <>
           <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-            <span className="text-lg text-emerald-300">✓</span>
+            <span className="text-lg text-emerald-300">âœ“</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
-                {selectedReg.tail_number} · {selectedReg.aircraft_name}
+                {selectedReg.tail_number} Â· {selectedReg.aircraft_name}
               </p>
               {(selectedReg.addon_provider || selectedReg.variant_name) && (
                 <p className="mt-0.5 text-xs text-emerald-200/70">
@@ -5231,7 +5231,7 @@ function getItineraryRouteCategory(item: AvailableItineraryOption) {
 
 
 function formatEconomyUsd(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
+  if (value == null || !Number.isFinite(value)) return "â€”";
   const sign = value < 0 ? "-" : "";
   return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
 }
@@ -5291,21 +5291,21 @@ function EconomyMiniGrid({
   if (!estimate) {
     return (
       <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/50">
-        Economía estimada no disponible para esta combinación.
+        EconomÃ­a estimada no disponible para esta combinaciÃ³n.
       </div>
     );
   }
 
   const values = [
-    { label: "💵 Piloto", value: formatEconomyUsd(estimate.pilotCommissionUsd), tone: "text-emerald-100" },
-    { label: "👥 Pax", value: estimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
-    { label: "📦 Carga", value: String(estimate.estimatedCargoKg.toLocaleString("es-CL")) + " kg", tone: "text-white/82" },
-    { label: "🏢 Aerolínea", value: formatEconomyUsd(estimate.airlineRevenueUsd), tone: "text-cyan-100" },
-    { label: "⛽ Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
-    { label: "🛠 Mantención", value: formatEconomyUsd(estimate.maintenanceCostUsd), tone: "text-white/82" },
-    { label: "🧾 Operación", value: formatEconomyUsd(estimate.airportFeesUsd + estimate.handlingCostUsd + estimate.repairReserveUsd + estimate.onboardServiceCostUsd), tone: "text-white/82" },
-    { label: "🛍 Ventas", value: formatEconomyUsd(estimate.onboardServiceRevenueUsd + estimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
-    { label: "📈 Utilidad", value: formatEconomyUsd(estimate.netProfitUsd), tone: estimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
+    { label: "ðŸ’µ Piloto", value: formatEconomyUsd(estimate.pilotCommissionUsd), tone: "text-emerald-100" },
+    { label: "ðŸ‘¥ Pax", value: estimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
+    { label: "ðŸ“¦ Carga", value: String(estimate.estimatedCargoKg.toLocaleString("es-CL")) + " kg", tone: "text-white/82" },
+    { label: "ðŸ¢ AerolÃ­nea", value: formatEconomyUsd(estimate.airlineRevenueUsd), tone: "text-cyan-100" },
+    { label: "â›½ Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
+    { label: "ðŸ›  MantenciÃ³n", value: formatEconomyUsd(estimate.maintenanceCostUsd), tone: "text-white/82" },
+    { label: "ðŸ§¾ OperaciÃ³n", value: formatEconomyUsd(estimate.airportFeesUsd + estimate.handlingCostUsd + estimate.repairReserveUsd + estimate.onboardServiceCostUsd), tone: "text-white/82" },
+    { label: "ðŸ› Ventas", value: formatEconomyUsd(estimate.onboardServiceRevenueUsd + estimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
+    { label: "ðŸ“ˆ Utilidad", value: formatEconomyUsd(estimate.netProfitUsd), tone: estimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
   ];
 
   return (
@@ -5353,7 +5353,7 @@ function DispatchItineraryTable({
               <th className="px-4 py-3 font-semibold">Destino</th>
               <th className="px-4 py-3 font-semibold">Distancia</th>
               <th className="px-4 py-3 font-semibold">Duracion aprox.</th>
-              <th className="px-4 py-3 font-semibold">Economía</th>
+              <th className="px-4 py-3 font-semibold">EconomÃ­a</th>
               <th className="px-4 py-3 font-semibold">Salida (local)</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
             </tr>
@@ -5459,7 +5459,7 @@ function DispatchItineraryTable({
                   {/* DISTANCIA */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm font-semibold text-white">
-                      {distanceNm ? `${distanceNm} NM` : "—"}
+                      {distanceNm ? `${distanceNm} NM` : "â€”"}
                     </span>
                   </td>
                   {/* DURACION */}
@@ -5486,11 +5486,11 @@ function DispatchItineraryTable({
                       });
                       return estimate ? (
                         <div className="text-xs leading-5">
-                          <p className="font-black text-emerald-100">💵 {formatEconomyUsd(estimate.pilotCommissionUsd)}</p>
-                          <p className="font-semibold text-cyan-100/80">📈 {formatEconomyUsd(estimate.netProfitUsd)}</p>
+                          <p className="font-black text-emerald-100">ðŸ’µ {formatEconomyUsd(estimate.pilotCommissionUsd)}</p>
+                          <p className="font-semibold text-cyan-100/80">ðŸ“ˆ {formatEconomyUsd(estimate.netProfitUsd)}</p>
                         </div>
                       ) : (
-                        <span className="text-white/38">—</span>
+                        <span className="text-white/38">â€”</span>
                       );
                     })()}
                   </td>
@@ -5637,7 +5637,7 @@ function RouteAircraftSideIcon({ className = "" }: { className?: string }) {
 
 function formatAircraftHealthPercent(value?: number | null) {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return "Sin diagnóstico";
+    return "Sin diagnÃ³stico";
   }
   return `${Math.round(value)}%`;
 }
@@ -5693,7 +5693,7 @@ function AircraftHealthPanel({
         ? "Fuera de servicio"
         : "Mantenimiento requerido"
       : aircraft.condition_band === "warning"
-        ? "Revisión sugerida"
+        ? "RevisiÃ³n sugerida"
         : "Disponible";
 
   const maintenanceTone = aircraft.maintenance_required
@@ -5825,7 +5825,7 @@ async function loadTrainingAircraftProgress(profile: PilotProfileRecord | null) 
 
 function formatTrainingDate(value: string | null) {
   if (!value) {
-    return "—";
+    return "â€”";
   }
 
   try {
@@ -5835,7 +5835,7 @@ function formatTrainingDate(value: string | null) {
       year: "2-digit",
     });
   } catch {
-    return "—";
+    return "â€”";
   }
 }
 
@@ -5896,13 +5896,13 @@ function TrainingIcaoInput({
         const airportName = airport?.name?.trim() || airport?.municipality?.trim() || "";
         setAirportLabel(
           airportName
-            ? `${normalizedValue} · ${airportName}`
-            : `${normalizedValue} · aeropuerto no encontrado`,
+            ? `${normalizedValue} Â· ${airportName}`
+            : `${normalizedValue} Â· aeropuerto no encontrado`,
         );
       })
       .catch(() => {
         if (isActive) {
-          setAirportLabel(`${normalizedValue} · no se pudo consultar el aeropuerto`);
+          setAirportLabel(`${normalizedValue} Â· no se pudo consultar el aeropuerto`);
         }
       })
       .finally(() => {
@@ -5916,8 +5916,8 @@ function TrainingIcaoInput({
 
   const helperText = normalizedValue.length === 4
     ? isLoadingAirport
-      ? `${normalizedValue} · buscando aeropuerto...`
-      : airportLabel || `${normalizedValue} · aeropuerto no encontrado`
+      ? `${normalizedValue} Â· buscando aeropuerto...`
+      : airportLabel || `${normalizedValue} Â· aeropuerto no encontrado`
     : normalizedValue.length > 0
       ? "Completa el ICAO de 4 caracteres."
       : "Ingresa el ICAO del aeropuerto.";
@@ -5956,23 +5956,23 @@ function TrainingCheckrideDispatchModal({
     origin: "----",
     destination: "----",
     label: "Ruta pendiente",
-    remarks: "La ruta especial del checkride todavía no está configurada.",
+    remarks: "La ruta especial del checkride todavÃ­a no estÃ¡ configurada.",
   };
 
   const scoring = checkride.scoring ?? {
     maxScore: 100,
     passScore: 85,
-    items: ["Evaluación especial pendiente de configuración."],
+    items: ["EvaluaciÃ³n especial pendiente de configuraciÃ³n."],
   };
 
   const weatherConditions = checkride.weatherConditions ?? {
-    ceiling: "Condición de techo pendiente de configuración.",
-    visibility: "Condición de visibilidad/RVR pendiente de configuración.",
-    wind: "Condición de viento pendiente de configuración.",
-    precipitation: "Condición de precipitación/fenómeno pendiente de configuración.",
-    qnh: "QNH pendiente de configuración.",
-    lockedPreset: "Control de clima pendiente de configuración.",
-    operationalFocus: "Objetivo operacional pendiente de configuración.",
+    ceiling: "CondiciÃ³n de techo pendiente de configuraciÃ³n.",
+    visibility: "CondiciÃ³n de visibilidad/RVR pendiente de configuraciÃ³n.",
+    wind: "CondiciÃ³n de viento pendiente de configuraciÃ³n.",
+    precipitation: "CondiciÃ³n de precipitaciÃ³n/fenÃ³meno pendiente de configuraciÃ³n.",
+    qnh: "QNH pendiente de configuraciÃ³n.",
+    lockedPreset: "Control de clima pendiente de configuraciÃ³n.",
+    operationalFocus: "Objetivo operacional pendiente de configuraciÃ³n.",
   };
 
   const aircraftOptions = checkride.aircraftOptions ?? [];
@@ -5991,7 +5991,7 @@ function TrainingCheckrideDispatchModal({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
-                  Checkride / Habilitación
+                  Checkride / HabilitaciÃ³n
                 </span>
                 <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
                   {checkride.code}
@@ -6022,7 +6022,7 @@ function TrainingCheckrideDispatchModal({
                 <div className="absolute inset-0 bg-gradient-to-t from-[#061423] via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/70">Condición oficial</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/70">CondiciÃ³n oficial</p>
                     <p className="mt-1 max-w-2xl text-sm font-semibold leading-5 text-white">{checkride.weatherGoal}</p>
                   </div>
                   <span className="rounded-full border border-white/12 bg-black/32 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/72 backdrop-blur-md">
@@ -6042,7 +6042,7 @@ function TrainingCheckrideDispatchModal({
                   </div>
                   <div className="rounded-[16px] border border-white/8 bg-black/16 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-white/36">Ruta</p>
-                    <p className="mt-1 text-lg font-semibold text-white">{route.origin} → {route.destination}</p>
+                    <p className="mt-1 text-lg font-semibold text-white">{route.origin} â†’ {route.destination}</p>
                     <p className="mt-1 text-xs text-white/46">{route.label}</p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -6051,7 +6051,7 @@ function TrainingCheckrideDispatchModal({
                       <p className="mt-1 text-sm font-semibold leading-5 text-white">{checkride.recommendedRank}</p>
                     </div>
                     <div className="rounded-[16px] border border-emerald-300/18 bg-emerald-400/10 px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/54">Aprobación</p>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/54">AprobaciÃ³n</p>
                       <p className="mt-1 text-lg font-semibold text-emerald-100">{scoring.passScore}/{scoring.maxScore}</p>
                     </div>
                   </div>
@@ -6059,7 +6059,7 @@ function TrainingCheckrideDispatchModal({
               </div>
 
               <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">¿Cómo lo apruebo?</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Â¿CÃ³mo lo apruebo?</p>
                 <p className="mt-3 text-sm leading-6 text-white/62">{checkride.approvalNote}</p>
               </div>
             </div>
@@ -6088,7 +6088,7 @@ function TrainingCheckrideDispatchModal({
                     <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">{point.type}</p>
                   </div>
                   {index < routeWaypoints.length - 1 ? (
-                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">→</div>
+                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">â†’</div>
                   ) : null}
                 </div>
               ))}
@@ -6097,13 +6097,13 @@ function TrainingCheckrideDispatchModal({
 
           <section className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr]">
             <div className="rounded-[24px] border border-cyan-300/14 bg-cyan-400/[0.05] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/58">Condición climática obligatoria</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/58">CondiciÃ³n climÃ¡tica obligatoria</p>
               <div className="mt-4 grid gap-2">
                 {[
                   ["Techo", weatherConditions.ceiling],
                   ["Visibilidad", weatherConditions.visibility],
                   ["Viento", weatherConditions.wind],
-                  ["Precipitación", weatherConditions.precipitation],
+                  ["PrecipitaciÃ³n", weatherConditions.precipitation],
                   ["QNH", weatherConditions.qnh],
                 ].map(([label, value]) => (
                   <div key={`${checkride.code}-weather-${label}`} className="rounded-[15px] border border-white/8 bg-black/16 px-3 py-3">
@@ -6119,7 +6119,7 @@ function TrainingCheckrideDispatchModal({
             </div>
 
             <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Criterios de evaluación</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Criterios de evaluaciÃ³n</p>
               <div className="mt-4 space-y-3">
                 {evaluationCriteria.map((criterion, index) => (
                   <div key={`${checkride.code}-criterion-${index}`} className="rounded-[18px] border border-white/8 bg-[#071827]/72 px-4 py-3">
@@ -6163,13 +6163,13 @@ function TrainingCheckrideDispatchModal({
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Opciones oficiales de aeronave</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Selecciona una opción asignada</h3>
+                <h3 className="mt-2 text-xl font-semibold text-white">Selecciona una opciÃ³n asignada</h3>
                 <p className="mt-2 max-w-4xl text-sm leading-6 text-white/56">
-                  Patagonia Wings asigna estas dos opciones para la habilitación. Elegir una u otra no te reprueba; ambas son válidas siempre que uses una de las aeronaves publicadas para este checkride.
+                  Patagonia Wings asigna estas dos opciones para la habilitaciÃ³n. Elegir una u otra no te reprueba; ambas son vÃ¡lidas siempre que uses una de las aeronaves publicadas para este checkride.
                 </p>
               </div>
               <div className="rounded-[14px] border border-emerald-300/18 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100">
-                Máximo {scoring.maxScore} · aprueba con {scoring.passScore}
+                MÃ¡ximo {scoring.maxScore} Â· aprueba con {scoring.passScore}
               </div>
             </div>
 
@@ -6192,13 +6192,13 @@ function TrainingCheckrideDispatchModal({
                   >
                     Preparar despacho
                   </button>
-                  <p className="mt-2 text-[11px] leading-5 text-white/34">Opción oficial {index + 1} para esta habilitación.</p>
+                  <p className="mt-2 text-[11px] leading-5 text-white/34">OpciÃ³n oficial {index + 1} para esta habilitaciÃ³n.</p>
                 </div>
               ))}
             </div>
 
             <div className="mt-5 rounded-[18px] border border-white/8 bg-black/14 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Reglas rápidas</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Reglas rÃ¡pidas</p>
               <ul className="mt-3 grid gap-2 text-xs leading-5 text-white/58 md:grid-cols-2">
                 {specialRules.map((rule, index) => (
                   <li key={`${checkride.code}-rule-${index}`} className="rounded-[14px] border border-white/8 bg-white/[0.025] px-3 py-2">
@@ -6306,15 +6306,15 @@ function TrainingTheoryExamModal({
         });
 
         if (error) {
-          setAttemptSaveMessage("Resultado guardado localmente. Ejecuta el SQL de teóricas para guardarlo también en Supabase.");
+          setAttemptSaveMessage("Resultado guardado localmente. Ejecuta el SQL de teÃ³ricas para guardarlo tambiÃ©n en Supabase.");
         } else {
           setAttemptSaveMessage("Resultado guardado correctamente en Supabase.");
         }
       } else {
-        setAttemptSaveMessage("Resultado calculado. No se detectó callsign para guardarlo en Supabase.");
+        setAttemptSaveMessage("Resultado calculado. No se detectÃ³ callsign para guardarlo en Supabase.");
       }
     } catch {
-      setAttemptSaveMessage("Resultado guardado localmente. Supabase no respondió para registrar el intento.");
+      setAttemptSaveMessage("Resultado guardado localmente. Supabase no respondiÃ³ para registrar el intento.");
     } finally {
       setSavingAttempt(false);
     }
@@ -6381,7 +6381,7 @@ function TrainingTheoryExamModal({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100">
-                  Evaluación teórica
+                  EvaluaciÃ³n teÃ³rica
                 </span>
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100">
                   {exam.code}
@@ -6424,7 +6424,7 @@ function TrainingTheoryExamModal({
               <div className="rounded-[22px] border border-violet-300/14 bg-violet-400/[0.055] p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100/58">Preguntas</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{totalQuestions}</p>
-                <p className="mt-1 text-xs text-white/46">Alternativas múltiples</p>
+                <p className="mt-1 text-xs text-white/46">Alternativas mÃºltiples</p>
               </div>
               <div className="rounded-[22px] border border-cyan-300/14 bg-cyan-400/[0.055] p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100/58">Tiempo</p>
@@ -6432,7 +6432,7 @@ function TrainingTheoryExamModal({
                 <p className="mt-1 text-xs text-white/46">Contador real</p>
               </div>
               <div className="rounded-[22px] border border-emerald-300/14 bg-emerald-400/[0.055] p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-100/58">Aprobación</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-100/58">AprobaciÃ³n</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{exam.passScore}%</p>
                 <p className="mt-1 text-xs text-white/46">{minimumCorrect} de {totalQuestions} correctas</p>
               </div>
@@ -6457,7 +6457,7 @@ function TrainingTheoryExamModal({
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#061423] via-[#061423]/28 to-transparent" />
                     <div className="absolute bottom-5 left-5 right-5">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100/70">Estado de evaluación</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100/70">Estado de evaluaciÃ³n</p>
                       <p className="mt-2 text-2xl font-semibold text-white">{gate.label}</p>
                     </div>
                   </div>
@@ -6470,13 +6470,13 @@ function TrainingTheoryExamModal({
                 }`}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/52">Acceso bloqueado</p>
                   <h3 className="mt-3 text-2xl font-semibold text-white">
-                    {gate.tone === "passed" ? "Esta teórica ya fue aprobada" : "Reintento todavía no disponible"}
+                    {gate.tone === "passed" ? "Esta teÃ³rica ya fue aprobada" : "Reintento todavÃ­a no disponible"}
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-white/64">{gate.helper}</p>
                   {latestAttempt ? (
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <div className="rounded-[18px] border border-white/10 bg-black/18 p-4">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Último resultado</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Ãšltimo resultado</p>
                         <p className="mt-2 text-2xl font-semibold text-white">{latestAttempt.score_percent}%</p>
                       </div>
                       <div className="rounded-[18px] border border-white/10 bg-black/18 p-4">
@@ -6507,14 +6507,14 @@ function TrainingTheoryExamModal({
                       {scorePercent}%
                     </p>
                     <p className="mt-2 text-sm font-semibold text-white">
-                      {passed ? "Evaluación aprobada" : "Evaluación no aprobada"}
+                      {passed ? "EvaluaciÃ³n aprobada" : "EvaluaciÃ³n no aprobada"}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-white/58">
-                      Obtuviste {correctCount} respuestas correctas de {totalQuestions}. La nota mínima de aprobación es {exam.passScore}%.
+                      Obtuviste {correctCount} respuestas correctas de {totalQuestions}. La nota mÃ­nima de aprobaciÃ³n es {exam.passScore}%.
                     </p>
                     {!passed ? (
                       <p className="mt-2 text-sm leading-6 text-amber-100/72">
-                        Podrás realizar un nuevo intento después de 7 días.
+                        PodrÃ¡s realizar un nuevo intento despuÃ©s de 7 dÃ­as.
                       </p>
                     ) : null}
                     {attemptSaveMessage ? (
@@ -6528,7 +6528,7 @@ function TrainingTheoryExamModal({
                       disabled={savingAttempt}
                       className="mt-5 rounded-[14px] border border-white/10 bg-white/[0.06] px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/76 transition hover:bg-white/[0.1] hover:text-white disabled:cursor-wait disabled:opacity-60"
                     >
-                      {savingAttempt ? "Guardando resultado..." : "Cerrar evaluación"}
+                      {savingAttempt ? "Guardando resultado..." : "Cerrar evaluaciÃ³n"}
                     </button>
                   </div>
 
@@ -6536,7 +6536,7 @@ function TrainingTheoryExamModal({
                     {questions.map((question, index) => {
                       const selectedOption = answers[question.id];
                       const isCorrect = selectedOption === question.correctOptionId;
-                      const correctLabel = question.options.find((option) => option.id === question.correctOptionId)?.label ?? "—";
+                      const correctLabel = question.options.find((option) => option.id === question.correctOptionId)?.label ?? "â€”";
 
                       return (
                         <div key={question.id} className="rounded-[18px] border border-white/8 bg-black/18 p-4">
@@ -6588,23 +6588,23 @@ function TrainingTheoryExamModal({
                   <h3 className="mt-3 text-2xl font-semibold text-white">{exam.title}</h3>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-[18px] border border-cyan-300/14 bg-cyan-400/[0.055] p-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/56">Duración</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/56">DuraciÃ³n</p>
                       <p className="mt-2 text-2xl font-semibold text-white">{exam.durationMinutes} min</p>
                     </div>
                     <div className="rounded-[18px] border border-emerald-300/14 bg-emerald-400/[0.055] p-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/56">Aprobación</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/56">AprobaciÃ³n</p>
                       <p className="mt-2 text-2xl font-semibold text-white">{minimumCorrect}/{totalQuestions}</p>
                     </div>
                   </div>
                   <ul className="mt-5 space-y-3 text-sm leading-6 text-white/62">
-                    <li>• Tendrás un solo intento activo y el contador comenzará al presionar “Hacer intento”.</li>
-                    <li>• La prueba contiene {totalQuestions} preguntas con alternativas A/B/C/D.</li>
-                    <li>• Puedes navegar entre preguntas antes de finalizar.</li>
-                    <li>• Si apruebas, esta teórica queda bloqueada como aprobada.</li>
-                    <li>• Si repruebas, el reintento quedará bloqueado por {TRAINING_THEORY_RETRY_DAYS} días.</li>
+                    <li>â€¢ TendrÃ¡s un solo intento activo y el contador comenzarÃ¡ al presionar â€œHacer intentoâ€.</li>
+                    <li>â€¢ La prueba contiene {totalQuestions} preguntas con alternativas A/B/C/D.</li>
+                    <li>â€¢ Puedes navegar entre preguntas antes de finalizar.</li>
+                    <li>â€¢ Si apruebas, esta teÃ³rica queda bloqueada como aprobada.</li>
+                    <li>â€¢ Si repruebas, el reintento quedarÃ¡ bloqueado por {TRAINING_THEORY_RETRY_DAYS} dÃ­as.</li>
                   </ul>
                   <div className="mt-6 rounded-[18px] border border-amber-300/18 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-50/74">
-                    Al iniciar no se mostrarán instrucciones nuevamente. Revisa bien el tema y responde con calma.
+                    Al iniciar no se mostrarÃ¡n instrucciones nuevamente. Revisa bien el tema y responde con calma.
                   </div>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                     <button
@@ -6645,7 +6645,7 @@ function TrainingTheoryExamModal({
                     </div>
                     <div className="border-t border-white/8 p-4">
                       <p className="text-sm leading-6 text-white/58">
-                        El contador está activo. Responde con calma y finaliza cuando completes todas las preguntas.
+                        El contador estÃ¡ activo. Responde con calma y finaliza cuando completes todas las preguntas.
                       </p>
                     </div>
                   </div>
@@ -6758,7 +6758,7 @@ function TrainingTheoryExamModal({
                             : "cursor-not-allowed border-white/8 bg-white/[0.02] text-white/28"
                         }`}
                       >
-                        {savingAttempt ? "Guardando..." : "Finalizar evaluación"}
+                        {savingAttempt ? "Guardando..." : "Finalizar evaluaciÃ³n"}
                       </button>
                     </div>
                   </div>
@@ -6769,9 +6769,9 @@ function TrainingTheoryExamModal({
         ) : (
           <div className="p-6">
             <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-8 text-center">
-              <p className="text-3xl">📘</p>
-              <p className="mt-3 text-lg font-semibold text-white">Evaluación en preparación</p>
-              <p className="mt-2 text-sm text-white/52">Esta teórica será habilitada en un próximo bloque.</p>
+              <p className="text-3xl">ðŸ“˜</p>
+              <p className="mt-3 text-lg font-semibold text-white">EvaluaciÃ³n en preparaciÃ³n</p>
+              <p className="mt-2 text-sm text-white/52">Esta teÃ³rica serÃ¡ habilitada en un prÃ³ximo bloque.</p>
             </div>
           </div>
         )}
@@ -6824,7 +6824,7 @@ function TrainingReservationModal({
     setDestinationIcao("");
     setScheduledDeparture(defaultTrainingDepartureHHMM());
     setScheduledDepartureWasEdited(false);
-    setRemarks(`Entrenamiento ${aircraft.display_name} creado desde la página de Entrenamiento.`);
+    setRemarks(`Entrenamiento ${aircraft.display_name} creado desde la pÃ¡gina de Entrenamiento.`);
     setSaving(false);
     setSyncingSimbrief(false);
     setFinalizingDispatch(false);
@@ -6916,7 +6916,7 @@ function TrainingReservationModal({
     }
 
     if (!routeReady) {
-      setErrorMessage("Debes ingresar origen y destino ICAO válidos, distintos entre sí.");
+      setErrorMessage("Debes ingresar origen y destino ICAO vÃ¡lidos, distintos entre sÃ­.");
       return;
     }
 
@@ -6947,7 +6947,7 @@ function TrainingReservationModal({
       }
 
       setReservationData(row);
-      setMessage("Reserva de entrenamiento creada. Por ahora crea el OFP manualmente en SimBrief, impórtalo desde esta ventana y finaliza el despacho para que ACARS lo pueda rescatar.");
+      setMessage("Reserva de entrenamiento creada. Por ahora crea el OFP manualmente en SimBrief, impÃ³rtalo desde esta ventana y finaliza el despacho para que ACARS lo pueda rescatar.");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -6992,7 +6992,7 @@ function TrainingReservationModal({
       if (data.summary.staticId) {
         setTrainingSimbriefStaticId(data.summary.staticId);
       }
-      setMessage("OFP importado desde SimBrief. Revisa que vuelo, origen, destino y airframe coincidan. Luego crea la reserva si aún no existe y finaliza el despacho para ACARS.");
+      setMessage("OFP importado desde SimBrief. Revisa que vuelo, origen, destino y airframe coincidan. Luego crea la reserva si aÃºn no existe y finaliza el despacho para ACARS.");
     } catch (error) {
       setTrainingSimbriefSummary(null);
       setErrorMessage(error instanceof Error ? error.message : "No se pudo importar el OFP desde SimBrief.");
@@ -7097,7 +7097,7 @@ function TrainingReservationModal({
       };
 
       onReserved(nextReservation);
-      setMessage("Despacho de entrenamiento finalizado. ACARS ya puede rescatarlo igual que un chárter, pero sin aeronave física ni matrícula real.");
+      setMessage("Despacho de entrenamiento finalizado. ACARS ya puede rescatarlo igual que un chÃ¡rter, pero sin aeronave fÃ­sica ni matrÃ­cula real.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo finalizar el despacho de entrenamiento.");
     } finally {
@@ -7133,7 +7133,7 @@ function TrainingReservationModal({
                 Entrenamiento de {aircraft.display_name}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
-                Esta reserva no toma una aeronave física. El flujo queda como chárter: reserva web, OFP de SimBrief importado y despacho final para que ACARS lo rescate.
+                Esta reserva no toma una aeronave fÃ­sica. El flujo queda como chÃ¡rter: reserva web, OFP de SimBrief importado y despacho final para que ACARS lo rescate.
               </p>
             </div>
 
@@ -7222,10 +7222,10 @@ function TrainingReservationModal({
               Resumen de reserva
             </p>
             <div className="mt-3 grid gap-3 text-sm text-white/72 sm:grid-cols-4">
-              <span><strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}</span>
-              <span><strong className="text-white">Ruta:</strong> {cleanOrigin || "----"} → {cleanDestination || "----"}</span>
-              <span><strong className="text-white">Avión:</strong> {aircraft.aircraft_type_code}</span>
-              <span><strong className="text-white">Matrícula:</strong> {TRAINING_AIRCRAFT_REGISTRATION_LABEL}</span>
+              <span><strong className="text-white">Piloto:</strong> {profile?.callsign ?? "â€”"}</span>
+              <span><strong className="text-white">Ruta:</strong> {cleanOrigin || "----"} â†’ {cleanDestination || "----"}</span>
+              <span><strong className="text-white">AviÃ³n:</strong> {aircraft.aircraft_type_code}</span>
+              <span><strong className="text-white">MatrÃ­cula:</strong> {TRAINING_AIRCRAFT_REGISTRATION_LABEL}</span>
             </div>
           </div>
 
@@ -7604,10 +7604,10 @@ function DashboardWorkspace({
       });
 
       if (!response.ok) {
-        throw new Error("No se pudo cerrar la sesión de Navigraph.");
+        throw new Error("No se pudo cerrar la sesiÃ³n de Navigraph.");
       }
 
-      setNavigraphInfoMessage("Sesión Navigraph desconectada correctamente.");
+      setNavigraphInfoMessage("SesiÃ³n Navigraph desconectada correctamente.");
       setSimbriefStaticId(null);
       await refreshNavigraphStatus(true);
     } catch (error) {
@@ -7622,7 +7622,7 @@ function DashboardWorkspace({
 
   async function handleOpenSimbriefPlanner() {
     if (!profile || !selectedAircraftRecord || !selectedItineraryRecord) {
-      setNavigraphErrorMessage(isCharterLikeDispatch ? "Primero debes crear la reserva Chárter con origen, destino y aeronave." : "Primero debes confirmar tipo de vuelo, aeronave e itinerario.");
+      setNavigraphErrorMessage(isCharterLikeDispatch ? "Primero debes crear la reserva ChÃ¡rter con origen, destino y aeronave." : "Primero debes confirmar tipo de vuelo, aeronave e itinerario.");
       return;
     }
 
@@ -7632,7 +7632,7 @@ function DashboardWorkspace({
     }
 
     if (!navigraphConnected) {
-      setNavigraphInfoMessage("SimBrief se abrirá con los datos de Patagonia Wings. Si solicita sesión, inicia con tu cuenta Navigraph/SimBrief y luego vuelve para cargar el OFP.");
+      setNavigraphInfoMessage("SimBrief se abrirÃ¡ con los datos de Patagonia Wings. Si solicita sesiÃ³n, inicia con tu cuenta Navigraph/SimBrief y luego vuelve para cargar el OFP.");
     }
 
     setSyncingSimbrief(true);
@@ -7718,15 +7718,15 @@ function DashboardWorkspace({
       setSimbriefGenerationActive(true);
       setNavigraphInfoMessage(
         data.mode === "api"
-          ? "Generando OFP SimBrief con los datos de Patagonia Wings. La ventana pequeña volverá automáticamente al finalizar."
-          : "SimBrief se abrió prellenado. Revisa el vuelo, presiona Generate Flight en SimBrief y luego vuelve a Patagonia Wings para cargar el OFP automático."
+          ? "Generando OFP SimBrief con los datos de Patagonia Wings. La ventana pequeÃ±a volverÃ¡ automÃ¡ticamente al finalizar."
+          : "SimBrief se abriÃ³ prellenado. Revisa el vuelo, presiona Generate Flight en SimBrief y luego vuelve a Patagonia Wings para cargar el OFP automÃ¡tico."
       );
 
       const popup = window.open(data.generateUrl || data.editUrl, popupName, popupFeatures);
 
       if (!popup) {
         setSimbriefGenerationActive(false);
-        throw new Error("El navegador bloqueó la ventana de SimBrief. Permite popups para Patagonia Wings e inténtalo nuevamente.");
+        throw new Error("El navegador bloqueÃ³ la ventana de SimBrief. Permite popups para Patagonia Wings e intÃ©ntalo nuevamente.");
       }
 
       const popupMonitor = window.setInterval(() => {
@@ -7735,8 +7735,8 @@ function DashboardWorkspace({
           setSimbriefGenerationActive(false);
           setNavigraphInfoMessage(
             data.mode === "api"
-              ? "La ventana de SimBrief se cerró. Usa Cargar OFP automático para recuperar el plan si no se cargó solo."
-              : "Cuando hayas presionado Generate Flight en SimBrief, usa Cargar OFP automático para traer el plan a Patagonia Wings."
+              ? "La ventana de SimBrief se cerrÃ³. Usa Cargar OFP automÃ¡tico para recuperar el plan si no se cargÃ³ solo."
+              : "Cuando hayas presionado Generate Flight en SimBrief, usa Cargar OFP automÃ¡tico para traer el plan a Patagonia Wings."
           );
         }
       }, 1200);
@@ -7750,7 +7750,7 @@ function DashboardWorkspace({
     }
   }
 
-  // Carga reserva activa del piloto y refresca telemetría viva enviada por ACARS.
+  // Carga reserva activa del piloto y refresca telemetrÃ­a viva enviada por ACARS.
   useEffect(() => {
     if (!profile) return;
     let alive = true;
@@ -7812,7 +7812,7 @@ function DashboardWorkspace({
       setNavigraphInfoMessage("");
       void refreshNavigraphStatus(true);
     } else if (simbriefReturn === "1") {
-      setNavigraphInfoMessage("Volviste desde SimBrief. Ahora usa Cargar OFP automático para traer el plan generado y validar el despacho.");
+      setNavigraphInfoMessage("Volviste desde SimBrief. Ahora usa Cargar OFP automÃ¡tico para traer el plan generado y validar el despacho.");
     }
   }, [activeTab, searchParams]);
 
@@ -7833,12 +7833,12 @@ function DashboardWorkspace({
     {
       id: "e175",
       title: "E175 disponible",
-      description: "Opción jet regional para saltos medios dentro de la red operativa.",
+      description: "OpciÃ³n jet regional para saltos medios dentro de la red operativa.",
     },
     {
       id: "a320",
       title: "A320 disponible",
-      description: "Opción narrowbody para red troncal y rutas con mayor demanda.",
+      description: "OpciÃ³n narrowbody para red troncal y rutas con mayor demanda.",
     },
   ] as const;
 
@@ -7855,7 +7855,7 @@ function DashboardWorkspace({
     },
     {
       id: "special_leg",
-      title: "Pierna especial / misión",
+      title: "Pierna especial / misiÃ³n",
       description: "Slot especial para entrenamiento, evento o traslado validado.",
     },
   ] as const;
@@ -7921,7 +7921,7 @@ function DashboardWorkspace({
     }
 
     const aircraftMatched = modeFiltered.filter((item) => {
-      // Prioridad 1: Rutas V2 traen una lista explícita de aeronaves compatibles.
+      // Prioridad 1: Rutas V2 traen una lista explÃ­cita de aeronaves compatibles.
       // Esta debe mandar sobre service_profile, porque en V2 service_profile puede ser "pax"/"cargo"
       // y eso NO es una regla de compatibilidad por aeronave.
       const compatibleTypes = item.compatible_aircraft_types ?? [];
@@ -7958,8 +7958,8 @@ function DashboardWorkspace({
     const rankMatched = aircraftMatched.filter((item) => {
       const routeCategory = getItineraryRouteCategory(item);
 
-      // Rutas V2 siempre traen route_group con la categoría oficial.
-      // Si llega una ruta legacy sin categoría, no la escondemos para no romper datos antiguos.
+      // Rutas V2 siempre traen route_group con la categorÃ­a oficial.
+      // Si llega una ruta legacy sin categorÃ­a, no la escondemos para no romper datos antiguos.
       if (!routeCategory) {
         return true;
       }
@@ -7968,8 +7968,8 @@ function DashboardWorkspace({
     });
 
     // Strict filtering: when an aircraft is selected, only show compatible itineraries
-    // (even if the list is empty — do not fall back to all routes).
-    // Además, los dos primeros rangos solo ven rutas regionales/nacionales.
+    // (even if the list is empty â€” do not fall back to all routes).
+    // AdemÃ¡s, los dos primeros rangos solo ven rutas regionales/nacionales.
     return rankMatched;
   }, [
     availableItineraries,
@@ -8020,7 +8020,7 @@ function DashboardWorkspace({
     return {
       itinerary_id: charterReservationId ?? routeCode,
       itinerary_code: routeCode,
-      itinerary_name: selectedFlightType === "free_flight" ? "Vuelo libre" : "Chárter Patagonia Wings",
+      itinerary_name: selectedFlightType === "free_flight" ? "Vuelo libre" : "ChÃ¡rter Patagonia Wings",
       flight_mode: "charter",
       origin_icao: charterOperation.origin,
       destination_icao: charterOperation.destination,
@@ -8252,7 +8252,7 @@ function DashboardWorkspace({
     webDispatchDistanceNm != null ? `${formatInteger(webDispatchDistanceNm)} NM` : "Pendiente";
   const summaryDispatchDuration = formatDurationMinutes(webDispatchDurationMinutes);
   const summaryAirframeDisplay = selectedAircraftRecord
-    ? `${selectedAircraftRecord.aircraft_name} · ${webAirframe}`
+    ? `${selectedAircraftRecord.aircraft_name} Â· ${webAirframe}`
     : "Pendiente";
   const canDispatchFlight =
     Boolean(profile) &&
@@ -8423,13 +8423,13 @@ function DashboardWorkspace({
       ? DISPATCH_FLIGHT_TYPE_OPTIONS.find((option) => option.id === selectedFlightType)?.title ?? "Listo"
       : "Pendiente",
     aircraft: selectedAircraftRecord
-      ? `${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}`
+      ? `${selectedAircraftRecord.tail_number} Â· ${selectedAircraftRecord.aircraft_name}`
       : "Pendiente",
     itinerary: selectedItineraryRecord
-      ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
+      ? `${selectedItineraryRecord.itinerary_code} Â· ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
     dispatch: preparedReservationId
-      ? "Despachado ✓"
+      ? "Despachado âœ“"
       : dispatchReady
         ? "Listo para despachar"
         : "Pendiente",
@@ -8493,7 +8493,7 @@ function DashboardWorkspace({
       setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
-      setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para cargar el OFP automático.");
+      setSimbriefErrorMessage("Falta tu usuario SimBrief en Perfil para cargar el OFP automÃ¡tico.");
       setSummaryInfoMessage("");
       setSummaryErrorMessage("");
       return;
@@ -8534,7 +8534,7 @@ function DashboardWorkspace({
       setSimbriefGenerationActive(false);
       setSimbriefSummary(data.summary);
       setSimbriefInfoMessage(
-        "OFP cargado automáticamente desde SimBrief. Revisa la validación antes de continuar al resumen."
+        "OFP cargado automÃ¡ticamente desde SimBrief. Revisa la validaciÃ³n antes de continuar al resumen."
       );
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
@@ -8543,7 +8543,7 @@ function DashboardWorkspace({
       setSimbriefSummary(null);
       setSimbriefInfoMessage("");
       setSimbriefErrorMessage(
-        error instanceof Error ? error.message : "No se pudo cargar el OFP automático desde SimBrief."
+        error instanceof Error ? error.message : "No se pudo cargar el OFP automÃ¡tico desde SimBrief."
       );
       setPreparedReservationId(null);
     } finally {
@@ -8571,7 +8571,7 @@ function DashboardWorkspace({
       }
 
       setSimbriefGenerationActive(false);
-      setNavigraphInfoMessage("SimBrief terminó de generar el OFP. Cargando datos automáticamente en Patagonia Wings...");
+      setNavigraphInfoMessage("SimBrief terminÃ³ de generar el OFP. Cargando datos automÃ¡ticamente en Patagonia Wings...");
       void handleLoadSimbriefData(returnedStaticId);
     }
 
@@ -8583,7 +8583,7 @@ function DashboardWorkspace({
     if (!simbriefSummary) {
       setDispatchReady(false);
       setSimbriefInfoMessage("");
-      setSimbriefErrorMessage("Primero debes cargar el OFP automático desde SimBrief.");
+      setSimbriefErrorMessage("Primero debes cargar el OFP automÃ¡tico desde SimBrief.");
       setPreparedReservationId(null);
       setSummaryInfoMessage("");
       setSummaryErrorMessage("");
@@ -8607,6 +8607,10 @@ function DashboardWorkspace({
     setSimbriefInfoMessage("Despacho validado correctamente. Ya puedes continuar al resumen.");
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
+    setDispatchStep("summary");
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   async function handleDispatchFlight() {
@@ -8833,7 +8837,7 @@ function DashboardWorkspace({
     if (normalizedStatus === "reserved") return "Reserva creada";
     if (normalizedStatus === "dispatched" || normalizedStatus === "dispatch_ready") return "Despacho preparado";
     if ((normalizedStatus === "in_progress" || normalizedStatus === "in_flight") && activeHasLivePosition) return "Vuelo en vivo";
-    if (normalizedStatus === "in_progress" || normalizedStatus === "in_flight") return "Vuelo iniciado · esperando telemetría";
+    if (normalizedStatus === "in_progress" || normalizedStatus === "in_flight") return "Vuelo iniciado Â· esperando telemetrÃ­a";
     return "Seguimiento";
   }, [activeHasLivePosition, activeReservation?.status]);
   const activeProgressPercent = Math.round(clamp01(activeFlightProgress) * 100);
@@ -8852,7 +8856,7 @@ function DashboardWorkspace({
                 type="button"
                 onClick={() => { if (!isDispatchBlocked) onChangeTab(tab.key); }}
                 disabled={isDispatchBlocked}
-                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
+                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso â€” finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
                 className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                   isActive
                     ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
@@ -8862,7 +8866,7 @@ function DashboardWorkspace({
                 }`}
               >
                 {tab.label}
-                {isDispatchBlocked ? " 🔒" : ""}
+                {isDispatchBlocked ? " ðŸ”’" : ""}
               </button>
             );
           })}
@@ -8916,8 +8920,8 @@ function DashboardWorkspace({
                         </p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
                         <p className="hidden mt-3 text-sm leading-7 text-white/72">
-                          Antes de tomar aeronave, aquí defines el perfil operativo del vuelo. Hasta que no elijas una
-                          modalidad, Aeronave seguirá bloqueado.
+                          Antes de tomar aeronave, aquÃ­ defines el perfil operativo del vuelo. Hasta que no elijas una
+                          modalidad, Aeronave seguirÃ¡ bloqueado.
                         </p>
 
                         <p className="mt-3 text-sm leading-7 text-white/72">
@@ -9015,9 +9019,9 @@ function DashboardWorkspace({
                       <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué define este paso</p>
+                            <p className="text-sm font-semibold text-white">QuÃ© define este paso</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              La modalidad elegida marca el contexto del despacho. Desde aquí se conserva el flujo
+                              La modalidad elegida marca el contexto del despacho. Desde aquÃ­ se conserva el flujo
                               secuencial sin tocar la estructura aprobada del dashboard.
                             </p>
                           </div>
@@ -9026,13 +9030,13 @@ function DashboardWorkspace({
                             <p className="mt-2 text-sm leading-7 text-white/70">
                               {selectedFlightType
                                 ? `Seleccionado: ${stepStatusLabel.flightType}. Ya puedes pasar a Aeronave.`
-                                : "Todavía no eliges un tipo de vuelo. Aeronave seguirá bloqueado hasta seleccionar uno."}
+                                : "TodavÃ­a no eliges un tipo de vuelo. Aeronave seguirÃ¡ bloqueado hasta seleccionar uno."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Secuencia activa: primero eliges una de las seis tarjetas; recién después se habilita
+                          Secuencia activa: primero eliges una de las seis tarjetas; reciÃ©n despuÃ©s se habilita
                           Aeronave.
                         </div>
 
@@ -9055,9 +9059,9 @@ function DashboardWorkspace({
                       <div className="space-y-4">
                         <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
-                          <h4 className="mt-3 text-2xl font-semibold text-white">Chárter: origen, destino y aeronave</h4>
+                          <h4 className="mt-3 text-2xl font-semibold text-white">ChÃ¡rter: origen, destino y aeronave</h4>
                           <p className="mt-3 text-sm leading-7 text-white/72">
-                            Para vuelos Chárter y Vuelo libre no se usa el listado de itinerarios regulares. Aquí defines destino,
+                            Para vuelos ChÃ¡rter y Vuelo libre no se usa el listado de itinerarios regulares. AquÃ­ defines destino,
                             hora local, aeronave disponible en tu aeropuerto actual y creas la reserva directa para que ACARS la pueda leer.
                           </p>
                         </div>
@@ -9106,7 +9110,7 @@ function DashboardWorkspace({
                                 } as FlightReservationRow & { id: string });
                               }
 
-                              setSummaryInfoMessage("Chárter reservado correctamente. Continúa al paso Despacho para crear o importar el OFP.");
+                              setSummaryInfoMessage("ChÃ¡rter reservado correctamente. ContinÃºa al paso Despacho para crear o importar el OFP.");
                               setDispatchStep("dispatch_flow");
 
                               window.requestAnimationFrame(() => {
@@ -9116,7 +9120,7 @@ function DashboardWorkspace({
                           />
                         ) : (
                           <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5 text-sm leading-7 text-white/70">
-                            Cargando perfil del piloto para preparar el Chárter.
+                            Cargando perfil del piloto para preparar el ChÃ¡rter.
                           </div>
                         )}
 
@@ -9130,10 +9134,10 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">SelecciÃ³n de aeronave</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Ahora sí puedes tomar aeronave. Al elegir una, se habilitará Itinerario. Si cambias el tipo de vuelo,
-                          este paso se resetea para mantener el orden lógico.
+                          Ahora sÃ­ puedes tomar aeronave. Al elegir una, se habilitarÃ¡ Itinerario. Si cambias el tipo de vuelo,
+                          este paso se resetea para mantener el orden lÃ³gico.
                         </p>
 
                         <div className="mt-5">
@@ -9156,7 +9160,7 @@ function DashboardWorkspace({
                         <div className="mt-6 flex flex-col gap-4 border-t border-white/8 pt-5 lg:flex-row lg:items-center lg:justify-between">
                           <p className="text-sm leading-7 text-white/70">
                             {selectedAircraftRecord
-                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}.`
+                              ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} Â· ${selectedAircraftRecord.aircraft_name}.`
                               : availableAircraft.length > 0
                                 ? "Escoge una aeronave de la tabla para continuar al itinerario."
                                 : "No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual."}
@@ -9181,9 +9185,9 @@ function DashboardWorkspace({
                       <div className="hidden rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué se conserva</p>
+                            <p className="text-sm font-semibold text-white">QuÃ© se conserva</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Reutilizamos la lógica que ya teníamos para no romper reservas, lectura de flota ni filtros reales.
+                              Reutilizamos la lÃ³gica que ya tenÃ­amos para no romper reservas, lectura de flota ni filtros reales.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
@@ -9258,11 +9262,11 @@ function DashboardWorkspace({
                           <div className="mt-4 rounded-[20px] border border-emerald-300/16 bg-emerald-300/[0.045] p-4">
                             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                               <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Economía estimada del itinerario</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">EconomÃ­a estimada del itinerario</p>
                                 <p className="mt-1 text-sm text-white/58">Valores previos al despacho; el cierre real se recalcula con el PIREP y el ledger.</p>
                               </div>
                               <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
-                                {selectedItineraryRecord.origin_icao} → {selectedItineraryRecord.destination_icao}
+                                {selectedItineraryRecord.origin_icao} â†’ {selectedItineraryRecord.destination_icao}
                               </span>
                             </div>
                             <EconomyMiniGrid
@@ -9336,13 +9340,13 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Aquí queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
+                          AquÃ­ queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
                           despacho como listo y validado.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                            Conexión y estado de Navigraph
+                            ConexiÃ³n y estado de Navigraph
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
                             Apertura y recarga de OFP / SimBrief
@@ -9356,15 +9360,15 @@ function DashboardWorkspace({
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Reutilización</p>
+                            <p className="text-sm font-semibold text-white">ReutilizaciÃ³n</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              No rehacemos el despacho desde cero; aquí se enchufa el flujo real que ya estaba operativo.
+                              No rehacemos el despacho desde cero; aquÃ­ se enchufa el flujo real que ya estaba operativo.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Estado actual</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              {dispatchReady ? "Despacho marcado como listo. Resumen ya está habilitado." : "Aún falta marcar este paso como listo para abrir Resumen."}
+                              {dispatchReady ? "Despacho marcado como listo. Resumen ya estÃ¡ habilitado." : "AÃºn falta marcar este paso como listo para abrir Resumen."}
                             </p>
                           </div>
                         </div>
@@ -9392,7 +9396,7 @@ function DashboardWorkspace({
                             onClick={() => handleStepChange(isCharterLikeDispatch ? "aircraft" : "itinerary")}
                             className="button-secondary py-3"
                           >
-                            {isCharterLikeDispatch ? "Volver al Chárter" : "Volver a itinerario"}
+                            {isCharterLikeDispatch ? "Volver al ChÃ¡rter" : "Volver a itinerario"}
                           </button>
                           <button
                             type="button"
@@ -9412,10 +9416,10 @@ function DashboardWorkspace({
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">
-                          {isCharterLikeDispatch ? "Despacho Chárter" : "Despacho de itinerario"}
+                          {isCharterLikeDispatch ? "Despacho ChÃ¡rter" : "Despacho de itinerario"}
                         </h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Primero revisa la reserva web, luego prepara o importa el OFP de SimBrief, valida que los datos coincidan y finalmente continúa al resumen para dejar el vuelo listo para ACARS.
+                          Primero revisa la reserva web, luego prepara o importa el OFP de SimBrief, valida que los datos coincidan y finalmente continÃºa al resumen para dejar el vuelo listo para ACARS.
                         </p>
                       </div>
 
@@ -9426,7 +9430,7 @@ function DashboardWorkspace({
                               Resumen de reserva
                             </p>
                             <h5 className="mt-2 text-lg font-semibold text-white">
-                              {isCharterLikeDispatch ? "Reserva Chárter / Vuelo libre" : "Reserva de itinerario"}
+                              {isCharterLikeDispatch ? "Reserva ChÃ¡rter / Vuelo libre" : "Reserva de itinerario"}
                             </h5>
                           </div>
                           <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/76">
@@ -9436,16 +9440,16 @@ function DashboardWorkspace({
 
                         <div className="mt-4 grid gap-3 text-sm text-white/72 sm:grid-cols-2 xl:grid-cols-4">
                           <span>
-                            <strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}
+                            <strong className="text-white">Piloto:</strong> {profile?.callsign ?? "â€”"}
                           </span>
                           <span>
-                            <strong className="text-white">Ruta:</strong> {webOriginCode || "----"} → {webDestinationCode || "----"}
+                            <strong className="text-white">Ruta:</strong> {webOriginCode || "----"} â†’ {webDestinationCode || "----"}
                           </span>
                           <span>
-                            <strong className="text-white">Avión:</strong> {webAirframe || selectedAircraftRecord?.aircraft_type_code || "—"}
+                            <strong className="text-white">AviÃ³n:</strong> {webAirframe || selectedAircraftRecord?.aircraft_type_code || "â€”"}
                           </span>
                           <span>
-                            <strong className="text-white">Matrícula:</strong> {selectedAircraftRecord?.tail_number || "—"}
+                            <strong className="text-white">MatrÃ­cula:</strong> {selectedAircraftRecord?.tail_number || "â€”"}
                           </span>
                         </div>
                       </div>
@@ -9456,7 +9460,7 @@ function DashboardWorkspace({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">
                               SimBrief / despacho
                             </p>
-                            <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief automático</h3>
+                            <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief automÃ¡tico</h3>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
                             dispatchReady
@@ -9470,14 +9474,14 @@ function DashboardWorkspace({
                         </div>
 
                         <p className="mt-3 text-sm text-white/58">
-                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. En modo seguro, SimBrief se abre prellenado: el piloto solo revisa, presiona Generate Flight y luego carga el OFP automático en esta página.
+                          Patagonia Wings prepara el vuelo con nÃºmero, origen, destino, aeronave y matrÃ­cula. En modo seguro, SimBrief se abre prellenado: el piloto solo revisa, presiona Generate Flight y luego carga el OFP automÃ¡tico en esta pÃ¡gina.
                         </p>
 
                         {simbriefGenerationActive ? (
                           <div className="mt-4 rounded-[20px] border border-emerald-300/20 bg-emerald-400/[0.08] p-4 text-sm text-emerald-50">
                             <p className="font-semibold">Generando OFP SimBrief...</p>
                             <p className="mt-1 text-emerald-50/72">
-                              No completes el despacho todavía. Si estás en SimBrief, genera/guarda el vuelo y luego vuelve a Patagonia Wings para cargar combustible, pax, carga, ruta y tiempos planificados.
+                              No completes el despacho todavÃ­a. Si estÃ¡s en SimBrief, genera/guarda el vuelo y luego vuelve a Patagonia Wings para cargar combustible, pax, carga, ruta y tiempos planificados.
                             </p>
                           </div>
                         ) : null}
@@ -9489,14 +9493,14 @@ function DashboardWorkspace({
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Ruta</p>
-                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} → {webDestinationCode}</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} â†’ {webDestinationCode}</p>
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Airframe</p>
                             <p className="mt-1 text-sm font-semibold text-white">{webAirframe}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Matrícula</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">MatrÃ­cula</p>
                             <p className="mt-1 text-sm font-semibold text-white">{selectedAircraftRecord?.tail_number || "Pendiente"}</p>
                           </div>
                         </div>
@@ -9517,7 +9521,7 @@ function DashboardWorkspace({
                             disabled={syncingSimbrief || !profile?.simbrief_username?.trim()}
                             className={`py-3 ${syncingSimbrief || !profile?.simbrief_username?.trim() ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
                           >
-                            {syncingSimbrief ? "Cargando..." : "Cargar OFP automático"}
+                            {syncingSimbrief ? "Cargando..." : "Cargar OFP automÃ¡tico"}
                           </button>
 
                           <button
@@ -9568,7 +9572,7 @@ function DashboardWorkspace({
                           onClick={() => handleStepChange(isCharterLikeDispatch ? "aircraft" : "itinerary")}
                           className="button-secondary py-3"
                         >
-                          {isCharterLikeDispatch ? "Volver al Chárter" : "Volver a itinerario"}
+                          {isCharterLikeDispatch ? "Volver al ChÃ¡rter" : "Volver a itinerario"}
                         </button>
 
                         <button
@@ -9587,9 +9591,9 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final del vuelo</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Manifiesto de salida Patagonia Wings</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Aqui queda el consolidado final del vuelo a despachar. Al confirmar, la web lo deja listo en la base operativa para que ACARS lo rescate.
+                          SimBrief/OFP validado. Revisa el manifiesto final antes de enviar el vuelo a ACARS.
                         </p>
                       </div>
 
@@ -9597,9 +9601,9 @@ function DashboardWorkspace({
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Resumen web
+                              Que vuelo hare
                             </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Datos del vuelo a realizar</h5>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Resumen operacional pre-ACARS</h5>
                           </div>
                           <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
                             Listo para despacho
@@ -9636,7 +9640,7 @@ function DashboardWorkspace({
                           <DispatchValueCard
                             label="Itinerario"
                             value={selectedItineraryRecord?.itinerary_name || selectedItineraryRecord?.itinerary_code || "Pendiente"}
-                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} → ${selectedItineraryRecord.destination_icao}` : undefined}
+                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} â†’ ${selectedItineraryRecord.destination_icao}` : undefined}
                             valueClassName="text-[1.3rem] leading-tight"
                           />
                           <DispatchValueCard
@@ -9653,6 +9657,13 @@ function DashboardWorkspace({
                             valueClassName={`text-[1.3rem] leading-tight ${preparedReservationId ? "text-emerald-300" : dispatchReady ? "text-sky-300" : ""}`}
                           />
                         </div>
+
+                        <div className="mt-4">
+                          <DispatchWideValueStrip
+                            label="Ruta OFP"
+                            value={summaryDispatchRoute}
+                          />
+                        </div>
                       </div>
 
                       {simbriefSummary ? (
@@ -9660,9 +9671,9 @@ function DashboardWorkspace({
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              OFP confirmado
+                              Que lleva el avion
                             </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Datos traidos desde SimBrief</h5>
+                            <h5 className="mt-2 text-xl font-semibold text-white">Carga, pesos y combustible del manifiesto</h5>
                           </div>
                           <span className="rounded-full border border-emerald-300/25 bg-emerald-500/[0.12] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
                             {preparedReservationId ? "Despachado" : "Validado"}
@@ -9725,12 +9736,51 @@ function DashboardWorkspace({
                           />
                         </div>
 
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                           <DispatchValueCard
                             label="Comb. bloque"
                             value={
                               typeof simbriefSummary?.blockFuelKg === "number"
                                 ? `${simbriefSummary.blockFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Comb. trip"
+                            value={
+                              typeof simbriefSummary?.tripFuelKg === "number"
+                                ? `${simbriefSummary.tripFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Comb. reserva"
+                            value={
+                              typeof simbriefSummary?.reserveFuelKg === "number"
+                                ? `${simbriefSummary.reserveFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                          <DispatchValueCard
+                            label="Comb. taxi"
+                            value={
+                              typeof simbriefSummary?.taxiFuelKg === "number"
+                                ? `${simbriefSummary.taxiFuelKg.toLocaleString("es-CL")} kg`
+                                : "Pendiente"
+                            }
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                          <DispatchValueCard
+                            label="Alternativo"
+                            value={simbriefSummary?.alternate?.trim() || "No informado"}
+                          />
+                          <DispatchValueCard
+                            label="Peso estimado pax"
+                            value={
+                              typeof simbriefSummary?.pax === "number"
+                                ? `${formatInteger(simbriefSummary.pax * 84)} kg`
                                 : "Pendiente"
                             }
                           />
@@ -9744,7 +9794,7 @@ function DashboardWorkspace({
                           />
                           <DispatchValueCard
                             label="OFP cargado"
-                            value={simbriefSummary ? "✓ Listo" : "Pendiente"}
+                            value={simbriefSummary ? "Listo" : "Pendiente"}
                             valueClassName={simbriefSummary ? "text-[1.3rem] leading-tight text-emerald-400" : "text-[1.3rem] leading-tight text-white/50"}
                           />
                         </div>
@@ -9753,8 +9803,8 @@ function DashboardWorkspace({
                           <div className="mt-4 rounded-[20px] border border-emerald-300/16 bg-emerald-300/[0.045] p-4">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Economía planificada OFP</p>
-                                <p className="mt-1 text-sm text-white/58">Esta planificación usa pax, carga y combustible importados desde SimBrief. El cierre ACARS calculará el resultado real final.</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Cuanto gana el piloto y la aerolinea</p>
+                                <p className="mt-1 text-sm text-white/58">Valores planificados antes de ACARS. El cierre oficial recalcula con datos reales.</p>
                               </div>
                               <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
                                 Fuente: SimBrief/OFP
@@ -9762,14 +9812,16 @@ function DashboardWorkspace({
                             </div>
                             <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                               {[
-                                { label: "💵 Piloto", value: formatEconomyUsd(simbriefEconomyEstimate.pilotPaymentUsd), tone: "text-emerald-100" },
-                                { label: "👥 Pax OFP", value: simbriefEconomyEstimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
-                                { label: "📦 Carga OFP", value: `${simbriefEconomyEstimate.estimatedCargoKg.toLocaleString("es-CL")} kg`, tone: "text-white/82" },
-                                { label: "⛽ Combustible OFP", value: `${simbriefEconomyEstimate.fuelKg.toLocaleString("es-CL")} kg / ${formatEconomyUsd(simbriefEconomyEstimate.fuelCostUsd)}`, tone: "text-amber-100" },
-                                { label: "🏢 Ingreso", value: formatEconomyUsd(simbriefEconomyEstimate.airlineRevenueUsd), tone: "text-cyan-100" },
-                                { label: "🧾 Costos", value: formatEconomyUsd(simbriefEconomyEstimate.totalCostUsd), tone: "text-white/82" },
-                                { label: "🛍 Servicio/ventas", value: formatEconomyUsd(simbriefEconomyEstimate.onboardServiceRevenueUsd + simbriefEconomyEstimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
-                                { label: "📈 Utilidad", value: formatEconomyUsd(simbriefEconomyEstimate.netProfitUsd), tone: simbriefEconomyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
+                                { label: "Comision piloto estimada", value: formatEconomyUsd(simbriefEconomyEstimate.pilotPaymentUsd), tone: "text-emerald-100" },
+                                { label: "Ingreso pasajeros", value: formatEconomyUsd(simbriefEconomyEstimate.passengerRevenueUsd), tone: "text-cyan-100" },
+                                { label: "Ingreso carga", value: formatEconomyUsd(simbriefEconomyEstimate.cargoRevenueUsd), tone: "text-cyan-100" },
+                                { label: "Servicios a bordo", value: formatEconomyUsd(simbriefEconomyEstimate.onboardServiceRevenueUsd), tone: "text-cyan-100" },
+                                { label: "Ventas a bordo", value: formatEconomyUsd(simbriefEconomyEstimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
+                                { label: "Costo combustible", value: formatEconomyUsd(simbriefEconomyEstimate.fuelCostUsd), tone: "text-amber-100" },
+                                { label: "Costo mantenimiento", value: formatEconomyUsd(simbriefEconomyEstimate.maintenanceCostUsd), tone: "text-white/82" },
+                                { label: "Tasas y handling", value: formatEconomyUsd(simbriefEconomyEstimate.airportFeesUsd + simbriefEconomyEstimate.handlingCostUsd), tone: "text-white/82" },
+                                { label: "Costo total", value: formatEconomyUsd(simbriefEconomyEstimate.totalCostUsd), tone: "text-white/82" },
+                                { label: "Utilidad esperada aerolinea", value: formatEconomyUsd(simbriefEconomyEstimate.netProfitUsd), tone: simbriefEconomyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
                               ].map((item) => (
                                 <div key={item.label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
                                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{item.label}</p>
@@ -9777,24 +9829,20 @@ function DashboardWorkspace({
                                 </div>
                               ))}
                             </div>
+                            <p className="mt-4 rounded-[14px] border border-amber-200/16 bg-amber-300/[0.06] px-3 py-2 text-xs font-semibold text-amber-100/92">
+                              La comision queda devengada y se paga en la liquidacion mensual.
+                            </p>
                           </div>
                         ) : null}
-
-                        <div className="mt-4">
-                          <DispatchWideValueStrip
-                            label="Ruta validada"
-                            value={summaryDispatchRoute}
-                          />
-                        </div>
                       </div>
                       ) : null}
 
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="space-y-4">
                           <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
-                            <p className="text-sm font-semibold text-white">Salida a base operativa</p>
+                            <p className="text-sm font-semibold text-white">Que debe hacer ahora</p>
                             <p className="mt-2 text-sm leading-7 text-white/72">
-                              Al presionar <span className="font-semibold text-white">Despachar vuelo</span>, la web guarda esta preparacion en la base activa y genera el paquete de despacho para ACARS.
+                              Revisa una ultima vez los datos del manifiesto y luego presiona <span className="font-semibold text-white">Enviar a ACARS</span> para dejar el vuelo listo en la base operativa.
                             </p>
                           </div>
 
@@ -9812,7 +9860,7 @@ function DashboardWorkspace({
 
                           <div className="flex flex-wrap gap-3 pt-1">
                             <button type="button" onClick={() => handleStepChange("dispatch_flow")} className="button-secondary py-3">
-                              Volver a despacho
+                              Volver a editar
                             </button>
                             <button
                               type="button"
@@ -9821,10 +9869,10 @@ function DashboardWorkspace({
                               className={`py-3 ${!canDispatchFlight || finalizingDispatch || preparedReservationId ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                             >
                               {finalizingDispatch
-                                ? "Despachando..."
+                                ? "Enviando a ACARS..."
                                 : preparedReservationId
-                                  ? "✓ Vuelo despachado — ACARS listo"
-                                  : "Despachar vuelo"}
+                                  ? "Enviado a ACARS"
+                                  : "Enviar a ACARS"}
                             </button>
                           </div>
                         </div>
@@ -9836,9 +9884,9 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envÃ­o a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
+                          Ãšltima validaciÃ³n del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -9860,21 +9908,21 @@ function DashboardWorkspace({
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
-                            <p className="text-sm font-semibold text-white">Qué se ve aquí</p>
+                            <p className="text-sm font-semibold text-white">QuÃ© se ve aquÃ­</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Un resumen limpio del vuelo listo para salir, con semáforos de validación y el botón final de envío cuando todo esté correcto.
+                              Un resumen limpio del vuelo listo para salir, con semÃ¡foros de validaciÃ³n y el botÃ³n final de envÃ­o cuando todo estÃ© correcto.
                             </p>
                           </div>
                           <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                             <p className="text-sm font-semibold text-white">Compatibilidad futura</p>
                             <p className="mt-2 text-sm leading-7 text-white/70">
-                              Este panel podrá recibir después economía, score, tolerancias y auditoría sin romper la estructura ya aprobada.
+                              Este panel podrÃ¡ recibir despuÃ©s economÃ­a, score, tolerancias y auditorÃ­a sin romper la estructura ya aprobada.
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 rounded-[18px] border border-dashed border-white/12 bg-[#031428]/58 p-4 text-sm leading-7 text-white/64">
-                          Resumen habilitado de forma progresiva: no se abre si algún paso anterior sigue pendiente.
+                          Resumen habilitado de forma progresiva: no se abre si algÃºn paso anterior sigue pendiente.
                         </div>
 
                         <div className="mt-5 flex flex-wrap gap-3">
@@ -9897,7 +9945,7 @@ function DashboardWorkspace({
         {activeTab === "office" && profile ? (
           <div className="flex flex-col gap-4">
 
-            {/* ── Fila 1: Perfil + Accesos ── */}
+            {/* â”€â”€ Fila 1: Perfil + Accesos â”€â”€ */}
             <div className="grid gap-4 lg:grid-cols-3">
 
               {/* Tarjeta de perfil */}
@@ -9943,43 +9991,43 @@ function DashboardWorkspace({
                 <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/8 pt-5 sm:grid-cols-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Hub base</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "—"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "â€”"}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">País</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "—"}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">PaÃ­s</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "â€”"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Simulador</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "—"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "â€”"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">SimBrief</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "—"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "â€”"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">VATSIM</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "—"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "â€”"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">IVAO</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "—"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "â€”"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Accesos rápidos */}
+              {/* Accesos rÃ¡pidos */}
               <div className="surface-outline rounded-[24px] p-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
                 <div className="mt-4 flex flex-col gap-3">
                   <Link href="/profile" className="button-secondary text-center text-sm">
-                    ✏ Editar perfil
+                    âœ Editar perfil
                   </Link>
                   <Link href="/certifications" className="button-ghost text-center text-sm">
-                    🎖 Certificaciones
+                    ðŸŽ– Certificaciones
                   </Link>
                   <Link href="/operations" className="button-ghost text-center text-sm">
-                    📋 Operaciones
+                    ðŸ“‹ Operaciones
                   </Link>
                 </div>
 
@@ -9999,13 +10047,13 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* ── Fila 2: Métricas de carrera ── */}
+            {/* â”€â”€ Fila 2: MÃ©tricas de carrera â”€â”€ */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Horas totales", value: formatDecimal(metrics.totalHours), unit: "hs" },
                 { label: "PIREPs", value: formatInteger(metrics.totalPireps), unit: "vuelos" },
                 { label: `Horas ${metrics.monthLabel}`, value: formatDecimal(metrics.monthHours), unit: "hs" },
-                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "—", unit: "" },
+                { label: `PosiciÃ³n ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "â€”", unit: "" },
               ].map((m) => (
                 <div key={m.label} className="surface-outline rounded-[20px] p-5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
@@ -10015,7 +10063,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* ── Fila 3: Scores + Billetera ── */}
+            {/* â”€â”€ Fila 3: Scores + Billetera â”€â”€ */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Patagonia Score", value: formatDecimal(metrics.patagoniaScore), accent: "#67d7ff" },
@@ -10039,7 +10087,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* ── Fila 4: Reserva activa ── */}
+            {/* â”€â”€ Fila 4: Reserva activa â”€â”€ */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Reserva activa
@@ -10055,8 +10103,8 @@ function DashboardWorkspace({
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
                         <p className="mt-1 text-sm font-medium text-white">
-                          {activeReservation.aircraft_type_code ?? "—"}
-                          {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
+                          {activeReservation.aircraft_type_code ?? "â€”"}
+                          {activeReservation.aircraft_registration ? ` Â· ${activeReservation.aircraft_registration}` : ""}
                         </p>
                       </div>
                       <div>
@@ -10083,7 +10131,7 @@ function DashboardWorkspace({
                       type="button"
                       disabled={cancellingReservation}
                       onClick={async () => {
-                        if (!confirm("¿Cancelar esta reserva? No se puede deshacer.")) return;
+                        if (!confirm("Â¿Cancelar esta reserva? No se puede deshacer.")) return;
                         setCancellingReservation(true);
                         try {
                           await cancelFlightOperation(
@@ -10110,7 +10158,7 @@ function DashboardWorkspace({
                       }}
                       className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {cancellingReservation ? "Cancelando..." : "✕ Cancelar reserva"}
+                      {cancellingReservation ? "Cancelando..." : "âœ• Cancelar reserva"}
                     </button>
                   </div>
 
@@ -10123,12 +10171,12 @@ function DashboardWorkspace({
                         <p className="mt-2 text-base font-semibold text-white">{activeProgressLabel}</p>
                         <p className="mt-1 text-xs text-white/42">
                           {activeHasLivePosition
-                            ? `${activeProgressPercent}% real${activeLiveGroundSpeed != null ? ` · ${formatInteger(activeLiveGroundSpeed)} kt GS` : ""}${activeLivePhase ? ` · ${activeLivePhase}` : ""}`
+                            ? `${activeProgressPercent}% real${activeLiveGroundSpeed != null ? ` Â· ${formatInteger(activeLiveGroundSpeed)} kt GS` : ""}${activeLivePhase ? ` Â· ${activeLivePhase}` : ""}`
                             : "Sin movimiento simulado: esperando datos reales del ACARS"}
                         </p>
                       </div>
                       <div className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/84">
-                        {activeRouteDistanceNm > 0 ? `${formatInteger(activeRouteDistanceNm)} NM totales` : "Ruta en preparación"}
+                        {activeRouteDistanceNm > 0 ? `${formatInteger(activeRouteDistanceNm)} NM totales` : "Ruta en preparaciÃ³n"}
                       </div>
                     </div>
 
@@ -10172,16 +10220,16 @@ function DashboardWorkspace({
               )}
             </div>
 
-            {/* ── Fila 5: Economía aerolínea (mini panel) ── */}
+            {/* â”€â”€ Fila 5: EconomÃ­a aerolÃ­nea (mini panel) â”€â”€ */}
             <OfficeEconomyPanel />
 
-            {/* ── Fila 6: Historial de vuelos ── */}
+            {/* â”€â”€ Fila 6: Historial de vuelos â”€â”€ */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
               </p>
               {central.recentFlights.length === 0 ? (
-                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aún.</p>
+                <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aÃºn.</p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full text-sm">
@@ -10206,13 +10254,13 @@ function DashboardWorkspace({
                               formatRouteTag(f)
                             )}
                           </td>
-                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
+                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "â€”"}</td>
                           <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
                           <td className="py-3 text-right font-semibold text-[#67d7ff]">
-                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
+                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "â€”"}
                           </td>
                           <td className="py-3 text-right text-white/38">
-                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
+                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "â€”"}
                           </td>
                         </tr>
                       ))}
@@ -10246,9 +10294,9 @@ function DashboardWorkspace({
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/58">Entrenamiento</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Centro de Capacitación y Perfeccionamiento</h2>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">Centro de CapacitaciÃ³n y Perfeccionamiento</h2>
                     <p className="mt-2 max-w-4xl text-sm leading-6 text-white/66">
-                      Vuelos de práctica por aeronave, con origen/destino libre y evaluación histórica. Estas sesiones acumulan horas por tipo de avión,
+                      Vuelos de prÃ¡ctica por aeronave, con origen/destino libre y evaluaciÃ³n histÃ³rica. Estas sesiones acumulan horas por tipo de aviÃ³n,
                       pero no modifican el Patagonia Score general ni el promedio de ascenso.
                     </p>
                   </div>
@@ -10256,7 +10304,7 @@ function DashboardWorkspace({
 
                 <div className="mt-5 rounded-[16px] border border-amber-300/20 bg-[#0d1723]/72 px-4 py-3 text-sm leading-6 text-amber-100/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md">
                   Para solicitar checkride de una aeronave necesitas completar al menos {TRAINING_MIN_AIRCRAFT_HOURS} horas de entrenamiento en ese tipo.
-                  El score del entrenamiento queda visible como historial técnico, sin sumar ni restar al puntaje general del piloto.
+                  El score del entrenamiento queda visible como historial tÃ©cnico, sin sumar ni restar al puntaje general del piloto.
                 </div>
               </div>
             </div>
@@ -10264,7 +10312,7 @@ function DashboardWorkspace({
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 {
-                  label: "Tipos de avión",
+                  label: "Tipos de aviÃ³n",
                   value: formatInteger(trainingAircraftProgress.length),
                   unit: "disponibles",
                   accent: "#67d7ff",
@@ -10282,7 +10330,7 @@ function DashboardWorkspace({
                   accent: "#49d787",
                 },
                 {
-                  label: "Regla mínima",
+                  label: "Regla mÃ­nima",
                   value: `${TRAINING_MIN_AIRCRAFT_HOURS}h`,
                   unit: "por tipo",
                   accent: "#fbbf24",
@@ -10300,16 +10348,16 @@ function DashboardWorkspace({
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Plan de entrenamiento</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Tarjetas desplegables por categoría de avión</h3>
+                  <h3 className="mt-2 text-xl font-semibold text-white">Tarjetas desplegables por categorÃ­a de aviÃ³n</h3>
                   <p className="mt-2 max-w-4xl text-sm leading-6 text-white/56">
-                    Cada bloque se abre según el rango del piloto. Siempre quedan habilitadas las aeronaves que ya puede volar y, además,
-                    la siguiente categoría inmediata para practicarla antes del ascenso definitivo.
+                    Cada bloque se abre segÃºn el rango del piloto. Siempre quedan habilitadas las aeronaves que ya puede volar y, ademÃ¡s,
+                    la siguiente categorÃ­a inmediata para practicarla antes del ascenso definitivo.
                   </p>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[420px] lg:max-w-[460px]">
                   <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Categorías activas</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">CategorÃ­as activas</p>
                     <p className="mt-2 text-2xl font-semibold text-white">{formatInteger(trainingAccessSummary.activeCards.length)}</p>
                     <p className="mt-1 text-[11px] text-white/42">ya operativas por rango</p>
                   </div>
@@ -10329,8 +10377,8 @@ function DashboardWorkspace({
               </div>
 
               <div className="mt-5 rounded-[18px] border border-white/8 bg-[#031428]/58 px-4 py-4 text-sm leading-6 text-white/70">
-                <strong className="text-white">Lógica aplicada:</strong> los aviones escuela y las categorías ya habilitadas quedan operativas,
-                mientras que la <span className="text-cyan-200">siguiente categoría</span> se desbloquea solo para entrenamiento previo. Las demás
+                <strong className="text-white">LÃ³gica aplicada:</strong> los aviones escuela y las categorÃ­as ya habilitadas quedan operativas,
+                mientras que la <span className="text-cyan-200">siguiente categorÃ­a</span> se desbloquea solo para entrenamiento previo. Las demÃ¡s
                 permanecen bloqueadas hasta progresar de rango.
               </div>
 
@@ -10350,7 +10398,7 @@ function DashboardWorkspace({
                                 {card.tierLabel}
                               </span>
                               <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${card.badgeClass}`}>
-                                {card.currentTier ? "Operativa" : card.nextTier ? "Pre-habilitación" : "Bloqueada"}
+                                {card.currentTier ? "Operativa" : card.nextTier ? "Pre-habilitaciÃ³n" : "Bloqueada"}
                               </span>
                             </div>
 
@@ -10381,7 +10429,7 @@ function DashboardWorkspace({
                                   : "cursor-not-allowed border-white/8 bg-white/[0.025] text-white/32"
                               }`}
                             >
-                              {card.unlocked ? (isOpen ? "Ocultar categoría" : "Abrir categoría") : "Bloqueada por rango"}
+                              {card.unlocked ? (isOpen ? "Ocultar categorÃ­a" : "Abrir categorÃ­a") : "Bloqueada por rango"}
                             </button>
                           </div>
                         </div>
@@ -10419,13 +10467,13 @@ function DashboardWorkspace({
                                             <span className="font-mono text-white/70">{item.aircraft_type_code}</span>
                                             <span>Familia {item.family_code ?? item.aircraft_type_code}</span>
                                             <span>{formatInteger(item.training_flights)} vuelos</span>
-                                            <span>Último: {formatTrainingDate(item.last_training_at)}</span>
+                                            <span>Ãšltimo: {formatTrainingDate(item.last_training_at)}</span>
                                           </div>
                                           <div className="mt-3">
                                             <div className="flex items-center justify-between gap-3 text-[11px] text-white/42">
                                               <span>
                                                 {schoolAircraft
-                                                  ? "Avión escuela · acceso permanente"
+                                                  ? "AviÃ³n escuela Â· acceso permanente"
                                                   : `${formatDecimal(item.total_hours)}h / ${formatDecimal(item.min_hours_required)}h`}
                                               </span>
                                               <span>{schoolAircraft ? "100%" : `${progress}%`}</span>
@@ -10471,12 +10519,12 @@ function DashboardWorkspace({
                                                 : "cursor-not-allowed border-white/8 bg-white/[0.025] text-white/32"
                                             }`}
                                           >
-                                            {currentlyPermitted ? "Entrenar ahora" : previewTraining ? "Entrenar categoría siguiente" : "Bloqueado"}
+                                            {currentlyPermitted ? "Entrenar ahora" : previewTraining ? "Entrenar categorÃ­a siguiente" : "Bloqueado"}
                                           </button>
 
                                           {schoolAircraft ? (
                                             <span className="rounded-[12px] border border-emerald-300/20 bg-emerald-400/10 px-4 py-2.5 text-center text-xs font-semibold text-emerald-200">
-                                              Avión escuela inicial
+                                              AviÃ³n escuela inicial
                                             </span>
                                           ) : (
                                             <button
@@ -10491,7 +10539,7 @@ function DashboardWorkspace({
                                               {item.checkride_available && currentlyPermitted
                                                 ? "Solicitar checkride"
                                                 : previewTraining
-                                                  ? "Checkride al subir de categoría"
+                                                  ? "Checkride al subir de categorÃ­a"
                                                   : "Checkride bloqueado"}
                                             </button>
                                           )}
@@ -10505,7 +10553,7 @@ function DashboardWorkspace({
                           ) : null
                         ) : (
                           <div className="border-t border-white/8 px-5 py-4 text-sm leading-6 text-white/50">
-                            Esta categoría se abrirá automáticamente cuando el piloto consolide la categoría anterior y su rango permita avanzar.
+                            Esta categorÃ­a se abrirÃ¡ automÃ¡ticamente cuando el piloto consolide la categorÃ­a anterior y su rango permita avanzar.
                           </div>
                         )}
                       </div>
@@ -10525,8 +10573,8 @@ function DashboardWorkspace({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Habilitaciones</p>
                   <h3 className="mt-2 text-xl font-semibold text-white">Checkrides operativos</h3>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
-                    Aquí quedará el listado de habilitaciones prácticas del piloto. Cada bloque podrá conectarse después
-                    con lógica real de aprobación, pero desde ya queda visible el flujo con botón de checkride.
+                    AquÃ­ quedarÃ¡ el listado de habilitaciones prÃ¡cticas del piloto. Cada bloque podrÃ¡ conectarse despuÃ©s
+                    con lÃ³gica real de aprobaciÃ³n, pero desde ya queda visible el flujo con botÃ³n de checkride.
                   </p>
                 </div>
                 <div className="grid gap-2 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-white/42 sm:grid-cols-2 lg:min-w-[280px]">
@@ -10535,7 +10583,7 @@ function DashboardWorkspace({
                     <p className="mt-1 text-lg text-white">{TRAINING_CHECKRIDE_CATALOG.length}</p>
                   </div>
                   <div className="rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <p>Teóricas disponibles</p>
+                    <p>TeÃ³ricas disponibles</p>
                     <p className="mt-1 text-lg text-white">{TRAINING_THEORY_EXAMS.length}</p>
                   </div>
                 </div>
@@ -10559,7 +10607,7 @@ function DashboardWorkspace({
                           <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
                             item.status === "Disponible"
                               ? "border-emerald-300/24 bg-emerald-400/12 text-emerald-100"
-                              : item.status === "Próximo bloque"
+                              : item.status === "PrÃ³ximo bloque"
                                 ? "border-cyan-300/24 bg-cyan-400/12 text-cyan-100"
                                 : "border-amber-300/24 bg-amber-400/12 text-amber-100"
                           }`}>
@@ -10588,11 +10636,11 @@ function DashboardWorkspace({
             <div className="surface-outline rounded-[24px] p-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Teóricas</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Evaluaciones teóricas</h3>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">TeÃ³ricas</p>
+                  <h3 className="mt-2 text-xl font-semibold text-white">Evaluaciones teÃ³ricas</h3>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
-                    Bloque reservado para las pruebas teóricas del plan de formación. Queda preparado con seis evaluaciones
-                    base y su acción directa para aplicar cada teórica.
+                    Bloque reservado para las pruebas teÃ³ricas del plan de formaciÃ³n. Queda preparado con seis evaluaciones
+                    base y su acciÃ³n directa para aplicar cada teÃ³rica.
                   </p>
                 </div>
                 <div className="rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-white/42">
@@ -10627,13 +10675,13 @@ function DashboardWorkspace({
                               {exam.code}
                             </span>
                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/62">
-                              Evaluación teórica
+                              EvaluaciÃ³n teÃ³rica
                             </span>
                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${stateClass}`}>
                               {gate.label}
                             </span>
                             <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
-                              {exam.durationMinutes} min · {exam.questions.length} preguntas
+                              {exam.durationMinutes} min Â· {exam.questions.length} preguntas
                             </span>
                           </div>
                           <p className="mt-2 text-[15px] font-semibold text-white">{exam.title}</p>
@@ -10656,11 +10704,11 @@ function DashboardWorkspace({
                                     : "cursor-not-allowed border-white/8 bg-white/[0.025] text-white/32"
                             }`}
                           >
-                            {canOpenExam ? "Aplicar teórica" : gate.tone === "passed" ? "Aprobada" : gate.tone === "locked" ? "Bloqueada" : "Aplicar teórica"}
+                            {canOpenExam ? "Aplicar teÃ³rica" : gate.tone === "passed" ? "Aprobada" : gate.tone === "locked" ? "Bloqueada" : "Aplicar teÃ³rica"}
                           </button>
                           {attempt ? (
                             <span className="text-right text-[11px] leading-4 text-white/36">
-                              Último intento: {attempt.score_percent}% · {formatTheoryAttemptDate(attempt.submitted_at)}
+                              Ãšltimo intento: {attempt.score_percent}% Â· {formatTheoryAttemptDate(attempt.submitted_at)}
                             </span>
                           ) : null}
                         </div>
@@ -10719,8 +10767,8 @@ function DashboardPartnersShowcase() {
             Programas recomendados para operar Patagonia Wings
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/68">
-            Herramientas externas que complementan la operación del piloto: planificación, cartas, navegación,
-            comunicaciones y experiencia de simulación. Cada logo abre su sitio oficial de descarga en una nueva pestaña.
+            Herramientas externas que complementan la operaciÃ³n del piloto: planificaciÃ³n, cartas, navegaciÃ³n,
+            comunicaciones y experiencia de simulaciÃ³n. Cada logo abre su sitio oficial de descarga en una nueva pestaÃ±a.
           </p>
         </div>
 
@@ -10761,7 +10809,7 @@ function DashboardPartnersShowcase() {
                     <p className="mt-2 max-w-xl text-sm leading-6 text-white/62">{partner.description}</p>
                   </div>
                   <span className="inline-flex w-fit shrink-0 items-center justify-center rounded-full border border-cyan-200/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition group-hover:border-cyan-100/34 group-hover:bg-cyan-300/16">
-                    {partner.cta} →
+                    {partner.cta} â†’
                   </span>
                 </div>
               </div>
@@ -10780,7 +10828,7 @@ function DashboardContent() {
   const [central, setCentral] = useState<CentralOverview>({
     airportCode: "SCEL",
     airportName: "Aeropuerto actual del piloto",
-    municipality: "Ubicación operativa",
+    municipality: "UbicaciÃ³n operativa",
     countryCode: "CL",
     countryName: "Chile",
     pilotsOnField: 0,
@@ -10793,9 +10841,9 @@ function DashboardContent() {
       { title: "Mejores PIREP mes", entries: [{ label: "Sin datos", value: "Pendiente" }] },
     ],
     yearlyRankingCards: [
-      { title: "Mejores puntajes año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
-      { title: "Ranking de horas año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
-      { title: "Mejores PIREP año", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores puntajes aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Ranking de horas aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
+      { title: "Mejores PIREP aÃ±o", entries: [{ label: "Sin datos", value: "Pendiente" }] },
     ],
     activeFlights: [],
     recentFlights: [],
@@ -10865,7 +10913,7 @@ function DashboardContent() {
           setTrainingAircraftProgress(nextTrainingAircraftProgress);
         }
       } catch (error) {
-        console.error("No se pudieron cargar todas las métricas del dashboard:", error);
+        console.error("No se pudieron cargar todas las mÃ©tricas del dashboard:", error);
         if (isMounted) {
           setMetrics((current) => ({
             ...current,
@@ -10915,9 +10963,9 @@ function DashboardContent() {
       { label: "Patagonia Score", type: "number", value: metrics.patagoniaScore, decimals: 1 },
       { label: "Rango", type: "text", value: metrics.careerRank },
       {
-        label: `Posición ${metrics.monthLabel}`,
+        label: `PosiciÃ³n ${metrics.monthLabel}`,
         type: metrics.monthPosition == null ? "text" : "number",
-        value: metrics.monthPosition ?? "—",
+        value: metrics.monthPosition ?? "â€”",
       },
       { label: `Hs. ${metrics.monthLabel}`, type: "number", value: metrics.monthHours, decimals: 1 },
       { label: "PIREPs", type: "number", value: metrics.totalPireps },
@@ -10949,7 +10997,7 @@ function DashboardContent() {
               Bienvenido, {pilotName}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-white/76 sm:text-[15px]">
-              Queremos ser la mejor aerolínea virtual del sur del mundo. Ayúdanos a seguir mejorando cada vuelo.
+              Queremos ser la mejor aerolÃ­nea virtual del sur del mundo. AyÃºdanos a seguir mejorando cada vuelo.
             </p>
           </div>
 
@@ -11000,3 +11048,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+
