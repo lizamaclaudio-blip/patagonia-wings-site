@@ -4863,15 +4863,29 @@ function DispatchAircraftCascadeSelector({
     B789: "Boeing 787-9",
     MD88: "McDonnell Douglas MD-88",
   };
-  const toFriendlyAircraftLabel = (raw: string | null | undefined) => {
+  const normalizeAircraftTypeCode = (raw: string | null | undefined) => {
     const value = (raw ?? "").trim().toUpperCase();
     if (!value) return "";
-    return value.split("_")[0] || value;
+    const tokens = value.split(/[^A-Z0-9]+/).filter(Boolean);
+    const preferred = tokens.find((token) => token in AIRCRAFT_NAME_FALLBACK);
+    if (preferred) return preferred;
+    const simbriefLike = tokens.find((token) => /^[A-Z]\d{2,3}[A-Z]?$/.test(token));
+    if (simbriefLike) return simbriefLike;
+    const last = tokens[tokens.length - 1] ?? value;
+    return last.split("_")[0] || last;
+  };
+  const toFriendlyAircraftLabel = (raw: string | null | undefined) => {
+    return normalizeAircraftTypeCode(raw);
   };
   const toFriendlyAircraftName = (codeRaw: string | null | undefined, nameRaw: string | null | undefined) => {
     const code = toFriendlyAircraftLabel(codeRaw);
     const candidate = (nameRaw ?? "").trim();
-    if (candidate && !candidate.includes("_") && candidate.toUpperCase() !== code) return candidate;
+    const looksLikeRegistrationLabel =
+      /^[A-Z]{2}-[A-Z0-9]{2,5}\s*-\s*[A-Z0-9_]+$/i.test(candidate) ||
+      /^[A-Z]{2}-[A-Z0-9]{2,5}\s*[·-]\s*[A-Z0-9_]+$/i.test(candidate);
+    if (candidate && !candidate.includes("_") && candidate.toUpperCase() !== code && !looksLikeRegistrationLabel) {
+      return candidate;
+    }
     return AIRCRAFT_NAME_FALLBACK[code] ?? "";
   };
 
@@ -5041,7 +5055,7 @@ function DispatchAircraftCascadeSelector({
             <option value="">— Elige tipo —</option>
             {aircraftTypeOptions.map((t) => (
               <option key={t.typeCode} value={t.typeCode}>
-                {t.displayName ? `${t.typeCode} — ${t.displayName}` : t.typeCode}
+                {t.displayName || t.typeCode}
               </option>
             ))}
           </select>
@@ -5081,10 +5095,9 @@ function DispatchAircraftCascadeSelector({
             <span className="text-lg text-emerald-300">✓</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
-                {`${selectedReg.tail_number} · ${toFriendlyAircraftLabel(selectedReg.aircraft_variant_code || selectedReg.aircraft_code)}${
-                  toFriendlyAircraftName(selectedReg.aircraft_variant_code || selectedReg.aircraft_code, selectedReg.aircraft_name)
-                    ? ` · ${toFriendlyAircraftName(selectedReg.aircraft_variant_code || selectedReg.aircraft_code, selectedReg.aircraft_name)}`
-                    : ""
+                {`${selectedReg.tail_number} · ${
+                  toFriendlyAircraftName(selectedReg.aircraft_variant_code || selectedReg.aircraft_code, selectedReg.aircraft_name) ||
+                  toFriendlyAircraftLabel(selectedReg.aircraft_variant_code || selectedReg.aircraft_code)
                 }`}
               </p>
               {(selectedReg.addon_provider || selectedReg.variant_name) && (
@@ -8751,21 +8764,31 @@ function DashboardWorkspace({
     setDispatchStep(step);
   };
 
+  const invalidateDispatchOfp = (message?: string) => {
+    setDispatchReady(false);
+    setSimbriefSummary(null);
+    setSimbriefStaticId(null);
+    setSimbriefGenerationActive(false);
+    if (message) {
+      setSimbriefInfoMessage(message);
+    } else {
+      setSimbriefInfoMessage("");
+    }
+    setSimbriefErrorMessage("");
+    setPreparedReservationId(null);
+    setSummaryInfoMessage("");
+    setSummaryErrorMessage("");
+  };
+
   const resetAfterFlightType = (nextFlightType: DispatchFlightTypeId) => {
     setSelectedFlightType(nextFlightType);
     setSelectedAircraft(null);
     setSelectedItinerary(null);
     setCharterReservationId(null);
     setCharterOperation(null);
-    setDispatchReady(false);
-    setSimbriefSummary(null);
-    setSimbriefInfoMessage("");
-    setSimbriefErrorMessage("");
+    invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
     setDispatchRouteInput("");
     setDispatchRouteApplied("");
-    setPreparedReservationId(null);
-    setSummaryInfoMessage("");
-    setSummaryErrorMessage("");
     setDispatchStep("aircraft");
   };
 
@@ -8774,30 +8797,18 @@ function DashboardWorkspace({
     setSelectedItinerary(null);
     setCharterReservationId(null);
     setCharterOperation(null);
-    setDispatchReady(false);
-    setSimbriefSummary(null);
-    setSimbriefInfoMessage("");
-    setSimbriefErrorMessage("");
+    invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
     setDispatchRouteInput("");
     setDispatchRouteApplied("");
-    setPreparedReservationId(null);
-    setSummaryInfoMessage("");
-    setSummaryErrorMessage("");
   };
 
   const resetAfterItinerary = (nextItinerary: string) => {
     setSelectedItinerary(nextItinerary);
     setCharterReservationId(null);
     setCharterOperation(null);
-    setDispatchReady(false);
-    setSimbriefSummary(null);
-    setSimbriefInfoMessage("");
-    setSimbriefErrorMessage("");
+    invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
     setDispatchRouteInput("");
     setDispatchRouteApplied("");
-    setPreparedReservationId(null);
-    setSummaryInfoMessage("");
-    setSummaryErrorMessage("");
     setDispatchStep("dispatch_flow");
   };
 
@@ -9560,7 +9571,12 @@ function DashboardWorkspace({
                               null
                             }
                             departureHHMM={selectedDepartureHHMM}
-                            onDepartureTimeChange={setSelectedDepartureHHMM}
+                            onDepartureTimeChange={(hhmm) => {
+                              setSelectedDepartureHHMM(hhmm);
+                              if (simbriefSummary || dispatchReady || simbriefStaticId) {
+                                invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
+                              }
+                            }}
                           />
                         </div>
 
@@ -9798,7 +9814,12 @@ function DashboardWorkspace({
                           <input
                             type="text"
                             value={dispatchRouteInput}
-                            onChange={(event) => setDispatchRouteInput(event.target.value)}
+                            onChange={(event) => {
+                              setDispatchRouteInput(event.target.value);
+                              if (simbriefSummary || dispatchReady || simbriefStaticId) {
+                                invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
+                              }
+                            }}
                             placeholder="PARKE8 AMB DGO o URL SkyVector con fpl="
                             className="mt-3 w-full rounded-xl border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/50"
                           />
@@ -9819,6 +9840,9 @@ function DashboardWorkspace({
                                   return;
                                 }
                                 setDispatchRouteApplied(dispatchRouteInput.trim());
+                                if (simbriefSummary || dispatchReady || simbriefStaticId) {
+                                  invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
+                                }
                                 setSimbriefErrorMessage("");
                               }}
                               className="button-secondary py-2.5"
@@ -9830,6 +9854,9 @@ function DashboardWorkspace({
                               onClick={() => {
                                 setDispatchRouteInput("");
                                 setDispatchRouteApplied("");
+                                if (simbriefSummary || dispatchReady || simbriefStaticId) {
+                                  invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
+                                }
                                 setSimbriefErrorMessage("");
                               }}
                               className="button-secondary py-2.5"
@@ -10239,10 +10266,10 @@ function DashboardWorkspace({
                               className={`py-3 ${!canDispatchFlight || finalizingDispatch || preparedReservationId ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                             >
                               {finalizingDispatch
-                                ? "Enviando a ACARS..."
+                                ? "[5] Enviando a ACARS..."
                                 : preparedReservationId
-                                  ? "Enviado a ACARS"
-                                  : "Enviar a ACARS"}
+                                  ? "[5] Enviado a ACARS"
+                                  : "[5] Enviar a ACARS"}
                             </button>
                           </div>
                         </div>
