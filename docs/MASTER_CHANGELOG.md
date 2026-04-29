@@ -1163,3 +1163,10 @@ Regla contable preservada:
 - Se publica checklist ready-to-fly para pruebas operacionales de ACARS 7.0.0.
 - Se mantiene sin cambios el selector web de aeronaves y sin impacto en 18B contable.
 
+
+## 2026-04-29 - ACARS 7.0.1 detection confidence hardening
+- Se formaliza metadata de deteccion en payload ACARS: type/variant/addon/profile, confidence, reason, source, matched title/pattern, fallback_used, profile_status.
+- Se extiende blackbox/event summary/capability snapshot con contexto de deteccion para auditoria operacional.
+- Se agrega exclusion conservadora por detection confidence low/fallback/unknown para evitar penalizacion de señales ambiguas.
+- Se crea guia de validacion manual por addon y checklist smoke test ready-to-fly.
+

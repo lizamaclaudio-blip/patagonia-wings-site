@@ -1,45 +1,39 @@
-# ACARS 7.0.0 - Matriz de capacidades (33 aeronaves)
+# ACARS 7.0.1 - Matriz de capacidades (33 aeronaves)
 
-Regla: toda senal no confirmada o no fiable queda N/D y no penalizable hasta prueba manual.
+Regla: no marcar PASSED sin prueba manual real. Si no hay prueba: NOT_TESTED.
 
-| # | aircraftTypeCode | aircraftVariantCode | addonSource | simulator | readMethodDoors | readMethodLights | readMethodXPDR | readMethodFuel | readMethodElectrical | detectionPattern | detectionConfidenceExpected | Estado | penaltyExclusions |
+| # | aircraftTypeCode | aircraftVariantCode | addonSource | detection_confidence_expected | detection_reason_expected | detection_source | matched_pattern | profile_status | addon_validation_required | lvar_hvar_required | fsuipc_required | manual_test_status | last_test_result |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | A20N | A20N_FBW | FBW | MSFS2020 | LVAR/PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains FBW/A32NX | high | PARCIAL | doors/seatbelt no fiables |
-| 2 | A21N | A21N_LATINVFR | LVFR | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | title contains LVFR/A321 | medium | PARCIAL | doors |
-| 3 | A319 | A319_FENIX | FENIX | MSFS2020 | LVAR/PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Fenix/A319 | high | PARCIAL | addon-specific not verified |
-| 4 | A320 | A320_FENIX | FENIX | MSFS2020 | LVAR/PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Fenix/A320 | high | PARCIAL | addon-specific not verified |
-| 5 | A321 | A321_FENIX | FENIX | MSFS2020 | LVAR/PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Fenix/A321 | high | PARCIAL | addon-specific not verified |
-| 6 | A339 | A339_HEADWIND | HEADWIND | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains Headwind/A339 | medium | PARCIAL | doors/electrical |
-| 7 | A359 | A359_INIBUILDS | INIBUILDS | MSFS2020 | UNKNOWN | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | UNKNOWN | title contains iniBuilds/A359 | low | PENDIENTE SIM | varios |
-| 8 | ATR72 | ATR72_MSFS | ASOBO | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | title contains ATR72 | high | PARCIAL | anti-ice pending |
-| 9 | B350 | B350_BLACKSQUARE | BLACKSQUARE | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Black Square B350 | high | PARCIAL | door/electrical partial |
-| 10 | B38M | B38M_IFLY | IFLY | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains iFly B38M | high | PARCIAL | xpdr mode verify |
-| 11 | B736 | B736_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 736 | high | PARCIAL | door partial |
-| 12 | B737 | B737_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 737 | high | PARCIAL | door partial |
-| 13 | B738 | B738_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 738 | high | PARCIAL | code/mode verify |
-| 14 | B739 | B739_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 739 | high | PARCIAL | AP modes verify |
-| 15 | B748 | B748_SALTY | SALTY | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains Salty/747 | medium | PARCIAL | door/xpdr partial |
-| 16 | B772 | B772_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 772 | high | PARCIAL | zfw verify |
-| 17 | B77F | B77F_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 77F | high | PARCIAL | payload cargo verify |
-| 18 | B77W | B77W_PMDG | PMDG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains PMDG 77W | high | PARCIAL | door verify |
-| 19 | B789 | B789_HORIZONS | HORIZONS | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains Horizons 789 | medium | PARCIAL | xpdr reliability |
-| 20 | B78X | B78X_MSFS | ASOBO | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains 78X/B787-10 | medium | PARCIAL | qnh source verify |
-| 21 | BE58 | BE58_BLACKSQUARE | BLACKSQUARE | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Black Square BE58 | high | PARCIAL | fixed gear exclusion |
-| 22 | C172 | C172_ASOBO | ASOBO | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | title contains C172 Asobo | high | PARCIAL | fixed gear exclusion |
-| 23 | C208 | C208_BLACKSQUARE | BLACKSQUARE | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | LVAR/PARCIAL | title contains Black Square C208 | high | PARCIAL | doors/xpdr partial |
-| 24 | DHC6 | DHC6_AEROSOFT | AEROSOFT | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains Aerosoft DHC6 | medium | PARCIAL | xpdr partial |
-| 25 | E170 | E170_FLIGHTSIM | FLIGHTSIM | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains E170 Flightsim | medium | PENDIENTE SIM | perfil parcial |
-| 26 | E175 | E175_FLIGHTSIM | FLIGHTSIM | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains E175 Flightsim | medium | PARCIAL | manual test required |
-| 27 | E190 | E190_FLIGHTSIM | FLIGHTSIM | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains E190 Flightsim | medium | PARCIAL | manual test required |
-| 28 | E195 | E195_FLIGHTSIM | FLIGHTSIM | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains E195 Flightsim | medium | PARCIAL | manual test required |
-| 29 | MD82 | MD82_MADDOG | MADDOG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains Maddog/MD82 | high | PARCIAL | door verify |
-| 30 | MD83 | MD83_MADDOG | MADDOG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains Maddog/MD83 | high | PARCIAL | no-smoking verify |
-| 31 | MD88 | MD88_MADDOG | MADDOG | MSFS2020 | PARCIAL | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | PARCIAL | title contains Maddog/MD88 | high | PARCIAL | AP modes verify |
-| 32 | SU95 | SU95_HEADWIND | HEADWIND | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | PARCIAL | SIMCONNECT_STANDARD | PARCIAL | title contains SU95/Headwind | low | PENDIENTE SIM | multiple exclusions |
-| 33 | TBM9 | TBM9_MSFS | ASOBO | MSFS2020 | NOT_SUPPORTED | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | SIMCONNECT_STANDARD | title contains TBM9/TBM930 | high | PARCIAL | fixed gear exclusion |
-
-## Politica de seguridad de penalizacion
-- `supported=false` => no penalizar.
-- `reliable=false` => no penalizacion automatica.
-- `fixedGear=true` => excluir reglas de gear.
-- `unknown variant` => modo conservador (N/D + no penalizable).
+| 1 | A20N | A20N_FBW | FBW | high | title pattern FBW/A32NX | simconnect_title | FBW/A32NX | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 2 | A21N | A21N_LATINVFR | LVFR | medium | title pattern LVFR | simconnect_title | LVFR | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 3 | A319 | A319_FENIX | FENIX | high | title pattern Fenix | simconnect_title | FENIX | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 4 | A320 | A320_FENIX | FENIX | high | title pattern Fenix | simconnect_title | FENIX | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 5 | A321 | A321_FENIX | FENIX | high | title pattern Fenix | simconnect_title | FENIX | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 6 | A339 | A339_HEADWIND | HEADWIND | medium | profile title match | simconnect_title | A339 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 7 | A359 | A359_INIBUILDS | INIBUILDS | low | addon title uncertain | simconnect_title | INIBUILDS | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 8 | ATR72 | ATR72_MSFS | ASOBO | high | profile title match | simconnect_title | ATR72 | exact_profile | YES | NO | NO | NOT_TESTED | pending |
+| 9 | B350 | B350_BLACKSQUARE | BLACKSQUARE | high | title contains Black Square | simconnect_title | BLACKSQUARE | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 10 | B38M | B38M_IFLY | IFLY | high | title contains iFly | simconnect_title | IFLY | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 11 | B736 | B736_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 12 | B737 | B737_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 13 | B738 | B738_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 14 | B739 | B739_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 15 | B748 | B748_SALTY | SALTY | medium | profile pattern match | simconnect_title | SALTY | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 16 | B772 | B772_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 17 | B77F | B77F_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 18 | B77W | B77W_PMDG | PMDG | high | title contains PMDG | simconnect_title | PMDG | partial_profile | YES | NO | YES | NOT_TESTED | pending |
+| 19 | B789 | B789_HORIZONS | HORIZONS | medium | profile pattern match | simconnect_title | B789 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 20 | B78X | B78X_MSFS | ASOBO | medium | profile pattern match | simconnect_title | B78X | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 21 | BE58 | BE58_BLACKSQUARE | BLACKSQUARE | high | title contains Black Square | simconnect_title | BLACKSQUARE | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 22 | C172 | C172_ASOBO | ASOBO | high | exact/base title | simconnect_title | C172 | exact_profile | YES | NO | NO | NOT_TESTED | pending |
+| 23 | C208 | C208_BLACKSQUARE | BLACKSQUARE | high | title contains Black Square | simconnect_title | BLACKSQUARE | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 24 | DHC6 | DHC6_AEROSOFT | AEROSOFT | medium | profile pattern match | simconnect_title | AEROSOFT | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 25 | E170 | E170_FLIGHTSIM | FLIGHTSIM | medium | profile pattern match | simconnect_title | E170 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 26 | E175 | E175_FLIGHTSIM | FLIGHTSIM | medium | profile pattern match | simconnect_title | E175 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 27 | E190 | E190_FLIGHTSIM | FLIGHTSIM | medium | profile pattern match | simconnect_title | E190 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 28 | E195 | E195_FLIGHTSIM | FLIGHTSIM | medium | profile pattern match | simconnect_title | E195 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 29 | MD82 | MD82_MADDOG | MADDOG | high | title contains Maddog | simconnect_title | MADDOG | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 30 | MD83 | MD83_MADDOG | MADDOG | high | title contains Maddog | simconnect_title | MADDOG | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 31 | MD88 | MD88_MADDOG | MADDOG | high | title contains Maddog | simconnect_title | MADDOG | partial_profile | YES | YES | NO | NOT_TESTED | pending |
+| 32 | SU95 | SU95_HEADWIND | HEADWIND | low | weak title confidence | simconnect_title | SU95 | partial_profile | YES | NO | NO | NOT_TESTED | pending |
+| 33 | TBM9 | TBM9_MSFS | ASOBO | high | base title match | simconnect_title | TBM9 | exact_profile | YES | NO | NO | NOT_TESTED | pending |
