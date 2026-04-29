@@ -6,7 +6,13 @@ type RouteSuggestionRow = {
   route_text: string;
   source: string | null;
   flight_level: string | null;
+  aircraft_type: string | null;
+  aircraft_registration: string | null;
+  aircraft_display_name: string | null;
+  aircraft_category: string | null;
   usage_count: number | null;
+  created_at?: string | null;
+  last_used_at?: string | null;
 };
 
 function normalize(value: string | null | undefined) {
@@ -35,42 +41,54 @@ export async function POST(request: NextRequest) {
       flightLevel?: string | null;
       aircraftType?: string | null;
       aircraftRegistration?: string | null;
+      aircraftCategory?: string | null;
     };
 
     const origin = normalize(body.origin);
     const destination = normalize(body.destination);
     const flightLevel = normalize(body.flightLevel || null);
     const aircraftType = normalize(body.aircraftType || null);
+    const aircraftCategory = normalize(body.aircraftCategory || null);
 
     if (!origin || !destination) {
       return NextResponse.json({ error: "origin y destination son obligatorios." }, { status: 400 });
     }
 
     const supabase = createSupabaseAdminClient();
-    const candidates = [flightLevel || null, null];
-    const aircraftCandidates = [aircraftType || null, null];
+    const strategies: Array<{
+      flightLevel: string | null;
+      aircraftType: string | null;
+      aircraftCategory: string | null;
+    }> = [
+      { flightLevel: flightLevel || null, aircraftType: aircraftType || null, aircraftCategory: null },
+      { flightLevel: null, aircraftType: aircraftType || null, aircraftCategory: null },
+      { flightLevel: flightLevel || null, aircraftType: null, aircraftCategory: aircraftCategory || null },
+      { flightLevel: flightLevel || null, aircraftType: null, aircraftCategory: null },
+      { flightLevel: null, aircraftType: null, aircraftCategory: null },
+    ];
 
     let selected: RouteSuggestionRow | null = null;
 
-    for (const fl of candidates) {
-      for (const at of aircraftCandidates) {
-        let query = supabase
-          .from("dispatch_route_suggestions")
-          .select("id, route_text, source, flight_level, usage_count")
-          .eq("is_active", true)
-          .ilike("origin_icao", origin)
-          .ilike("destination_icao", destination)
-          .order("updated_at", { ascending: false })
-          .limit(1);
+    for (const strategy of strategies) {
+      let query = supabase
+        .from("dispatch_route_suggestions")
+        .select("id, route_text, source, flight_level, aircraft_type, aircraft_registration, aircraft_display_name, aircraft_category, usage_count, created_at, last_used_at")
+        .eq("is_active", true)
+        .ilike("origin_icao", origin)
+        .ilike("destination_icao", destination)
+        .order("usage_count", { ascending: false })
+        .order("last_used_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .limit(1);
 
-        query = fl ? query.ilike("flight_level", fl) : query.is("flight_level", null);
-        query = at ? query.ilike("aircraft_type", at) : query.is("aircraft_type", null);
+      query = strategy.flightLevel ? query.ilike("flight_level", strategy.flightLevel) : query;
+      query = strategy.aircraftType ? query.ilike("aircraft_type", strategy.aircraftType) : query;
+      query = strategy.aircraftCategory ? query.ilike("aircraft_category", strategy.aircraftCategory) : query;
 
-        const { data } = await query.maybeSingle<RouteSuggestionRow>();
-        if (data) {
-          selected = data;
-          break;
-        }
+      const { data } = await query.maybeSingle<RouteSuggestionRow>();
+      if (data) {
+        selected = data;
+        break;
       }
       if (selected) break;
     }
@@ -98,6 +116,12 @@ export async function POST(request: NextRequest) {
       route: cleaned || null,
       source: selected.source ?? "internal",
       flightLevel: selected.flight_level ?? flightLevel ?? null,
+      usageCount: selected.usage_count ?? 0,
+      aircraftType: selected.aircraft_type ?? null,
+      aircraftRegistration: selected.aircraft_registration ?? null,
+      aircraftDisplayName: selected.aircraft_display_name ?? null,
+      aircraftCategory: selected.aircraft_category ?? null,
+      lastUsedAt: selected.last_used_at ?? null,
     });
   } catch (error) {
     return NextResponse.json(

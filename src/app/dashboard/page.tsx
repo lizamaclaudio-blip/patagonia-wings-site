@@ -7567,6 +7567,14 @@ function DashboardWorkspace({
   const [dispatchRouteInput, setDispatchRouteInput] = useState("");
   const [dispatchRouteApplied, setDispatchRouteApplied] = useState("");
   const [searchingDispatchRoute, setSearchingDispatchRoute] = useState(false);
+  const [routeFinderSummary, setRouteFinderSummary] = useState<{
+    route: string;
+    source: string;
+    usageCount: number;
+    aircraftType: string | null;
+    aircraftDisplayName: string | null;
+    aircraftRegistration: string | null;
+  } | null>(null);
   const [finalizingDispatch, setFinalizingDispatch] = useState(false);
   const [summaryInfoMessage, setSummaryInfoMessage] = useState("");
   const [summaryErrorMessage, setSummaryErrorMessage] = useState("");
@@ -8004,7 +8012,15 @@ function DashboardWorkspace({
       });
 
       const data = (await response.json()) as
-        | { route: string | null; source: string; flightLevel: string | null }
+        | {
+            route: string | null;
+            source: string;
+            flightLevel: string | null;
+            usageCount?: number;
+            aircraftType?: string | null;
+            aircraftDisplayName?: string | null;
+            aircraftRegistration?: string | null;
+          }
         | { error?: string };
 
       if (!response.ok || ("error" in data && typeof data.error === "string")) {
@@ -8015,17 +8031,60 @@ function DashboardWorkspace({
       }
 
       if (!data.route) {
-        setSimbriefInfoMessage("No hay ruta interna para esta combinación. Puedes pegar ruta ATS manual o dejar que SimBrief sugiera.");
+        setRouteFinderSummary(null);
+        setSimbriefInfoMessage("No hay ruta guardada. Puedes pegar una ruta SkyVector o dejar que SimBrief sugiera.");
         return;
       }
 
       setDispatchRouteInput(data.route);
       setDispatchRouteApplied(data.route);
-      setSimbriefInfoMessage(`Ruta interna aplicada (${data.source}).`);
+      setRouteFinderSummary({
+        route: data.route,
+        source: data.source,
+        usageCount: data.usageCount ?? 0,
+        aircraftType: data.aircraftType ?? null,
+        aircraftDisplayName: data.aircraftDisplayName ?? null,
+        aircraftRegistration: data.aircraftRegistration ?? null,
+      });
+      setSimbriefInfoMessage("Ruta sugerida por Patagonia Wings aplicada.");
     } catch (error) {
       setSimbriefErrorMessage(error instanceof Error ? error.message : "No se pudo buscar ruta.");
     } finally {
       setSearchingDispatchRoute(false);
+    }
+  }
+
+  async function persistRouteLearning(params: {
+    routeText: string;
+    source: "manual" | "skyvector" | "ofp" | "internal";
+    flightLevel?: string | null;
+  }) {
+    if (!selectedAircraftRecord || !selectedItineraryRecord || !params.routeText.trim()) return;
+    try {
+      await fetch("/api/dispatch/route-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: webOriginCode,
+          destination: webDestinationCode,
+          flightLevel: params.flightLevel ?? appliedRoutePreview.detectedCruiseLevel ?? null,
+          aircraftType: webAirframe,
+          aircraftRegistration: selectedAircraftRecord.tail_number ?? null,
+          aircraftDisplayName:
+            selectedAircraftRecord.aircraft_name ||
+            null,
+          aircraftCategory: selectedItineraryRecord.route_category ?? selectedItineraryRecord.service_profile ?? null,
+          routeText: params.routeText,
+          source: params.source,
+          flightNumber: webFlightNumberValidationValue,
+          metadata: {
+            itineraryId: selectedItineraryRecord.itinerary_id,
+            itineraryCode: selectedItineraryRecord.itinerary_code,
+          },
+        }),
+      });
+    } catch {
+      // non-blocking
     }
   }
 
@@ -8930,6 +8989,14 @@ function DashboardWorkspace({
     setDispatchReady(true);
     setSimbriefErrorMessage("");
     setSimbriefInfoMessage("Despacho validado correctamente. Ya puedes continuar al resumen.");
+    const ofpRoute = simbriefSummary.routeText?.trim() ?? "";
+    if (ofpRoute) {
+      void persistRouteLearning({
+        routeText: ofpRoute,
+        source: "ofp",
+        flightLevel: simbriefSummary.cruiseAltitude ?? null,
+      });
+    }
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
     setDispatchStep("summary");
@@ -9840,6 +9907,11 @@ function DashboardWorkspace({
                                   return;
                                 }
                                 setDispatchRouteApplied(dispatchRouteInput.trim());
+                                void persistRouteLearning({
+                                  routeText: dispatchRouteInput.trim(),
+                                  source: preSimbriefRoutePreview.source === "skyvector" ? "skyvector" : "manual",
+                                  flightLevel: preSimbriefRoutePreview.detectedCruiseLevel,
+                                });
                                 if (simbriefSummary || dispatchReady || simbriefStaticId) {
                                   invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
                                 }
@@ -9869,6 +9941,18 @@ function DashboardWorkspace({
                             <p>Nivel detectado: {appliedRoutePreview.detectedCruiseLevel || "No detectado"}</p>
                             <p>Origen/Destino validados: {webOriginCode} → {webDestinationCode}</p>
                           </div>
+                          {routeFinderSummary ? (
+                            <div className="mt-3 rounded-[14px] border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100/90">
+                              <p className="font-semibold">Ruta sugerida por Patagonia Wings</p>
+                              <p>ATS: {routeFinderSummary.route}</p>
+                              <p>
+                                Aeronave: {routeFinderSummary.aircraftType ?? webAirframe}
+                                {routeFinderSummary.aircraftDisplayName ? ` — ${routeFinderSummary.aircraftDisplayName}` : ""}
+                              </p>
+                              <p>Usada {routeFinderSummary.usageCount} veces</p>
+                              <p>Última aeronave: {routeFinderSummary.aircraftRegistration ?? "N/D"} · Fuente: {routeFinderSummary.source}</p>
+                            </div>
+                          ) : null}
                           {preSimbriefRoutePreview.error ? (
                             <p className="mt-3 text-xs text-rose-200">{preSimbriefRoutePreview.error}</p>
                           ) : null}

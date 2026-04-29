@@ -1254,6 +1254,25 @@ export async function persistOfficialCloseout(params: {
     const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
     const originIcao = normalizeIcao(params.reservation.origin_ident);
     const destinationIcao = normalizeIcao(params.reservation.destination_ident);
+    const qualitySeed = reservationId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const seeded = (Math.sin(qualitySeed) + 1) / 2;
+    const blockPlannedMinutes = asNumber(params.preparedDispatch?.scheduledBlockMinutes ?? params.preparedDispatch?.expectedBlockP50Minutes ?? 0);
+    const blockDeviationRatio = blockPlannedMinutes > 0 ? Math.abs(official.actualBlockMinutes - blockPlannedMinutes) / blockPlannedMinutes : 0;
+    const fuelPlannedKg = asNumber(params.preparedDispatch?.fuelPlannedKg ?? 0);
+    const fuelDeviationRatio = fuelPlannedKg > 0 ? Math.abs(official.fuelUsedKg - fuelPlannedKg) / fuelPlannedKg : 0;
+    const scorePenalty = Math.max(0, 85 - asNumber(official.procedureScore)) / 100;
+    const damagePenalty = damageDeductionUsd > 0 ? 0.45 : 0;
+    const operationalPenalty = Math.min(0.7, blockDeviationRatio * 0.4 + fuelDeviationRatio * 0.35 + scorePenalty + damagePenalty);
+    const operationalBonus = Math.max(0, (asNumber(official.procedureScore) - 92) / 120 + (0.5 - Math.abs(seeded - 0.5)) * 0.08);
+    const onboardSalesFactor = Math.max(0, Math.min(1.2, 0.92 + operationalBonus - operationalPenalty));
+    const onboardServiceQualityFactor = Math.max(0.2, Math.min(1.2, 0.96 + operationalBonus - operationalPenalty * 0.8));
+    const salesQualityReason = damageDeductionUsd > 0
+      ? "Daños o incidente detectado: ventas/servicio reducidos"
+      : operationalPenalty > 0.28
+        ? "Condiciones operacionales exigentes: ajuste negativo de ventas"
+        : operationalBonus > 0.08
+          ? "Vuelo estable y eficiente: ventas sobre estimado"
+          : "Vuelo normal: ventas dentro de rango esperado";
     const economy = estimateFlightEconomy({
       distanceNm,
       blockMinutes: official.actualBlockMinutes,
@@ -1266,6 +1285,8 @@ export async function persistOfficialCloseout(params: {
       actualFuelKg: official.fuelUsedKg,
       damageCostUsd: damageDeductionUsd,
       economySource: "actual",
+      onboardSalesFactor,
+      onboardServiceQualityFactor,
     });
     const fuelCostUsd = economy.fuelCostUsd;
     const maintenanceCostUsd = economy.maintenanceCostUsd;
@@ -1335,7 +1356,16 @@ export async function persistOfficialCloseout(params: {
       profit_margin_pct: economy.profitMarginPct,
       economy_source: "actual",
       created_at: nowIso,
-      metadata: economy,
+      metadata: {
+        ...economy,
+        onboard_sales_factor: onboardSalesFactor,
+        onboard_service_quality_factor: onboardServiceQualityFactor,
+        onboard_quality_reason: salesQualityReason,
+        planned_block_minutes: blockPlannedMinutes || null,
+        planned_fuel_kg: fuelPlannedKg || null,
+        block_deviation_ratio: blockDeviationRatio,
+        fuel_deviation_ratio: fuelDeviationRatio,
+      },
     };
 
     await maybeUpsertReservationRow("flight_economy_snapshots", reservationId, economySnapshotPayload);

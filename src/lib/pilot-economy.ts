@@ -405,6 +405,8 @@ export type EstimateFlightEconomyInput = FuelPriceContext & {
   actualFuelKg?: number | null;
   damageCostUsd?: number | null;
   economySource?: EconomySource;
+  onboardSalesFactor?: number | null;
+  onboardServiceQualityFactor?: number | null;
 };
 
 export type FlightEconomyEstimate = {
@@ -426,9 +428,11 @@ export function estimateFlightEconomy(input: EstimateFlightEconomyInput): Flight
   const passengerRevenue = operationType === "TRAINING" ? 0 : money(passengerCount * fareUsd);
   const cargoRevenue = operationType === "TRAINING" ? 0 : money(cargoKg * cargoRateUsdPerKg(distanceNm, operationType));
   const hasCabinService = profile.cabinService && passengerCount > 0 && operationType !== "TRAINING";
-  const onboardServiceRevenueUsd = hasCabinService ? money(passengerCount * (international ? 6.5 : 3.25)) : 0;
-  const onboardSalesRevenueUsd = hasCabinService && international && profile.internationalRetail ? money(passengerCount * 8.5 * 0.34) : 0;
-  const onboardServiceCostUsd = hasCabinService ? money(passengerCount * (international ? 4.3 : 2.1)) : 0;
+  const serviceFactor = clamp(Number(input.onboardServiceQualityFactor ?? 1), 0.2, 1.2);
+  const salesFactor = clamp(Number(input.onboardSalesFactor ?? 1), 0, 1.2);
+  const onboardServiceRevenueUsd = hasCabinService ? money(passengerCount * (international ? 6.5 : 3.25) * serviceFactor) : 0;
+  const onboardSalesRevenueUsd = hasCabinService && international && profile.internationalRetail ? money(passengerCount * 8.5 * 0.34 * salesFactor) : 0;
+  const onboardServiceCostUsd = hasCabinService ? money(passengerCount * (international ? 4.3 : 2.1) * Math.max(0.6, serviceFactor)) : 0;
   const fuelKg = input.actualFuelKg && input.actualFuelKg > 0 ? Math.round(input.actualFuelKg) : estimateFuelKg(distanceNm, input.aircraftTypeCode);
   const fuelPrice = estimateFuelPriceUsdPerKg(input);
   const fuelCostUsd = money(fuelKg * fuelPrice);
