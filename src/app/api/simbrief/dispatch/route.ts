@@ -40,9 +40,12 @@ function sanitizeRouteText(
   destination: string,
   flightNumber: string
 ) {
-  const clean = (routeText ?? "").trim();
+  const clean = (routeText ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
   if (!clean) return "";
-  const upper = clean.toUpperCase();
+  const upper = clean;
   const originUp = origin.trim().toUpperCase();
   const destinationUp = destination.trim().toUpperCase();
   const fltnum = flightNumber.trim().toUpperCase();
@@ -52,8 +55,14 @@ function sanitizeRouteText(
   if (upper === `PWG-${originUp}-${destinationUp}`) return "";
   if (upper === `${fltnum}-${originUp}-${destinationUp}`) return "";
   if (upper === `${originUp}-${destinationUp}`) return "";
-
-  return clean;
+  const forbidden = new Set([originUp, destinationUp, fltnum, airline, "PWG"]);
+  const tokens = upper
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => !/^[KN]\d{4}F\d{3}$/i.test(token))
+    .filter((token) => !forbidden.has(token));
+  return tokens.join(" ").trim();
 }
 
 export async function POST(request: NextRequest) {

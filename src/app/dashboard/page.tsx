@@ -4844,10 +4844,35 @@ function DispatchAircraftCascadeSelector({
   onSelect: (aircraftId: string) => void;
 }) {
   const available = useMemo(() => rows.filter((r) => r.selectable), [rows]);
+  const AIRCRAFT_NAME_FALLBACK: Record<string, string> = {
+    BE58: "Beechcraft Baron 58",
+    C172: "Cessna 172 Skyhawk",
+    C208: "Cessna Grand Caravan",
+    B350: "Beechcraft King Air 350",
+    TBM9: "Daher TBM 930",
+    A319: "Airbus A319",
+    A320: "Airbus A320",
+    A321: "Airbus A321",
+    AT76: "ATR 72-600",
+    B737: "Boeing 737-700",
+    B738: "Boeing 737-800",
+    B739: "Boeing 737-900",
+    B38M: "Boeing 737 MAX 8",
+    E190: "Embraer E190",
+    B78X: "Boeing 787-10",
+    B789: "Boeing 787-9",
+    MD88: "McDonnell Douglas MD-88",
+  };
   const toFriendlyAircraftLabel = (raw: string | null | undefined) => {
     const value = (raw ?? "").trim().toUpperCase();
     if (!value) return "";
     return value.split("_")[0] || value;
+  };
+  const toFriendlyAircraftName = (codeRaw: string | null | undefined, nameRaw: string | null | undefined) => {
+    const code = toFriendlyAircraftLabel(codeRaw);
+    const candidate = (nameRaw ?? "").trim();
+    if (candidate && !candidate.includes("_") && candidate.toUpperCase() !== code) return candidate;
+    return AIRCRAFT_NAME_FALLBACK[code] ?? "";
   };
 
   // modelCode = aircraft_model_code (e.g. "C208", "A320") — agrupador real del Step 1
@@ -4867,16 +4892,18 @@ function DispatchAircraftCascadeSelector({
 
   // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320...)
   const uniqueModels = useMemo(() => {
-    const seen = new Map<string, string>();
+    const seen = new Map<string, { code: string; name: string }>();
     for (const r of available) {
       const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
       if (modelKey && !seen.has(modelKey)) {
-        seen.set(modelKey, modelKey);
+        const code = toFriendlyAircraftLabel(modelKey);
+        const name = toFriendlyAircraftName(modelKey, r.aircraft_name);
+        seen.set(modelKey, { code, name });
       }
     }
     return Array.from(seen.entries())
-      .map(([code, name]) => ({ code, name: toFriendlyAircraftLabel(name) }))
-      .sort((a, b) => a.name.localeCompare(b.name, "es"));
+      .map(([value, meta]) => ({ value, code: meta.code, name: meta.name }))
+      .sort((a, b) => `${a.code} ${a.name}`.localeCompare(`${b.code} ${b.name}`, "es"));
   }, [available]);
 
   // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
@@ -5014,8 +5041,8 @@ function DispatchAircraftCascadeSelector({
           >
             <option value="">— Elige tipo —</option>
             {uniqueModels.map((t) => (
-              <option key={t.code} value={t.code}>
-                {t.name}
+              <option key={t.value} value={t.value}>
+                {t.name ? `${t.code} — ${t.name}` : t.code}
               </option>
             ))}
           </select>
@@ -5041,7 +5068,11 @@ function DispatchAircraftCascadeSelector({
             <option value="">— Elige matrícula —</option>
             {registrations.map((r) => (
               <option key={r.aircraft_id} value={r.aircraft_id}>
-                {r.tail_number}
+                {`${r.tail_number} · ${toFriendlyAircraftLabel(r.aircraft_variant_code || r.aircraft_code)}${
+                  toFriendlyAircraftName(r.aircraft_variant_code || r.aircraft_code, r.aircraft_name)
+                    ? ` · ${toFriendlyAircraftName(r.aircraft_variant_code || r.aircraft_code, r.aircraft_name)}`
+                    : ""
+                }`}
               </option>
             ))}
           </select>
@@ -5055,7 +5086,11 @@ function DispatchAircraftCascadeSelector({
             <span className="text-lg text-emerald-300">✓</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
-                {selectedReg.tail_number} · {selectedReg.aircraft_name}
+                {`${selectedReg.tail_number} · ${toFriendlyAircraftLabel(selectedReg.aircraft_variant_code || selectedReg.aircraft_code)}${
+                  toFriendlyAircraftName(selectedReg.aircraft_variant_code || selectedReg.aircraft_code, selectedReg.aircraft_name)
+                    ? ` · ${toFriendlyAircraftName(selectedReg.aircraft_variant_code || selectedReg.aircraft_code, selectedReg.aircraft_name)}`
+                    : ""
+                }`}
               </p>
               {(selectedReg.addon_provider || selectedReg.variant_name) && (
                 <p className="mt-0.5 text-xs text-emerald-200/70">
@@ -5152,9 +5187,12 @@ function sanitizeSimbriefRouteText(
   destination: string,
   flightNumber: string
 ) {
-  const clean = (routeText ?? "").trim();
+  const clean = (routeText ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
   if (!clean) return "";
-  const upper = clean.toUpperCase();
+  const upper = clean;
   const originUp = origin.trim().toUpperCase();
   const destinationUp = destination.trim().toUpperCase();
   const fltnum = flightNumber.trim().toUpperCase();
@@ -5165,7 +5203,150 @@ function sanitizeSimbriefRouteText(
   if (upper === `${fltnum}-${originUp}-${destinationUp}`) return "";
   if (upper === `${originUp}-${destinationUp}`) return "";
 
-  return clean;
+  const forbidden = new Set([originUp, destinationUp, fltnum, airline, "PWG"]);
+  const tokens = upper
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => !/^[KN]\d{4}F\d{3}$/i.test(token))
+    .filter((token) => !forbidden.has(token));
+
+  return tokens.join(" ").trim();
+}
+
+type PreSimbriefRoutePreview = {
+  cleanedRoute: string;
+  detectedCruiseLevel: string | null;
+  validatedOrigin: string | null;
+  validatedDestination: string | null;
+  source: "empty" | "manual" | "skyvector";
+  error: string | null;
+};
+
+function parsePreSimbriefRouteInput(params: {
+  input: string;
+  origin: string;
+  destination: string;
+  flightNumber: string;
+}): PreSimbriefRoutePreview {
+  const raw = params.input.trim();
+  const origin = params.origin.trim().toUpperCase();
+  const destination = params.destination.trim().toUpperCase();
+
+  if (!raw) {
+    return {
+      cleanedRoute: "",
+      detectedCruiseLevel: null,
+      validatedOrigin: origin || null,
+      validatedDestination: destination || null,
+      source: "empty",
+      error: null,
+    };
+  }
+
+  let source: "manual" | "skyvector" = "manual";
+  let normalizedInput = raw;
+  let parsedOrigin: string | null = null;
+  let parsedDestination: string | null = null;
+  let detectedCruiseLevel: string | null = null;
+
+  if (/skyvector\.com/i.test(raw)) {
+    source = "skyvector";
+    try {
+      const url = new URL(raw);
+      const fplParam = url.searchParams.get("fpl");
+      if (!fplParam?.trim()) {
+        return {
+          cleanedRoute: "",
+          detectedCruiseLevel: null,
+          validatedOrigin: null,
+          validatedDestination: null,
+          source,
+          error: "La URL de SkyVector no trae el parámetro fpl.",
+        };
+      }
+
+      const decoded = decodeURIComponent(fplParam).replace(/\+/g, " ").trim().toUpperCase();
+      const tokens = decoded.split(/\s+/).filter(Boolean);
+      if (tokens.length < 3) {
+        return {
+          cleanedRoute: "",
+          detectedCruiseLevel: null,
+          validatedOrigin: null,
+          validatedDestination: null,
+          source,
+          error: "No se pudo interpretar el plan FPL de SkyVector.",
+        };
+      }
+
+      if (/^[KN]\d{4}F\d{3}$/i.test(tokens[0])) {
+        const cruiseMatch = tokens[0].match(/F(\d{3})/i);
+        detectedCruiseLevel = cruiseMatch ? `FL${cruiseMatch[1]}` : null;
+        tokens.shift();
+      }
+
+      parsedOrigin = tokens[0] ?? null;
+      parsedDestination = tokens[tokens.length - 1] ?? null;
+
+      if (parsedOrigin !== origin || parsedDestination !== destination) {
+        return {
+          cleanedRoute: "",
+          detectedCruiseLevel,
+          validatedOrigin: parsedOrigin,
+          validatedDestination: parsedDestination,
+          source,
+          error: `Origen/Destino del FPL (${parsedOrigin ?? "----"} → ${parsedDestination ?? "----"}) no coincide con la reserva (${origin} → ${destination}).`,
+        };
+      }
+
+      normalizedInput = tokens.slice(1, -1).join(" ");
+    } catch {
+      return {
+        cleanedRoute: "",
+        detectedCruiseLevel: null,
+        validatedOrigin: null,
+        validatedDestination: null,
+        source,
+        error: "La URL de SkyVector no es válida.",
+      };
+    }
+  }
+
+  const manualTokens = normalizedInput
+    .trim()
+    .toUpperCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (manualTokens.length > 0 && /^[KN]\d{4}F\d{3}$/i.test(manualTokens[0])) {
+    const cruiseMatch = manualTokens[0].match(/F(\d{3})/i);
+    detectedCruiseLevel = detectedCruiseLevel ?? (cruiseMatch ? `FL${cruiseMatch[1]}` : null);
+    manualTokens.shift();
+  }
+
+  if (manualTokens[0] === origin && manualTokens[manualTokens.length - 1] === destination) {
+    normalizedInput = manualTokens.slice(1, -1).join(" ");
+    parsedOrigin = origin;
+    parsedDestination = destination;
+  } else {
+    normalizedInput = manualTokens.join(" ");
+  }
+
+  const cleanedRoute = sanitizeSimbriefRouteText(
+    normalizedInput,
+    origin,
+    destination,
+    params.flightNumber
+  );
+
+  return {
+    cleanedRoute,
+    detectedCruiseLevel,
+    validatedOrigin: parsedOrigin ?? origin,
+    validatedDestination: parsedDestination ?? destination,
+    source,
+    error: null,
+  };
 }
 
 const LOW_RANK_ROUTE_LIMIT_CODES = new Set([
@@ -7375,6 +7556,9 @@ function DashboardWorkspace({
   const [simbriefGenerationActive, setSimbriefGenerationActive] = useState(false);
   const [simbriefInfoMessage, setSimbriefInfoMessage] = useState("");
   const [simbriefErrorMessage, setSimbriefErrorMessage] = useState("");
+  const [dispatchRouteInput, setDispatchRouteInput] = useState("");
+  const [dispatchRouteApplied, setDispatchRouteApplied] = useState("");
+  const [searchingDispatchRoute, setSearchingDispatchRoute] = useState(false);
   const [finalizingDispatch, setFinalizingDispatch] = useState(false);
   const [summaryInfoMessage, setSummaryInfoMessage] = useState("");
   const [summaryErrorMessage, setSummaryErrorMessage] = useState("");
@@ -7673,9 +7857,17 @@ function DashboardWorkspace({
             "000"
       );
 
-      const routeTextCandidate = isCharterLikeDispatch
-        ? charterOperation?.routeText || selectedItineraryRecord.itinerary_code
-        : selectedItineraryRecord.itinerary_code;
+      if (appliedRoutePreview.error) {
+        throw new Error(appliedRoutePreview.error);
+      }
+
+      const routeTextCandidate = appliedRoutePreview.cleanedRoute;
+      const remarks = [
+        "PATAGONIA WINGS WEB DISPATCH",
+        appliedRoutePreview.detectedCruiseLevel ? `CRZ ${appliedRoutePreview.detectedCruiseLevel}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       const payload = {
         userId: profile.id,
@@ -7710,7 +7902,7 @@ function DashboardWorkspace({
           60,
         pax: 0,
         cargoKg: 0,
-        remarks: "PATAGONIA WINGS WEB DISPATCH",
+        remarks,
       };
 
       const response = await fetch("/api/simbrief/dispatch", {
@@ -7778,6 +7970,54 @@ function DashboardWorkspace({
       );
     } finally {
       setSyncingSimbrief(false);
+    }
+  }
+
+  async function handleFindDispatchRoute() {
+    if (!selectedAircraftRecord || !selectedItineraryRecord) {
+      setSimbriefErrorMessage("Primero selecciona aeronave e itinerario.");
+      return;
+    }
+
+    setSearchingDispatchRoute(true);
+    setSimbriefErrorMessage("");
+
+    try {
+      const response = await fetch("/api/dispatch/route-finder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: webOriginCode,
+          destination: webDestinationCode,
+          flightLevel: appliedRoutePreview.detectedCruiseLevel,
+          aircraftType: webAirframe,
+          aircraftRegistration: selectedAircraftRecord.tail_number ?? null,
+        }),
+      });
+
+      const data = (await response.json()) as
+        | { route: string | null; source: string; flightLevel: string | null }
+        | { error?: string };
+
+      if (!response.ok || ("error" in data && typeof data.error === "string")) {
+        throw new Error("error" in data ? data.error || "No se pudo buscar ruta." : "No se pudo buscar ruta.");
+      }
+      if (!("route" in data)) {
+        throw new Error("Respuesta inválida de route-finder.");
+      }
+
+      if (!data.route) {
+        setSimbriefInfoMessage("No hay ruta interna para esta combinación. Puedes pegar ruta ATS manual o dejar que SimBrief sugiera.");
+        return;
+      }
+
+      setDispatchRouteInput(data.route);
+      setDispatchRouteApplied(data.route);
+      setSimbriefInfoMessage(`Ruta interna aplicada (${data.source}).`);
+    } catch (error) {
+      setSimbriefErrorMessage(error instanceof Error ? error.message : "No se pudo buscar ruta.");
+    } finally {
+      setSearchingDispatchRoute(false);
     }
   }
 
@@ -8113,6 +8353,26 @@ function DashboardWorkspace({
     selectedItineraryRecord?.origin_icao?.trim().toUpperCase() ?? central.airportCode.trim().toUpperCase();
   const webDestinationCode =
     selectedItineraryRecord?.destination_icao?.trim().toUpperCase() ?? "Pendiente";
+  const preSimbriefRoutePreview = useMemo(
+    () =>
+      parsePreSimbriefRouteInput({
+        input: dispatchRouteInput,
+        origin: webOriginCode,
+        destination: webDestinationCode,
+        flightNumber: webFlightNumberValidationValue || "000",
+      }),
+    [dispatchRouteInput, webDestinationCode, webFlightNumberValidationValue, webOriginCode],
+  );
+  const appliedRoutePreview = useMemo(
+    () =>
+      parsePreSimbriefRouteInput({
+        input: dispatchRouteApplied,
+        origin: webOriginCode,
+        destination: webDestinationCode,
+        flightNumber: webFlightNumberValidationValue || "000",
+      }),
+    [dispatchRouteApplied, webDestinationCode, webFlightNumberValidationValue, webOriginCode],
+  );
   const webOriginAirport = itineraryAirportsByIcao[webOriginCode];
   const webDestinationAirport = itineraryAirportsByIcao[webDestinationCode];
   const webOriginCity = selectedItineraryRecord
@@ -8506,6 +8766,8 @@ function DashboardWorkspace({
     setSimbriefSummary(null);
     setSimbriefInfoMessage("");
     setSimbriefErrorMessage("");
+    setDispatchRouteInput("");
+    setDispatchRouteApplied("");
     setPreparedReservationId(null);
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
@@ -8521,6 +8783,8 @@ function DashboardWorkspace({
     setSimbriefSummary(null);
     setSimbriefInfoMessage("");
     setSimbriefErrorMessage("");
+    setDispatchRouteInput("");
+    setDispatchRouteApplied("");
     setPreparedReservationId(null);
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
@@ -8534,6 +8798,8 @@ function DashboardWorkspace({
     setSimbriefSummary(null);
     setSimbriefInfoMessage("");
     setSimbriefErrorMessage("");
+    setDispatchRouteInput("");
+    setDispatchRouteApplied("");
     setPreparedReservationId(null);
     setSummaryInfoMessage("");
     setSummaryErrorMessage("");
@@ -9530,6 +9796,62 @@ function DashboardWorkspace({
                           Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. En modo seguro, SimBrief se abre prellenado: el piloto solo revisa, presiona Generate Flight y luego carga el OFP automático en esta página.
                         </p>
 
+                        <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
+                            Ruta ATS / SkyVector
+                          </p>
+                          <input
+                            type="text"
+                            value={dispatchRouteInput}
+                            onChange={(event) => setDispatchRouteInput(event.target.value)}
+                            placeholder="PARKE8 AMB DGO o URL SkyVector con fpl="
+                            className="mt-3 w-full rounded-xl border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white outline-none focus:border-cyan-300/50"
+                          />
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => void handleFindDispatchRoute()}
+                              disabled={searchingDispatchRoute || !selectedAircraftRecord || !selectedItineraryRecord}
+                              className={`button-secondary py-2.5 ${searchingDispatchRoute || !selectedAircraftRecord || !selectedItineraryRecord ? "cursor-not-allowed opacity-55" : ""}`}
+                            >
+                              {searchingDispatchRoute ? "Buscando..." : "Buscar ruta"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (preSimbriefRoutePreview.error) {
+                                  setSimbriefErrorMessage(preSimbriefRoutePreview.error);
+                                  return;
+                                }
+                                setDispatchRouteApplied(dispatchRouteInput.trim());
+                                setSimbriefErrorMessage("");
+                              }}
+                              className="button-secondary py-2.5"
+                            >
+                              Usar ruta
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDispatchRouteInput("");
+                                setDispatchRouteApplied("");
+                                setSimbriefErrorMessage("");
+                              }}
+                              className="button-secondary py-2.5"
+                            >
+                              Limpiar ruta
+                            </button>
+                          </div>
+                          <div className="mt-3 space-y-1 text-xs text-white/70">
+                            <p>Ruta enviada a SimBrief: {appliedRoutePreview.cleanedRoute || "SimBrief sugerirá ruta"}</p>
+                            <p>Nivel detectado: {appliedRoutePreview.detectedCruiseLevel || "No detectado"}</p>
+                            <p>Origen/Destino validados: {webOriginCode} → {webDestinationCode}</p>
+                          </div>
+                          {preSimbriefRoutePreview.error ? (
+                            <p className="mt-3 text-xs text-rose-200">{preSimbriefRoutePreview.error}</p>
+                          ) : null}
+                        </div>
+
                         {simbriefGenerationActive ? (
                           <div className="mt-4 rounded-[20px] border border-emerald-300/20 bg-emerald-400/[0.08] p-4 text-sm text-emerald-50">
                             <p className="font-semibold">Generando OFP SimBrief...</p>
@@ -9562,10 +9884,10 @@ function DashboardWorkspace({
                           <button
                             type="button"
                             onClick={() => void handleOpenSimbriefPlanner()}
-                            disabled={syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord}
-                            className={`py-3 ${syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
+                            disabled={syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord || Boolean(appliedRoutePreview.error)}
+                            className={`py-3 ${syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord || Boolean(appliedRoutePreview.error) ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                           >
-                            {syncingSimbrief ? "Preparando..." : simbriefStaticId ? "Regenerar OFP SimBrief" : "Generar OFP SimBrief"}
+                            {syncingSimbrief ? "[1] Preparando..." : simbriefStaticId ? "[1] Rehacer OFP SimBrief" : "[1] Generar OFP SimBrief"}
                           </button>
 
                           <button
@@ -9574,7 +9896,7 @@ function DashboardWorkspace({
                             disabled={syncingSimbrief || !profile?.simbrief_username?.trim()}
                             className={`py-3 ${syncingSimbrief || !profile?.simbrief_username?.trim() ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
                           >
-                            {syncingSimbrief ? "Cargando..." : "Cargar OFP automático"}
+                            {syncingSimbrief ? "[2] Cargando..." : "[2] Cargar OFP"}
                           </button>
 
                           <button
@@ -9583,7 +9905,7 @@ function DashboardWorkspace({
                             disabled={!simbriefSummary || !canValidateDispatch}
                             className={`py-3 ${simbriefSummary && canValidateDispatch ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
                           >
-                            Validar despacho
+                            [3] Validar OFP
                           </button>
                         </div>
 
@@ -9634,7 +9956,7 @@ function DashboardWorkspace({
                           disabled={!canOpenSummary}
                           className={`py-3 ${canOpenSummary ? "button-primary" : "button-secondary cursor-not-allowed opacity-50"}`}
                         >
-                          Continuar a resumen
+                          [4] Continuar a manifiesto
                         </button>
                       </div>
                     </div>

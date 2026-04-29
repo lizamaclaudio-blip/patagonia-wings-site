@@ -371,9 +371,9 @@ export function buildSimbriefApiLoaderUrl(params: {
     type: params.type,
     orig: normalizeUpper(params.origin),
     dest: normalizeUpper(params.destination),
-    route: params.payload.routeText,
     callsign: params.payload.callsign,
     units: "KGS",
+    paxwgt: "80",
     navlog: "1",
     maps: "detail",
     notams: "1",
@@ -401,6 +401,9 @@ export function buildSimbriefApiLoaderUrl(params: {
 
   if (params.payload.alternate) {
     search.set("altn", normalizeUpper(params.payload.alternate));
+  }
+  if (params.payload.routeText?.trim()) {
+    search.set("route", params.payload.routeText.trim());
   }
 
   if (params.payload.aircraftTailNumber) {
@@ -451,9 +454,9 @@ export function buildSimbriefDispatchPrefillUrl(params: {
     type: params.type,
     orig: normalizeUpper(params.origin),
     dest: normalizeUpper(params.destination),
-    route: params.payload.routeText,
     callsign: params.payload.callsign,
     units: "KGS",
+    paxwgt: "80",
     navlog: "1",
     maps: "detail",
     notams: "1",
@@ -463,6 +466,7 @@ export function buildSimbriefDispatchPrefillUrl(params: {
   });
 
   if (date) search.set("date", date);
+  if (params.payload.routeText?.trim()) search.set("route", params.payload.routeText.trim());
   if (departureParts) {
     search.set("deph", departureParts.hour);
     search.set("depm", departureParts.minute);
