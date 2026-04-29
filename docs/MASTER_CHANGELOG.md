@@ -1148,3 +1148,18 @@ Regla contable preservada:
 - Se endurece closeout payload con event log v7 (code/phase/timestamp/severity/supported/reliable/penalty_applied/reason/evidence).
 - Se mantiene compatibilidad con finalize web y economia 18B sin cambios contables.
 
+## 2026-04-29 - HOTFIX ACARS/Web 7.0.0
+- ACARS ahora muestra version visual enlazada a version real (UpdateService/AppVersion).
+- Actualizados App.config, AssemblyInfo y manifests locales a 7.0.0.
+- PostFlight ACARS reetiquetado como caja negra: evaluacion final oficial en Patagonia Wings Web.
+- Cierre operacional diferencia completed vs cancelled desde ACARS.
+- Habilitaciones en cierre con fallback "No disponible" y sin duplicados.
+- Oficina web: se agregan LEDs visuales de despacho alimentados por telemetria ACARS.
+
+## 2026-04-29 - ACARS 7.0.0 Ready To Fly (deteccion y build oficial)
+- Se documenta build oficial ACARS WPF legacy con MSBuild VS2022 x64 (Debug|x64) como validacion final.
+- Se consolida documentacion de deteccion aeronave/addon con separacion Web (tipo/matricula) vs ACARS (variante tecnica interna).
+- Se actualiza matriz de 33 aeronaves con variante, addon source, metodo de lectura y exclusions no penalizables por capacidad.
+- Se publica checklist ready-to-fly para pruebas operacionales de ACARS 7.0.0.
+- Se mantiene sin cambios el selector web de aeronaves y sin impacto en 18B contable.
+
