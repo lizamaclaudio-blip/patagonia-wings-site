@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
@@ -113,15 +113,15 @@ function getAircraftTypeLabel(value: string | null | undefined) {
 }
 
 function getAircraftRegistrationLabel(item: CharterAircraftOption) {
+  return (item.tail_number ?? "").trim() || "Sin matrícula";
+}
+
+function getAircraftSummaryLabel(item: CharterAircraftOption | null) {
+  if (!item) return "Sin selección";
+  const registration = (item.tail_number ?? "").trim() || "Sin matrícula";
   const typeCode = getAircraftTypeCode(item);
   const typeName = getAircraftTypeName(typeCode);
-  const registration = (item.tail_number ?? "").trim() || "Sin matrícula";
-  const variant = (item.variant_name ?? "").trim();
-  const provider = (item.addon_provider ?? "").trim();
-
-  return [registration, typeName, variant, provider]
-    .filter(Boolean)
-    .join(" · ");
+  return `${registration} · ${typeCode} · ${typeName}`;
 }
 
 function AirportSearchBox({
@@ -626,15 +626,15 @@ export default function CharterOriginDestinationStep({
         ) : economyEstimate ? (
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["💵 Piloto", formatUsd(economyEstimate.pilotCommissionUsd ?? economyEstimate.pilotPaymentUsd), "text-emerald-100"],
-              ["👥 Pax", String(Math.round((economyEstimate.estimatedPassengers || 0)).toLocaleString("es-CL")), "text-white/82"],
-              ["📦 Carga", String(Math.round((economyEstimate.estimatedCargoKg || 0)).toLocaleString("es-CL")) + " kg", "text-white/82"],
-              ["🏢 Aerolínea", formatUsd(economyEstimate.airlineRevenueUsd), "text-cyan-100"],
-              ["⛽ Combustible", formatUsd(economyEstimate.fuelCostUsd), "text-amber-100"],
-              ["🛠 Mantención", formatUsd(economyEstimate.maintenanceCostUsd), "text-white/82"],
-              ["🧾 Operación", formatUsd((economyEstimate.airportFeesUsd ?? 0) + (economyEstimate.handlingCostUsd ?? 0) + (economyEstimate.repairReserveUsd ?? 0) + (economyEstimate.onboardServiceCostUsd ?? 0)), "text-white/82"],
-              ["🛍 Ventas", formatUsd((economyEstimate.onboardServiceRevenueUsd ?? 0) + (economyEstimate.onboardSalesRevenueUsd ?? 0)), "text-cyan-100"],
-              ["📈 Utilidad", formatUsd(economyEstimate.netProfitUsd), economyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100"],
+              ["Pago piloto", formatUsd(economyEstimate.pilotCommissionUsd ?? economyEstimate.pilotPaymentUsd), "text-emerald-100"],
+              ["Pasajeros", String(Math.round((economyEstimate.estimatedPassengers || 0)).toLocaleString("es-CL")), "text-white/82"],
+              ["Carga", String(Math.round((economyEstimate.estimatedCargoKg || 0)).toLocaleString("es-CL")) + " kg", "text-white/82"],
+              ["Ingreso aerolínea", formatUsd(economyEstimate.airlineRevenueUsd), "text-cyan-100"],
+              ["Costo combustible", formatUsd(economyEstimate.fuelCostUsd), "text-amber-100"],
+              ["Costo mantención", formatUsd(economyEstimate.maintenanceCostUsd), "text-white/82"],
+              ["Costos operación", formatUsd((economyEstimate.airportFeesUsd ?? 0) + (economyEstimate.handlingCostUsd ?? 0) + (economyEstimate.repairReserveUsd ?? 0) + (economyEstimate.onboardServiceCostUsd ?? 0)), "text-white/82"],
+              ["Ventas/servicio", formatUsd((economyEstimate.onboardServiceRevenueUsd ?? 0) + (economyEstimate.onboardSalesRevenueUsd ?? 0)), "text-cyan-100"],
+              ["Utilidad estimada", formatUsd(economyEstimate.netProfitUsd), economyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100"],
             ].map(([label, value, tone]) => (
               <div key={label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{label}</p>
@@ -693,7 +693,7 @@ export default function CharterOriginDestinationStep({
           />
 
           <DarkDropdown
-            label="2 · Nº de registro"
+            label="2 · N° de registro"
             placeholder="— Elige matrícula —"
             value={selectedAircraftId ?? ""}
             options={aircraftOptions}
@@ -705,6 +705,10 @@ export default function CharterOriginDestinationStep({
           />
         </div>
 
+        <p className="mt-3 text-xs text-white/54">
+          Aeronave seleccionada: {getAircraftSummaryLabel(selectedAircraft)}
+        </p>
+
         {!loadingAircraft && aircraft.length === 0 ? (
           <p className="mt-5 rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
             No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual.
@@ -714,3 +718,4 @@ export default function CharterOriginDestinationStep({
     </div>
   );
 }
+

@@ -1107,3 +1107,16 @@ Cambios:
 Estado:
 - ACARS/SIM no tocado.
 - Build OK.
+
+## 2026-04-30 - Cierre final 18F + validacion label catalog + ACARS/SIM alcance
+
+Cambios:
+- Validado bloque de progresion piloto: `pilot_expense_catalog` usa `label` (no `name`) en migracion, APIs y UI.
+- `CharterOriginDestinationStep` ajustado para 18F multitype: selector de tipo mantiene `codigo + nombre`; selector de matricula muestra solo matricula; resumen muestra `matricula + tipo + nombre`.
+- Limpieza de textos corruptos/UTF-8 en componentes de despacho charter.
+- Se mantiene OFP guiado bloqueante, Route Finder, SimBrief limpio, manifiesto pre-ACARS y planificado vs real sin regresion.
+- ACARS/SIM desktop: no aplicable en este repo web (no se detecto proyecto de cliente ACARS/Electron/SimConnect para patch directo).
+
+Validaciones:
+- `npm run build` OK.
+- Scan mojibake en dashboard/components/simbrief OK.
