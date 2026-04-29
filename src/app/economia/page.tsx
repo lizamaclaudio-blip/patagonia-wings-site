@@ -1319,6 +1319,129 @@ function MonthlyFixedCostsPanel() {
     </section>
   );
 }
+
+type MonthlySalaryAdminResponse = {
+  ok?: boolean;
+  error?: string;
+  period?: { year: number; month: number; paymentDateLabel: string };
+  totals?: { pilots: number; payablePilots: number; netPayableUsd: number };
+};
+
+function MonthlyPilotPayoutPanel() {
+  const now = new Date();
+  const [year, setYear] = useState(now.getUTCFullYear());
+  const [month, setMonth] = useState(now.getUTCMonth() + 1);
+  const [ownerChecked, setOwnerChecked] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [message, setMessage] = useState("");
+  const [data, setData] = useState<MonthlySalaryAdminResponse | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function checkOwner() {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) {
+        if (active) {
+          setIsOwner(false);
+          setOwnerChecked(true);
+        }
+        return;
+      }
+      const profileRes = await fetch("/api/pilot/salary/monthly", { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      const payload = profileRes && profileRes.ok ? await profileRes.json().catch(() => null) : null;
+      const callsign = String(payload?.pilot?.callsign ?? "");
+      const email = String(payload?.pilot?.email ?? "");
+      if (active) {
+        setIsOwner(isOwnerIdentity(callsign, email));
+        setOwnerChecked(true);
+      }
+    }
+    void checkOwner();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function runPreview() {
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("Debes iniciar sesión como owner.");
+      const res = await fetch(`/api/pilot/salary/monthly/admin?year=${year}&month=${month}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await res.json()) as MonthlySalaryAdminResponse;
+      if (!res.ok || payload.ok === false) throw new Error(payload.error ?? "No se pudo generar preview.");
+      setData(payload);
+    } catch (error) {
+      setData(null);
+      setMessage(error instanceof Error ? error.message : "Error en preview.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runPayout() {
+    setRunning(true);
+    setMessage("");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("Debes iniciar sesión como owner.");
+      const res = await fetch(`/api/pilot/salary/monthly/admin?year=${year}&month=${month}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await res.json()) as MonthlySalaryAdminResponse;
+      if (!res.ok || payload.ok === false) throw new Error(payload.error ?? "No se pudo ejecutar liquidación.");
+      setData(payload);
+      setMessage("Liquidación ejecutada. Reintentar el mismo mes no duplicará pagos.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al ejecutar liquidación.");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  if (ownerChecked && !isOwner) return null;
+
+  return (
+    <section className="mb-10 rounded-[30px] border border-cyan-400/14 bg-gradient-to-br from-cyan-400/[0.08] to-white/[0.025] p-6 sm:p-7">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Liquidación mensual piloto</p>
+      <h2 className="mt-1 text-xl font-black text-white">Cierre manual owner/admin</h2>
+      <p className="mt-2 text-sm leading-6 text-white/58">
+        La comisión se devenga por vuelo y se paga solo aquí en cierre mensual. Futuro cron sugerido: último día hábil.
+      </p>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <label className="text-xs text-white/60">Año
+          <input value={year} onChange={(e) => setYear(Number(e.target.value) || year)} className="mt-1 block w-28 rounded-xl border border-white/12 bg-black/20 px-3 py-2 text-sm text-white" />
+        </label>
+        <label className="text-xs text-white/60">Mes
+          <input value={month} onChange={(e) => setMonth(Math.min(12, Math.max(1, Number(e.target.value) || month)))} className="mt-1 block w-20 rounded-xl border border-white/12 bg-black/20 px-3 py-2 text-sm text-white" />
+        </label>
+        <button type="button" onClick={runPreview} disabled={loading || running} className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white">
+          {loading ? "Cargando..." : "Preview"}
+        </button>
+        <button type="button" onClick={runPayout} disabled={loading || running} className="rounded-xl border border-cyan-300/30 bg-cyan-300/14 px-4 py-2 text-xs font-semibold text-cyan-100">
+          {running ? "Procesando..." : "Pagar liquidación"}
+        </button>
+      </div>
+      {data?.totals ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <p className="rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-white/78">Pilotos: {data.totals.pilots}</p>
+          <p className="rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-white/78">Pagables: {data.totals.payablePilots}</p>
+          <p className="rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-xs text-emerald-300">Total: {fmtUsd(data.totals.netPayableUsd)}</p>
+        </div>
+      ) : null}
+      {message ? <p className="mt-3 text-xs text-amber-200">{message}</p> : null}
+    </section>
+  );
+}
 type EconomyHistoricalMetricsResponse = {
   ok?: boolean;
   totals?: {
@@ -1560,6 +1683,7 @@ export default function EconomiaPage() {
         <FleetAssetsPanel />
         <FleetPurchasePanel />
         <MonthlyFixedCostsPanel />
+        <MonthlyPilotPayoutPanel />
 
         {/* Pilot wallet expenses and certification costs */}
         <PilotExpensePlanPanel />

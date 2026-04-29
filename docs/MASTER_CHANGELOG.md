@@ -1094,3 +1094,16 @@ Cambios:
 Notas:
 - No se modifico bloque 18B contable.
 - `npm run build` OK.
+
+## 2026-04-30 - Cierre 18E admin payout + fix migracion progresion
+
+Cambios:
+- Corregida migracion `20260430_pilot_progression_catalog_and_ledger_columns.sql`: agrega `created_at` y `updated_at` en `pilot_expense_catalog` antes del upsert.
+- Nuevo endpoint owner/admin `GET|POST /api/pilot/salary/monthly/admin` para preview y ejecucion manual de liquidacion mensual.
+- Proteccion de doble pago por piloto/mes: si el periodo ya esta `paid`, se omite.
+- Pago de wallet solo en liquidacion mensual admin; el cierre ACARS sigue solo devengando comision.
+- Nueva tarjeta owner en `/economia` para ejecutar preview/pago mensual y documentar cron futuro (ultimo dia habil).
+
+Estado:
+- ACARS/SIM no tocado.
+- Build OK.

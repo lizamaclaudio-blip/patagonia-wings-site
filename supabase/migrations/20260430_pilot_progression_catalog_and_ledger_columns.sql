@@ -9,6 +9,10 @@ alter table if exists public.pilot_expense_ledger
   add column if not exists reference_code text,
   add column if not exists metadata jsonb default '{}'::jsonb;
 
+alter table if exists public.pilot_expense_catalog
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 create unique index if not exists idx_pilot_expense_catalog_code_unique
   on public.pilot_expense_catalog (code);
 
