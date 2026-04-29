@@ -4875,9 +4875,7 @@ function DispatchAircraftCascadeSelector({
     return AIRCRAFT_NAME_FALLBACK[code] ?? "";
   };
 
-  // modelCode = aircraft_model_code (e.g. "C208", "A320") — agrupador real del Step 1
-  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") — agrupador del Step 2
-  const [selModelCode, setSelModelCode] = useState<string>("");
+  const [selectedAircraftType, setSelectedAircraftType] = useState<string>("");
   const [selVariantKey, setSelVariantKey] = useState<string>("");
 
   // Sync cascade state when external selectedAircraftId changes
@@ -4885,25 +4883,26 @@ function DispatchAircraftCascadeSelector({
     if (!selectedAircraftId) return;
     const found = available.find((r) => r.aircraft_id === selectedAircraftId);
     if (found) {
-      setSelModelCode(found.aircraft_variant_code?.trim() || found.aircraft_code);
+      setSelectedAircraftType(toFriendlyAircraftLabel(found.aircraft_variant_code?.trim() || found.aircraft_code));
       setSelVariantKey(found.aircraft_type_code?.trim() || "");
     }
   }, [selectedAircraftId, available]);
 
-  // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320...)
-  const uniqueModels = useMemo(() => {
-    const seen = new Map<string, { code: string; name: string }>();
+  // Step 1: tipos únicos deduplicados solo por typeCode limpio (sin matrícula)
+  const aircraftTypeOptions = useMemo(() => {
+    const seen = new Map<string, { typeCode: string; displayName: string }>();
     for (const r of available) {
-      const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
-      if (modelKey && !seen.has(modelKey)) {
-        const code = toFriendlyAircraftLabel(modelKey);
-        const name = toFriendlyAircraftName(modelKey, r.aircraft_name);
-        seen.set(modelKey, { code, name });
+      const typeCode = toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code);
+      if (typeCode && !seen.has(typeCode)) {
+        seen.set(typeCode, {
+          typeCode,
+          displayName: toFriendlyAircraftName(typeCode, r.aircraft_name),
+        });
       }
     }
     return Array.from(seen.entries())
-      .map(([value, meta]) => ({ value, code: meta.code, name: meta.name }))
-      .sort((a, b) => `${a.code} ${a.name}`.localeCompare(`${b.code} ${b.name}`, "es"));
+      .map(([, meta]) => meta)
+      .sort((a, b) => `${a.typeCode} ${a.displayName}`.localeCompare(`${b.typeCode} ${b.displayName}`, "es"));
   }, [available]);
 
   // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
@@ -4930,11 +4929,11 @@ function DispatchAircraftCascadeSelector({
 
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
-    if (!selModelCode) return [];
+    if (!selectedAircraftType) return [];
     // key → { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
-      (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
+      (r) => toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code) === selectedAircraftType
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
       // Preferir addon_provider → variant_name → derivar de aircraft_type_code
@@ -4956,22 +4955,22 @@ function DispatchAircraftCascadeSelector({
         label: (addonCounts.get(addonLabel) ?? 0) > 1 ? displayName : addonLabel,
       }))
       .sort((a, b) => a.label.localeCompare(b.label, "es"));
-  }, [available, selModelCode]);
+  }, [available, selectedAircraftType]);
 
   // Auto-select variant when only one option available
   useEffect(() => {
-    if (selModelCode && uniqueVariants.length === 1 && !selVariantKey) {
+    if (selectedAircraftType && uniqueVariants.length === 1 && !selVariantKey) {
       setSelVariantKey(uniqueVariants[0].key);
     }
-  }, [selModelCode, uniqueVariants, selVariantKey]);
+  }, [selectedAircraftType, uniqueVariants, selVariantKey]);
 
   // Step 3: matrículas disponibles para modelo + variante seleccionada
   // Matrículas: filtra por modelo; variante es opcional y solo pre-filtra la lista
   const registrations = useMemo(() => {
-    if (!selModelCode) return [];
+    if (!selectedAircraftType) return [];
     return available.filter((r) => {
-      const modelKey = r.aircraft_variant_code?.trim() || r.aircraft_code;
-      if (modelKey !== selModelCode) return false;
+      const modelKey = toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code);
+      if (modelKey !== selectedAircraftType) return false;
       // Si hay variante elegida, filtra; si no, muestra todas las del modelo
       if (selVariantKey) {
         const varKey = r.aircraft_type_code?.trim() || "__none__";
@@ -4979,7 +4978,7 @@ function DispatchAircraftCascadeSelector({
       }
       return true;
     });
-  }, [available, selModelCode, selVariantKey]);
+  }, [available, selectedAircraftType, selVariantKey]);
 
   // Auto-select registration when only one option available
   useEffect(() => {
@@ -5012,8 +5011,8 @@ function DispatchAircraftCascadeSelector({
     [available, selectedAircraftId]
   );
 
-  const handleModelChange = (code: string) => {
-    setSelModelCode(code);
+  const handleTypeChange = (typeCode: string) => {
+    setSelectedAircraftType(typeCode);
     setSelVariantKey("");
     onSelect("");
   };
@@ -5035,14 +5034,14 @@ function DispatchAircraftCascadeSelector({
             1 · Tipo de aeronave
           </label>
           <select
-            value={selModelCode}
-            onChange={(e) => handleModelChange(e.target.value)}
+            value={selectedAircraftType}
+            onChange={(e) => handleTypeChange(e.target.value)}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none"
           >
             <option value="">— Elige tipo —</option>
-            {uniqueModels.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.name ? `${t.code} — ${t.name}` : t.code}
+            {aircraftTypeOptions.map((t) => (
+              <option key={t.typeCode} value={t.typeCode}>
+                {t.displayName ? `${t.typeCode} — ${t.displayName}` : t.typeCode}
               </option>
             ))}
           </select>
@@ -5052,7 +5051,7 @@ function DispatchAircraftCascadeSelector({
         <div className="flex flex-col gap-2">
           <label
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
-              selModelCode ? "text-white/54" : "text-white/24"
+              selectedAircraftType ? "text-white/54" : "text-white/24"
             }`}
           >
             2 · N° de registro
@@ -5062,7 +5061,7 @@ function DispatchAircraftCascadeSelector({
             onChange={(e) => {
               if (e.target.value) onSelect(e.target.value);
             }}
-            disabled={!selModelCode}
+            disabled={!selectedAircraftType}
             className="w-full rounded-[12px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-36"
           >
             <option value="">— Elige matrícula —</option>
