@@ -59,11 +59,23 @@ export async function POST(request: NextRequest) {
       closeoutPayload: payload.closeoutPayload ?? null,
     });
 
+    const requestOrigin = request.nextUrl.origin || "";
+    const origin = requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1")
+      ? "https://www.patagoniaw.com"
+      : (requestOrigin || "https://www.patagoniaw.com");
+    const summaryPath = result.resultUrl || `/flights/${reservationId}`;
+    const summaryUrl = summaryPath.startsWith("http://") || summaryPath.startsWith("https://")
+      ? summaryPath
+      : `${origin}${summaryPath.startsWith("/") ? "" : "/"}${summaryPath}`;
+
     return NextResponse.json({
       ok: true,
+      success: true,
       reservationId,
+      status: result.official.finalStatus,
+      summaryUrl,
       resultStatus: result.official.finalStatus,
-      resultUrl: result.resultUrl,
+      resultUrl: summaryUrl,
       officialScores: {
         procedure_score: result.official.procedureScore,
         mission_score: result.official.missionScore,

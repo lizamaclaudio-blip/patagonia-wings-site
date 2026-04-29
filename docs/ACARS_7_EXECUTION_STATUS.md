@@ -1,16 +1,15 @@
-# ACARS 7.0.1 - Estado de ejecucion
+# ACARS 7.0.3 - Estado de ejecucion
 
 Fecha: 2026-04-29
 
 ## Estado por bloque
-- Detection confidence payload: COMPLETO.
-- Detection reason/profile status payload: COMPLETO.
-- Diagnostico addon/variante (payload/log): COMPLETO.
-- Guia de validacion manual addon: COMPLETO.
-- Matriz 33 aeronaves con estado manual: COMPLETO.
-- Capability gates hardening por confidence: COMPLETO OPERATIVO en closeout exclusions.
-- Ready-to-fly smoke checklist: COMPLETO.
-- Versionado 7.0.1: COMPLETO (ACARS binario y manifests locales).
+- HUD MSFS in-game package: COMPLETO.
+- Bridge local ACARS->HUD: COMPLETO.
+- Finalize server-confirmed + summaryUrl: COMPLETO.
+- Apertura automatica de resumen web: COMPLETO.
+- Versionado ACARS 7.0.3: COMPLETO.
+- Ready-to-fly smoke checklist: ACTUALIZADO.
+- Autoupdate universal legacy matrix: COMPLETO (script actualizado).
 
 ## Cambios tecnicos
 - `SimData` agrega: type/variant/addon/profile + confidence/reason/source + matched_title/pattern + fallback_used + profile_status.
@@ -20,9 +19,16 @@ Fecha: 2026-04-29
   - `blackbox_summary`,
   - `event_summary`,
   - `capability_snapshot`.
-- `ApiService` agrega `penalty_exclusions` por confidence low/fallback/unknown para evitar penalizacion de señales ambiguas.
+- `ApiService` agrega `penalty_exclusions` por confidence low/fallback/unknown para evitar penalizacion de seÃ±ales ambiguas.
 
 ## Validaciones
-- Build ACARS oficial MSBuild VS2022 x64: PENDIENTE en esta corrida (ejecutar al final).
-- Build web: NO APLICA (sin cambios funcionales web).
-- SQL: NO REQUERIDO.
+- Build ACARS oficial MSBuild VS2022 x64: OK.
+- Build web: OK (`npm run build`).
+- SQL: NO REQUERIDO para este hotfix.
+
+## 2026-04-29 - CIERRE RELEASE 7.0.3
+- Manifests ACARS/Web alineados a 7.0.3 revision 2026.4.29.5.
+- Feed publico con mandatory update y forceUpdateBelow=7.0.3.
+- Finalize exige success + reservationId + summaryUrl antes de marcar enviado.
+- HUD interno MSFS consume bridge localhost seguro (`/api/hud/state`).
+

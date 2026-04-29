@@ -1,8 +1,8 @@
-# ACARS 7.0.1 - Ready To Fly Checklist
+# ACARS 7.0.3 - Ready To Fly Checklist
 
 Fecha: 2026-04-29
 
-1. Abrir ACARS 7.0.1.
+1. Abrir ACARS 7.0.3.
 2. Enviar vuelo de entrenamiento desde web.
 3. Confirmar preparedDispatch.
 4. Confirmar aircraft type.
@@ -17,8 +17,10 @@ Fecha: 2026-04-29
 13. Cerrar completed.
 14. Probar cancelled.
 15. Probar crash/incident en entorno controlado.
-16. Confirmar finalize.
-17. Confirmar planificado vs real en web.
-18. Confirmar wallet no sube por vuelo.
-19. Confirmar ledger/salary no duplican.
-20. Registrar resultado en matriz de 33 aeronaves.
+16. Confirmar HUD bridge local `http://127.0.0.1:37677/api/hud/state`.
+17. Confirmar HUD MSFS muestra ACARS offline cuando corresponde.
+18. Confirmar finalize con success + reservationId + summaryUrl.
+19. Confirmar planificado vs real en web.
+20. Confirmar wallet no sube por vuelo.
+21. Confirmar ledger/salary no duplican.
+22. Registrar resultado en matriz de 33 aeronaves.

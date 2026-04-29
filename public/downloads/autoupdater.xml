@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>6.0.1.0</version>
-  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup-6.0.1-beta.exe</url>
-  <changelog>ACARS 6.0.1-beta para prueba integral Patagonia Wings.
-Base Supabase normalizada: tipo operativo separado de addon/perfil tecnico ACARS.
-Updater inmediato compatible con versiones beta y release feed activo.
-Control Center preparado para importador, perfiles tecnicos y reglas operativas centralizadas.</changelog>
-  <mandatory>false</mandatory>
+  <version>7.0.3.0</version>
+  <latestVersion>7.0.3</latestVersion>
+  <minSupportedVersion>1.0.0</minSupportedVersion>
+  <forceUpdateBelow>7.0.3</forceUpdateBelow>
+  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</url>
+  <downloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</downloadUrl>
+  <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
+  <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
+  <revision>2026.4.29.5</revision>
+  <changelog>ACARS 7.0.3 - HUD MSFS in-game, bridge local ACARS a HUD, finalize confirmado por servidor, apertura de resumen web y autoupdate universal.</changelog>
+  <releaseNotes>ACARS 7.0.3 - HUD MSFS in-game, bridge local ACARS a HUD, finalize confirmado por servidor, apertura de resumen web y autoupdate universal.</releaseNotes>
+  <mandatory>true</mandatory>
+  <required>true</required>
 </item>

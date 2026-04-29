@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <version>7.0.3.0</version>
+  <latestVersion>7.0.3</latestVersion>
+  <minSupportedVersion>1.0.0</minSupportedVersion>
+  <forceUpdateBelow>7.0.3</forceUpdateBelow>
+  <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</url>
+  <downloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</downloadUrl>
+  <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
+  <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
+  <revision>2026.4.29.5</revision>
+  <changelog>- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.
+- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.
+- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.</changelog>
+  <releaseNotes>- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.
+- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.
+- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.</releaseNotes>
+  <mandatory>true</mandatory>
+  <required>true</required>
+</item>

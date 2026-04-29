@@ -9193,6 +9193,43 @@ function DashboardWorkspace({
   const activeLiveLongitude = useMemo(() => getNestedNumber(activeLiveSample, "longitude") ?? getNestedNumber(activeLiveSample, "lon") ?? getNestedNumber(activeLiveSample, "lng"), [activeLiveSample]);
   const activeLiveGroundSpeed = useMemo(() => getNestedNumber(activeLiveSample, "groundSpeed") ?? getNestedNumber(activeLiveSample, "ground_speed") ?? getNestedNumber(activeLiveSample, "groundSpeedKts"), [activeLiveSample]);
   const activeLivePhase = useMemo(() => getNestedText(activeLivePayload, "phase") || getNestedText(activeLiveSample, "phase"), [activeLivePayload, activeLiveSample]);
+  const activeAircraftMatch = useMemo(() => {
+    const value =
+      getNestedText(activeLiveSample, "aircraftMatch") ??
+      getNestedText(activeLiveSample, "aircraft_match") ??
+      getNestedText(activeLiveSample, "aircraft_ok");
+    if (!value) return null;
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "ok", "match"].includes(normalized)) return true;
+    if (["false", "0", "no", "mismatch"].includes(normalized)) return false;
+    return null;
+  }, [activeLiveSample]);
+  const activeColdDarkOrEnergyReady = useMemo(() => {
+    const battery =
+      getNestedNumber(activeLiveSample, "battery_on") ??
+      getNestedNumber(activeLiveSample, "battery") ??
+      getNestedNumber(activeLiveSample, "masterBatteryOn");
+    const avionics =
+      getNestedNumber(activeLiveSample, "avionics_on") ??
+      getNestedNumber(activeLiveSample, "avionics");
+    if (battery == null && avionics == null) return null;
+    return (battery ?? 0) > 0 || (avionics ?? 0) > 0;
+  }, [activeLiveSample]);
+  const activeParkingBrakeSet = useMemo(() => {
+    const parking =
+      getNestedNumber(activeLiveSample, "parking_brake") ??
+      getNestedNumber(activeLiveSample, "parkingBrake") ??
+      getNestedNumber(activeLiveSample, "parking_brake_position");
+    if (parking == null) return null;
+    return parking > 0;
+  }, [activeLiveSample]);
+  const activeGateCondition = useMemo(() => {
+    const onGround =
+      getNestedNumber(activeLiveSample, "on_ground") ??
+      getNestedNumber(activeLiveSample, "onGround");
+    if (onGround == null) return null;
+    return onGround > 0;
+  }, [activeLiveSample]);
   const activeStatusIsLive = useMemo(() => {
     const normalizedStatus = activeReservation?.status?.trim().toLowerCase() ?? "";
     return normalizedStatus === "in_progress" || normalizedStatus === "in_flight";
@@ -10644,6 +10681,27 @@ function DashboardWorkspace({
                   </div>
 
                   <div className="overflow-hidden rounded-[24px] border border-cyan-400/12 bg-[radial-gradient(circle_at_top_left,rgba(103,215,255,0.16),transparent_42%),linear-gradient(135deg,rgba(3,20,40,0.94),rgba(6,33,61,0.88))] p-5 shadow-[0_24px_60px_rgba(1,10,20,0.34)]">
+                    <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                      {[
+                        { label: "Avion correcto", value: activeAircraftMatch, ok: "OK", bad: "No coincide" },
+                        { label: "Energia/C&D", value: activeColdDarkOrEnergyReady, ok: "Listo", bad: "No listo" },
+                        { label: "Freno parking", value: activeParkingBrakeSet, ok: "Aplicado", bad: "Liberado" },
+                        { label: "Gate/condicion", value: activeGateCondition, ok: "Cumple", bad: "Fuera" },
+                      ].map((led) => {
+                        const isNd = led.value == null;
+                        const isOk = led.value === true;
+                        return (
+                          <div key={led.label} className="rounded-[14px] border border-white/10 bg-[#04172a]/70 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">{led.label}</p>
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <span className={`h-2.5 w-2.5 rounded-full ${isNd ? "bg-slate-400" : isOk ? "bg-emerald-400" : "bg-amber-300"}`} />
+                              <span className="text-xs font-semibold text-white/85">{isNd ? "N/D" : isOk ? led.ok : led.bad}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-100/60">
