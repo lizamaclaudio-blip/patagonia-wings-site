@@ -481,7 +481,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCTE",
       destination: "SCIE",
-      label: "Puerto Montt â†’ Concepción",
+      label: "Puerto Montt → Concepción",
       remarks: "Tramo corto y controlado para revisar salida instrumental, navegación en ruta y llegada estabilizada.",
     },
     routeWaypoints: [
@@ -574,7 +574,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SCTE",
-      label: "Santiago â†’ Puerto Montt",
+      label: "Santiago → Puerto Montt",
       remarks: "Perfil comercial nacional para practicar briefing, interceptación y decisión en mínimos CAT I.",
     },
     routeWaypoints: [
@@ -667,7 +667,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SAEZ",
       destination: "SCEL",
-      label: "Buenos Aires Ezeiza â†’ Santiago",
+      label: "Buenos Aires Ezeiza → Santiago",
       remarks: "Perfil internacional corto para practicar baja visibilidad en operación comercial jet.",
     },
     routeWaypoints: [
@@ -760,7 +760,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SAEZ",
-      label: "Santiago â†’ Buenos Aires Ezeiza",
+      label: "Santiago → Buenos Aires Ezeiza",
       remarks: "Vuelo comercial de precisión para evaluar un perfil LVO completo.",
     },
     routeWaypoints: [
@@ -853,7 +853,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SCIE",
-      label: "Santiago â†’ Concepción",
+      label: "Santiago → Concepción",
       remarks: "Perfil corto con enfoque en técnica de viento cruzado durante aproximación, flare y aterrizaje.",
     },
     routeWaypoints: [
@@ -946,7 +946,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCTE",
       destination: "SCCI",
-      label: "Puerto Montt â†’ Punta Arenas",
+      label: "Puerto Montt → Punta Arenas",
       remarks: "Perfil patagónico para evaluar planeamiento, meteorología y criterio de seguridad en entorno especial.",
     },
     routeWaypoints: [
@@ -2086,7 +2086,7 @@ function resolveCountryCode(value?: string | null, icao?: string | null) {
 function formatDurationMinutes(value: number | null | undefined) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) {
-    return "â€”";
+    return "—";
   }
 
   const safeMinutes = Math.max(1, Math.round(minutes));
@@ -2330,7 +2330,7 @@ function getDestinationCityLabel(
     return destinationAirport.name.trim();
   }
 
-  const splitByArrow = itinerary.itinerary_name.split("â†’");
+  const splitByArrow = itinerary.itinerary_name.split("→");
   const parsed = splitByArrow.length > 1 ? splitByArrow[splitByArrow.length - 1].trim() : "";
   return parsed || itinerary.destination_icao;
 }
@@ -2543,7 +2543,7 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
     {
       mode: "ground_taxi",
       title: "Taxi urbano / interaeródromo",
-      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL â†” SCTB o SCTE â†” SCPF.`,
+      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL ↔ SCTB o SCTE ↔ SCPF.`,
       accent: "amber",
     },
     {
@@ -2746,7 +2746,7 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
 function parseMetarVisibilityMeters(rawMetar: string): number | null {
   const upper = rawMetar.toUpperCase();
   if (upper.includes("CAVOK")) return 9999;
-  // SM (statute miles) â€” approximate
+  // SM (statute miles) — approximate
   const smMatch = rawMetar.match(/\bM?(\d+(?:\/\d+)?)SM\b/i);
   if (smMatch) {
     const smVal = smMatch[1].includes("/") ? 0.5 : Number.parseFloat(smMatch[1]);
@@ -2800,7 +2800,7 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
       if (pilotH < requiredH) {
         warnings.push({
           level: requiredH >= 3 ? "red" : "amber",
-          text: `Visibilidad ${visM < 1000 ? `${visM} m` : `${(visM / 1000).toFixed(1)} km`} requiere habilitación H${requiredH} â€” tienes H${pilotH}.`,
+          text: `Visibilidad ${visM < 1000 ? `${visM} m` : `${(visM / 1000).toFixed(1)} km`} requiere habilitación H${requiredH} — tienes H${pilotH}.`,
         });
       }
     }
@@ -2822,7 +2822,7 @@ function buildWeatherWarnings(rawMetar: string, activeQualifications: string): W
       if (pilotV < requiredV) {
         warnings.push({
           level: requiredV >= 2 ? "red" : "amber",
-          text: `Viento ${windKt} kt requiere habilitación V${requiredV} â€” tienes V${pilotV}.`,
+          text: `Viento ${windKt} kt requiere habilitación V${requiredV} — tienes V${pilotV}.`,
         });
       }
     }
@@ -2867,7 +2867,7 @@ function buildNewsItems(
   if (recentFlights.length > 0) {
     items.push({
       tag: "Historial",
-      title: "Ãšltimos cierres disponibles",
+      title: "Últimos cierres disponibles",
       body:
         "La oficina mantiene los PIREPs recientes para comparar score, procedimientos, performance y estado del reporte.",
     });
@@ -2915,7 +2915,7 @@ function formatFlightStatusLabel(status?: string | null) {
 function formatRouteTag(row: FlightReservationRow) {
   const origin = row.origin_ident?.trim().toUpperCase() ?? "---";
   const destination = row.destination_ident?.trim().toUpperCase() ?? "---";
-  return `${origin} â†’ ${destination}`;
+  return `${origin} → ${destination}`;
 }
 
 function topEntries(
@@ -3237,7 +3237,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
 
   const airport = (airportRes.data ?? null) as AirportRow | null;
 
-  let metarText = `METAR ${currentAirport} â€” pendiente de actualización`;
+  let metarText = `METAR ${currentAirport} — pendiente de actualización`;
 
   try {
     const metarCandidateIds = buildMetarCandidateIds(currentAirport);
@@ -3257,7 +3257,7 @@ async function loadCentralOverview(profile: PilotProfileRecord): Promise<Central
       }
     }
   } catch {
-    metarText = `METAR ${currentAirport} â€” pendiente de actualización`;
+    metarText = `METAR ${currentAirport} — pendiente de actualización`;
   }
 
   const airportCode = airport?.ident?.trim().toUpperCase() ?? currentAirport;
@@ -3916,7 +3916,7 @@ function CentralNewsSection({
                         {article.title}
                       </h4>
                     </div>
-                    <span className="shrink-0 text-white/35">â†—</span>
+                    <span className="shrink-0 text-white/35">↗</span>
                   </div>
                   {article.description ? (
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
@@ -4007,7 +4007,7 @@ function CentralFlightsTable({
             {rows.length ? (
               rows.map((row, index) => {
                 const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
-                // Show just the ICAO model code, not the addon suffix (A319_FENIX â†’ A319)
+                // Show just the ICAO model code, not the addon suffix (A319_FENIX → A319)
                 const rawTypeCode = row.aircraft_type_code?.trim() || "";
                 const aircraftPrimary = rawTypeCode
                   ? rawTypeCode.split("_")[0]
@@ -4035,7 +4035,7 @@ function CentralFlightsTable({
 
                     <td className="px-4 py-3">
                       <div className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
-                        {registration ?? "â€”"}
+                        {registration ?? "—"}
                       </div>
                     </td>
 
@@ -4058,7 +4058,7 @@ function CentralFlightsTable({
                         <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
                           {toSafeNumber(row.procedure_score) > 0
                             ? `${formatDecimal(toSafeNumber(row.procedure_score))} pts`
-                            : "â€”"}
+                            : "—"}
                         </span>
                       )}
                     </td>
@@ -4101,7 +4101,7 @@ function CentralFlightsTable({
   );
 }
 
-// â”€â”€â”€ Office Economy Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Office Economy Panel -----------------------------------------------------
 
 type EconStats = {
   airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number; initial_capital_usd?: number; has_real_ledger?: boolean };
@@ -4172,7 +4172,7 @@ function OfficeEconomyPanel() {
           ) : null}
         </div>
         <Link href="/economia" className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90">
-          Ver completo â†’
+          Ver completo →
         </Link>
       </div>
 
@@ -4182,7 +4182,7 @@ function OfficeEconomyPanel() {
           { label: "Balance", value: fmtU(airline.balance_usd), color: airline.balance_usd >= 0 ? "#34d399" : "#f87171" },
           { label: "Ingresos", value: fmtU(airline.total_revenue_usd), color: "#38bdf8" },
           { label: "Costos", value: fmtU(airline.total_costs_usd), color: "#fbbf24" },
-          { label: isProfit ? "Utilidad" : "Pérdida", value: `${isProfit ? "+" : "âˆ’"}${fmtU(airline.net_profit_usd)}`, color: isProfit ? "#34d399" : "#f87171" },
+          { label: isProfit ? "Utilidad" : "Pérdida", value: `${isProfit ? "+" : "-"}${fmtU(airline.net_profit_usd)}`, color: isProfit ? "#34d399" : "#f87171" },
         ].map((k) => (
           <div key={k.label} className="rounded-[16px] border border-white/8 bg-white/[0.02] px-4 py-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{k.label}</p>
@@ -4398,18 +4398,18 @@ function CentralTransfersSectionControlled({
             {!isLoadingTransfers && destinations.length > 0 && (
               hasAbandonmentPenalty ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200">
-                  âš  Aeropuerto no-hub · +$350 multa
+                  Atención: Aeropuerto no-hub · +$350 multa
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-                  âœ“ Hub designado · sin multa
+                  ✓ Hub designado · sin multa
                 </span>
               )
             )}
           </div>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
             Reposiciónate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
-            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional â€” partís desde un hub."}
+            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional — partís desde un hub."}
           </p>
         </div>
       </div>
@@ -4513,7 +4513,7 @@ function CentralTransfersSectionControlled({
   );
 }
 
-// â”€â”€â”€ News section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- News section wrapper -----------------------------------------------------
 
 type LiveNewsArticle = {
   title: string;
@@ -4653,14 +4653,14 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-              Ãšltimos 20 vuelos
+              Últimos 20 vuelos
             </p>
             <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
-              Ãšltimos cierres
+              Últimos cierres
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{formatInteger(central.recentFlights.length)} registro(s)</p>
           </div>
@@ -4844,9 +4844,14 @@ function DispatchAircraftCascadeSelector({
   onSelect: (aircraftId: string) => void;
 }) {
   const available = useMemo(() => rows.filter((r) => r.selectable), [rows]);
+  const toFriendlyAircraftLabel = (raw: string | null | undefined) => {
+    const value = (raw ?? "").trim().toUpperCase();
+    if (!value) return "";
+    return value.split("_")[0] || value;
+  };
 
-  // modelCode = aircraft_model_code (e.g. "C208", "A320") â€” agrupador real del Step 1
-  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") â€” agrupador del Step 2
+  // modelCode = aircraft_model_code (e.g. "C208", "A320") — agrupador real del Step 1
+  // variantKey = aircraft_type_code (e.g. "C208_BLACKSQUARE") — agrupador del Step 2
   const [selModelCode, setSelModelCode] = useState<string>("");
   const [selVariantKey, setSelVariantKey] = useState<string>("");
 
@@ -4860,7 +4865,7 @@ function DispatchAircraftCascadeSelector({
     }
   }, [selectedAircraftId, available]);
 
-  // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320â€¦)
+  // Step 1: modelos únicos agrupados por aircraft_model_code (B737, C208, A320...)
   const uniqueModels = useMemo(() => {
     const seen = new Map<string, string>();
     for (const r of available) {
@@ -4870,12 +4875,12 @@ function DispatchAircraftCascadeSelector({
       }
     }
     return Array.from(seen.entries())
-      .map(([code, name]) => ({ code, name }))
+      .map(([code, name]) => ({ code, name: toFriendlyAircraftLabel(name) }))
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [available]);
 
   // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
-  // Ej: "B737_PMDG" â†’ "PMDG" | "C208_BLACKSQUARE" â†’ "Black Square" | "ATR72_MSFS" â†’ "Estándar"
+  // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
   const deriveAddonLabel = (typeCode: string | undefined | null): string => {
     if (!typeCode) return "Estándar";
     const suffix = typeCode.split("_").pop()?.toUpperCase() ?? "";
@@ -4899,13 +4904,13 @@ function DispatchAircraftCascadeSelector({
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = useMemo(() => {
     if (!selModelCode) return [];
-    // key â†’ { addonLabel, displayName }
+    // key → { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
       (r) => (r.aircraft_variant_code?.trim() || r.aircraft_code) === selModelCode
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      // Preferir addon_provider â†’ variant_name â†’ derivar de aircraft_type_code
+      // Preferir addon_provider → variant_name → derivar de aircraft_type_code
       const addonLabel =
         r.addon_provider?.trim() ||
         r.variant_name?.trim() ||
@@ -5047,7 +5052,7 @@ function DispatchAircraftCascadeSelector({
       {selectedReg ? (
         <>
           <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-            <span className="text-lg text-emerald-300">âœ“</span>
+            <span className="text-lg text-emerald-300">✓</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
                 {selectedReg.tail_number} · {selectedReg.aircraft_name}
@@ -5252,7 +5257,7 @@ function getItineraryRouteCategory(item: AvailableItineraryOption) {
 
 
 function formatEconomyUsd(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "â€”";
+  if (value == null || !Number.isFinite(value)) return "—";
   const sign = value < 0 ? "-" : "";
   return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
 }
@@ -5322,7 +5327,7 @@ function EconomyMiniGrid({
                                 { label: "Pax", value: estimate.estimatedPassengers.toLocaleString("es-CL"), tone: "text-white/82" },
                                 { label: "Carga", value: String(estimate.estimatedCargoKg.toLocaleString("es-CL")) + " kg", tone: "text-white/82" },
                                 { label: "Aerolínea", value: formatEconomyUsd(estimate.airlineRevenueUsd), tone: "text-cyan-100" },
-    { label: "â›½ Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
+    { label: "Combustible", value: formatEconomyUsd(estimate.fuelCostUsd), tone: "text-amber-100" },
                                 { label: "Mantención", value: formatEconomyUsd(estimate.maintenanceCostUsd), tone: "text-white/82" },
                                 { label: "Operación", value: formatEconomyUsd(estimate.airportFeesUsd + estimate.handlingCostUsd + estimate.repairReserveUsd + estimate.onboardServiceCostUsd), tone: "text-white/82" },
                                 { label: "Ventas", value: formatEconomyUsd(estimate.onboardServiceRevenueUsd + estimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
@@ -5374,6 +5379,7 @@ function DispatchItineraryTable({
               <th className="px-4 py-3 font-semibold">Destino</th>
               <th className="px-4 py-3 font-semibold">Distancia</th>
               <th className="px-4 py-3 font-semibold">Duracion aprox.</th>
+              <th className="px-4 py-3 font-semibold">Vuelo / ruta</th>
               <th className="px-4 py-3 font-semibold">Economía</th>
               <th className="px-4 py-3 font-semibold">Salida (local)</th>
               <th className="px-4 py-3 font-semibold text-right">Accion</th>
@@ -5381,23 +5387,16 @@ function DispatchItineraryTable({
           </thead>
 
           <tbody>
-            {rows.map((row, index) => {
+            {rows.map((row) => {
               const isSelected = selectedItineraryId === row.itinerary_id;
               const originCode = row.origin_icao.trim().toUpperCase();
               const destinationCode = row.destination_icao.trim().toUpperCase();
-              const rowKey = [
-                row.itinerary_id,
-                row.itinerary_code,
-                row.flight_number,
-                row.flight_designator,
-                row.aircraft_type_code,
-                row.compatible_aircraft_types?.join("_"),
-                originCode,
-                destinationCode,
-                index,
-              ]
-                .filter(Boolean)
-                .join("-");
+              const rowKey = row.itinerary_id || row.itinerary_code || `${originCode}-${destinationCode}-${row.flight_number ?? row.flight_designator ?? "route"}`;
+              const flightIdentifier =
+                compactFlightIdentifier(row.flight_designator) ||
+                compactFlightIdentifier(row.flight_number) ||
+                row.itinerary_code ||
+                "Sin código";
               const originAirport = airportsByIcao[originCode];
               const destinationAirport = airportsByIcao[destinationCode];
               const originCity = getOriginCityLabel(
@@ -5480,7 +5479,7 @@ function DispatchItineraryTable({
                   {/* DISTANCIA */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm font-semibold text-white">
-                      {distanceNm ? `${distanceNm} NM` : "â€”"}
+                      {distanceNm ? `${distanceNm} NM` : "—"}
                     </span>
                   </td>
                   {/* DURACION */}
@@ -5491,6 +5490,10 @@ function DispatchItineraryTable({
                     {!durationCandidate && estimatedMinutes > 0 ? (
                       <span className="ml-1 text-[11px] text-white/40">~est.</span>
                     ) : null}
+                  </td>
+                  {/* ECONOMIA */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-white">{flightIdentifier}</span>
                   </td>
                   {/* ECONOMIA */}
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -5511,7 +5514,7 @@ function DispatchItineraryTable({
                             <p className="font-semibold text-cyan-100/80">{formatEconomyUsd(estimate.netProfitUsd)}</p>
                         </div>
                       ) : (
-                        <span className="text-white/38">â€”</span>
+                        <span className="text-white/38">—</span>
                       );
                     })()}
                   </td>
@@ -5551,7 +5554,7 @@ function DispatchItineraryTable({
 
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-white/54">
+                <td colSpan={8} className="px-4 py-8 text-center text-sm text-white/54">
                   No hay itinerarios disponibles para la aeronave y modo de vuelo seleccionados.
                 </td>
               </tr>
@@ -5846,7 +5849,7 @@ async function loadTrainingAircraftProgress(profile: PilotProfileRecord | null) 
 
 function formatTrainingDate(value: string | null) {
   if (!value) {
-    return "â€”";
+    return "—";
   }
 
   try {
@@ -5856,7 +5859,7 @@ function formatTrainingDate(value: string | null) {
       year: "2-digit",
     });
   } catch {
-    return "â€”";
+    return "—";
   }
 }
 
@@ -6063,7 +6066,7 @@ function TrainingCheckrideDispatchModal({
                   </div>
                   <div className="rounded-[16px] border border-white/8 bg-black/16 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-white/36">Ruta</p>
-                    <p className="mt-1 text-lg font-semibold text-white">{route.origin} â†’ {route.destination}</p>
+                    <p className="mt-1 text-lg font-semibold text-white">{route.origin} → {route.destination}</p>
                     <p className="mt-1 text-xs text-white/46">{route.label}</p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -6109,7 +6112,7 @@ function TrainingCheckrideDispatchModal({
                     <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">{point.type}</p>
                   </div>
                   {index < routeWaypoints.length - 1 ? (
-                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">â†’</div>
+                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">→</div>
                   ) : null}
                 </div>
               ))}
@@ -6497,7 +6500,7 @@ function TrainingTheoryExamModal({
                   {latestAttempt ? (
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <div className="rounded-[18px] border border-white/10 bg-black/18 p-4">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Ãšltimo resultado</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Último resultado</p>
                         <p className="mt-2 text-2xl font-semibold text-white">{latestAttempt.score_percent}%</p>
                       </div>
                       <div className="rounded-[18px] border border-white/10 bg-black/18 p-4">
@@ -6557,7 +6560,7 @@ function TrainingTheoryExamModal({
                     {questions.map((question, index) => {
                       const selectedOption = answers[question.id];
                       const isCorrect = selectedOption === question.correctOptionId;
-                      const correctLabel = question.options.find((option) => option.id === question.correctOptionId)?.label ?? "â€”";
+                      const correctLabel = question.options.find((option) => option.id === question.correctOptionId)?.label ?? "—";
 
                       return (
                         <div key={question.id} className="rounded-[18px] border border-white/8 bg-black/18 p-4">
@@ -6618,11 +6621,11 @@ function TrainingTheoryExamModal({
                     </div>
                   </div>
                   <ul className="mt-5 space-y-3 text-sm leading-6 text-white/62">
-                    <li>â€¢ Tendrás un solo intento activo y el contador comenzará al presionar â€œHacer intentoâ€.</li>
-                    <li>â€¢ La prueba contiene {totalQuestions} preguntas con alternativas A/B/C/D.</li>
-                    <li>â€¢ Puedes navegar entre preguntas antes de finalizar.</li>
-                    <li>â€¢ Si apruebas, esta teórica queda bloqueada como aprobada.</li>
-                    <li>â€¢ Si repruebas, el reintento quedará bloqueado por {TRAINING_THEORY_RETRY_DAYS} días.</li>
+                    <li>• Tendrás un solo intento activo y el contador comenzará al presionar "Hacer intento".</li>
+                    <li>• La prueba contiene {totalQuestions} preguntas con alternativas A/B/C/D.</li>
+                    <li>• Puedes navegar entre preguntas antes de finalizar.</li>
+                    <li>• Si apruebas, esta teórica queda bloqueada como aprobada.</li>
+                    <li>• Si repruebas, el reintento quedará bloqueado por {TRAINING_THEORY_RETRY_DAYS} días.</li>
                   </ul>
                   <div className="mt-6 rounded-[18px] border border-amber-300/18 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-50/74">
                     Al iniciar no se mostrarán instrucciones nuevamente. Revisa bien el tema y responde con calma.
@@ -7243,8 +7246,8 @@ function TrainingReservationModal({
               Resumen de reserva
             </p>
             <div className="mt-3 grid gap-3 text-sm text-white/72 sm:grid-cols-4">
-              <span><strong className="text-white">Piloto:</strong> {profile?.callsign ?? "â€”"}</span>
-              <span><strong className="text-white">Ruta:</strong> {cleanOrigin || "----"} â†’ {cleanDestination || "----"}</span>
+              <span><strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}</span>
+              <span><strong className="text-white">Ruta:</strong> {cleanOrigin || "----"} → {cleanDestination || "----"}</span>
               <span><strong className="text-white">Avión:</strong> {aircraft.aircraft_type_code}</span>
               <span><strong className="text-white">Matrícula:</strong> {TRAINING_AIRCRAFT_REGISTRATION_LABEL}</span>
             </div>
@@ -7993,8 +7996,8 @@ function DashboardWorkspace({
         selectedCode,
       ].join("|");
       const dedupeKey = flightDiscriminator
-        ? `${item.itinerary_id}|${flightDiscriminator}`
-        : `${item.itinerary_id}|${fallbackFingerprint}`;
+        ? `${item.origin_icao}|${item.destination_icao}|${flightDiscriminator}`
+        : `${item.origin_icao}|${item.destination_icao}|${fallbackFingerprint}`;
       if (!deduped.has(dedupeKey)) deduped.set(dedupeKey, item);
     }
     const uniqueByRoute = Array.from(deduped.values());
@@ -8018,7 +8021,7 @@ function DashboardWorkspace({
     });
 
     // Strict filtering: when an aircraft is selected, only show compatible itineraries
-    // (even if the list is empty â€” do not fall back to all routes).
+    // (even if the list is empty — do not fall back to all routes).
     // Además, los dos primeros rangos solo ven rutas regionales/nacionales.
     return rankMatched;
   }, [
@@ -8479,7 +8482,7 @@ function DashboardWorkspace({
       ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
     dispatch: preparedReservationId
-      ? "Despachado âœ“"
+      ? "Despachado ✓"
       : dispatchReady
         ? "Listo para despachar"
         : "Pendiente",
@@ -8906,7 +8909,7 @@ function DashboardWorkspace({
                 type="button"
                 onClick={() => { if (!isDispatchBlocked) onChangeTab(tab.key); }}
                 disabled={isDispatchBlocked}
-                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso â€” finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
+                title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
                 className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                   isActive
                     ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
@@ -9316,7 +9319,7 @@ function DashboardWorkspace({
                                 <p className="mt-1 text-sm text-white/58">Valores previos al despacho; el cierre real se recalcula con el PIREP y el ledger.</p>
                               </div>
                               <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
-                                {selectedItineraryRecord.origin_icao} â†’ {selectedItineraryRecord.destination_icao}
+                                {selectedItineraryRecord.origin_icao} → {selectedItineraryRecord.destination_icao}
                               </span>
                             </div>
                             <EconomyMiniGrid
@@ -9490,16 +9493,16 @@ function DashboardWorkspace({
 
                         <div className="mt-4 grid gap-3 text-sm text-white/72 sm:grid-cols-2 xl:grid-cols-4">
                           <span>
-                            <strong className="text-white">Piloto:</strong> {profile?.callsign ?? "â€”"}
+                            <strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}
                           </span>
                           <span>
-                            <strong className="text-white">Ruta:</strong> {webOriginCode || "----"} â†’ {webDestinationCode || "----"}
+                            <strong className="text-white">Ruta:</strong> {webOriginCode || "----"} → {webDestinationCode || "----"}
                           </span>
                           <span>
-                            <strong className="text-white">Avión:</strong> {webAirframe || selectedAircraftRecord?.aircraft_type_code || "â€”"}
+                            <strong className="text-white">Avión:</strong> {webAirframe || selectedAircraftRecord?.aircraft_type_code || "—"}
                           </span>
                           <span>
-                            <strong className="text-white">Matrícula:</strong> {selectedAircraftRecord?.tail_number || "â€”"}
+                            <strong className="text-white">Matrícula:</strong> {selectedAircraftRecord?.tail_number || "—"}
                           </span>
                         </div>
                       </div>
@@ -9543,7 +9546,7 @@ function DashboardWorkspace({
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Ruta</p>
-                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} â†’ {webDestinationCode}</p>
+                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} → {webDestinationCode}</p>
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Airframe</p>
@@ -9690,7 +9693,7 @@ function DashboardWorkspace({
                           <DispatchValueCard
                             label="Itinerario"
                             value={selectedItineraryRecord?.itinerary_name || selectedItineraryRecord?.itinerary_code || "Pendiente"}
-                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} â†’ ${selectedItineraryRecord.destination_icao}` : undefined}
+                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} → ${selectedItineraryRecord.destination_icao}` : undefined}
                             valueClassName="text-[1.3rem] leading-tight"
                           />
                           <DispatchValueCard
@@ -9936,7 +9939,7 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
                         <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Ãšltima validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
+                          Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
 
                         <div className="mt-5 space-y-3 text-sm leading-7 text-white/76">
@@ -9995,7 +9998,7 @@ function DashboardWorkspace({
         {activeTab === "office" && profile ? (
           <div className="flex flex-col gap-4">
 
-            {/* â”€â”€ Fila 1: Perfil + Accesos â”€â”€ */}
+            {/* -- Fila 1: Perfil + Accesos -- */}
             <div className="grid gap-4 lg:grid-cols-3">
 
               {/* Tarjeta de perfil */}
@@ -10041,27 +10044,27 @@ function DashboardWorkspace({
                 <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/8 pt-5 sm:grid-cols-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Hub base</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.base_hub ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">País</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.country ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Simulador</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simulator ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">SimBrief</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.simbrief_username ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">VATSIM</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.vatsim_id ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">IVAO</p>
-                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "â€”"}</p>
+                    <p className="mt-1 text-sm font-medium text-white">{profile.ivao_id ?? "—"}</p>
                   </div>
                 </div>
               </div>
@@ -10071,7 +10074,7 @@ function DashboardWorkspace({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
                 <div className="mt-4 flex flex-col gap-3">
                   <Link href="/profile" className="button-secondary text-center text-sm">
-                    âœ Editar perfil
+                    Editar perfil
                   </Link>
                   <Link href="/certifications" className="button-ghost text-center text-sm">
                   Certificaciones
@@ -10097,13 +10100,13 @@ function DashboardWorkspace({
               </div>
             </div>
 
-            {/* â”€â”€ Fila 2: Métricas de carrera â”€â”€ */}
+            {/* -- Fila 2: Métricas de carrera -- */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Horas totales", value: formatDecimal(metrics.totalHours), unit: "hs" },
                 { label: "PIREPs", value: formatInteger(metrics.totalPireps), unit: "vuelos" },
                 { label: `Horas ${metrics.monthLabel}`, value: formatDecimal(metrics.monthHours), unit: "hs" },
-                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "â€”", unit: "" },
+                { label: `Posición ${metrics.monthLabel}`, value: metrics.monthPosition != null ? `#${formatInteger(metrics.monthPosition)}` : "—", unit: "" },
               ].map((m) => (
                 <div key={m.label} className="surface-outline rounded-[20px] p-5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{m.label}</p>
@@ -10113,7 +10116,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 3: Scores + Billetera â”€â”€ */}
+            {/* -- Fila 3: Scores + Billetera -- */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
                 { label: "Patagonia Score", value: formatDecimal(metrics.patagoniaScore), accent: "#67d7ff" },
@@ -10137,7 +10140,7 @@ function DashboardWorkspace({
               ))}
             </div>
 
-            {/* â”€â”€ Fila 4: Reserva activa â”€â”€ */}
+            {/* -- Fila 4: Reserva activa -- */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Reserva activa
@@ -10153,7 +10156,7 @@ function DashboardWorkspace({
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Aeronave</p>
                         <p className="mt-1 text-sm font-medium text-white">
-                          {activeReservation.aircraft_type_code ?? "â€”"}
+                          {activeReservation.aircraft_type_code ?? "—"}
                           {activeReservation.aircraft_registration ? ` · ${activeReservation.aircraft_registration}` : ""}
                         </p>
                       </div>
@@ -10208,7 +10211,7 @@ function DashboardWorkspace({
                       }}
                       className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {cancellingReservation ? "Cancelando..." : "âœ• Cancelar reserva"}
+                      {cancellingReservation ? "Cancelando..." : "Cancelar reserva"}
                     </button>
                   </div>
 
@@ -10270,10 +10273,10 @@ function DashboardWorkspace({
               )}
             </div>
 
-            {/* â”€â”€ Fila 5: Economía aerolínea (mini panel) â”€â”€ */}
+            {/* -- Fila 5: Economía aerolínea (mini panel) -- */}
             <OfficeEconomyPanel />
 
-            {/* â”€â”€ Fila 6: Historial de vuelos â”€â”€ */}
+            {/* -- Fila 6: Historial de vuelos -- */}
             <div className="surface-outline rounded-[24px] p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
@@ -10304,13 +10307,13 @@ function DashboardWorkspace({
                               formatRouteTag(f)
                             )}
                           </td>
-                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "â€”"}</td>
+                          <td className="py-3 text-white/70">{f.aircraft_type_code ?? "—"}</td>
                           <td className="py-3 text-white/54">{formatFlightStatusLabel(f.status)}</td>
                           <td className="py-3 text-right font-semibold text-[#67d7ff]">
-                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "â€”"}
+                            {f.procedure_score != null ? formatDecimal(f.procedure_score) : "—"}
                           </td>
                           <td className="py-3 text-right text-white/38">
-                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "â€”"}
+                            {f.completed_at ? new Date(f.completed_at).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
                           </td>
                         </tr>
                       ))}
@@ -10517,7 +10520,7 @@ function DashboardWorkspace({
                                             <span className="font-mono text-white/70">{item.aircraft_type_code}</span>
                                             <span>Familia {item.family_code ?? item.aircraft_type_code}</span>
                                             <span>{formatInteger(item.training_flights)} vuelos</span>
-                                            <span>Ãšltimo: {formatTrainingDate(item.last_training_at)}</span>
+                                            <span>Último: {formatTrainingDate(item.last_training_at)}</span>
                                           </div>
                                           <div className="mt-3">
                                             <div className="flex items-center justify-between gap-3 text-[11px] text-white/42">
@@ -10758,7 +10761,7 @@ function DashboardWorkspace({
                           </button>
                           {attempt ? (
                             <span className="text-right text-[11px] leading-4 text-white/36">
-                              Ãšltimo intento: {attempt.score_percent}% · {formatTheoryAttemptDate(attempt.submitted_at)}
+                              Último intento: {attempt.score_percent}% · {formatTheoryAttemptDate(attempt.submitted_at)}
                             </span>
                           ) : null}
                         </div>
@@ -10859,7 +10862,7 @@ function DashboardPartnersShowcase() {
                     <p className="mt-2 max-w-xl text-sm leading-6 text-white/62">{partner.description}</p>
                   </div>
                   <span className="inline-flex w-fit shrink-0 items-center justify-center rounded-full border border-cyan-200/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition group-hover:border-cyan-100/34 group-hover:bg-cyan-300/16">
-                    {partner.cta} â†’
+                    {partner.cta} →
                   </span>
                 </div>
               </div>
@@ -11015,7 +11018,7 @@ function DashboardContent() {
       {
         label: `Posición ${metrics.monthLabel}`,
         type: metrics.monthPosition == null ? "text" : "number",
-        value: metrics.monthPosition ?? "â€”",
+        value: metrics.monthPosition ?? "—",
       },
       { label: `Hs. ${metrics.monthLabel}`, type: "number", value: metrics.monthHours, decimals: 1 },
       { label: "PIREPs", type: "number", value: metrics.totalPireps },
@@ -11098,5 +11101,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-
-
