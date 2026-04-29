@@ -5067,11 +5067,7 @@ function DispatchAircraftCascadeSelector({
             <option value="">— Elige matrícula —</option>
             {registrations.map((r) => (
               <option key={r.aircraft_id} value={r.aircraft_id}>
-                {`${r.tail_number} · ${toFriendlyAircraftLabel(r.aircraft_variant_code || r.aircraft_code)}${
-                  toFriendlyAircraftName(r.aircraft_variant_code || r.aircraft_code, r.aircraft_name)
-                    ? ` · ${toFriendlyAircraftName(r.aircraft_variant_code || r.aircraft_code, r.aircraft_name)}`
-                    : ""
-                }`}
+                {r.tail_number}
               </option>
             ))}
           </select>
