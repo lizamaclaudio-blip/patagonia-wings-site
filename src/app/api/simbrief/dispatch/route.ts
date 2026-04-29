@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+﻿import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   buildSimbriefApiLoaderUrl,
@@ -32,6 +32,28 @@ function resolveReturnBaseUrl(request: NextRequest) {
     cleanBaseUrl(process.env.NEXT_PUBLIC_APP_URL) ??
     request.nextUrl.origin
   );
+}
+
+function sanitizeRouteText(
+  routeText: string | null | undefined,
+  origin: string,
+  destination: string,
+  flightNumber: string
+) {
+  const clean = (routeText ?? "").trim();
+  if (!clean) return "";
+  const upper = clean.toUpperCase();
+  const originUp = origin.trim().toUpperCase();
+  const destinationUp = destination.trim().toUpperCase();
+  const fltnum = flightNumber.trim().toUpperCase();
+  const airline = fltnum.replace(/\d+/g, "");
+
+  if (upper === `${airline}-${originUp}-${destinationUp}`) return "";
+  if (upper === `PWG-${originUp}-${destinationUp}`) return "";
+  if (upper === `${fltnum}-${originUp}-${destinationUp}`) return "";
+  if (upper === `${originUp}-${destinationUp}`) return "";
+
+  return clean;
 }
 
 export async function POST(request: NextRequest) {
@@ -84,7 +106,12 @@ export async function POST(request: NextRequest) {
       alternate: payload.alternate ?? null,
       aircraftCode: payload.aircraftCode,
       aircraftTailNumber: payload.aircraftTailNumber ?? null,
-      routeText: payload.routeText ?? "",
+      routeText: sanitizeRouteText(
+        payload.routeText ?? "",
+        payload.origin,
+        payload.destination,
+        normalizeSimbriefFlightNumber(payload.flightNumber ?? "1000")
+      ),
       scheduledDeparture: payload.scheduledDeparture ?? new Date().toISOString(),
       eteMinutes: payload.eteMinutes ?? 60,
       pax: payload.pax ?? 0,
