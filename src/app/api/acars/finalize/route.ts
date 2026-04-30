@@ -9,6 +9,7 @@ import {
   type AcarsCloseoutPayloadInput,
   type PreparedDispatchInput,
 } from "@/lib/acars-official";
+import { getSayIntentionsServerConfig, writeSayIntentionsLog } from "@/lib/sayintentions";
 
 function getBearerToken(request: NextRequest) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -58,6 +59,34 @@ export async function POST(request: NextRequest) {
       damageEvents: payload.damageEvents ?? [],
       closeoutPayload: payload.closeoutPayload ?? null,
     });
+
+    const sayIntentionsConfig = getSayIntentionsServerConfig();
+    if (sayIntentionsConfig.enabled && sayIntentionsConfig.vaApiKeyPresent) {
+      const endpoint = `${sayIntentionsConfig.baseUrl}/getCommsHistory`;
+      const commsResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: process.env.SAYINTENTIONS_VA_API_KEY,
+          reservation_id: reservationId,
+          flight_number: payload.activeFlight?.flightNumber ?? payload.report?.flightNumber ?? null,
+          dep: payload.activeFlight?.departureIcao ?? payload.preparedDispatch?.departureIcao ?? payload.report?.departureIcao ?? null,
+          arr: payload.activeFlight?.arrivalIcao ?? payload.preparedDispatch?.arrivalIcao ?? payload.report?.arrivalIcao ?? null,
+        }),
+        cache: "no-store",
+      }).catch(() => null);
+
+      await writeSayIntentionsLog({
+        reservation_id: reservationId,
+        pilot_id: context.user.id,
+        sync_type: "getCommsHistory",
+        status: commsResponse?.ok ? "completed" : "warning",
+        source: "acars_finalize",
+        response_payload: commsResponse ? await commsResponse.json().catch(() => null) : null,
+        error_message: commsResponse?.ok ? null : "comms_history_unavailable",
+        created_at: new Date().toISOString(),
+      });
+    }
 
     const requestOrigin = request.nextUrl.origin || "";
     const origin = requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1")

@@ -544,6 +544,38 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section id="sayintentions" className="border-y border-white/8 bg-[rgba(5,20,40,0.92)] py-20 sm:py-24">
+        <div className="pw-container">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <div className="parallax-chip">Integracion recomendada</div>
+              <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+                SayIntentions.AI
+              </h2>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">
+                Integracion recomendada para operaciones inmersivas con ATC, copiloto, cabina y despacho virtual.
+                Patagonia Wings prepara contexto operacional del vuelo para asistir al piloto durante toda la operacion.
+              </p>
+              <a
+                href="https://sayintentions.ai"
+                target="_blank"
+                rel="noreferrer"
+                className="button-primary mt-8 inline-flex"
+              >
+                Conocer SayIntentions
+              </a>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
+              <img
+                src="/partners/sayintentions-logo.png"
+                alt="SayIntentions.AI"
+                className="mx-auto h-auto w-full max-w-[380px] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   );
 }
