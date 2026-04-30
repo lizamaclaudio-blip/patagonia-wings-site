@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient, hasSupabaseServiceRoleKey } from "@/lib/supabase/server";
 
 type RouteSuggestionRow = {
   id: string;
@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "origin y destination son obligatorios." }, { status: 400 });
     }
 
-    const supabase = createSupabaseAdminClient();
+    const canWriteLearning = hasSupabaseServiceRoleKey();
+    const supabase = canWriteLearning ? createSupabaseAdminClient() : createSupabaseServerClient();
     const strategies: Array<{
       flightLevel: string | null;
       aircraftType: string | null;
@@ -103,14 +104,18 @@ export async function POST(request: NextRequest) {
 
     const cleaned = cleanRoute(selected.route_text, origin, destination);
 
-    const nowIso = new Date().toISOString();
-    void supabase
-      .from("dispatch_route_suggestions")
-      .update({
-        usage_count: Math.max(0, selected.usage_count ?? 0) + 1,
-        last_used_at: nowIso,
-      })
-      .eq("id", selected.id);
+    if (canWriteLearning) {
+      const nowIso = new Date().toISOString();
+      void supabase
+        .from("dispatch_route_suggestions")
+        .update({
+          usage_count: Math.max(0, selected.usage_count ?? 0) + 1,
+          last_used_at: nowIso,
+        })
+        .eq("id", selected.id);
+    } else {
+      console.warn("[route-finder] route learning usage update skipped: missing service role");
+    }
 
     return NextResponse.json({
       route: cleaned || null,
@@ -122,11 +127,14 @@ export async function POST(request: NextRequest) {
       aircraftDisplayName: selected.aircraft_display_name ?? null,
       aircraftCategory: selected.aircraft_category ?? null,
       lastUsedAt: selected.last_used_at ?? null,
+      learningSaved: canWriteLearning,
+      learningReason: canWriteLearning ? null : "learning_skipped_missing_admin_key",
     });
   } catch (error) {
+    console.error("[route-finder] failed:", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "No se pudo buscar ruta interna.",
+        error: "No se pudo buscar ruta interna.",
       },
       { status: 500 }
     );

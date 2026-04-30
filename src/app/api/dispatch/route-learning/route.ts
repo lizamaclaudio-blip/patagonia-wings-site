@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, hasSupabaseServiceRoleKey } from "@/lib/supabase/server";
 
 function normalize(value: string | null | undefined) {
   return (value ?? "").trim().toUpperCase();
@@ -23,6 +23,14 @@ function cleanRoute(route: string, origin: string, destination: string, flightNu
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasSupabaseServiceRoleKey()) {
+      console.warn("[route-learning] skipped: missing service role");
+      return NextResponse.json(
+        { success: true, saved: false, reason: "learning_skipped_missing_admin_key" },
+        { status: 202 }
+      );
+    }
+
     const body = (await request.json()) as {
       origin?: string;
       destination?: string;
@@ -93,7 +101,7 @@ export async function POST(request: NextRequest) {
           usage_count: Math.max(0, existing.usage_count ?? 0) + 1,
         })
         .eq("id", existing.id);
-      return NextResponse.json({ ok: true, mode: "updated", route: routeText });
+      return NextResponse.json({ success: true, saved: true, mode: "updated", route: routeText });
     }
 
     await supabase
@@ -103,10 +111,11 @@ export async function POST(request: NextRequest) {
         usage_count: 1,
       });
 
-    return NextResponse.json({ ok: true, mode: "inserted", route: routeText });
+    return NextResponse.json({ success: true, saved: true, mode: "inserted", route: routeText });
   } catch (error) {
+    console.error("[route-learning] failed:", error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "No se pudo guardar aprendizaje de ruta." },
+      { success: false, saved: false, error: "No se pudo guardar aprendizaje de ruta." },
       { status: 500 }
     );
   }

@@ -25,6 +25,10 @@ export function createSupabaseAdminClient(): SupabaseClient {
   });
 }
 
+export function hasSupabaseServiceRoleKey(): boolean {
+  return Boolean(supabaseServiceRoleKey && supabaseServiceRoleKey.trim());
+}
+
 export function createSupabaseServerClient(accessToken?: string): SupabaseClient {
   assertServerEnv();
 

@@ -8020,11 +8020,13 @@ function DashboardWorkspace({
             aircraftType?: string | null;
             aircraftDisplayName?: string | null;
             aircraftRegistration?: string | null;
+            learningSaved?: boolean;
+            learningReason?: string | null;
           }
         | { error?: string };
 
       if (!response.ok || ("error" in data && typeof data.error === "string")) {
-        throw new Error("error" in data ? data.error || "No se pudo buscar ruta." : "No se pudo buscar ruta.");
+        throw new Error("No se pudo buscar ruta.");
       }
       if (!("route" in data)) {
         throw new Error("Respuesta inválida de route-finder.");
@@ -8047,8 +8049,11 @@ function DashboardWorkspace({
         aircraftRegistration: data.aircraftRegistration ?? null,
       });
       setSimbriefInfoMessage("Ruta sugerida por Patagonia Wings aplicada.");
+      if (data.learningSaved === false && data.learningReason === "learning_skipped_missing_admin_key") {
+        setSimbriefInfoMessage("Ruta sugerida. El aprendizaje automático se guardará cuando el servidor esté configurado.");
+      }
     } catch (error) {
-      setSimbriefErrorMessage(error instanceof Error ? error.message : "No se pudo buscar ruta.");
+      setSimbriefErrorMessage("No se pudo buscar ruta. Intenta nuevamente.");
     } finally {
       setSearchingDispatchRoute(false);
     }
@@ -8061,7 +8066,7 @@ function DashboardWorkspace({
   }) {
     if (!selectedAircraftRecord || !selectedItineraryRecord || !params.routeText.trim()) return;
     try {
-      await fetch("/api/dispatch/route-learning", {
+      const response = await fetch("/api/dispatch/route-learning", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -8083,6 +8088,18 @@ function DashboardWorkspace({
           },
         }),
       });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = (await response.json()) as
+        | { success?: boolean; saved?: boolean; reason?: string }
+        | null;
+
+      if (payload?.saved === false && payload.reason === "learning_skipped_missing_admin_key") {
+        setSimbriefInfoMessage("Ruta sugerida. El aprendizaje automático se guardará cuando el servidor esté configurado.");
+      }
     } catch {
       // non-blocking
     }
