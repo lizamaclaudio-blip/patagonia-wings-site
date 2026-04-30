@@ -14,10 +14,10 @@
     "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
     "packageUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
     "directDownloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "forceUpdate":  true,
+    "forceUpdate":  false,
     "mandatory":  true,
     "required":  true,
     "notes":  "- ACARS 7.0.11 consolidado: HUD MSFS, fuel, finalize manual PIREP y soporte operativo.`n- Integracion SayIntentions y persistencia de eventos closeout estabilizada.`n- Publicacion de installer real 7.0.11 con autoupdate y manifests sincronizados.",
     "releaseNotes":  "- ACARS 7.0.11 consolidado: HUD MSFS, fuel, finalize manual PIREP y soporte operativo.`n- Integracion SayIntentions y persistencia de eventos closeout estabilizada.`n- Publicacion de installer real 7.0.11 con autoupdate y manifests sincronizados.",
-    "releaseDate":  "2026-04-30T15:50:03.794Z"
+    "releaseDate":  "2026-04-30T15:54:14.086Z"
 }
