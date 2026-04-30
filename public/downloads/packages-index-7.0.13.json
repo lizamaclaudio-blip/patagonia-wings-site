@@ -1,0 +1,516 @@
+﻿{
+    "channel":  "stable",
+    "version":  "7.0.13",
+    "revision":  "2026.4.30.3",
+    "releaseDate":  "2026-04-30T18:07:21.173Z",
+    "totalFiles":  63,
+    "packages":  [
+                     {
+                         "path":  "AutoUpdater.NET.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AutoUpdater.NET.dll",
+                         "sha256":  "11ab2d5cb1e57491be88d7489747a33cb7241c7e4cdaec7392cfcb4b9aa8e42f",
+                         "size":  271872,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "fsuipcClient.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/fsuipcClient.dll",
+                         "sha256":  "71d2a84b0d9a72a6c4b6b19639bbe7ff4eb4aa94bb09565c9c784790e5f09824",
+                         "size":  629760,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "Microsoft.FlightSimulator.SimConnect.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Microsoft.FlightSimulator.SimConnect.dll",
+                         "sha256":  "4675b6129c00561126c3398c04fc33f27d52c05557cafd7cec4f319a26022fa4",
+                         "size":  152576,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "Newtonsoft.Json.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Newtonsoft.Json.dll",
+                         "sha256":  "f0c07af0e84d4dd4da4bd7823ba4535bc0481b3bf623ed40b659b68147a6bb75",
+                         "size":  721320,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "Newtonsoft.Json.xml",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Newtonsoft.Json.xml",
+                         "sha256":  "a9c6be122c118de22c72f9f9e5d9ef787492d24ad91d2c9c23b8d1f0e5f2ef3c",
+                         "size":  733577,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "NuGet.Versioning.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/NuGet.Versioning.dll",
+                         "sha256":  "f670a3c0d6d5241fa4b98d3f155eb149bf556f0e5f9c150ba4ab311a51195367",
+                         "size":  64544,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "NuGet.Versioning.xml",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/NuGet.Versioning.xml",
+                         "sha256":  "a20a9e6693183bac78311a28656d941fa1bddc395dd94f0fb5d03841a400e168",
+                         "size":  116281,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "PatagoniaWings.Acars.Core.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/PatagoniaWings.Acars.Core.dll",
+                         "sha256":  "14d86942358bd35b12bc7fa51c3ad5c2dd41fd787b81f17f31eeabdbd31553fb",
+                         "size":  494592,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "PatagoniaWings.Acars.Master.exe",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/PatagoniaWings.Acars.Master.exe",
+                         "sha256":  "92b3a0c01fbf62d2b6f2e143a9aa147e5fdd5b260f34ab8c3cf7c6dcaa82be63",
+                         "size":  6533632,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "PatagoniaWings.Acars.Master.exe.config",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/PatagoniaWings.Acars.Master.exe.config",
+                         "sha256":  "65aa8e3032f326568bc4c99640199a3fb9c680d313561c00ce228badd79531e0",
+                         "size":  2520,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "PatagoniaWings.Acars.SimConnect.dll",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/PatagoniaWings.Acars.SimConnect.dll",
+                         "sha256":  "5b85aaa2d8479f4acdd942a675d0b0553b4506934ae4c145acfa46698d2d9598",
+                         "size":  49152,
+                         "restartRequired":  true,
+                         "updateMode":  "restart"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A20N_FBW.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A20N_FBW.json",
+                         "sha256":  "7a6c5e32744dd1977c97eef7c2bc0814ce2fcf9c6abdb83f2f91ad902377d6de",
+                         "size":  1890,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A21N_LATINVFR.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A21N_LATINVFR.json",
+                         "sha256":  "372b8b0fb7109330a2056db7f8b8753c35586eed9d0dbe294946ce1ae2a563d4",
+                         "size":  1940,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A319_FENIX.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A319_FENIX.json",
+                         "sha256":  "120182cb290d5cec5eda463e517d6299be6fbe63ec1813fb7b620c93b4b82a6b",
+                         "size":  1857,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A319_LATINVFR.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A319_LATINVFR.json",
+                         "sha256":  "600dfa08cb515edfa10fe2448528aac1da27d48b58edaf5f4a414cccda294c43",
+                         "size":  1913,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A320_FENIX.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A320_FENIX.json",
+                         "sha256":  "ae00b00ec4a2c7cde22bf4bc60dac7723ffde5697a06f39ab37bd981b2ec6f68",
+                         "size":  1857,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A320_LATINVFR.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A320_LATINVFR.json",
+                         "sha256":  "9adf060dd723fae7697d18be42c98acf26fb25cc92e1bf30d7cedd1005bd5001",
+                         "size":  1913,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A321_FENIX.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A321_FENIX.json",
+                         "sha256":  "89a5ac4d0f75b5529da52ffe16f66d18b8e9e03ca6698518f7a98c188140076e",
+                         "size":  1857,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A339_HEADWIND.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A339_HEADWIND.json",
+                         "sha256":  "9707144860741eb79f27e6551728102cc34b3790612d68f3c14b780973b2cef1",
+                         "size":  1898,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/A359_INIBUILDS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/A359_INIBUILDS.json",
+                         "sha256":  "0a73c7bb0b9d1c05891ede4610cb6e4c4b5841452fceed8ea403f87bdca900ae",
+                         "size":  1885,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/ATR72_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/ATR72_MSFS.json",
+                         "sha256":  "b4288d281731450d22524bd5b03444346df63972c11d731b5fa9785600e925e5",
+                         "size":  1840,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B350_BLACKSQUARE.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B350_BLACKSQUARE.json",
+                         "sha256":  "e7ef45146a41a299bfc4da7037652cdc2628b126878bf7c84bacba916ab8536b",
+                         "size":  1526,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B350_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B350_MSFS.json",
+                         "sha256":  "cbcfde09b20a1ef18f5d0e9d5f0eacd4040a8d93aa83ff774543e267c76c8271",
+                         "size":  1853,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B38M_IFLY.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B38M_IFLY.json",
+                         "sha256":  "60f4202e2747bcbfc9dab95c2c597c54afd0821919b1b242e0f0f0c6832af9f6",
+                         "size":  1836,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B736_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B736_PMDG.json",
+                         "sha256":  "4731016c14ee4912441b45365d87597e5133b3d1305787448b374dab798dd49b",
+                         "size":  1806,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B737_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B737_PMDG.json",
+                         "sha256":  "e52813b42d93e1d486543a330e6f70d1ac651e618721e3131aa7e94339ecdf4b",
+                         "size":  1806,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B738_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B738_PMDG.json",
+                         "sha256":  "af07f0999cd6c19cfc23d32d31f1c540e56cb1757542560cec5d7f1d83da6af1",
+                         "size":  1806,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B739_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B739_PMDG.json",
+                         "sha256":  "f68b9844ee4140bde5695fe6ccd0b0f2edea1bad31976e1be2d135b47aeb850e",
+                         "size":  1806,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B748_SALTY.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B748_SALTY.json",
+                         "sha256":  "6c1af1634b9961c94e4c4cb77d0febd7aad612ff7596d7a71852b67c857d66ea",
+                         "size":  1874,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B772_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B772_PMDG.json",
+                         "sha256":  "ed4c2ecb8a7c72ea462f7702cb3dd66a5abfb8e07b1809e35b4747560acae29b",
+                         "size":  1786,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B77F_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B77F_PMDG.json",
+                         "sha256":  "69092d5b1ab7f8c570007d50784a14bbb60a5b68b91389972334287361b1dce8",
+                         "size":  1795,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B77W_PMDG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B77W_PMDG.json",
+                         "sha256":  "a2899a85eedffb019eeadf2b138e0879fc0a0f71652cfdba4313c0b0b8510050",
+                         "size":  1788,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B789_HORIZONS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B789_HORIZONS.json",
+                         "sha256":  "a99d9cb716460aa1ac28378e86c5b60c9ee264f623c086c1078b77e14c977a24",
+                         "size":  1828,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/B78X_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/B78X_MSFS.json",
+                         "sha256":  "42c0a78eff0406a5f67f893ef60d9ea279394f24b94cf7fd57da34ffea5a3abb",
+                         "size":  1824,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/BE58_BLACKSQUARE.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/BE58_BLACKSQUARE.json",
+                         "sha256":  "b76f5756b5cf830df7d5f1c8136428fe279ca808bb7b8cdcffeab8672dfcef2f",
+                         "size":  1880,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/BE58_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/BE58_MSFS.json",
+                         "sha256":  "832a6f2961c6967d10e7ce581b9c3be182553d412a11c355c715e5a0932bb206",
+                         "size":  1791,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/C172_ASOBO.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/C172_ASOBO.json",
+                         "sha256":  "5d13ecb13ed6c6a6a4cceb47926ce58d56c03938409c5a0e40c321c40cd7e2cf",
+                         "size":  1928,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/C208_BLACKSQUARE.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/C208_BLACKSQUARE.json",
+                         "sha256":  "f277305e94fb2a0094ce9c11ba759ee2380a96b9e5fbceb0c429c8ab50097a47",
+                         "size":  1890,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/C208_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/C208_MSFS.json",
+                         "sha256":  "927df3efc35af63db76aced819c95f27642d98dc4f8d44dd46c24c2d83d0ebf5",
+                         "size":  1852,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/DHC6_AEROSOFT.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/DHC6_AEROSOFT.json",
+                         "sha256":  "451cfd66d52781c6d2d6d9efa7161d8395e0f995c82b54bb1862e4fc66458512",
+                         "size":  1836,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/E170_FLIGHTSIM.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/E170_FLIGHTSIM.json",
+                         "sha256":  "5c0d1fe71ef25f7fc5c3cf757000e714dbf4b8896c5d453534355ffac9e35c81",
+                         "size":  1878,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/E175_FLIGHTSIM.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/E175_FLIGHTSIM.json",
+                         "sha256":  "19e635a11f75d433e68889c44a1ff3a59b34e942ebd37a2f5737538cb3cade5c",
+                         "size":  1878,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/E190_FLIGHTSIM.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/E190_FLIGHTSIM.json",
+                         "sha256":  "538049e06577409eb05ddd52a580adfe16da416d8abe2237bdc35fb7d2090866",
+                         "size":  1878,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/E195_FLIGHTSIM.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/E195_FLIGHTSIM.json",
+                         "sha256":  "26eeb6a310ec795ad650a95cfd0ff60044a3ae888550db584f5f8cd0572ee572",
+                         "size":  1878,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/manifest_patagonia_profiles.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/manifest_patagonia_profiles.json",
+                         "sha256":  "05e15b262d05cad78945159989908069b99acb24536c5875a83b4404978b1eca",
+                         "size":  842,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/MD82_MADDOG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/MD82_MADDOG.json",
+                         "sha256":  "985a58986870fcdcb1d5f7c49aa9959fa64655dbe7259b392e7a38ee85854c74",
+                         "size":  1827,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/MD83_MADDOG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/MD83_MADDOG.json",
+                         "sha256":  "8a3a2bb2c76a813df8bb6fa7f51fbc3392bb5f89d17a0a49a19547bec3ee4944",
+                         "size":  1827,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/MD88_MADDOG.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/MD88_MADDOG.json",
+                         "sha256":  "e05bfc1eb26673f3061fa4047df65124fe97f478f60fec02053ea50295a0976b",
+                         "size":  1827,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/MSFS_NATIVE.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/MSFS_NATIVE.json",
+                         "sha256":  "87afe11af40882a2ceeede643b29f0796037267b758d0c7e208ba0b5cbb09697",
+                         "size":  1391,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/SU95_HEADWIND.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/SU95_HEADWIND.json",
+                         "sha256":  "439bf70aeda5ff70f85a7306a30c17f53b21eb9c7a97ad26dc2491d1b69669be",
+                         "size":  1841,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "AircraftProfiles/TBM9_MSFS.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/AircraftProfiles/TBM9_MSFS.json",
+                         "sha256":  "69877dfb0ff8abac0604f78ea2ab9bfdb3cd514d3c9753a942b5f8ef173217c3",
+                         "size":  1836,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Pilot/pilot-avatar.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Pilot/pilot-avatar.png",
+                         "sha256":  "d6706132a4d5dbac200735ddca4e491a14f756961d8a71480a24f3799c27398f",
+                         "size":  18839,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/cadet-school.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/cadet-school.png",
+                         "sha256":  "eea378aa4de72c9e86959a3e6a86b960fd54206504f747807bcc4d81fe935f15",
+                         "size":  196775,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/captain.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/captain.png",
+                         "sha256":  "0906e71e329755b5d79aa5749a671ac250af36c820ceccbdc423db39dfea2c1a",
+                         "size":  291584,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/first-officer.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/first-officer.png",
+                         "sha256":  "859bc4496e631e3cd033340a9d0cff985c182e8bd495310c170fd7ac092245c9",
+                         "size":  265475,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/international-commander.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/international-commander.png",
+                         "sha256":  "15ad83874b239dfae09d72a9db30c0570b3937b487206f5380508f4f86556894",
+                         "size":  289747,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/junior-captain.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/junior-captain.png",
+                         "sha256":  "98387daf616900abbcdb9d88fe5a19c8c23944f329327ce9bb0e9ca4d872beaa",
+                         "size":  300786,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/junior-first-officer.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/junior-first-officer.png",
+                         "sha256":  "4eb515e8361420397d66c6e26a36b7104faf598fe96d736d4962fe0562273f89",
+                         "size":  278262,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/line-check-captain.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/line-check-captain.png",
+                         "sha256":  "39ce648a0aeb71fbcb805cdb6638aa51ba197a31030f0f1d40d9d0dfdf8504aa",
+                         "size":  304078,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/second-officer.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/second-officer.png",
+                         "sha256":  "89aa7c81390f9fd849c9619dc7c9955d13c772ce566f81495d7b03d381313784",
+                         "size":  287158,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/senior-captain.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/senior-captain.png",
+                         "sha256":  "d4de21c69c84069e4e1b80cc8e837034012a5a7d8a7ef0cae47f6bc14591af32",
+                         "size":  297201,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Ranks/senior-first-officer.png",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Ranks/senior-first-officer.png",
+                         "sha256":  "29a31df529edd494b870c4a27a55c0832c3def5df6272603615958a3c7b5789d",
+                         "size":  289693,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     },
+                     {
+                         "path":  "Assets/Rules/patagonia-rules.json",
+                         "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/stable/7.0.13/2026.4.30.3/files/Assets/Rules/patagonia-rules.json",
+                         "sha256":  "99a289028f5739b1b705fba8234de7f507ac95cbc5108a7008816da3a009da1a",
+                         "size":  14441,
+                         "restartRequired":  false,
+                         "updateMode":  "hot"
+                     }
+                 ],
+    "deleted":  [
+
+                ]
+}

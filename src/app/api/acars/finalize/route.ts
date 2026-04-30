@@ -43,22 +43,71 @@ export async function POST(request: NextRequest) {
     }
 
     const context = await loadReservationContext(accessToken, reservationId);
-    const result = await persistOfficialCloseout({
-      accessToken,
-      user: context.user,
-      profile: context.profile,
-      reservation: context.reservation,
-      dispatchPackage: context.dispatchPackage,
-      aircraft: context.aircraft,
-      aircraftCondition: context.aircraftCondition,
-      activeFlight: payload.activeFlight ?? null,
-      preparedDispatch: payload.preparedDispatch ?? null,
-      report: payload.report ?? null,
-      telemetryLog: payload.telemetryLog ?? [],
-      lastSimData: payload.lastSimData ?? null,
-      damageEvents: payload.damageEvents ?? [],
-      closeoutPayload: payload.closeoutPayload ?? null,
-    });
+    let fallbackWarnings: string[] = [];
+    const result = await (async () => {
+      try {
+        return await persistOfficialCloseout({
+          accessToken,
+          user: context.user,
+          profile: context.profile,
+          reservation: context.reservation,
+          dispatchPackage: context.dispatchPackage,
+          aircraft: context.aircraft,
+          aircraftCondition: context.aircraftCondition,
+          activeFlight: payload.activeFlight ?? null,
+          preparedDispatch: payload.preparedDispatch ?? null,
+          report: payload.report ?? null,
+          telemetryLog: payload.telemetryLog ?? [],
+          lastSimData: payload.lastSimData ?? null,
+          damageEvents: payload.damageEvents ?? [],
+          closeoutPayload: payload.closeoutPayload ?? null,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "finalize_failed";
+        if (message.includes("SUPABASE_SERVICE_ROLE_KEY")) {
+          fallbackWarnings = ["degraded_finalize_missing_service_role_key"];
+          const closeoutStatus = payload.report?.remarks?.toLowerCase().includes("closeout:crashed") ? "crashed" : "completed";
+          const now = new Date().toISOString();
+          const supabase = context.supabase;
+          await supabase
+            .from("flight_reservations")
+            .update({
+              status: closeoutStatus,
+              completed_at: now,
+              updated_at: now,
+            })
+            .eq("id", reservationId);
+
+          await supabase
+            .from("dispatch_packages")
+            .update({
+              dispatch_status: closeoutStatus,
+              updated_at: now,
+            })
+            .eq("reservation_id", reservationId);
+
+          return {
+            official: {
+              finalStatus: closeoutStatus,
+              procedureScore: 0,
+              missionScore: 0,
+              safetyScore: 0,
+              efficiencyScore: 0,
+              finalScore: 0,
+              scoringStatus: "manual_review",
+            },
+            resultUrl: `/flights/${reservationId}`,
+            reservation: {
+              ...(context.reservation ?? {}),
+              status: closeoutStatus,
+              id: reservationId,
+            },
+          } as const;
+        }
+
+        throw error;
+      }
+    })();
 
     const sayIntentionsConfig = getSayIntentionsServerConfig();
     if (sayIntentionsConfig.enabled && sayIntentionsConfig.vaApiKeyPresent) {
@@ -92,22 +141,57 @@ export async function POST(request: NextRequest) {
     const origin = requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1")
       ? "https://www.patagoniaw.com"
       : (requestOrigin || "https://www.patagoniaw.com");
+
+    const { data: reservationCheck, error: reservationCheckError } = await context.supabase
+      .from("flight_reservations")
+      .select("id,status")
+      .eq("id", reservationId)
+      .maybeSingle();
+
+    const persisted = !reservationCheckError && Boolean(reservationCheck?.id);
+    const normalizedStatus = String(reservationCheck?.status ?? "").trim().toLowerCase();
+    const activeStatuses = new Set(["reserved", "in_progress", "in_flight", "dispatched", "dispatch_ready"]);
+    const reservationClosed = persisted && !activeStatuses.has(normalizedStatus);
     const summaryPath = result.resultUrl || `/flights/${reservationId}`;
     const summaryUrl = summaryPath.startsWith("http://") || summaryPath.startsWith("https://")
       ? summaryPath
       : `${origin}${summaryPath.startsWith("/") ? "" : "/"}${summaryPath}`;
+    const summaryUrlValid = /^https?:\/\//i.test(summaryUrl);
+
+    if (!persisted || !reservationClosed || !summaryUrlValid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          success: false,
+          persisted,
+          reservationClosed,
+          reservationId,
+          status: normalizedStatus || result.official.finalStatus,
+          summaryUrl: summaryUrlValid ? summaryUrl : null,
+          resultStatus: normalizedStatus || result.official.finalStatus,
+          warnings: [
+            ...fallbackWarnings,
+            !persisted ? "reservation_not_persisted" : null,
+            !reservationClosed ? "reservation_not_closed" : null,
+            !summaryUrlValid ? "summary_url_invalid" : null,
+          ].filter(Boolean),
+          error: !reservationClosed ? "reservation_not_closed" : "finalize_not_confirmed",
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       ok: true,
       success: true,
-      reservationClosed: true,
-      persisted: true,
+      reservationClosed,
+      persisted,
       reservationId,
-      status: result.official.finalStatus,
+      status: normalizedStatus || result.official.finalStatus,
       summaryUrl,
-      resultStatus: result.official.finalStatus,
+      resultStatus: normalizedStatus || result.official.finalStatus,
       resultUrl: summaryUrl,
-      warnings: [],
+      warnings: fallbackWarnings,
       officialScores: {
         procedure_score: result.official.procedureScore,
         mission_score: result.official.missionScore,
