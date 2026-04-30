@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       success: true,
+      reservationClosed: true,
       reservationId,
       status: result.official.finalStatus,
       summaryUrl,

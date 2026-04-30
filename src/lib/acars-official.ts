@@ -1061,7 +1061,9 @@ export async function persistOfficialCloseout(params: {
     max_speed_kts: official.maxSpeedKts,
   };
 
-  const { data: updatedReservation, error: reservationError } = await supabase
+  // Admin client bypasses RLS and is required for the authoritative status update.
+  // scoring_status: 'manual_review' is now valid per migration fix_scoring_status_check_constraint.
+  const { data: updatedReservation, error: reservationError } = await accountingSupabase
     .from("flight_reservations")
     .update({
       status: official.finalStatus,
