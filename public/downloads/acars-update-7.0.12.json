@@ -18,8 +18,8 @@
     "releaseDate":  "2026-04-30",
     "minVersion":  "1.0.0",
     "fileName":  "PatagoniaWingsACARSSetup.exe",
-    "size":  30182805,
+    "size":  30179932,
     "fileSize":  "28.8 MB",
-    "checksumSha256":  "A81275DDF8161E24DD91D223FA27BE0AD00617D47FA037C2E9BD8510E68B4677",
+    "checksumSha256":  "0D4AC499520F3C49582A15E1E098528675420CCD89CBF694CC7482E4BBBC3D87",
     "storageProvider":  "supabase"
 }
