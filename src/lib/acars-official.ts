@@ -277,6 +277,34 @@ function extractXmlText(xml: string, tag: string) {
   return match ? asText(match[1]) : "";
 }
 
+function extractPirepLogEvents(rawXml: string) {
+  if (!rawXml) return [] as Array<Record<string, unknown>>;
+  const logMatches = [...rawXml.matchAll(/<Log>([\s\S]*?)<\/Log>/gi)];
+  if (!logMatches.length) return [] as Array<Record<string, unknown>>;
+
+  const events: Array<Record<string, unknown>> = [];
+  const pushLogEvent = (code: string, stage: string, severity: string, detail: string) => {
+    events.push(buildEvent(code, stage, severity, detail, { source: "pirep_raw_log" }));
+  };
+
+  for (const match of logMatches) {
+    const line = asText(match[1]);
+    if (!line || line.toUpperCase().includes("EVENT") || line.toUpperCase().includes("LATITUDE")) {
+      continue;
+    }
+
+    const normalized = line.toUpperCase();
+    if (normalized.includes(" START")) pushLogEvent("RAW_START", "preflight", "info", "Inicio de sesión de vuelo detectado en PIREP RAW.");
+    if (normalized.includes(" STOP")) pushLogEvent("RAW_STOP", "shutdown", "info", "Cierre de sesión de vuelo detectado en PIREP RAW.");
+    if (normalized.includes(" SQUAWK")) pushLogEvent("RAW_SQUAWK", "cruise", "info", "Evento de transponder detectado en PIREP RAW.");
+    if (normalized.includes(" TAKEOFF")) pushLogEvent("RAW_TAKEOFF", "takeoff", "info", "Evento de despegue detectado en PIREP RAW.");
+    if (normalized.includes(" LANDING")) pushLogEvent("RAW_LANDING", "landing", "info", "Evento de aterrizaje detectado en PIREP RAW.");
+    if (normalized.includes(" CRASH")) pushLogEvent("RAW_CRASH", "landing", "critical", "Evento de impacto detectado en PIREP RAW.");
+  }
+
+  return events;
+}
+
 function buildEvaluatedPirepXml(rawXml: string, official: OfficialScoringResult, reservationId: string) {
   const sourceXml = rawXml || "<PIREP />";
   const evaluatedBlock = [
@@ -615,6 +643,7 @@ export function evaluateOfficialCloseout(params: {
   const rawPirepXml = asText(closeoutPayload?.pirepXmlContent);
   const rawPirepFileName = asText(closeoutPayload?.pirepFileName);
   const rawPirepChecksum = asText(closeoutPayload?.pirepChecksumSha256);
+  const rawLogEvents = extractPirepLogEvents(rawPirepXml);
   const stages = buildStageBreakdown(samples);
   const damageSummary = summarizeDamage(damageEvents);
   const penalties: Array<Record<string, unknown>> = [];
@@ -963,6 +992,9 @@ export function evaluateOfficialCloseout(params: {
       )
     )
   );
+  if (rawLogEvents.length) {
+    events.push(...rawLogEvents);
+  }
 
   return {
     finalStatus,

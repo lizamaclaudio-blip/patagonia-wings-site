@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          api_key: process.env.SAYINTENTIONS_VA_API_KEY,
+          api_key: sayIntentionsConfig.vaApiKey,
           reservation_id: reservationId,
           flight_number: payload.activeFlight?.flightNumber ?? payload.report?.flightNumber ?? null,
           dep: payload.activeFlight?.departureIcao ?? payload.preparedDispatch?.departureIcao ?? payload.report?.departureIcao ?? null,
@@ -101,11 +101,13 @@ export async function POST(request: NextRequest) {
       ok: true,
       success: true,
       reservationClosed: true,
+      persisted: true,
       reservationId,
       status: result.official.finalStatus,
       summaryUrl,
       resultStatus: result.official.finalStatus,
       resultUrl: summaryUrl,
+      warnings: [],
       officialScores: {
         procedure_score: result.official.procedureScore,
         mission_score: result.official.missionScore,
@@ -117,8 +119,13 @@ export async function POST(request: NextRequest) {
       reservation: result.reservation,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo cerrar el vuelo oficialmente.";
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "No se pudo cerrar el vuelo oficialmente." },
+      {
+        success: false,
+        reservationClosed: false,
+        error: message === "reservation_not_closed" ? "reservation_not_closed" : message,
+      },
       { status: 500 }
     );
   }

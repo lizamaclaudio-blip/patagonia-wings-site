@@ -25,9 +25,14 @@ export const DEFAULT_SAYINTENTIONS_SETTINGS: Required<SayIntentionsSettingsInput
 };
 
 export function getSayIntentionsServerConfig() {
+  const vaApiKey =
+    process.env.SAYINTENTIONS_VA_LINK_API_KEY?.trim() ||
+    process.env.SAYINTENTIONS_VA_API_KEY?.trim() ||
+    "";
   return {
     enabled: String(process.env.SAYINTENTIONS_ENABLED ?? "false").toLowerCase() === "true",
-    vaApiKeyPresent: Boolean(process.env.SAYINTENTIONS_VA_API_KEY?.trim()),
+    vaApiKeyPresent: Boolean(vaApiKey),
+    vaApiKey,
     baseUrl: process.env.SAYINTENTIONS_SAPI_BASE_URL?.trim() || "https://apipri.sayintentions.ai/sapi",
   };
 }
