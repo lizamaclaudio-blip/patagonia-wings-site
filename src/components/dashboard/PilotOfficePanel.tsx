@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/browser";
+import { AcarsLiveLogPanel } from "./AcarsLiveLogPanel";
 import {
   AIRCRAFT_LICENSE_REQUIREMENTS,
   CAREER_RANKS,
@@ -958,6 +959,17 @@ export default function PilotOfficePanel({
           </SurfaceCard>
         </div>
       ) : null}
+
+      {activeOfficeTab === "summary" && activeReservation?.id && (
+        <AcarsLiveLogPanel
+          reservationId={activeReservation.id}
+          isActive={
+            activeReservation.status === "in_progress" ||
+            activeReservation.status === "in_flight" ||
+            activeReservation.status === "confirmed"
+          }
+        />
+      )}
 
       {activeOfficeTab === "theory" ? (
         <SurfaceCard>
