@@ -668,12 +668,12 @@ function FlightResultContent() {
               {[
                 { label: "Fuel (kg)", value: `${Math.round(asNumber(plannedSnapshot?.fuel_kg_estimated)) || 0} / ${Math.round(asNumber(actualSnapshot?.fuel_kg_actual)) || 0}` },
                 { label: "Block", value: `${formatMinutes(asNumber(plannedSnapshot?.block_minutes_estimated))} / ${formatMinutes(asNumber(actualSnapshot?.block_minutes_actual) || reservation?.actual_block_minutes)}` },
-                { label: "Ingresos USD", value: `${plannedRevenue ? `$${plannedRevenue.toFixed(0)}` : "Pendiente"} / ${actualRevenue ? `$${actualRevenue.toFixed(0)}` : "Pendiente"}` },
-                { label: "Costos USD", value: `${asNumber(plannedSnapshot?.total_cost_usd) ? `$${asNumber(plannedSnapshot?.total_cost_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.total_cost_usd) ? `$${asNumber(actualSnapshot?.total_cost_usd).toFixed(0)}` : "Pendiente"}` },
-                { label: "Utilidad USD", value: `${asNumber(plannedSnapshot?.net_profit_usd) ? `$${asNumber(plannedSnapshot?.net_profit_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.net_profit_usd) ? `$${asNumber(actualSnapshot?.net_profit_usd).toFixed(0)}` : "Pendiente"}` },
-                { label: "Comisión USD", value: `${asNumber(plannedSnapshot?.pilot_payment_usd) ? `$${asNumber(plannedSnapshot?.pilot_payment_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd) ? `$${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd).toFixed(0)}` : "Pendiente"}` },
-                { label: "Ventas a bordo", value: `${asNumber(plannedSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Pendiente"}` },
-                { label: "Servicio a bordo", value: `${asNumber(plannedSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Pendiente"} / ${asNumber(actualSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Pendiente"}` },
+                { label: "Ingresos USD", value: `${plannedRevenue ? `$${plannedRevenue.toFixed(0)}` : "Sin datos recibidos"} / ${actualRevenue ? `$${actualRevenue.toFixed(0)}` : "Sin datos recibidos"}` },
+                { label: "Costos USD", value: `${asNumber(plannedSnapshot?.total_cost_usd) ? `$${asNumber(plannedSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.total_cost_usd) ? `$${asNumber(actualSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                { label: "Utilidad USD", value: `${asNumber(plannedSnapshot?.net_profit_usd) ? `$${asNumber(plannedSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.net_profit_usd) ? `$${asNumber(actualSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                { label: "Comisión USD", value: `${asNumber(plannedSnapshot?.pilot_payment_usd) ? `$${asNumber(plannedSnapshot?.pilot_payment_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd) ? `$${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                { label: "Ventas a bordo", value: `${asNumber(plannedSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                { label: "Servicio a bordo", value: `${asNumber(plannedSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
               ].map((item) => (
                 <div key={item.label} className="surface-outline rounded-[22px] px-5 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">{item.label}</p>
@@ -682,9 +682,9 @@ function FlightResultContent() {
               ))}
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Snapshot: {actualSnapshot ? "Creado" : "Pendiente"}</p>
-              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Ledger: {hasLedgerEntry ? "Creado" : "Pendiente"}</p>
-              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary acumulado: {hasSalaryEntry ? "Sí" : "Pendiente"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Snapshot: {actualSnapshot ? "Creado" : "Sin datos recibidos"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Ledger: {hasLedgerEntry ? "Creado" : "Sin datos recibidos"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary acumulado: {hasSalaryEntry ? "Sí" : "No devengado o sin consolidación"}</p>
             </div>
             <p className="mt-3 text-sm text-white/66">
               {asText(actualMeta.onboard_quality_reason) || "Sin motivo operacional adicional para ajuste de ventas/servicio."}

@@ -19,5 +19,5 @@
     "required":  true,
     "notes":  "- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.\n- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.\n- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.",
     "releaseNotes":  "- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.\n- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.\n- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.",
-    "releaseDate":  "2026-04-29T21:40:09.578Z"
+    "releaseDate":  "2026-04-30T02:14:14.315Z"
 }

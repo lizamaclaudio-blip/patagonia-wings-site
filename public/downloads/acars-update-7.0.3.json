@@ -15,7 +15,7 @@
     "revision":  "2026.4.29.5",
     "notes":  "- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.\n- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.\n- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.",
     "releaseNotes":  "- ACARS 7.0.3 con HUD MSFS in-game (paquete HTML/JS/CSS) y bridge local 127.0.0.1.\n- Finalize requiere confirmacion server-side real y abre summaryUrl oficial tras cierre exitoso.\n- Autoupdate universal reforzado para actualizar cualquier version legacy hacia 7.0.3.",
-    "releaseDate":  "2026-04-29",
+    "releaseDate":  "2026-04-30",
     "minVersion":  "1.0.0",
     "fileName":  "PatagoniaWingsACARSSetup.exe",
     "size":  30168574,
