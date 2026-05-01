@@ -183,12 +183,16 @@ type StageName =
 
 type OfficialScoringResult = {
   finalStatus: OfficialFlightStatus;
+  evaluationStatus: "evaluable" | "no_evaluable";
+  economyEligible: boolean;
+  evidenceWarnings: string[];
+  evidenceSnapshot: Record<string, unknown>;
   procedureScore: number;
   missionScore: number;
   safetyScore: number;
   efficiencyScore: number;
   finalScore: number;
-  scoringStatus: "scored" | "manual_review";
+  scoringStatus: "scored" | "manual_review" | "pending_server_closeout";
   penaltiesJson: Array<Record<string, unknown>>;
   eventsJson: Array<Record<string, unknown>>;
   stageBreakdownJson: Record<StageName, Record<string, unknown>>;
@@ -649,6 +653,7 @@ export function evaluateOfficialCloseout(params: {
   const penalties: Array<Record<string, unknown>> = [];
   const events: Array<Record<string, unknown>> = [];
   const manualReviewReasons: string[] = [];
+  const evidenceWarnings: string[] = [];
 
   let procedureScore = 100;
   let missionScore = 100;
@@ -665,6 +670,34 @@ export function evaluateOfficialCloseout(params: {
   const routeMismatch =
     normalizeIcao(reservation.origin_ident) !== normalizeIcao(activeFlight?.departureIcao ?? preparedDispatch?.departureIcao ?? report?.departureIcao) ||
     normalizeIcao(reservation.destination_ident) !== normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? report?.arrivalIcao);
+
+  const reservationId = asText(reservation.id);
+  const hasReservationId = reservationId.length > 0;
+  const hasCloseoutPayload = Boolean(closeoutPayload) || rawPirepXml.length > 0;
+  const telemetrySamples = samples.length;
+  const airborneSamples = samples.filter((sample) => !asBoolean(sample.onGround)).length;
+  const hasTelemetryEvidence = telemetrySamples >= 4;
+  const hasElapsedByReport = Math.max(0, Math.round((new Date(asText(report?.arrivalTime)).getTime() - new Date(asText(report?.departureTime)).getTime()) / 1000));
+  const hasElapsedBySamples = telemetrySamples >= 2
+    ? Math.max(0, Math.round((new Date(asText(samples.at(-1)?.capturedAtUtc)).getTime() - new Date(asText(samples[0]?.capturedAtUtc)).getTime()) / 1000))
+    : 0;
+  const elapsedSeconds = Math.max(hasElapsedByReport, hasElapsedBySamples);
+  const minimumElapsedSeconds = 120;
+  const hasElapsedEvidence = elapsedSeconds >= minimumElapsedSeconds;
+  const reportDistanceNm = Math.max(0, asNumber(report?.distance), asNumber(reservation.distance_nm));
+  const hasAirborneEvidence = airborneSamples > 0 || stages.takeoff.reached || stages.landing.reached;
+  const hasMovementEvidence = reportDistanceNm > 1 || hasAirborneEvidence;
+  const invalidAcarsCloseoutStatuses = new Set(["queued_retry", "pending", "pending_sync", "retry_pending", "error", "failed"]);
+  const closeoutStatusCompatible = requestedCloseoutStatus.length === 0 || !invalidAcarsCloseoutStatuses.has(requestedCloseoutStatus);
+
+  if (!hasReservationId) evidenceWarnings.push("missing_reservation_id");
+  if (!hasCloseoutPayload) evidenceWarnings.push("missing_closeout_payload");
+  if (!hasTelemetryEvidence) evidenceWarnings.push("no_measured_data");
+  if (!hasElapsedEvidence) evidenceWarnings.push("no_elapsed_time");
+  if (!hasMovementEvidence) evidenceWarnings.push("no_airborne_evidence");
+  if (!closeoutStatusCompatible) evidenceWarnings.push("closeout_status_not_compatible");
+
+  const evidenceOk = evidenceWarnings.length === 0;
 
   if (routeMismatch) {
     missionScore -= 20;
@@ -864,6 +897,11 @@ export function evaluateOfficialCloseout(params: {
     manualReviewReasons.push("missing_telemetry");
   }
 
+  if (!evidenceOk) {
+    finalStatus = "manual_review";
+    manualReviewReasons.push("insufficient_flight_evidence");
+  }
+
   if (finalStatus === "manual_review" || manualReviewReasons.length > 0) {
     safetyScore -= 10;
   }
@@ -938,7 +976,11 @@ export function evaluateOfficialCloseout(params: {
           : null,
   };
 
-  const scoringStatus = finalStatus === "manual_review" || manualReviewReasons.length > 0 ? "manual_review" : "scored";
+  const evaluationStatus: "evaluable" | "no_evaluable" = evidenceOk ? "evaluable" : "no_evaluable";
+  const scoringStatus = evaluationStatus === "no_evaluable"
+    ? "pending_server_closeout"
+    : (finalStatus === "manual_review" || manualReviewReasons.length > 0 ? "manual_review" : "scored");
+  const economyEligible = finalStatus === "completed" && evaluationStatus === "evaluable";
   const finalScore = clamp(
     procedureScore * 0.35 + missionScore * 0.25 + safetyScore * 0.25 + efficiencyScore * 0.15,
     0,
@@ -962,6 +1004,8 @@ export function evaluateOfficialCloseout(params: {
     fuel_used_kg: Math.round(fuelUsedKg),
     final_score: finalScore,
     scoring_status: scoringStatus,
+    evaluation_status: evaluationStatus,
+    economy_eligible: economyEligible,
   };
 
   if (rawPirepFileName) officialPirep["pirep_file_name"] = rawPirepFileName;
@@ -998,6 +1042,19 @@ export function evaluateOfficialCloseout(params: {
 
   return {
     finalStatus,
+    evaluationStatus,
+    economyEligible,
+    evidenceWarnings,
+    evidenceSnapshot: {
+      reservation_id: reservationId,
+      telemetry_samples: telemetrySamples,
+      airborne_samples: airborneSamples,
+      elapsed_seconds: elapsedSeconds,
+      minimum_elapsed_seconds: minimumElapsedSeconds,
+      distance_nm: reportDistanceNm,
+      closeout_status: requestedCloseoutStatus,
+      has_closeout_payload: hasCloseoutPayload,
+    },
     procedureScore: clamp(procedureScore, 0, 100),
     missionScore: clamp(missionScore, 0, 100),
     safetyScore: clamp(safetyScore, 0, 100),
@@ -1084,6 +1141,10 @@ export async function persistOfficialCloseout(params: {
     final_score: official.finalScore,
     scoring_status: official.scoringStatus,
     manual_review_reasons: official.manualReviewReasons,
+    evaluation_status: official.evaluationStatus,
+    economy_eligible: official.economyEligible,
+    closeout_warnings: official.evidenceWarnings,
+    closeout_evidence: official.evidenceSnapshot,
     fuel_start_kg: official.fuelStartKg,
     fuel_end_kg: official.fuelEndKg,
     fuel_used_kg: official.fuelUsedKg,
@@ -1141,7 +1202,10 @@ export async function persistOfficialCloseout(params: {
   // Commission payment on completed flights
   let commissionUsd = 0;
   let damageDeductionUsd = 0;
-  if (official.finalStatus === "completed") {
+  let salaryAccrued = false;
+  let ledgerWritten = false;
+
+  if (official.economyEligible) {
     const distanceNm = asNumber(params.reservation.distance_nm ?? params.report?.distance ?? 0);
     const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
     const flightModeCode = asText(params.reservation.flight_mode_code ?? params.activeFlight?.flightModeCode ?? "CAREER");
@@ -1284,7 +1348,7 @@ export async function persistOfficialCloseout(params: {
 
   // ── Economy: realistic per-flight accounting and metrics ─────────────────────
   const distanceNm = asNumber(params.report?.distance ?? 0);
-  if (official.finalStatus === "completed") {
+  if (official.economyEligible) {
     const aircraftTypeCode = asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode);
     const originIcao = normalizeIcao(params.reservation.origin_ident);
     const destinationIcao = normalizeIcao(params.reservation.destination_ident);
@@ -1427,6 +1491,7 @@ export async function persistOfficialCloseout(params: {
       await maybeDeleteByReservationId("airline_ledger", reservationId);
       await maybeInsert("airline_ledger", ledgerEntries);
       await maybeRecalculateAirlineBalance(airlineId);
+      ledgerWritten = true;
     }
     // ── Monthly payroll ledger entry ───────────────────────────────────────────
     if (!rewardsAlreadyApplied) {
@@ -1468,6 +1533,7 @@ export async function persistOfficialCloseout(params: {
           status: "pending",
         });
       }
+      salaryAccrued = true;
     }
 
     const economyAccountingPayload = {
@@ -1489,11 +1555,45 @@ export async function persistOfficialCloseout(params: {
       .from("flight_reservations")
       .update({ score_payload: economyAccountingPayload })
       .eq("id", reservationId);
+  } else {
+    const noEvaluableSnapshot = {
+      reservation_id: reservationId,
+      flight_number: asText(params.activeFlight?.flightNumber ?? params.report?.flightNumber ?? params.reservation.route_code),
+      pilot_id: params.user.id,
+      pilot_callsign: asText(params.profile.callsign),
+      aircraft_id: asText(params.reservation.aircraft_id ?? params.activeFlight?.aircraftId) || null,
+      aircraft_registration: asText(params.reservation.aircraft_registration),
+      aircraft_type: asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode),
+      operation_type: asText(params.preparedDispatch?.flightMode ?? params.activeFlight?.flightModeCode ?? params.reservation.flight_mode_code ?? "CAREER"),
+      origin_icao: normalizeIcao(params.reservation.origin_ident),
+      destination_icao: normalizeIcao(params.reservation.destination_ident),
+      distance_nm: distanceNm > 0 ? distanceNm : null,
+      block_minutes_estimated: asNumber(params.preparedDispatch?.scheduledBlockMinutes ?? params.preparedDispatch?.expectedBlockP50Minutes ?? 0),
+      block_minutes_actual: official.actualBlockMinutes,
+      fuel_kg_actual: official.fuelUsedKg,
+      pilot_payment_usd: 0,
+      total_cost_usd: 0,
+      net_profit_usd: 0,
+      economy_source: "actual",
+      created_at: nowIso,
+      metadata: {
+        evaluation_status: official.evaluationStatus,
+        economy_eligible: false,
+        closeout_warnings: official.evidenceWarnings,
+        closeout_evidence: official.evidenceSnapshot,
+      },
+    };
+    await maybeUpsertReservationRow("flight_economy_snapshots", reservationId, noEvaluableSnapshot);
   }
 
   return {
     reservation: updatedReservation as GenericRow,
     official,
+    evaluationStatus: official.evaluationStatus,
+    economyEligible: official.economyEligible,
+    salaryAccrued,
+    ledgerWritten,
+    warnings: official.evidenceWarnings,
     resultUrl: `/flights/${reservationId}`,
   };
 }

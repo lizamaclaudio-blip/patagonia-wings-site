@@ -66,13 +66,14 @@ export async function POST(request: NextRequest) {
         const message = error instanceof Error ? error.message : "finalize_failed";
         if (message.includes("SUPABASE_SERVICE_ROLE_KEY")) {
           fallbackWarnings = ["degraded_finalize_missing_service_role_key"];
-          const closeoutStatus = payload.report?.remarks?.toLowerCase().includes("closeout:crashed") ? "crashed" : "completed";
+          const closeoutStatus = payload.report?.remarks?.toLowerCase().includes("closeout:crashed") ? "crashed" : "manual_review";
           const now = new Date().toISOString();
           const supabase = context.supabase;
           await supabase
             .from("flight_reservations")
             .update({
               status: closeoutStatus,
+              scoring_status: "pending_server_closeout",
               completed_at: now,
               updated_at: now,
             })
@@ -94,8 +95,13 @@ export async function POST(request: NextRequest) {
               safetyScore: 0,
               efficiencyScore: 0,
               finalScore: 0,
-              scoringStatus: "manual_review",
+              scoringStatus: "pending_server_closeout",
             },
+            evaluationStatus: "no_evaluable",
+            economyEligible: false,
+            salaryAccrued: false,
+            ledgerWritten: false,
+            warnings: ["degraded_finalize_missing_service_role_key", "closeout_not_evaluable"],
             resultUrl: `/flights/${reservationId}`,
             reservation: {
               ...(context.reservation ?? {}),
@@ -169,8 +175,13 @@ export async function POST(request: NextRequest) {
           status: normalizedStatus || result.official.finalStatus,
           summaryUrl: summaryUrlValid ? summaryUrl : null,
           resultStatus: normalizedStatus || result.official.finalStatus,
+          evaluationStatus: result.evaluationStatus ?? "no_evaluable",
+          economyEligible: result.economyEligible ?? false,
+          salaryAccrued: result.salaryAccrued ?? false,
+          ledgerWritten: result.ledgerWritten ?? false,
           warnings: [
             ...fallbackWarnings,
+            ...(result.warnings ?? []),
             !persisted ? "reservation_not_persisted" : null,
             !reservationClosed ? "reservation_not_closed" : null,
             !summaryUrlValid ? "summary_url_invalid" : null,
@@ -190,8 +201,12 @@ export async function POST(request: NextRequest) {
       status: normalizedStatus || result.official.finalStatus,
       summaryUrl,
       resultStatus: normalizedStatus || result.official.finalStatus,
+      evaluationStatus: result.evaluationStatus ?? "evaluable",
+      economyEligible: result.economyEligible ?? false,
+      salaryAccrued: result.salaryAccrued ?? false,
+      ledgerWritten: result.ledgerWritten ?? false,
       resultUrl: summaryUrl,
-      warnings: fallbackWarnings,
+      warnings: [...fallbackWarnings, ...(result.warnings ?? [])],
       officialScores: {
         procedure_score: result.official.procedureScore,
         mission_score: result.official.missionScore,

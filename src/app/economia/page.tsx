@@ -43,7 +43,7 @@ const SECTIONS: Section[] = [
     color: "from-emerald-400/10 to-transparent",
     items: [
       { heading: "Saldo inicial", text: "Todo piloto recibe una billetera virtual operacional. El saldo sirve para traslados, licencias, pruebas teóricas, checkrides y habilitaciones." },
-      { heading: "Cómo aumenta", text: "Aumenta con el pago por vuelos completados, nómina mensual y bonos operativos cuando correspondan." },
+      { heading: "Cómo aumenta", text: "Aumenta en la liquidación mensual aprobada (monthly payout), no por cada vuelo individual." },
       { heading: "Cómo disminuye", text: "Disminuye por gastos personales del piloto: traslados, licencias, pruebas, habilitaciones, entrenamientos recurrentes y deducciones por daño si aplica." },
       { heading: "Trazabilidad", text: "Cada gasto queda registrado en pilot_expense_ledger y cada ingreso se acumula en pilot_salary_ledger para liquidaciones mensuales." },
     ],
@@ -304,9 +304,10 @@ function MiniLineChart({ series, labels }: { series: ChartSeries[]; labels: stri
 
 type EconomiaStats = {
   airline: { name: string; balance_usd: number; total_revenue_usd: number; total_costs_usd: number; net_profit_usd: number };
-  breakdown: { income_flights: number; income_passengers?: number; income_cargo?: number; income_charter?: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_airport_fees?: number; cost_handling?: number; cost_salaries: number };
+  breakdown: { income_flights: number; income_passengers?: number; income_cargo?: number; income_charter?: number; cost_fuel: number; cost_maintenance: number; cost_pilot_payments: number; cost_repairs: number; cost_airport_fees?: number; cost_handling?: number; cost_salaries: number; no_evaluable_total?: number };
   payroll: Array<{ year: number; month: number; flights: number; commission: number; base_salary: number; net: number; callsigns: string[] }>;
   recentLedger: Array<{ entry_type: string; amount_usd: number; pilot_callsign?: string; description?: string; created_at: string }>;
+  movementHistory: Array<{ created_at: string; pilot_callsign?: string; reservation_id?: string | null; entry_type: string; description?: string; income_usd: number; cost_usd: number; net_usd: number; trace_amount_usd?: number; operational_impact?: string; status?: string; source?: string }>;
   topPilots: Array<{ callsign: string; commission: number }>;
   totalFlightsCompleted: number;
 };
@@ -345,6 +346,10 @@ function entryTypeColor(t: string) {
 function AirlineFinancePanel() {
   const [stats, setStats] = useState<EconomiaStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pilotFilter, setPilotFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [flightFilter, setFlightFilter] = useState("");
 
   useEffect(() => {
     fetch("/api/economia/stats")
@@ -363,7 +368,7 @@ function AirlineFinancePanel() {
   );
   if (!stats) return null;
 
-  const { airline, breakdown, payroll, topPilots, totalFlightsCompleted, recentLedger } = stats;
+  const { airline, breakdown, payroll, topPilots, totalFlightsCompleted, recentLedger, movementHistory } = stats;
   const isProfit = airline.net_profit_usd >= 0;
 
   // Build chart data from payroll (reverse = oldest first)
@@ -390,6 +395,31 @@ function AirlineFinancePanel() {
     { emoji: "👨‍✈️", label: "Pagos a pilotos", value: fmtUsd(breakdown.cost_pilot_payments), tone: "text-cyan-300" },
     { emoji: "🔧", label: "Reparaciones", value: fmtUsd(breakdown.cost_repairs), tone: "text-rose-300" },
   ];
+
+  const filteredMovements = movementHistory.filter((row) => {
+    const byPilot = pilotFilter === "all" || (row.pilot_callsign ?? "") === pilotFilter;
+    const byType = typeFilter === "all" || row.entry_type === typeFilter;
+    const byStatus = statusFilter === "all" || (row.status ?? "") === statusFilter;
+    const byFlight = !flightFilter.trim() || (row.reservation_id ?? "").toLowerCase().includes(flightFilter.trim().toLowerCase());
+    return byPilot && byType && byStatus && byFlight;
+  });
+
+  const movementTotals = filteredMovements.reduce(
+    (acc, row) => {
+      acc.income += row.income_usd;
+      acc.cost += row.cost_usd;
+      acc.net += row.net_usd;
+      if ((row.status ?? "") === "no_evaluable") {
+        acc.noEvaluable += Math.abs(row.trace_amount_usd ?? row.net_usd);
+      }
+      return acc;
+    },
+    { income: 0, cost: 0, net: 0, noEvaluable: 0 }
+  );
+
+  const pilots = Array.from(new Set(movementHistory.map((row) => row.pilot_callsign || "—")));
+  const types = Array.from(new Set(movementHistory.map((row) => row.entry_type)));
+  const statuses = Array.from(new Set(movementHistory.map((row) => row.status || "n/a")));
 
   return (
     <div className="mb-10 space-y-5">
@@ -533,6 +563,74 @@ function AirlineFinancePanel() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {movementHistory.length > 0 && (
+        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">📚</span>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Historial movimientos aerolínea</p>
+          </div>
+
+          <div className="mb-4 grid gap-2 md:grid-cols-5">
+            <select value={pilotFilter} onChange={(e) => setPilotFilter(e.target.value)} className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white">
+              <option value="all">Piloto: todos</option>
+              {pilots.map((pilot) => <option key={pilot} value={pilot}>{pilot}</option>)}
+            </select>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white">
+              <option value="all">Tipo: todos</option>
+              {types.map((type) => <option key={type} value={type}>{entryTypeLabel(type)}</option>)}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white">
+              <option value="all">Estado: todos</option>
+              {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+            <input value={flightFilter} onChange={(e) => setFlightFilter(e.target.value)} placeholder="Filtrar reserva/vuelo" className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white placeholder:text-white/40 md:col-span-2" />
+          </div>
+
+          <div className="mb-4 grid gap-2 md:grid-cols-5">
+            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Ingresos: {fmtUsd(movementTotals.income)}</p>
+            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Costos: {fmtUsd(movementTotals.cost)}</p>
+            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Utilidad: {fmtUsd(movementTotals.net)}</p>
+            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Devengos piloto: {fmtUsd(breakdown.cost_pilot_payments)}</p>
+            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">No evaluables: {fmtUsd(movementTotals.noEvaluable || breakdown.no_evaluable_total || 0)}</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/8 text-white/45">
+                  <th className="px-2 py-2 text-left">Fecha</th>
+                  <th className="px-2 py-2 text-left">Piloto</th>
+                  <th className="px-2 py-2 text-left">Reserva</th>
+                  <th className="px-2 py-2 text-left">Movimiento</th>
+                  <th className="px-2 py-2 text-right">Ingreso</th>
+                  <th className="px-2 py-2 text-right">Costo</th>
+                  <th className="px-2 py-2 text-right">Utilidad</th>
+                  <th className="px-2 py-2 text-left">Descripción</th>
+                  <th className="px-2 py-2 text-left">Fuente</th>
+                  <th className="px-2 py-2 text-left">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMovements.slice(0, 200).map((row, idx) => (
+                  <tr key={`${row.created_at}-${row.entry_type}-${idx}`} className="border-b border-white/6">
+                    <td className="px-2 py-2 text-white/70">{row.created_at ? new Date(row.created_at).toLocaleDateString("es-CL") : "—"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.pilot_callsign || "—"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.reservation_id || "—"}</td>
+                    <td className="px-2 py-2 text-white/80">{row.status === "no_evaluable" ? "Cierre no evaluable" : entryTypeLabel(row.entry_type)}</td>
+                    <td className="px-2 py-2 text-right text-emerald-300">{row.status === "no_evaluable" ? fmtUsd(0) : row.income_usd > 0 ? fmtUsd(row.income_usd) : "—"}</td>
+                    <td className="px-2 py-2 text-right text-rose-300">{row.status === "no_evaluable" ? fmtUsd(0) : row.cost_usd > 0 ? fmtUsd(row.cost_usd) : "—"}</td>
+                    <td className={`px-2 py-2 text-right font-semibold ${row.net_usd >= 0 ? "text-emerald-300" : "text-rose-300"}`}>{fmtUsd(row.net_usd)}</td>
+                    <td className="px-2 py-2 text-white/70">{row.description || "—"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.source || "airline_ledger"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.status === "no_evaluable" ? "No evaluable (trazabilidad)" : (row.status || "n/a")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

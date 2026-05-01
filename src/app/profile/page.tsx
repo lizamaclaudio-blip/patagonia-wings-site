@@ -187,6 +187,18 @@ type PilotSalaryData = {
     createdAt: string | null;
   }>;
   monthlyHistory?: PilotSalaryHistoryItem[];
+  movementHistory?: Array<{
+    date: string;
+    type: string;
+    reservationId: string | null;
+    description: string;
+    incomeUsd: number;
+    expenseUsd: number;
+    status: string;
+    source: string;
+    liquidated: boolean;
+    estimatedMonthlyBalanceUsd: number;
+  }>;
 };
 
 type PilotExpenseWalletItem = {
@@ -491,6 +503,21 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
   if (!data) return null;
 
   const walletBalance = toNumber(data.pilot?.walletBalanceUsd ?? ((profile as unknown) as Record<string, unknown> | null)?.wallet_balance ?? 0);
+  const movementRows = data.movementHistory ?? [];
+  const movementTotals = movementRows.reduce(
+    (acc, row) => {
+      acc.income += toNumber(row.incomeUsd);
+      acc.expense += toNumber(row.expenseUsd);
+      if (String(row.source).toLowerCase() === "monthly payout") {
+        acc.paid += toNumber(row.incomeUsd);
+      }
+      if (String(row.status).toLowerCase() === "accrued") {
+        acc.pending += toNumber(row.incomeUsd) - toNumber(row.expenseUsd);
+      }
+      return acc;
+    },
+    { income: 0, expense: 0, paid: 0, pending: 0 }
+  );
   const monthName = MONTH_NAMES_ES[(data.period.month - 1)] ?? "";
   const ledgerStatus = (data.ledger as Record<string, unknown> | null)?.status as string | undefined;
   const isPaid = ledgerStatus === "paid";
@@ -620,6 +647,53 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
                 </div>
               );
             })}
+          </div>
+        </div>
+      ) : null}
+
+      {movementRows.length > 0 ? (
+        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Historial mensual del piloto</p>
+          <div className="mb-3 grid gap-2 md:grid-cols-5">
+            <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Devengado: {fmtUsd(movementTotals.income)}</p>
+            <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Gastos: {fmtUsd(movementTotals.expense)}</p>
+            <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Neto pendiente: {fmtUsd(Math.max(0, movementTotals.pending))}</p>
+            <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Pagado: {fmtUsd(movementTotals.paid)}</p>
+            <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Wallet actual: {fmtUsd(walletBalance)}</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/8 text-white/45">
+                  <th className="px-2 py-2 text-left">Fecha</th>
+                  <th className="px-2 py-2 text-left">Tipo</th>
+                  <th className="px-2 py-2 text-left">Reserva</th>
+                  <th className="px-2 py-2 text-left">Descripción</th>
+                  <th className="px-2 py-2 text-right">Ingreso</th>
+                  <th className="px-2 py-2 text-right">Gasto</th>
+                  <th className="px-2 py-2 text-left">Estado</th>
+                  <th className="px-2 py-2 text-left">Origen</th>
+                  <th className="px-2 py-2 text-right">Saldo mes</th>
+                  <th className="px-2 py-2 text-left">Liquidado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movementRows.slice(0, 120).map((row, idx) => (
+                  <tr key={`${row.date}-${row.type}-${idx}`} className="border-b border-white/6">
+                    <td className="px-2 py-2 text-white/70">{row.date ? new Date(row.date).toLocaleDateString("es-CL") : "—"}</td>
+                    <td className="px-2 py-2 text-white/80">{row.type}</td>
+                    <td className="px-2 py-2 text-white/70">{row.reservationId ?? "—"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.description}</td>
+                    <td className="px-2 py-2 text-right text-emerald-300">{row.status === "no_evaluable" ? fmtUsd(0) : toNumber(row.incomeUsd) > 0 ? fmtUsd(row.incomeUsd) : "—"}</td>
+                    <td className="px-2 py-2 text-right text-rose-300">{toNumber(row.expenseUsd) > 0 ? fmtUsd(row.expenseUsd) : "—"}</td>
+                    <td className="px-2 py-2 text-white/70">{row.status === "no_evaluable" ? "No evaluable / sin devengo" : row.status}</td>
+                    <td className="px-2 py-2 text-white/70">{row.source}</td>
+                    <td className="px-2 py-2 text-right text-white/75">{fmtUsd(row.estimatedMonthlyBalanceUsd)}</td>
+                    <td className="px-2 py-2 text-white/70">{row.liquidated ? "Sí" : "No"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : null}

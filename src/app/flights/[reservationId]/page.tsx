@@ -146,6 +146,10 @@ function formatStatus(value?: string | null) {
   const normalized = asText(value).toLowerCase();
   const labels: Record<string, string> = {
     completed: "Completado",
+    pending_server_closeout: "Cierre pendiente servidor",
+    incomplete_closeout: "Cierre incompleto",
+    no_evaluable: "Cierre no evaluable",
+    manual_review: "Revisión manual",
     cancelled: "Cancelado",
     interrupted: "Interrumpido",
     crashed: "Accidentado",
@@ -162,6 +166,9 @@ function formatStatus(value?: string | null) {
 function statusTone(value?: string | null) {
   const normalized = asText(value).toLowerCase();
   if (normalized === "completed") return "text-emerald-300 border-emerald-400/20 bg-emerald-400/10";
+  if (normalized === "pending_server_closeout" || normalized === "incomplete_closeout" || normalized === "manual_review" || normalized === "no_evaluable") {
+    return "text-rose-200 border-rose-400/20 bg-rose-500/10";
+  }
   if (normalized === "crashed") return "text-rose-300 border-rose-400/20 bg-rose-400/10";
   if (normalized === "cancelled" || normalized === "interrupted") {
     return "text-amber-300 border-amber-400/20 bg-amber-400/10";
@@ -324,8 +331,44 @@ function FlightResultContent() {
   const officialEvents = Array.isArray(mergedScorePayload.events_json)
     ? (mergedScorePayload.events_json as Array<Record<string, unknown>>)
     : [];
-  const rawPirepFileName = asText(mergedScorePayload.raw_pirep_file_name);
+  const officialCloseout = asObject(mergedScorePayload.official_closeout);
+  const closeoutWarnings = Array.isArray(mergedScorePayload.closeout_warnings)
+    ? (mergedScorePayload.closeout_warnings as string[])
+    : [];
+  const closeoutEvidence = asObject(mergedScorePayload.closeout_evidence);
+  const blackboxEvents = Array.isArray(mergedScorePayload.blackbox_events)
+    ? (mergedScorePayload.blackbox_events as Array<Record<string, unknown>>)
+    : Array.isArray(mergedScorePayload.blackbox_event_log)
+      ? (mergedScorePayload.blackbox_event_log as Array<Record<string, unknown>>)
+      : [];
+  const evaluationStatus =
+    asText(mergedScorePayload.evaluation_status) ||
+    asText(officialCloseout.evaluation_status) ||
+    "evaluable";
+  const economyEligible =
+    mergedScorePayload.economy_eligible === true ||
+    officialCloseout.economy_eligible === true;
+  const salaryAccrued =
+    mergedScorePayload.salary_accrued === true ||
+    asObject(mergedScorePayload.economy_accounting).pilot_rewards_applied_at != null;
+  const ledgerWritten = hasLedgerEntry;
   const scoringStatus = asText(mergedScorePayload.scoring_status) || asText(asObject(mergedScorePayload.official_closeout).scoring_status);
+  const telemetrySamples = asNumber(closeoutEvidence.telemetry_samples);
+  const elapsedSeconds = asNumber(closeoutEvidence.elapsed_seconds);
+  const distanceNmEvidence = asNumber(closeoutEvidence.distance_nm);
+  const noEvidenceSignals =
+    penalties.length === 0 &&
+    officialEvents.length === 0 &&
+    blackboxEvents.length === 0 &&
+    telemetrySamples <= 0 &&
+    elapsedSeconds <= 0 &&
+    distanceNmEvidence <= 0;
+  const noEvaluableCloseout =
+    evaluationStatus === "no_evaluable" ||
+    scoringStatus === "pending_server_closeout" ||
+    scoringStatus === "incomplete_closeout" ||
+    noEvidenceSignals;
+  const rawPirepFileName = asText(mergedScorePayload.raw_pirep_file_name);
 
   const flightNumber =
     asText(reservation?.reservation_code) ||
@@ -463,8 +506,8 @@ function FlightResultContent() {
               {reservation ? `${asText(reservation.origin_ident) || "---"} → ${asText(reservation.destination_ident) || "---"}` : "Cargando resultado..."}
             </p>
           </div>
-          <div className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold ${statusTone(reservation?.status)}`}>
-            {formatStatus(reservation?.status)}
+          <div className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold ${statusTone(noEvaluableCloseout ? "no_evaluable" : reservation?.status)}`}>
+            {formatStatus(noEvaluableCloseout ? "no_evaluable" : reservation?.status)}
           </div>
         </div>
       </section>
@@ -475,6 +518,17 @@ function FlightResultContent() {
         <section className="mt-6 glass-panel rounded-[30px] p-7 text-rose-300">{error}</section>
       ) : reservation ? (
         <div className="mt-6 grid gap-6">
+          {noEvaluableCloseout ? (
+            <section className="rounded-[24px] border border-rose-400/25 bg-rose-500/10 px-6 py-5">
+              <p className="text-sm font-semibold text-rose-100">
+                Cierre recibido, pero no evaluable por falta de evidencia de vuelo.
+              </p>
+              <p className="mt-2 text-sm text-rose-100/80">
+                El vuelo no queda como completado pagable hasta que exista evidencia oficial mínima.
+              </p>
+            </section>
+          ) : null}
+
           <section className="glass-panel rounded-[30px] p-7">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
@@ -518,7 +572,6 @@ function FlightResultContent() {
             </div>
 
             <div className="glass-panel rounded-[30px] p-7">
-            <div className="glass-panel rounded-[30px] p-7">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Evaluación oficial servidor</p>
@@ -544,6 +597,49 @@ function FlightResultContent() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Eventos</p>
                   <p className="mt-2 text-base font-semibold text-white">{officialEvents.length}</p>
                 </div>
+              </div>
+
+              {noEvaluableCloseout ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <p className="rounded-[14px] border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">Estado: No evaluable</p>
+                  <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Daño aplicado: 0%</p>
+                  <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Wallet: Sin movimiento</p>
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+                  Devengo piloto: {salaryAccrued && economyEligible ? "Generado" : "No generado"}
+                </p>
+                <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+                  Ledger aerolínea: {ledgerWritten && economyEligible ? "Generado" : "No generado"}
+                </p>
+              </div>
+
+              {(closeoutWarnings.length > 0 || noEvaluableCloseout) ? (
+                <div className="mt-4 rounded-[18px] border border-rose-400/20 bg-rose-500/8 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-100/90">Motivo de no evaluación</p>
+                  {closeoutWarnings.length ? (
+                    <ul className="mt-2 space-y-1 text-sm text-rose-100/85">
+                      {closeoutWarnings.map((warning) => (
+                        <li key={warning}>• {warning}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-rose-100/85">
+                      No hay evidencia mínima de vuelo suficiente para aplicar reglaje/economía.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+                  Datos recibidos: muestras={asNumber(closeoutEvidence.telemetry_samples)} · elapsed={asNumber(closeoutEvidence.elapsed_seconds)}s
+                </p>
+                <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+                  Datos faltantes: {closeoutWarnings.length > 0 ? closeoutWarnings.join(", ") : "Ninguno"}
+                </p>
               </div>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -573,7 +669,6 @@ function FlightResultContent() {
                   </div>
                 </div>
               </div>
-            </div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Daño aplicado</p>
               {damageEvents.length ? (
                 <div className="mt-4 space-y-3">
@@ -586,13 +681,13 @@ function FlightResultContent() {
                   ))}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-white/70">Sin eventos de daño informados en este cierre.</p>
+                <p className="mt-4 text-sm text-white/70">0% (sin eventos de daño informados en este cierre).</p>
               )}
             </div>
           </section>
 
           {/* Economy section — only shown for completed flights with data */}
-          {(reservation.commission_usd != null || asNumber(mergedScorePayload.fuel_used_kg) > 0) ? (
+          {economyEligible ? (
           <section className="glass-panel rounded-[30px] p-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Economia del vuelo</p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -665,16 +760,26 @@ function FlightResultContent() {
           <section className="glass-panel rounded-[30px] p-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Planificado vs real</p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                { label: "Fuel (kg)", value: `${Math.round(asNumber(plannedSnapshot?.fuel_kg_estimated)) || 0} / ${Math.round(asNumber(actualSnapshot?.fuel_kg_actual)) || 0}` },
-                { label: "Block", value: `${formatMinutes(asNumber(plannedSnapshot?.block_minutes_estimated))} / ${formatMinutes(asNumber(actualSnapshot?.block_minutes_actual) || reservation?.actual_block_minutes)}` },
-                { label: "Ingresos USD", value: `${plannedRevenue ? `$${plannedRevenue.toFixed(0)}` : "Sin datos recibidos"} / ${actualRevenue ? `$${actualRevenue.toFixed(0)}` : "Sin datos recibidos"}` },
-                { label: "Costos USD", value: `${asNumber(plannedSnapshot?.total_cost_usd) ? `$${asNumber(plannedSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.total_cost_usd) ? `$${asNumber(actualSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"}` },
-                { label: "Utilidad USD", value: `${asNumber(plannedSnapshot?.net_profit_usd) ? `$${asNumber(plannedSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.net_profit_usd) ? `$${asNumber(actualSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"}` },
-                { label: "Comisión USD", value: `${asNumber(plannedSnapshot?.pilot_payment_usd) ? `$${asNumber(plannedSnapshot?.pilot_payment_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd) ? `$${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd).toFixed(0)}` : "Sin datos recibidos"}` },
-                { label: "Ventas a bordo", value: `${asNumber(plannedSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
-                { label: "Servicio a bordo", value: `${asNumber(plannedSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
-              ].map((item) => (
+                {[
+                  { label: "Fuel (kg)", value: `${Math.round(asNumber(plannedSnapshot?.fuel_kg_estimated)) || 0} / ${Math.round(asNumber(actualSnapshot?.fuel_kg_actual)) || 0}` },
+                  { label: "Block", value: `${formatMinutes(asNumber(plannedSnapshot?.block_minutes_estimated))} / ${formatMinutes(asNumber(actualSnapshot?.block_minutes_actual) || reservation?.actual_block_minutes)}` },
+                  { label: "Ingresos USD", value: `${plannedRevenue ? `$${plannedRevenue.toFixed(0)}` : "Sin datos recibidos"} / ${actualRevenue ? `$${actualRevenue.toFixed(0)}` : "Sin datos recibidos"}` },
+                  { label: "Costos USD", value: `${asNumber(plannedSnapshot?.total_cost_usd) ? `$${asNumber(plannedSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.total_cost_usd) ? `$${asNumber(actualSnapshot?.total_cost_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                  {
+                    label: noEvaluableCloseout ? "Utilidad USD (N/D no evaluable)" : "Utilidad USD",
+                    value: noEvaluableCloseout
+                      ? "No aplicable"
+                      : `${asNumber(plannedSnapshot?.net_profit_usd) ? `$${asNumber(plannedSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.net_profit_usd) ? `$${asNumber(actualSnapshot?.net_profit_usd).toFixed(0)}` : "Sin datos recibidos"}`,
+                  },
+                  {
+                    label: noEvaluableCloseout ? "Comisión USD (No devengada)" : "Comisión USD",
+                    value: noEvaluableCloseout
+                      ? "$0 / $0"
+                      : `${asNumber(plannedSnapshot?.pilot_payment_usd) ? `$${asNumber(plannedSnapshot?.pilot_payment_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd) ? `$${asNumber(actualSnapshot?.pilot_payment_usd || reservation?.commission_usd).toFixed(0)}` : "Sin datos recibidos"}`,
+                  },
+                  { label: "Ventas a bordo", value: `${asNumber(plannedSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_sales_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_sales_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                  { label: "Servicio a bordo", value: `${asNumber(plannedSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(plannedSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"} / ${asNumber(actualSnapshot?.onboard_service_revenue_usd) ? `$${asNumber(actualSnapshot?.onboard_service_revenue_usd).toFixed(0)}` : "Sin datos recibidos"}` },
+                ].map((item) => (
                 <div key={item.label} className="surface-outline rounded-[22px] px-5 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">{item.label}</p>
                   <p className="mt-2 text-base font-semibold text-white">{item.value}</p>

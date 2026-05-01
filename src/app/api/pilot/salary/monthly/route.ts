@@ -8,6 +8,19 @@ function getBearerToken(request: NextRequest) {
   return auth.slice(7).trim() || null;
 }
 
+type PilotMovementRow = {
+  date: string;
+  type: string;
+  reservationId: string | null;
+  description: string;
+  incomeUsd: number;
+  expenseUsd: number;
+  status: string;
+  source: string;
+  liquidated: boolean;
+  estimatedMonthlyBalanceUsd: number;
+};
+
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status });
 }
@@ -86,10 +99,11 @@ async function loadSalaryData(request: NextRequest) {
     : { data: [] };
 
   const flights = (flightsData ?? []) as Array<Record<string, unknown>>;
-  const flightsCount = flights.length;
-  const commissionTotal = flights.reduce((sum, f) => sum + toNumber(f.commission_usd), 0);
-  const damageTotal = flights.reduce((sum, f) => sum + toNumber(f.damage_deduction_usd), 0);
-  const blockMinutesTotal = flights.reduce((sum, f) => sum + getFlightBlockMinutes(f), 0);
+  const scoredFlights = flights.filter((flight) => String(flight.scoring_status ?? "").toLowerCase() === "scored");
+  const flightsCount = scoredFlights.length;
+  const commissionTotal = scoredFlights.reduce((sum, f) => sum + toNumber(f.commission_usd), 0);
+  const damageTotal = scoredFlights.reduce((sum, f) => sum + toNumber(f.damage_deduction_usd), 0);
+  const blockMinutesTotal = scoredFlights.reduce((sum, f) => sum + getFlightBlockMinutes(f), 0);
   const blockHoursTotal = roundMoney(blockMinutesTotal / 60);
 
   const { data: expenseData } = callsign
@@ -130,6 +144,106 @@ async function loadSalaryData(request: NextRequest) {
     .order("period_month", { ascending: false })
     .limit(12);
 
+  const movements: PilotMovementRow[] = [];
+  let runningBalance = 0;
+
+  for (const flight of flights) {
+    const reservationId = String(flight.id ?? "") || null;
+    const routeCode = String(flight.route_code ?? flight.flight_number ?? "Vuelo");
+    const commission = roundMoney(toNumber(flight.commission_usd));
+    const damage = roundMoney(Math.abs(toNumber(flight.damage_deduction_usd)));
+    const completedAt = String(flight.completed_at ?? flight.updated_at ?? "");
+    const scoringStatus = String(flight.scoring_status ?? "").toLowerCase();
+    const hasNoEvaluable =
+      scoringStatus === "pending_server_closeout" ||
+      scoringStatus === "incomplete_closeout" ||
+      scoringStatus === "no_evaluable";
+
+    if (hasNoEvaluable) {
+      movements.push({
+        date: completedAt,
+        type: "salary_accrual",
+        reservationId,
+        description: `Cierre no evaluable / sin devengo ${routeCode}`,
+        incomeUsd: 0,
+        expenseUsd: 0,
+        status: "no_evaluable",
+        source: "flight_reservations",
+        liquidated: false,
+        estimatedMonthlyBalanceUsd: roundMoney(runningBalance),
+      });
+      continue;
+    }
+
+    if (commission > 0) {
+      runningBalance += commission;
+      movements.push({
+        date: completedAt,
+        type: "salary_accrual",
+        reservationId,
+        description: `Devengo comisión ${routeCode}`,
+        incomeUsd: commission,
+        expenseUsd: 0,
+        status: hasNoEvaluable ? "no_evaluable" : "accrued",
+        source: "pilot_salary_ledger",
+        liquidated: false,
+        estimatedMonthlyBalanceUsd: roundMoney(runningBalance),
+      });
+    }
+
+    if (damage > 0) {
+      runningBalance -= damage;
+      movements.push({
+        date: completedAt,
+        type: "damage_deduction",
+        reservationId,
+        description: `Deducción por daño ${routeCode}`,
+        incomeUsd: 0,
+        expenseUsd: damage,
+        status: "accrued",
+        source: "pilot_salary_ledger",
+        liquidated: false,
+        estimatedMonthlyBalanceUsd: roundMoney(runningBalance),
+      });
+    }
+  }
+
+  for (const expense of expenses) {
+    const amount = roundMoney(Math.abs(toNumber(expense.amount_usd)));
+    runningBalance -= amount;
+    movements.push({
+      date: String(expense.created_at ?? ""),
+      type: String(expense.category ?? "expense"),
+      reservationId: null,
+      description: String(expense.description ?? expense.expense_code ?? "Gasto piloto"),
+      incomeUsd: 0,
+      expenseUsd: amount,
+      status: "paid",
+      source: "pilot_expense_ledger",
+      liquidated: true,
+      estimatedMonthlyBalanceUsd: roundMoney(runningBalance),
+    });
+  }
+
+  if (ledger && toNumber(ledger.net_paid_usd) > 0 && String(ledger.status ?? "").toLowerCase() === "paid") {
+    const payout = roundMoney(toNumber(ledger.net_paid_usd));
+    runningBalance += payout;
+    movements.push({
+      date: String(ledger.paid_at ?? ledger.updated_at ?? ""),
+      type: "monthly_payout",
+      reservationId: null,
+      description: `Liquidación mensual ${month}/${year}`,
+      incomeUsd: payout,
+      expenseUsd: 0,
+      status: "paid",
+      source: "monthly payout",
+      liquidated: true,
+      estimatedMonthlyBalanceUsd: roundMoney(runningBalance),
+    });
+  }
+
+  movements.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+
   return {
     data: {
       period: { year, month },
@@ -153,7 +267,7 @@ async function loadSalaryData(request: NextRequest) {
       netPaidUsd: roundMoney(netPaid),
       qualifiesForBase: flightsCount >= 5,
       ledger: ledger ?? null,
-      recentFlights: flights.slice(0, 30).map((f) => ({
+      recentFlights: scoredFlights.slice(0, 30).map((f) => ({
         id: String(f.id ?? ""),
         flightNumber: String(f.flight_number ?? f.route_code ?? "—"),
         origin: String(f.origin_icao ?? f.origin_airport ?? f.origin ?? "—"),
@@ -184,6 +298,7 @@ async function loadSalaryData(request: NextRequest) {
         status: String(row.status ?? "pending"),
         paidAt: row.paid_at ? String(row.paid_at) : null,
       })),
+      movementHistory: movements.slice(0, 150),
     },
     user,
     token,

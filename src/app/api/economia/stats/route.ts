@@ -21,16 +21,22 @@ export async function GET() {
     const supabase = createSupabaseServerClient();
 
     // Airline summary from airlines table + aggregate from ledger
-    const [airlineRes, ledgerAggRes, ledgerRecentRes, payrollRes, topPilotsRes] = await Promise.all([
+    const [airlineRes, ledgerAggRes, ledgerRecentRes, ledgerHistoryRes, payrollRes, topPilotsRes] = await Promise.all([
       supabase.from("airlines").select("id, name, balance_usd, total_revenue_usd, total_costs_usd").limit(1).maybeSingle(),
 
       supabase.from("airline_ledger").select("entry_type, amount_usd"),
 
       supabase
         .from("airline_ledger")
-        .select("entry_type, amount_usd, pilot_callsign, description, created_at")
+        .select("entry_type, amount_usd, pilot_callsign, description, reservation_id, created_at")
         .order("created_at", { ascending: false })
         .limit(20),
+
+      supabase
+        .from("airline_ledger")
+        .select("entry_type, amount_usd, pilot_callsign, description, reservation_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(250),
 
       supabase
         .from("pilot_salary_ledger")
@@ -51,8 +57,36 @@ export async function GET() {
     const airline = airlineRes.data ?? null;
     const ledgerRows = (ledgerAggRes.data ?? []) as Array<{ entry_type: string; amount_usd: unknown }>;
     const recentLedger = (ledgerRecentRes.data ?? []) as Array<Record<string, unknown>>;
+    const historyLedger = (ledgerHistoryRes.data ?? []) as Array<Record<string, unknown>>;
     const payrollRows = (payrollRes.data ?? []) as Array<Record<string, unknown>>;
     const topPilotRows = (topPilotsRes.data ?? []) as Array<Record<string, unknown>>;
+
+    const reservationIds = Array.from(
+      new Set(
+        historyLedger
+          .map((row) => asText(row.reservation_id))
+          .filter(Boolean)
+      )
+    );
+
+    const reservationStatusMap = new Map<string, string>();
+    if (reservationIds.length > 0) {
+      const { data: reservationRows } = await supabase
+        .from("flight_reservations")
+        .select("id,status,scoring_status")
+        .in("id", reservationIds);
+
+      for (const row of (reservationRows ?? []) as Array<Record<string, unknown>>) {
+        const id = asText(row.id);
+        if (!id) continue;
+        const scoringStatus = asText(row.scoring_status).toLowerCase();
+        const baseStatus = asText(row.status).toLowerCase();
+        const normalized = scoringStatus === "pending_server_closeout" || scoringStatus === "incomplete_closeout" || scoringStatus === "no_evaluable"
+          ? "no_evaluable"
+          : (baseStatus || "unknown");
+        reservationStatusMap.set(id, normalized);
+      }
+    }
 
     // Aggregate from ledger by entry_type
     const byType: Record<string, number> = {};
@@ -130,6 +164,37 @@ export async function GET() {
 
     const totalFlightsCompleted = topPilotRows.length;
 
+    const movementHistory = historyLedger.map((row) => {
+      const amount = asNumber(row.amount_usd);
+      const reservationId = asText(row.reservation_id) || null;
+      const reservationStatus = reservationId ? (reservationStatusMap.get(reservationId) ?? "unknown") : "n/a";
+      const isNoEvaluable = reservationStatus === "no_evaluable";
+      const source = reservationId
+        ? "airline_ledger + flight_economy_snapshots"
+        : "airline_ledger";
+      return {
+        created_at: asText(row.created_at),
+        pilot_callsign: asText(row.pilot_callsign) || "—",
+        reservation_id: reservationId,
+        entry_type: asText(row.entry_type) || "other",
+        description: isNoEvaluable
+          ? "Cierre no evaluable (sin impacto operacional)"
+          : (asText(row.description) || "Movimiento aerolínea"),
+        income_usd: isNoEvaluable ? 0 : amount > 0 ? Math.round(amount * 100) / 100 : 0,
+        cost_usd: isNoEvaluable ? 0 : amount < 0 ? Math.round(Math.abs(amount) * 100) / 100 : 0,
+        net_usd: isNoEvaluable ? 0 : Math.round(amount * 100) / 100,
+        trace_amount_usd: Math.round(amount * 100) / 100,
+        operational_impact: isNoEvaluable ? "excluded" : "included",
+        status: reservationStatus,
+        source,
+      };
+    });
+
+    const noEvaluablesTotal = movementHistory.reduce(
+      (sum, item) => item.status === "no_evaluable" ? sum + Math.abs(asNumber((item as Record<string, unknown>).trace_amount_usd)) : sum,
+      0
+    );
+
     return NextResponse.json({
       ok: true,
       airline: {
@@ -153,11 +218,13 @@ export async function GET() {
         cost_airport_fees: Math.round(totalAirportFees * 100) / 100,
         cost_handling: Math.round(totalHandling * 100) / 100,
         cost_salaries: Math.round(totalSalaries * 100) / 100,
+        no_evaluable_total: Math.round(noEvaluablesTotal * 100) / 100,
       },
       payroll: Object.values(payrollByMonth)
         .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month)
         .slice(0, 6),
       recentLedger: recentLedger.slice(0, 10),
+      movementHistory,
       topPilots,
       totalFlightsCompleted,
     });

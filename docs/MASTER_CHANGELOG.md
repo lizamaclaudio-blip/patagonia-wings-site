@@ -1184,3 +1184,17 @@ Regla contable preservada:
 - Feeds web/public (`acars-update.json`, `autoupdater.xml`, `channel.json`) quedan en 7.0.3 con force update legacy.
 - Regla contable preservada: sin cambios en wallet mensual y sin duplicar ledger/salary por retry.
 
+## 2026-04-30 - HOTFIX ACARS/Web 7.0.14 cierre oficial no evaluable
+- Se endurece validacion server-side de closeout oficial: evidencia minima obligatoria para permitir `completed` y economia.
+- Vuelos sin evidencia suficiente quedan en `pending_server_closeout` / `no_evaluable` y no generan salario, comision ni `airline_ledger`.
+- `/api/acars/finalize` devuelve flags operativos (`evaluationStatus`, `economyEligible`, `salaryAccrued`, `ledgerWritten`) para evitar falsos positivos de cierre.
+- Se ajustan vistas Web (`/flights/[reservationId]`, `/profile`, `/economia`) con mensajes claros de cierre incompleto e historial economico detallado por linea.
+- ACARS PostFlight muestra estado de cierre recibido no evaluable y mantiene flujo de resumen sin marcar exito contable.
+- Versionado sincronizado a 7.0.14 en AssemblyInfo y feeds (`acars-update`, `channel`, `autoupdater`) para update obligatorio desde versiones legacy.
+
+## 2026-05-01 - BLOQUE FINAL 7.0.14 (UI no evaluable + SQL diagnóstico)
+- `/flights/[reservationId]` fuerza presentación de cierre no evaluable cuando aplica (`pending_server_closeout`, `incomplete_closeout`, `no_evaluable` o sin evidencia mínima), con daño 0%, eventos 0 y sin devengo/ledger/wallet.
+- Historial mensual del piloto muestra líneas `No evaluable / sin devengo` con monto devengado 0 para reservas no evaluables.
+- Economía de aerolínea mantiene trazabilidad de `Cierre no evaluable` pero excluye impacto operacional de utilidad/ingresos/costos válidos.
+- Se agrega script no destructivo `sql/2026-05-01-diagnostico-cierres-no-evaluables.sql` con consultas de auditoría y reversa manual comentada por reserva específica.
+
