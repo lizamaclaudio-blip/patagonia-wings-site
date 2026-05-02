@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculateFlightCommission, calculateDamageDeduction, estimateFlightEconomy } from "@/lib/pilot-economy";
+import { buildPirepPerfectOfficialScoringInput } from "@/lib/pirep-perfect-official";
 
 export type OfficialFlightStatus =
   | "reserved"
@@ -703,7 +704,7 @@ async function applyPilotScoreProgression(params: {
   blockMinutes: number;
   officialPayload: Record<string, unknown>;
   notes?: string | null;
-}) {
+}): Promise<{ warnings: string[]; result?: GenericRow | null }> {
   const warnings: string[] = [];
   const callsign = normalizeIcao(params.callsign);
   if (!callsign || !params.reservationId) {
@@ -726,12 +727,91 @@ async function applyPilotScoreProgression(params: {
     return { warnings: [...warnings, "score_progression_already_applied"] };
   }
 
+  const officialPayload = asObject(params.officialPayload);
+  const pirepPerfectScoring = asObject(officialPayload.pirep_perfect_scoring);
+  const detailedPoints = asObject(pirepPerfectScoring.detailed_points);
+  const missionScore = asNumber(officialPayload.mission_score ?? detailedPoints.mission_score);
+  const validForProgression = officialPayload.economy_eligible !== false && detailedPoints.valid_for_progression !== false;
+  const flightModeCode = asText(officialPayload.flight_mode_code) || asText(asObject(officialPayload.official_pirep).flight_type) || "CAREER";
+  const legadoCredits = Math.max(0, Math.round(asNumber(detailedPoints.legado_credits)));
+
+  const manualFallback = async (reason: string) => {
+    const fallbackWarnings: string[] = [`score_progression_manual_fallback:${reason}`];
+    const flightHours = Number((Math.max(0, Math.round(params.blockMinutes)) / 60).toFixed(2));
+    const ledgerInsert = await supabase.from("pw_pilot_score_ledger").insert({
+      pilot_callsign: callsign,
+      source_type: "flight_reservation",
+      source_ref: params.reservationId,
+      flight_mode_code: flightModeCode,
+      flight_hours: flightHours,
+      procedure_score: params.procedureScore,
+      mission_score: missionScore || params.procedureScore,
+      legado_credits: legadoCredits,
+      valid_for_progression: validForProgression,
+      notes: params.notes ?? "official_web_supabase_closeout_manual_score_progression",
+    }).select("*").maybeSingle();
+
+    if (ledgerInsert.error && !isMissingRelationError(ledgerInsert.error)) {
+      return { warnings: [...fallbackWarnings, `score_progression_manual_ledger_failed:${ledgerInsert.error.message}`] };
+    }
+
+    const { data: ledgerRows, error: ledgerRowsError } = await supabase
+      .from("pw_pilot_score_ledger")
+      .select("procedure_score,mission_score,legado_credits,valid_for_progression,created_at")
+      .eq("pilot_callsign", callsign)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (ledgerRowsError && !isMissingRelationError(ledgerRowsError)) {
+      return { warnings: [...fallbackWarnings, `score_progression_manual_aggregate_failed:${ledgerRowsError.message}`] };
+    }
+
+    const validRows = (ledgerRows ?? []).filter((row) => row.valid_for_progression !== false);
+    const recent = validRows.slice(0, 10);
+    const avg = (values: number[]) => values.length ? Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)) : 0;
+    const pulso10 = avg(recent.map((row) => asNumber(row.procedure_score)).filter((value) => value > 0));
+    const ruta10 = avg(recent.map((row) => asNumber(row.mission_score)).filter((value) => value > 0));
+    const legadoPoints = validRows.reduce((sum, row) => sum + Math.max(0, Math.round(asNumber(row.legado_credits))), 0);
+
+    const scoreUpsert = await supabase.from("pw_pilot_scores").upsert({
+      pilot_callsign: callsign,
+      pulso_10: pulso10,
+      ruta_10: ruta10,
+      legado_points: legadoPoints,
+      valid_flights_in_window: recent.length,
+      progression_flights_total: validRows.length,
+      is_provisional: false,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "pilot_callsign" }).select("*").maybeSingle();
+
+    if (scoreUpsert.error && !isMissingRelationError(scoreUpsert.error)) {
+      return { warnings: [...fallbackWarnings, `score_progression_manual_scores_failed:${scoreUpsert.error.message}`] };
+    }
+
+    return {
+      warnings: fallbackWarnings,
+      result: {
+        reservation_id: params.reservationId,
+        pilot_callsign: callsign,
+        procedure_score: params.procedureScore,
+        mission_score: missionScore || params.procedureScore,
+        block_minutes: Math.max(0, Math.round(params.blockMinutes)),
+        block_hours: flightHours,
+        legado_credits: legadoCredits,
+        pulso_10: pulso10,
+        ruta_10: ruta10,
+        legado_points: legadoPoints,
+        scoring_status: "scored_manual_fallback",
+      } as GenericRow,
+    };
+  };
+
   const rpcPayload = {
     p_callsign: callsign,
     p_reservation_id: params.reservationId,
     p_procedure_score: params.procedureScore,
     p_block_minutes: Math.max(0, Math.round(params.blockMinutes)),
-    p_critical_cap: null,
+    p_critical_cap: asNumber(detailedPoints.critical_cap) || null,
     p_payload: params.officialPayload,
     p_notes: params.notes ?? "official_web_supabase_closeout",
   };
@@ -739,9 +819,22 @@ async function applyPilotScoreProgression(params: {
   const { data, error } = await supabase.rpc("pw_apply_completed_flight_score", rpcPayload);
   if (error) {
     if (isMissingRelationError(error)) {
-      return { warnings: [...warnings, "score_progression_rpc_missing:pw_apply_completed_flight_score"] };
+      return await manualFallback("rpc_missing");
     }
-    return { warnings: [...warnings, `score_progression_rpc_failed:${error.message}`] };
+    const fallback = await manualFallback(`rpc_failed:${error.message}`);
+    return { warnings: [...warnings, `score_progression_rpc_failed:${error.message}`, ...fallback.warnings], result: fallback.result };
+  }
+
+  const { data: ledgerAfterRpc } = await supabase
+    .from("pw_pilot_score_ledger")
+    .select("id")
+    .eq("pilot_callsign", callsign)
+    .eq("source_ref", params.reservationId)
+    .maybeSingle();
+
+  if (!ledgerAfterRpc?.id) {
+    const fallback = await manualFallback("rpc_returned_without_ledger_row");
+    return { warnings: [...warnings, ...fallback.warnings], result: fallback.result ?? (Array.isArray(data) ? data[0] as GenericRow | undefined : data as GenericRow | null) };
   }
 
   return {
@@ -1002,6 +1095,13 @@ export function evaluateOfficialCloseout(params: {
   const rawPirepFileName = asText(closeoutPayload?.pirepFileName);
   const rawPirepChecksum = asText(closeoutPayload?.pirepChecksumSha256);
   const rawLogEvents = extractPirepLogEvents(rawPirepXml);
+  const pirepPerfect = buildPirepPerfectOfficialScoringInput({
+    rawXml: rawPirepXml,
+    reservation,
+    activeFlight: activeFlight as unknown as GenericRow,
+    preparedDispatch: preparedDispatch as unknown as GenericRow,
+    report: report as unknown as GenericRow,
+  });
   const stages = buildStageBreakdown(samples);
   const damageSummary = summarizeDamage(damageEvents);
   const penalties: Array<Record<string, unknown>> = [];
@@ -1031,17 +1131,17 @@ export function evaluateOfficialCloseout(params: {
   const hasCloseoutPayload = Boolean(closeoutPayload) || rawPirepXml.length > 0;
   const telemetrySamples = samples.length;
   const airborneSamples = samples.filter((sample) => !asBoolean(sample.onGround)).length;
-  const hasTelemetryEvidence = telemetrySamples >= 4;
+  const hasTelemetryEvidence = telemetrySamples >= 4 || pirepPerfect.evidence.isEvidentiary;
   const hasElapsedByReport = Math.max(0, Math.round((new Date(asText(report?.arrivalTime)).getTime() - new Date(asText(report?.departureTime)).getTime()) / 1000));
   const hasElapsedBySamples = telemetrySamples >= 2
     ? Math.max(0, Math.round((new Date(asText(samples.at(-1)?.capturedAtUtc)).getTime() - new Date(asText(samples[0]?.capturedAtUtc)).getTime()) / 1000))
     : 0;
   const elapsedSeconds = Math.max(hasElapsedByReport, hasElapsedBySamples);
   const minimumElapsedSeconds = 120;
-  const hasElapsedEvidence = elapsedSeconds >= minimumElapsedSeconds;
-  const reportDistanceNm = Math.max(0, asNumber(report?.distance), asNumber(reservation.distance_nm));
-  const hasAirborneEvidence = airborneSamples > 0 || stages.takeoff.reached || stages.landing.reached;
-  const hasMovementEvidence = reportDistanceNm > 1 || hasAirborneEvidence;
+  const hasElapsedEvidence = elapsedSeconds >= minimumElapsedSeconds || pirepPerfect.evidence.blockMinutes >= 2;
+  const reportDistanceNm = Math.max(0, asNumber(report?.distance), asNumber(reservation.distance_nm), pirepPerfect.evidence.distanceNm);
+  const hasAirborneEvidence = airborneSamples > 0 || stages.takeoff.reached || stages.landing.reached || pirepPerfect.evidence.hasTakeoff || pirepPerfect.evidence.hasLanding;
+  const hasMovementEvidence = reportDistanceNm > 1 || hasAirborneEvidence || pirepPerfect.evidence.distanceNm > 1;
   const invalidAcarsCloseoutStatuses = new Set(["queued_retry", "pending", "pending_sync", "retry_pending", "error", "failed"]);
   const closeoutStatusCompatible = requestedCloseoutStatus.length === 0 || !invalidAcarsCloseoutStatuses.has(requestedCloseoutStatus);
 
@@ -1054,19 +1154,41 @@ export function evaluateOfficialCloseout(params: {
 
   const evidenceOk = evidenceWarnings.length === 0;
 
+  const takeoffReached = asBoolean(stages.takeoff.reached) || pirepPerfect.evidence.hasTakeoff;
+  const landingReached = asBoolean(stages.landing.reached) || pirepPerfect.evidence.hasLanding;
+  const taxiOutReached = asBoolean(stages.taxi_out.reached) || pirepPerfect.evidence.hasTakeoff;
+  const shutdownReached = asBoolean(stages.shutdown.reached) || pirepPerfect.evidence.hasShutdownOrStop || pirepPerfect.evidence.hasTaxiInOrGate;
+
+  if (pirepPerfect.hasRawXml) {
+    events.push(buildEvent("PIREP_PERFECT_XML_PARSED", "server_scoring", "info", "PIREP XML parseado server-side para scoring oficial Web/Supabase.", {
+      schema_version: pirepPerfect.schemaVersion,
+      is_pirep_perfect: pirepPerfect.evidence.isPirepPerfect,
+      is_evidentiary: pirepPerfect.evidence.isEvidentiary,
+      unsupported_protected_metrics: pirepPerfect.unsupportedProtectedMetrics.map((metric) => metric.name),
+    }));
+    events.push(...pirepPerfect.eventsJson);
+    penalties.push(...pirepPerfect.penaltiesJson);
+    evidenceWarnings.push(...pirepPerfect.warnings.map((warning) => `pirep_perfect:${warning}`));
+  }
+
+  procedureScore += pirepPerfect.scoreAdjustments.procedureDelta;
+  missionScore += pirepPerfect.scoreAdjustments.missionDelta;
+  safetyScore += pirepPerfect.scoreAdjustments.safetyDelta;
+  efficiencyScore += pirepPerfect.scoreAdjustments.efficiencyDelta;
+
   if (routeMismatch) {
     missionScore -= 20;
     manualReviewReasons.push("origin_or_destination_mismatch");
     penalties.push(buildEvent("ROUTE_MISMATCH", "dispatch", "high", "La telemetría no coincide con la reserva/despacho oficial."));
   }
 
-  if (!stages.takeoff.reached) {
+  if (!takeoffReached) {
     procedureScore -= 12;
   }
-  if (!stages.landing.reached && stages.takeoff.reached) {
+  if (!landingReached && takeoffReached) {
     missionScore -= 20;
   }
-  if (!stages.shutdown.reached) {
+  if (!shutdownReached) {
     procedureScore -= 8;
     events.push(buildEvent("NO_SHUTDOWN", "shutdown", "medium", "No se detectó shutdown completo."));
   }
@@ -1226,17 +1348,17 @@ export function evaluateOfficialCloseout(params: {
   }
   // "cancelled" = pilot never left the gate (no takeoff, no taxi).
   // "aborted" = pilot started rolling/taxied but didn't take off.
-  const pilotNeverDeparted = !stages.takeoff.reached && !stages.taxi_out.reached;
+  const pilotNeverDeparted = !takeoffReached && !taxiOutReached;
 
   let finalStatus: OfficialFlightStatus = severeDamage || crashEvent || hardLanding
     ? "crashed"
     : pilotNeverDeparted
       ? "cancelled"
-      : !stages.takeoff.reached && (stages.taxi_out.reached || samples.length > 0)
+      : !takeoffReached && (taxiOutReached || samples.length > 0 || pirepPerfect.evidence.hasTakeoff)
         ? "aborted"
-        : stages.takeoff.reached && (!stages.landing.reached || !stages.shutdown.reached)
+        : takeoffReached && (!landingReached || !shutdownReached)
           ? "interrupted"
-          : stages.shutdown.reached
+          : shutdownReached
             ? "completed"
             : "manual_review";
 
@@ -1250,7 +1372,7 @@ export function evaluateOfficialCloseout(params: {
   // Verify pilot actually arrived at the planned destination.
   // If the arrival airport doesn't match destination_ident, downgrade to interrupted.
   const reportedArrivalIcao = normalizeIcao(
-    activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? ""
+    activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? pirepPerfect.identity.destinationIcao ?? pirepPerfect.identity.landingAirport ?? ""
   );
   const plannedDestination = normalizeIcao(reservation.destination_ident);
   const arrivedAtDestination =
@@ -1268,7 +1390,7 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("CRASH", "landing", "critical", "El cierre oficial fue marcado como accidentado."));
   }
 
-  if (!samples.length) {
+  if (!samples.length && !pirepPerfect.evidence.isEvidentiary) {
     manualReviewReasons.push("missing_telemetry");
   }
 
@@ -1290,22 +1412,23 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("NO_SCORE", "general", "critical", `Vuelo cerrado como "${finalStatus}". No se otorgan puntos. El vuelo debe completarse y aterrizar en el destino planificado.`));
   }
 
-  const fuelStartKg = asNumber(samples[0]?.fuelKg) || asNumber(preparedDispatch?.fuelPlannedKg);
-  const fuelEndKg = asNumber(lastSample?.fuelKg);
+  const fuelStartKg = asNumber(samples[0]?.fuelKg) || pirepPerfect.evidence.fuelStartKg || asNumber(preparedDispatch?.fuelPlannedKg);
+  const fuelEndKg = asNumber(lastSample?.fuelKg) || pirepPerfect.evidence.fuelEndKg;
   const fuelUsedKg =
     asNumber(report?.fuelUsed) > 0
       ? asNumber(report?.fuelUsed) * 0.45359237
-      : Math.max(0, fuelStartKg - fuelEndKg);
+      : (pirepPerfect.evidence.fuelUsedKg || Math.max(0, fuelStartKg - fuelEndKg));
 
   const startTime = asText(samples[0]?.capturedAtUtc) || asText(report?.departureTime);
   const endTime = asText(lastSample?.capturedAtUtc) || asText(report?.arrivalTime) || new Date().toISOString();
   const actualBlockMinutes = Math.max(
     1,
-    Math.round((new Date(endTime).getTime() - new Date(startTime || endTime).getTime()) / 60000)
+    pirepPerfect.evidence.blockMinutes || Math.round((new Date(endTime).getTime() - new Date(startTime || endTime).getTime()) / 60000)
   );
 
-  const stageReachedCount = Object.values(stages).filter((stage) => asBoolean(stage.reached)).length;
-  const stageRatio = stageReachedCount / Object.keys(stages).length;
+  const stageReachedCount = Math.max(Object.values(stages).filter((stage) => asBoolean(stage.reached)).length, pirepPerfect.evidence.reachedPhaseCount);
+  const stageTotalCount = Math.max(Object.keys(stages).length, pirepPerfect.evidence.totalPhaseCount || 0, 1);
+  const stageRatio = stageReachedCount / stageTotalCount;
   missionScore = Math.round((missionScore * 0.6) + stageRatio * 40);
 
   const avgFuelFlow = samples.length
@@ -1316,16 +1439,16 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("FUEL_FLOW", "cruise", "medium", "Consumo elevado durante la operación."));
   }
 
-  const maxAltitudeFeet = Math.max(...samples.map((sample) => asNumber(sample.altitudeFeet)), asNumber(report?.maxAltitudeFeet));
-  const maxSpeedKts = Math.max(...samples.map((sample) => asNumber(sample.indicatedAirspeed)), asNumber(report?.maxSpeedKts));
-  const landingVsFpm = Math.max(Math.abs(asNumber(report?.landingVS)), ...samples.map((sample) => Math.abs(asNumber(sample.landingVS))));
-  const landingGForce = Math.max(Math.abs(asNumber(report?.landingG)), ...samples.map((sample) => Math.abs(firstNumber(sample.gForce, sample.landingG))));
+  const maxAltitudeFeet = Math.max(...samples.map((sample) => asNumber(sample.altitudeFeet)), asNumber(report?.maxAltitudeFeet), pirepPerfect.evidence.maxAltitudeFt);
+  const maxSpeedKts = Math.max(...samples.map((sample) => asNumber(sample.indicatedAirspeed)), asNumber(report?.maxSpeedKts), pirepPerfect.evidence.maxIas);
+  const landingVsFpm = Math.max(Math.abs(asNumber(report?.landingVS)), pirepPerfect.evidence.landingVsFpm, ...samples.map((sample) => Math.abs(asNumber(sample.landingVS))));
+  const landingGForce = Math.max(Math.abs(asNumber(report?.landingG)), pirepPerfect.evidence.landingGForce, ...samples.map((sample) => Math.abs(firstNumber(sample.gForce, sample.landingG))));
 
   const completedAt = endTime;
   // For completed flights, use the actual arrival airport.
   // For interrupted flights that took off, use the reported arrival if available (pilot diverted/emergency).
   // For cancelled/aborted (never departed or never took off), use origin — aircraft didn't move.
-  const reportedActualArrival = normalizeIcao(activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? "");
+  const reportedActualArrival = normalizeIcao(activeFlight?.arrivalIcao ?? report?.arrivalIcao ?? pirepPerfect.identity.landingAirport ?? pirepPerfect.identity.destinationIcao ?? "");
   const aircraftLocation =
     finalStatus === "completed"
       ? normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? reservation.destination_ident)
@@ -1381,6 +1504,7 @@ export function evaluateOfficialCloseout(params: {
     scoring_status: scoringStatus,
     evaluation_status: evaluationStatus,
     economy_eligible: economyEligible,
+    pirep_perfect_scoring: pirepPerfect,
   };
 
   if (rawPirepFileName) officialPirep["pirep_file_name"] = rawPirepFileName;
@@ -1429,6 +1553,9 @@ export function evaluateOfficialCloseout(params: {
       distance_nm: reportDistanceNm,
       closeout_status: requestedCloseoutStatus,
       has_closeout_payload: hasCloseoutPayload,
+      pirep_perfect: pirepPerfect.evidence,
+      pirep_perfect_identity: pirepPerfect.identity,
+      unsupported_protected_metrics: pirepPerfect.unsupportedProtectedMetrics.map((metric) => metric.name),
     },
     procedureScore: clamp(procedureScore, 0, 100),
     missionScore: clamp(missionScore, 0, 100),
@@ -1516,6 +1643,16 @@ export async function persistOfficialCloseout(params: {
       pilot_callsign: asText(params.profile.callsign),
     },
     official_pirep: official.officialPirep,
+    pirep_perfect_scoring: asObject(official.officialPirep).pirep_perfect_scoring ?? null,
+    officialScores: {
+      procedure_score: official.procedureScore,
+      mission_score: official.missionScore,
+      safety_score: official.safetyScore,
+      efficiency_score: official.efficiencyScore,
+      final_score: official.finalScore,
+      scoring_status: official.scoringStatus,
+      source: "web_supabase",
+    },
     sur_style_summary: surStyleSummary,
     ...surStyleSummary,
     raw_pirep_xml: rawPirepXml,
@@ -1682,6 +1819,9 @@ export async function persistOfficialCloseout(params: {
       );
   }
 
+  const pirepPerfectPayload = asObject((officialPayload as GenericRow).pirep_perfect_scoring);
+  const pirepPerfectDetailed = asObject(pirepPerfectPayload.detailedPoints ?? pirepPerfectPayload.detailed_points);
+
   await maybeUpsert("pw_flight_score_reports", {
     reservation_id: reservationId,
     pilot_callsign: asText(params.profile.callsign),
@@ -1691,6 +1831,19 @@ export async function persistOfficialCloseout(params: {
     procedure_grade: official.scoringStatus === "manual_review" ? "Manual Review" : `${official.procedureScore}`,
     performance_grade: official.scoringStatus === "manual_review" ? "Manual Review" : `${official.finalScore}`,
     mission_score: official.missionScore,
+    dispatch_points: asNumber(pirepPerfectDetailed.dispatch_points),
+    preparation_points: asNumber(pirepPerfectDetailed.preparation_points),
+    taxi_out_points: asNumber(pirepPerfectDetailed.taxi_out_points),
+    takeoff_climb_points: asNumber(pirepPerfectDetailed.takeoff_climb_points),
+    cruise_points: asNumber(pirepPerfectDetailed.cruise_points),
+    approach_points: asNumber(pirepPerfectDetailed.approach_points),
+    landing_points: asNumber(pirepPerfectDetailed.landing_points),
+    taxi_in_shutdown_points: asNumber(pirepPerfectDetailed.taxi_in_shutdown_points),
+    penalty_points: asNumber(pirepPerfectDetailed.penalty_points),
+    duration_factor: asNumber(pirepPerfectDetailed.duration_factor),
+    mission_factor: asNumber(pirepPerfectDetailed.mission_factor),
+    legado_credits: asNumber(pirepPerfectDetailed.legado_credits),
+    valid_for_progression: official.economyEligible,
     score_payload: officialPayload,
     notes: asText(params.report?.remarks),
     scored_at: nowIso,

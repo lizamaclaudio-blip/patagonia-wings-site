@@ -8,6 +8,7 @@ import { OptionalAuthPage, useOptionalSession } from "@/components/site/Protecte
 import { ensurePilotProfile } from "@/lib/pilot-profile";
 import { supabase } from "@/lib/supabase/browser";
 import { resolvePatagoniaScore } from "@/lib/sur-score";
+import { buildPirepPerfectWebSummary } from "@/lib/pirep-perfect-web";
 
 type FlightReservationResultRow = {
   id: string;
@@ -606,6 +607,15 @@ function FlightResultContent() {
     };
   }, [reservation?.score_payload, scoreReport?.score_payload]);
 
+  const pirepPerfect = useMemo(
+    () => buildPirepPerfectWebSummary({
+      scorePayload: mergedScorePayload,
+      reservation: (reservation ?? null) as Record<string, unknown> | null,
+      scoreReport: (scoreReport ?? null) as Record<string, unknown> | null,
+    }),
+    [mergedScorePayload, reservation, scoreReport]
+  );
+
   const currentAppeal = useMemo(
     () => asObject(mergedScorePayload.flight_appeal) as Partial<FlightAppeal>,
     [mergedScorePayload]
@@ -633,6 +643,8 @@ function FlightResultContent() {
   const officialEvents = Array.isArray(mergedScorePayload.events_json)
     ? (mergedScorePayload.events_json as Array<Record<string, unknown>>)
     : [];
+  const pirepTimelineEvents = pirepPerfect.eventTimeline.map((item) => item as unknown as Record<string, unknown>);
+  const displayTimelineEvents = officialEvents.length ? officialEvents : pirepTimelineEvents;
   const officialCloseout = asObject(mergedScorePayload.official_closeout);
   const closeoutWarnings = Array.isArray(mergedScorePayload.closeout_warnings)
     ? (mergedScorePayload.closeout_warnings as string[])
@@ -662,6 +674,7 @@ function FlightResultContent() {
     penalties.length === 0 &&
     officialEvents.length === 0 &&
     blackboxEvents.length === 0 &&
+    !pirepPerfect.hasAnyEvidence &&
     telemetrySamples <= 0 &&
     elapsedSeconds <= 0 &&
     distanceNmEvidence <= 0;
@@ -670,9 +683,10 @@ function FlightResultContent() {
     scoringStatus === "pending_server_closeout" ||
     scoringStatus === "incomplete_closeout" ||
     noEvidenceSignals;
-  const rawPirepFileName = asText(mergedScorePayload.raw_pirep_file_name);
+  const rawPirepFileName = asText(mergedScorePayload.raw_pirep_file_name) || (pirepPerfect.hasRawXml ? "raw_pirep_xml" : "");
 
   const flightNumber =
+    pirepPerfect.flightNumber ||
     asText(reservation?.reservation_code) ||
     asText(reservation?.route_code) ||
     reservationId;
@@ -684,10 +698,10 @@ function FlightResultContent() {
     missionScore: reservation?.mission_score,
   });
 
-  const fuelStartKg = asNumber(mergedScorePayload.fuel_start_kg);
-  const fuelEndKg = asNumber(mergedScorePayload.fuel_end_kg);
-  const fuelUsedKg = asNumber(mergedScorePayload.fuel_used_kg);
-  const landingVs = asNumber(mergedScorePayload.landing_vs_fpm);
+  const fuelStartKg = asNumber(mergedScorePayload.fuel_start_kg) || pirepPerfect.fuelStartKg;
+  const fuelEndKg = asNumber(mergedScorePayload.fuel_end_kg) || pirepPerfect.fuelEndKg;
+  const fuelUsedKg = asNumber(mergedScorePayload.fuel_used_kg) || pirepPerfect.fuelUsedKg;
+  const landingVs = asNumber(mergedScorePayload.landing_vs_fpm) || pirepPerfect.landingVs || pirepPerfect.touchdownVs;
   const observations =
     asText(scoreReport?.notes) ||
     asText(mergedScorePayload.procedural_summary) ||
@@ -700,30 +714,30 @@ function FlightResultContent() {
   const performanceScoreValue = noEvaluableCloseout ? 0 : asNumber(scoreReport?.performance_score ?? reservation?.performance_score);
   const missionScoreValue = noEvaluableCloseout ? 0 : asNumber(reservation?.mission_score);
   const totalScoreValue = noEvaluableCloseout ? 0 : (surScore || procedureScoreValue + performanceScoreValue + missionScoreValue);
-  const originIdent = asText(reservation?.origin_ident) || "---";
-  const destinationIdent = asText(reservation?.destination_ident) || "---";
-  const aircraftCode = asText(reservation?.aircraft_type_code) || "—";
-  const aircraftRegistration = asText(reservation?.aircraft_registration) || "—";
-  const aircraftDisplay = [aircraftCode, aircraftRegistration].filter((item) => item && item !== "—").join(" · ") || "—";
-  const flightTypeLabel = payloadText(mergedScorePayload, ["flight_type", "operation_type", "route_band", "mission_type"], "—");
+  const originIdent = pirepPerfect.originIdent || asText(reservation?.origin_ident) || "---";
+  const destinationIdent = pirepPerfect.destinationIdent || asText(reservation?.destination_ident) || "---";
+  const aircraftCode = pirepPerfect.aircraftCode || asText(reservation?.aircraft_type_code) || "—";
+  const aircraftRegistration = pirepPerfect.aircraftRegistration || asText(reservation?.aircraft_registration) || "—";
+  const aircraftDisplay = pirepPerfect.aircraftDisplayName || [aircraftCode, aircraftRegistration].filter((item) => item && item !== "—").join(" · ") || "—";
+  const flightTypeLabel = pirepPerfect.flightType || payloadText(mergedScorePayload, ["flight_type", "operation_type", "route_band", "mission_type"], "—");
   const rankLabel = payloadText(mergedScorePayload, ["pilot_rank", "rank_name", "career_rank"], "Piloto Patagonia Wings");
   const pilotHours = payloadNumber(mergedScorePayload, ["pilot_hours", "pilot_total_hours", "total_hours"]);
-  const scheduledDeparture = formatClockValue(payloadText(mergedScorePayload, ["scheduled_departure", "scheduled_etd", "etd", "std"], ""));
-  const scheduledArrival = formatClockValue(payloadText(mergedScorePayload, ["scheduled_arrival", "scheduled_eta", "eta", "sta"], ""));
+  const scheduledDeparture = formatClockValue(pirepPerfect.scheduledDeparture || payloadText(mergedScorePayload, ["scheduled_departure", "scheduled_etd", "etd", "std"], ""));
+  const scheduledArrival = formatClockValue(pirepPerfect.scheduledArrival || payloadText(mergedScorePayload, ["scheduled_arrival", "scheduled_eta", "eta", "sta"], ""));
   const actualStart = formatClockValue(payloadText(mergedScorePayload, ["actual_start_time", "started_at", "flight_started_at", "block_off_at", "engine_start_at"], reservation?.created_at ?? ""));
   const actualEnd = formatClockValue(payloadText(mergedScorePayload, ["actual_end_time", "landed_at", "completed_at", "block_on_at"], reservation?.completed_at ?? reservation?.updated_at ?? ""));
-  const picFalseCount = payloadNumber(mergedScorePayload, ["pic_false_count", "pic_false", "pic_falses", "picFalse"]);
-  const stallSeconds = payloadNumber(mergedScorePayload, ["stall_seconds", "stall_time_seconds", "stallSeconds"]);
-  const overspeedSeconds = payloadNumber(mergedScorePayload, ["overspeed_seconds", "overspeed_time_seconds", "overspeedSeconds"]);
-  const maxGForce = payloadNumber(mergedScorePayload, ["landing_g_force", "max_g_force", "g_force", "touchdown_g"]);
-  const departureWind = payloadText(mergedScorePayload, ["departure_wind_summary", "departure_wind", "takeoff_wind", "dep_wind"], "Sin datos recibidos");
-  const arrivalWind = payloadText(mergedScorePayload, ["arrival_wind_summary", "arrival_wind", "landing_wind", "arr_wind"], "Sin datos recibidos");
-  const departureRunway = payloadText(mergedScorePayload, ["departure_runway", "takeoff_runway", "dep_runway"], "RWY N/D");
-  const arrivalRunway = payloadText(mergedScorePayload, ["arrival_runway", "landing_runway", "arr_runway"], "RWY N/D");
-  const cruiseLevel = payloadText(mergedScorePayload, ["cruise_level", "flight_level", "planned_flight_level", "fl"], "—");
-  const routeText = payloadText(mergedScorePayload, ["route", "route_string", "ofp_route", "filed_route"], "Sin ruta cargada");
-  const simName = payloadText(mergedScorePayload, ["simulator", "sim", "sim_name"], "Microsoft Flight Simulator / ACARS Patagonia Wings");
-  const acarsVersion = payloadText(mergedScorePayload, ["acars_version", "client_version", "version"], "—");
+  const picFalseCount = payloadNumber(mergedScorePayload, ["pic_false_count", "pic_false", "pic_falses", "picFalse"]) || pirepPerfect.picFalseCount;
+  const stallSeconds = payloadNumber(mergedScorePayload, ["stall_seconds", "stall_time_seconds", "stallSeconds"]) || pirepPerfect.stallSeconds;
+  const overspeedSeconds = payloadNumber(mergedScorePayload, ["overspeed_seconds", "overspeed_time_seconds", "overspeedSeconds"]) || pirepPerfect.overspeedSeconds;
+  const maxGForce = payloadNumber(mergedScorePayload, ["landing_g_force", "max_g_force", "g_force", "touchdown_g"]) || pirepPerfect.maxGForce || pirepPerfect.touchdownG;
+  const departureWind = pirepPerfect.departureWind || payloadText(mergedScorePayload, ["departure_wind_summary", "departure_wind", "takeoff_wind", "dep_wind"], "Sin datos recibidos");
+  const arrivalWind = pirepPerfect.arrivalWind || payloadText(mergedScorePayload, ["arrival_wind_summary", "arrival_wind", "landing_wind", "arr_wind"], "Sin datos recibidos");
+  const departureRunway = pirepPerfect.departureRunway || payloadText(mergedScorePayload, ["departure_runway", "takeoff_runway", "dep_runway"], "RWY N/D");
+  const arrivalRunway = pirepPerfect.arrivalRunway || payloadText(mergedScorePayload, ["arrival_runway", "landing_runway", "arr_runway"], "RWY N/D");
+  const cruiseLevel = pirepPerfect.flightLevel || payloadText(mergedScorePayload, ["cruise_level", "flight_level", "planned_flight_level", "fl"], "—");
+  const routeText = pirepPerfect.routeText || payloadText(mergedScorePayload, ["route", "route_string", "ofp_route", "filed_route"], "Sin ruta cargada");
+  const simName = [pirepPerfect.simulator, pirepPerfect.simAircraftRaw].filter(Boolean).join(" · ") || payloadText(mergedScorePayload, ["simulator", "sim", "sim_name"], "Microsoft Flight Simulator / ACARS Patagonia Wings");
+  const acarsVersion = pirepPerfect.schemaVersion || payloadText(mergedScorePayload, ["acars_version", "client_version", "version"], "—");
   const procedureGroups: EvaluationGroup[] = [
     {
       title: "Procedimientos observados",
@@ -742,9 +756,9 @@ function FlightResultContent() {
     },
     {
       title: "Maniobras y eventos",
-      score: officialEvents.length ? `${officialEvents.length} eventos` : "Sin eventos",
+      score: displayTimelineEvents.length ? `${displayTimelineEvents.length} eventos` : "Sin eventos",
       positive: true,
-      items: officialEvents,
+      items: displayTimelineEvents,
       fallback: noEvaluableCloseout ? "No hay eventos evaluables desde caja negra/ACARS." : "Sin eventos operacionales registrados por el servidor.",
     },
     {
@@ -979,16 +993,76 @@ function FlightResultContent() {
             <InfoTable
               columns={["Duración", "Origen", "Comienzo", "Destino", "Fin", "Equipo", "Estado"]}
               rows={[[
-                { label: "Duración", value: formatMinutes(reservation.actual_block_minutes) },
+                { label: "Duración", value: pirepPerfect.blockDuration || formatMinutes(reservation.actual_block_minutes) },
                 { label: "Origen", value: originIdent },
                 { label: "Comienzo", value: actualStart, tone: "text-emerald-300" },
                 { label: "Destino", value: destinationIdent },
                 { label: "Fin", value: actualEnd, tone: "text-sky-200" },
-                { label: "Equipo", value: aircraftCode },
+                { label: "Equipo", value: aircraftDisplay },
                 { label: "Estado", value: noEvaluableCloseout ? "No evaluable" : formatStatus(reservation.status), tone: noEvaluableCloseout ? "text-rose-200" : "text-emerald-300" },
               ]]}
             />
           </section>
+
+          {pirepPerfect.hasRawXml ? (
+            <section className="glass-panel rounded-[30px] p-7">
+              <SurHeading icon="🧾" label="PIREP Perfect" strong="A3 · Parser Web" />
+              <InfoTable
+                columns={["XML", "Schema", "Ruta", "Avión", "Matrícula", "Perfil/Add-on", "Evidencia"]}
+                rows={[[
+                  { label: "XML", value: `${pirepPerfect.rawXmlLength} chars`, tone: "text-emerald-200" },
+                  { label: "Schema", value: pirepPerfect.schemaVersion || "PIREP legacy" },
+                  { label: "Ruta", value: `${originIdent} → ${destinationIdent}` },
+                  { label: "Avión", value: aircraftDisplay },
+                  { label: "Matrícula", value: aircraftRegistration },
+                  { label: "Perfil/Add-on", value: pirepPerfect.addonProvider || "N/D" },
+                  { label: "Evidencia", value: pirepPerfect.hasAnyEvidence ? "Leída" : "Insuficiente", tone: pirepPerfect.hasAnyEvidence ? "text-emerald-300" : "text-rose-200" },
+                ]]}
+              />
+
+              <SurHeading icon="🧩" label="Capacidades por" strong="Aeronave" />
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {(pirepPerfect.capabilities.length ? pirepPerfect.capabilities : [
+                  { name: "Capabilities", supported: false, source: "xml_legacy", reliability: "not_declared", penaltyEligible: false, reason: "Bloque Capabilities no disponible en este PIREP" },
+                ]).map((metric) => (
+                  <div key={`${metric.name}-${metric.source}`} className={`rounded-[18px] border px-4 py-3 ${metric.supported ? "border-emerald-400/15 bg-emerald-400/5" : "border-amber-400/15 bg-amber-400/5"}`}>
+                    <p className="text-sm font-semibold text-white">{metric.name}</p>
+                    <p className={`mt-1 text-xs font-semibold ${metric.supported ? "text-emerald-300" : "text-amber-200"}`}>
+                      {metric.supported ? "Soportado" : "N/D no penalizable"}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-white/60">{metric.source} · {metric.reason}</p>
+                  </div>
+                ))}
+              </div>
+
+              <SurHeading icon="🛬" label="Métricas reales" strong="del XML" />
+              <InfoTable
+                columns={["Distancia", "Max IAS", "Crucero", "Fuel usado", "Touchdown VS", "Touchdown G", "XPDR"]}
+                rows={[[
+                  { label: "Distancia", value: formatNm(pirepPerfect.distanceNm || distanceNmEvidence || reservation.distance_nm) },
+                  { label: "Max IAS", value: pirepPerfect.maxIas ? `${Math.round(pirepPerfect.maxIas)} kt` : "—" },
+                  { label: "Crucero", value: pirepPerfect.cruiseAltitude ? `${Math.round(pirepPerfect.cruiseAltitude)} ft` : cruiseLevel },
+                  { label: "Fuel usado", value: formatKg(fuelUsedKg || actualSnapshot?.fuel_kg_actual) },
+                  { label: "Touchdown VS", value: landingVs ? `${Math.round(landingVs)} ft/min` : "—", tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
+                  { label: "Touchdown G", value: pirepPerfect.touchdownG ? `${pirepPerfect.touchdownG.toFixed(2)}g` : "—" },
+                  { label: "XPDR", value: pirepPerfect.transponderState || pirepPerfect.transponder || "N/D", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("XPDR")) ? "text-amber-200" : "text-emerald-200" },
+                ]]}
+              />
+
+              <SurHeading icon="🧭" label="Resumen por" strong="Fases" />
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {pirepPerfect.phases.length ? pirepPerfect.phases.map((phase) => (
+                  <div key={phase.name} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-sm font-semibold text-white">{phase.name}</p>
+                    <p className="mt-1 text-xs text-white/52">{phase.samples} muestras · {phase.duration || "sin duración"}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt · ALT {Math.round(phase.maxAltitude)} ft · VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)}</p>
+                  </div>
+                )) : (
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran métricas legacy desde Resumen/Indicadores.</p>
+                )}
+              </div>
+            </section>
+          ) : null}
 
           {canUsePirepTester ? (
             <section className="glass-panel rounded-[30px] p-7">
@@ -1219,10 +1293,10 @@ function FlightResultContent() {
               <div className="rounded-[24px] border border-emerald-400/15 bg-emerald-400/5 p-5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200/80">Timeline servidor / caja negra</p>
                 <div className="mt-4 space-y-3">
-                  {officialEvents.length ? officialEvents.slice(0, 10).map((item, index) => (
+                  {displayTimelineEvents.length ? displayTimelineEvents.slice(0, 14).map((item, index) => (
                     <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
                       <p className="text-sm font-semibold text-white">{itemTitle(item)}</p>
-                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "evento"}</p>
+                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "evento"} · {asText(item.source) || "ACARS"}</p>
                       <p className="mt-2 text-sm text-white/78">{itemDescription(item)}</p>
                     </div>
                   )) : <p className="text-sm text-white/64">Sin eventos oficiales registrados.</p>}
