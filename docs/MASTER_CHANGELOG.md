@@ -1198,3 +1198,15 @@ Regla contable preservada:
 - Economía de aerolínea mantiene trazabilidad de `Cierre no evaluable` pero excluye impacto operacional de utilidad/ingresos/costos válidos.
 - Se agrega script no destructivo `sql/2026-05-01-diagnostico-cierres-no-evaluables.sql` con consultas de auditoría y reversa manual comentada por reserva específica.
 
+## 2026-05-01 - BLOQUE TEST PIREP XML (preview seguro)
+- Nuevo endpoint `POST /api/acars/finalize/test` (owner/admin) para ejecutar evaluación server-side en `testMode + dryRun` usando el mismo motor de reglaje (`evaluateOfficialCloseout`) sin cierre contable real.
+- Respuesta incluye `evaluationPreview`, estado, score, timeline, penalizaciones/eventos y banderas de seguridad (`economyMode=preview`, `salaryAccrued=false`, `ledgerWritten=false`, `walletMovement=false`).
+- Se agregan fixtures XML en `test-fixtures/pireps/`:
+  - `pirep-valid-sample.xml`
+  - `pirep-no-events.xml`
+  - `pirep-hard-landing.xml`
+  - `pirep-overspeed.xml`
+  - `pirep-completed-normal.xml`
+- UI mínima en `/flights/[reservationId]` para owner/admin en entorno dev: selector de fixture, XML manual opcional y ejecución de preview de reglaje.
+- Persistencia opcional no operativa en `acars_test_evaluations` (si existe); si la tabla no existe, la evaluación sigue funcionando y retorna warning de trazabilidad.
+

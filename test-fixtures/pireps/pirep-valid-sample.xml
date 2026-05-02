@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PIREP>
+  <Header>
+    <SchemaVersion>7.0.14</SchemaVersion>
+    <Source>PatagoniaWingsACARS</Source>
+    <GeneratedAtUtc>2026-05-01T13:40:00Z</GeneratedAtUtc>
+  </Header>
+  <Flight>
+    <ReservationId>TEST-VALID-SAMPLE</ReservationId>
+    <FlightNumber>PWG-TST-VAL</FlightNumber>
+    <Callsign>PWG001</Callsign>
+    <DepartureICAO>SAEZ</DepartureICAO>
+    <ArrivalICAO>SABE</ArrivalICAO>
+    <AircraftICAO>A320</AircraftICAO>
+    <DistanceNm>280</DistanceNm>
+    <DepartureTimeUtc>2026-05-01T12:00:00Z</DepartureTimeUtc>
+    <ArrivalTimeUtc>2026-05-01T13:40:00Z</ArrivalTimeUtc>
+  </Flight>
+  <ReglajeHints>
+    <CantidadPICs>3</CantidadPICs>
+    <PICsFailed>0</PICsFailed>
+  </ReglajeHints>
+  <RawEvents>
+    <Log> START SESSION</Log>
+    <Log> TAKEOFF RWY 11</Log>
+    <Log> SQUAWK 1200</Log>
+  </RawEvents>
+</PIREP>

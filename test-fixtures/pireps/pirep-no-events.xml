@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PIREP>
+  <Header>
+    <SchemaVersion>7.0.14</SchemaVersion>
+    <Source>PatagoniaWingsACARS</Source>
+    <GeneratedAtUtc>2026-05-01T12:00:00Z</GeneratedAtUtc>
+  </Header>
+  <Flight>
+    <ReservationId>TEST-NO-EVENTS</ReservationId>
+    <FlightNumber>PWG-TST-EMPTY</FlightNumber>
+    <Callsign>PWG001</Callsign>
+    <DepartureICAO>SAEZ</DepartureICAO>
+    <ArrivalICAO>SABE</ArrivalICAO>
+    <AircraftICAO>A320</AircraftICAO>
+    <DistanceNm>0</DistanceNm>
+  </Flight>
+  <ReglajeHints>
+    <CantidadPICs>0</CantidadPICs>
+    <PICsFailed>0</PICsFailed>
+  </ReglajeHints>
+  <RawEvents>
+    <Log> CLOSEOUT RECEIVED WITHOUT TELEMETRY</Log>
+  </RawEvents>
+</PIREP>

@@ -91,18 +91,15 @@ select
   psl.net_paid_usd,
   psl.status,
   psl.created_at,
-  psl.updated_at,
   to_jsonb(psl) as row_json
 from pilot_salary_ledger psl
 cross join params p
 where (
   p.p_reservation_id is null
-  or coalesce(psl.reservation_id::text, '') = p.p_reservation_id
-  or coalesce(psl.reservation_id::text, '') ilike '%' || p.p_target_text || '%'
   or coalesce(psl.pilot_callsign, '') ilike '%' || p.p_target_text || '%'
   or coalesce(to_jsonb(psl)::text, '') ilike '%' || p.p_target_text || '%'
 )
-order by psl.updated_at desc nulls last
+order by psl.created_at desc nulls last
 limit 200;
 
 

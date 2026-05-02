@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PIREP>
+  <Header>
+    <SchemaVersion>7.0.14</SchemaVersion>
+    <Source>PatagoniaWingsACARS</Source>
+    <GeneratedAtUtc>2026-05-01T13:40:00Z</GeneratedAtUtc>
+  </Header>
+  <Flight>
+    <ReservationId>TEST-HARD-LDG</ReservationId>
+    <FlightNumber>PWG-TST-HARD</FlightNumber>
+    <Callsign>PWG001</Callsign>
+    <DepartureICAO>SAEZ</DepartureICAO>
+    <ArrivalICAO>SABE</ArrivalICAO>
+    <AircraftICAO>A320</AircraftICAO>
+    <DistanceNm>210</DistanceNm>
+    <LandingVS>-1240</LandingVS>
+    <LandingG>2.1</LandingG>
+  </Flight>
+  <ReglajeHints>
+    <CantidadPICs>1</CantidadPICs>
+    <PICsFailed>1</PICsFailed>
+  </ReglajeHints>
+  <RawEvents>
+    <Log> START SESSION</Log>
+    <Log> TAKEOFF RWY 11</Log>
+    <Log> LANDING HARD CONTACT</Log>
+    <Log> CRASH IMPACT DETECTED</Log>
+  </RawEvents>
+</PIREP>

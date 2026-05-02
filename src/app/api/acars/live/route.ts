@@ -7,6 +7,34 @@ function getBearerToken(request: NextRequest): string | null {
   return auth.slice(7).trim() || null;
 }
 
+type GenericObject = Record<string, unknown>;
+
+function asObject(value: unknown): GenericObject {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as GenericObject) : {};
+}
+
+function asText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return typeof value === "string" ? value.trim() : String(value).trim();
+}
+
+function appendLiveSample(existingPayload: GenericObject, telemetry: GenericObject, nowIso: string) {
+  const existingLive = asObject(existingPayload.acars_live);
+  const existingTail = Array.isArray(existingLive.samples_tail) ? existingLive.samples_tail : [];
+  const previousCount = typeof existingLive.sample_count === "number" ? existingLive.sample_count : existingTail.length;
+  const sample = {
+    ...telemetry,
+    received_at: nowIso,
+  };
+
+  return {
+    sample,
+    samplesTail: [...existingTail.slice(-29), sample],
+    sampleCount: previousCount + 1,
+    firstSampleAt: asText(existingLive.first_sample_at) || nowIso,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
@@ -21,35 +49,28 @@ export async function GET(request: NextRequest) {
 
     const { data: reservation, error } = await supabase
       .from("flight_reservations")
-      .select(
-        "id, status, score_payload, updated_at, pilot_id, flight_number, origin_icao, destination_icao, aircraft_registration, aircraft_type_code"
-      )
+      .select("*")
       .eq("id", reservationId)
       .maybeSingle();
 
     if (error || !reservation) {
-      return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
+      return NextResponse.json({ error: error?.message ?? "Reserva no encontrada." }, { status: 404 });
     }
 
-    const scorePayload =
-      reservation.score_payload && typeof reservation.score_payload === "object"
-        ? (reservation.score_payload as Record<string, unknown>)
-        : {};
-
-    const acarsLive = scorePayload.acars_live
-      ? (scorePayload.acars_live as Record<string, unknown>)
-      : null;
+    const row = reservation as GenericObject;
+    const scorePayload = asObject(row.score_payload);
+    const acarsLive = scorePayload.acars_live ? asObject(scorePayload.acars_live) : null;
 
     return NextResponse.json({
       ok: true,
       reservationId,
-      status: reservation.status,
-      updatedAt: reservation.updated_at,
-      flightNumber: reservation.flight_number,
-      origin: reservation.origin_icao,
-      destination: reservation.destination_icao,
-      aircraftRegistration: reservation.aircraft_registration,
-      aircraftType: reservation.aircraft_type_code,
+      status: row.status ?? null,
+      updatedAt: row.updated_at ?? null,
+      flightNumber: row.flight_number ?? row.route_code ?? null,
+      origin: row.origin_icao ?? row.departure_icao ?? row.origin_ident ?? row.origin ?? null,
+      destination: row.destination_icao ?? row.arrival_icao ?? row.destination_ident ?? row.destination ?? null,
+      aircraftRegistration: row.aircraft_registration ?? row.tail_number ?? row.registration ?? null,
+      aircraftType: row.aircraft_type_code ?? row.aircraft_type ?? row.equipment ?? null,
       acarsLive,
       hasLiveData: acarsLive !== null,
     });
@@ -87,26 +108,31 @@ export async function POST(request: NextRequest) {
 
     const { data: reservation, error: readError } = await supabase
       .from("flight_reservations")
-      .select("id, pilot_id, score_payload, status")
+      .select("*")
       .eq("id", reservationId)
       .maybeSingle();
 
     if (readError || !reservation) {
-      return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
+      return NextResponse.json({ error: readError?.message ?? "Reserva no encontrada." }, { status: 404 });
     }
 
-    const existingPayload =
-      reservation.score_payload && typeof reservation.score_payload === "object"
-        ? (reservation.score_payload as Record<string, unknown>)
-        : {};
-
+    const row = reservation as GenericObject;
+    const existingPayload = asObject(row.score_payload);
+    const telemetry = asObject(payload.telemetry);
     const nowIso = new Date().toISOString();
+    const liveSample = appendLiveSample(existingPayload, telemetry, nowIso);
+
     const livePayload = {
       ...existingPayload,
       acars_live: {
+        ...asObject(existingPayload.acars_live),
         received_at: nowIso,
         phase: payload.phase ?? "unknown",
-        last_sample: payload.telemetry ?? {},
+        last_sample: telemetry,
+        samples_tail: liveSample.samplesTail,
+        sample_count: liveSample.sampleCount,
+        first_sample_at: liveSample.firstSampleAt,
+        last_sample_at: nowIso,
         events: payload.events ?? [],
         elapsed_seconds: payload.elapsedSeconds ?? null,
         airborne_seconds: payload.airborneSeconds ?? null,
@@ -126,7 +152,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, reservationId, receivedAt: nowIso });
+    return NextResponse.json({ ok: true, reservationId, receivedAt: nowIso, sampleCount: liveSample.sampleCount });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error al guardar telemetria en vivo." },

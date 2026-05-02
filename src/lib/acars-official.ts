@@ -78,10 +78,20 @@ export type AcarsReportInput = {
   fuelUsed?: number | null;
   landingVS?: number | null;
   landingG?: number | null;
+  picChecksTotal?: number | null;
+  picChecksCompleted?: number | null;
+  picChecksSucceeded?: number | null;
+  picChecksFailed?: number | null;
+  lastPicRequiredFrequencyMhz?: number | null;
+  picRadioSource?: string | null;
   remarks?: string | null;
   maxAltitudeFeet?: number | null;
   maxSpeedKts?: number | null;
   approachQnhHpa?: number | null;
+  patagoniaScore?: number | null;
+  procedureScore?: number | null;
+  performanceScore?: number | null;
+  evaluation?: Record<string, unknown> | null;
 };
 
 export type AcarsTelemetrySample = {
@@ -99,16 +109,27 @@ export type AcarsTelemetrySample = {
   fuelTotalLbs?: number | null;
   fuelKg?: number | null;
   fuelFlowLbsHour?: number | null;
+  fuelTotalCapacityLbs?: number | null;
+  fuelLeftTankLbs?: number | null;
+  fuelRightTankLbs?: number | null;
+  fuelCenterTankLbs?: number | null;
   totalWeightKg?: number | null;
   totalWeightLbs?: number | null;
   zeroFuelWeightKg?: number | null;
   payloadKg?: number | null;
+  emptyWeightKg?: number | null;
+  emptyWeightLbs?: number | null;
   engine1N1?: number | null;
   engine2N1?: number | null;
   engine3N1?: number | null;
   engine4N1?: number | null;
+  engineOneRunning?: boolean | null;
+  engineTwoRunning?: boolean | null;
+  engineThreeRunning?: boolean | null;
+  engineFourRunning?: boolean | null;
   landingVS?: number | null;
   landingG?: number | null;
+  gForce?: number | null;
   onGround?: boolean | null;
   strobeLightsOn?: boolean | null;
   beaconLightsOn?: boolean | null;
@@ -117,6 +138,8 @@ export type AcarsTelemetrySample = {
   navLightsOn?: boolean | null;
   parkingBrake?: boolean | null;
   autopilotActive?: boolean | null;
+  batteryMasterOn?: boolean | null;
+  avionicsMasterOn?: boolean | null;
   doorOpen?: boolean | null;
   pause?: boolean | null;
   seatBeltSign?: boolean | null;
@@ -137,11 +160,27 @@ export type AcarsTelemetrySample = {
   windSpeed?: number | null;
   windDirection?: number | null;
   qnh?: number | null;
+  qnhInHg?: number | null;
+  outsideTemperature?: number | null;
   isRaining?: boolean | null;
   simulatorType?: string | null;
   aircraftTitle?: string | null;
   detectedProfileCode?: string | null;
+  aircraftTypeCode?: string | null;
+  aircraftVariantCode?: string | null;
+  addonSource?: string | null;
+  profileCode?: string | null;
+  detectionConfidence?: string | null;
+  detectionReason?: string | null;
+  detectionSource?: string | null;
+  matchedTitle?: string | null;
+  matchedPattern?: string | null;
+  fallbackUsed?: boolean | null;
+  profileStatus?: string | null;
+  com1FrequencyMhz?: number | null;
+  com1StandbyFrequencyMhz?: number | null;
   com2FrequencyMhz?: number | null;
+  com2StandbyFrequencyMhz?: number | null;
 };
 
 export type AircraftDamageEventInput = {
@@ -281,6 +320,191 @@ function extractXmlText(xml: string, tag: string) {
   return match ? asText(match[1]) : "";
 }
 
+
+function firstNumber(...values: unknown[]) {
+  for (const value of values) {
+    const parsed = asNumber(value);
+    if (parsed > 0) return parsed;
+  }
+  return 0;
+}
+
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    const parsed = asText(value);
+    if (parsed) return parsed;
+  }
+  return "";
+}
+
+function sampleFuelKg(sample?: AcarsTelemetrySample | null) {
+  if (!sample) return 0;
+  return firstNumber(sample.fuelKg, asNumber(sample.fuelTotalLbs) * 0.45359237);
+}
+
+function sampleWeightKg(sample?: AcarsTelemetrySample | null) {
+  if (!sample) return 0;
+  return firstNumber(sample.totalWeightKg, asNumber(sample.totalWeightLbs) * 0.45359237);
+}
+
+function compactDuration(minutes: number) {
+  const safeMinutes = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+  return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
+function formatWindSummary(direction: number, speed: number) {
+  if (!direction && !speed) return "Sin datos recibidos";
+  const dir = Math.round(Math.max(0, direction));
+  const spd = Math.round(Math.max(0, speed));
+  return `${dir.toString().padStart(3, "0")}/${spd} kt`;
+}
+
+function countSecondsBySamples(samples: AcarsTelemetrySample[], predicate: (sample: AcarsTelemetrySample) => boolean) {
+  const count = samples.filter(predicate).length;
+  if (count === 0) return 0;
+  if (samples.length < 2) return count;
+  const first = new Date(asText(samples[0].capturedAtUtc)).getTime();
+  const last = new Date(asText(samples.at(-1)?.capturedAtUtc)).getTime();
+  const elapsed = Number.isFinite(first) && Number.isFinite(last) && last > first ? (last - first) / 1000 : 0;
+  const samplePeriod = elapsed > 0 ? Math.max(1, elapsed / Math.max(1, samples.length - 1)) : 1;
+  return Math.round(count * samplePeriod);
+}
+
+type SurStyleSummaryOfficial = Pick<OfficialScoringResult,
+  "finalStatus" | "evaluationStatus" | "scoringStatus" | "procedureScore" | "missionScore" | "safetyScore" | "efficiencyScore" | "finalScore" |
+  "actualBlockMinutes" | "fuelStartKg" | "fuelEndKg" | "fuelUsedKg" | "landingVsFpm" | "landingGForce" | "maxAltitudeFeet" | "maxSpeedKts" |
+  "economyEligible" | "evidenceWarnings" | "evidenceSnapshot" | "penaltiesJson" | "eventsJson" | "damageSummary"
+>;
+
+function buildSurStyleSummary(params: {
+  reservation: GenericRow;
+  dispatchPackage: GenericRow | null;
+  activeFlight?: AcarsFlightInput | null;
+  preparedDispatch?: PreparedDispatchInput | null;
+  report?: AcarsReportInput | null;
+  telemetryLog: AcarsTelemetrySample[];
+  lastSimData?: AcarsTelemetrySample | null;
+  closeoutPayload?: AcarsCloseoutPayloadInput | null;
+  official: SurStyleSummaryOfficial;
+}) {
+  const samples = params.telemetryLog ?? [];
+  const firstSample = samples[0] ?? null;
+  const lastSample = params.lastSimData ?? samples.at(-1) ?? null;
+  const airborneSamples = samples.filter((sample) => !asBoolean(sample.onGround));
+  const takeoffSample = airborneSamples[0] ?? null;
+  const touchdownSample = samples.find((sample, index) => index > 0 && !asBoolean(samples[index - 1]?.onGround) && asBoolean(sample.onGround)) ?? lastSample;
+  const rawXml = asText(params.closeoutPayload?.pirepXmlContent);
+  const closeoutHeader = asObject(params.closeoutPayload?.header);
+  const closeoutBlackbox = asObject((params.closeoutPayload as unknown as GenericRow)?.blackboxSummary);
+  const closeoutEventSummary = asObject((params.closeoutPayload as unknown as GenericRow)?.eventSummary);
+  const reportEval = asObject(params.report?.evaluation);
+  const telemetrySummary = asObject(reportEval.telemetrySummary);
+  const weightsValidation = asObject(reportEval.weightsValidation);
+  const weatherValidation = asObject(reportEval.weatherValidation);
+  const blockMinutes = firstNumber(params.official.actualBlockMinutes, asNumber(closeoutHeader.durationMinutes));
+  const flightMinutes = airborneSamples.length >= 2
+    ? Math.round((new Date(asText(airborneSamples.at(-1)?.capturedAtUtc)).getTime() - new Date(asText(airborneSamples[0].capturedAtUtc)).getTime()) / 60000)
+    : 0;
+  const departureWindSpeed = firstNumber(asNumber(weatherValidation.departureWindSpeed), takeoffSample?.windSpeed, firstSample?.windSpeed, extractXmlNumber(rawXml, "VientoSalidaVelocidad"));
+  const departureWindDirection = firstNumber(asNumber(weatherValidation.departureWindDirection), takeoffSample?.windDirection, firstSample?.windDirection, extractXmlNumber(rawXml, "VientoSalidaDireccion"));
+  const arrivalWindSpeed = firstNumber(asNumber(weatherValidation.arrivalWindSpeed), touchdownSample?.windSpeed, lastSample?.windSpeed, extractXmlNumber(rawXml, "VientoLlegadaVelocidad"));
+  const arrivalWindDirection = firstNumber(asNumber(weatherValidation.arrivalWindDirection), touchdownSample?.windDirection, lastSample?.windDirection, extractXmlNumber(rawXml, "VientoLlegadaDireccion"));
+  const overspeedSeconds = Math.max(extractXmlNumber(rawXml, "OverspeedSecs"), asNumber(telemetrySummary.overspeedSeconds), countSecondsBySamples(samples, (sample) => asNumber(sample.indicatedAirspeed) > 380 || (asNumber(sample.altitudeFeet) < 10000 && asNumber(sample.indicatedAirspeed) > 265)));
+  const stallSeconds = Math.max(extractXmlNumber(rawXml, "StallSecs"), asNumber(telemetrySummary.stallSeconds), countSecondsBySamples(samples, (sample) => !asBoolean(sample.onGround) && asNumber(sample.indicatedAirspeed) > 0 && asNumber(sample.indicatedAirspeed) < 55));
+  const pauseSeconds = Math.max(extractXmlNumber(rawXml, "TiempoenPausa"), countSecondsBySamples(samples, (sample) => asBoolean(sample.pause)));
+  const picFalseCount = Math.max(
+    extractXmlNumber(rawXml, "PICsFailed"),
+    asNumber(params.report?.picChecksFailed),
+    asNumber(closeoutBlackbox.pic_checks_failed),
+    asNumber(closeoutEventSummary.pic_false_count)
+  );
+  const picChecksTotal = Math.max(
+    extractXmlNumber(rawXml, "CantidadPICs"),
+    asNumber(params.report?.picChecksCompleted),
+    asNumber(closeoutBlackbox.pic_checks_completed),
+    asNumber(closeoutEventSummary.pic_checks_total)
+  );
+  const takeoffWeightKg = firstNumber(extractXmlNumber(rawXml, "TakeOffWeight"), asNumber(weightsValidation.actualTakeoffWeightKg), sampleWeightKg(takeoffSample), sampleWeightKg(firstSample));
+  const landingWeightKg = firstNumber(extractXmlNumber(rawXml, "LandingWeight"), asNumber(weightsValidation.actualLandingWeightKg), sampleWeightKg(touchdownSample), sampleWeightKg(lastSample));
+  const fuelStartKg = firstNumber(params.official.fuelStartKg, extractXmlNumber(rawXml, "TakeOffFuel"), sampleFuelKg(firstSample), params.preparedDispatch?.fuelPlannedKg);
+  const fuelEndKg = firstNumber(params.official.fuelEndKg, extractXmlNumber(rawXml, "FinalFuel"), sampleFuelKg(lastSample));
+  const plannedFuelKg = firstNumber(params.preparedDispatch?.fuelPlannedKg, asNumber(weightsValidation.plannedFuelKg));
+  const plannedTowKg = firstNumber(asNumber(weightsValidation.plannedTowKg), asNumber(params.preparedDispatch?.zeroFuelWeightKg) + plannedFuelKg);
+  const plannedZfwKg = firstNumber(params.preparedDispatch?.zeroFuelWeightKg, asNumber(weightsValidation.plannedZeroFuelWeightKg));
+  const actualZfwKg = firstNumber(asNumber(weightsValidation.actualZeroFuelWeightKg), firstSample?.zeroFuelWeightKg, lastSample?.zeroFuelWeightKg);
+  const actualPayloadKg = firstNumber(firstSample?.payloadKg, lastSample?.payloadKg, params.preparedDispatch?.payloadKg);
+  const maxGForce = Math.max(params.official.landingGForce, asNumber(closeoutBlackbox.max_g_force), ...samples.map((sample) => Math.abs(firstNumber(sample.gForce, sample.landingG))));
+  const maxDescentRateFpm = Math.min(0, ...samples.map((sample) => asNumber(sample.verticalSpeed)));
+  const maxAscentRateFpm = Math.max(0, ...samples.map((sample) => asNumber(sample.verticalSpeed)));
+  const routeText = firstText(params.preparedDispatch?.routeText, params.activeFlight?.route, asText(params.dispatchPackage?.route_text), extractXmlText(rawXml, "Ruta"));
+  const simulatorName = firstText(lastSample?.simulatorType, firstSample?.simulatorType, extractXmlText(rawXml, "SimVersion"), "MSFS2020");
+  const aircraftTitle = firstText(lastSample?.aircraftTitle, firstSample?.aircraftTitle, extractXmlText(rawXml, "SimAvionRaw"));
+  const aircraftVariantCode = firstText(lastSample?.aircraftVariantCode, firstSample?.aircraftVariantCode, params.activeFlight?.aircraftVariantCode, params.preparedDispatch?.aircraftVariantCode);
+  const addonProvider = firstText(lastSample?.addonSource, firstSample?.addonSource, params.activeFlight?.addonProvider, params.preparedDispatch?.addonProvider);
+  const qualityText = params.official.evaluationStatus === "no_evaluable" ? "Cierre recibido, pero no evaluable por falta de evidencia de vuelo. No se genera devengo ni ledger." : params.official.finalStatus === "completed" ? "Vuelo evaluado oficialmente por Web/Supabase con evidencia ACARS y caja negra." : `Vuelo cerrado como ${params.official.finalStatus}; no recibe puntaje operativo completo.`;
+  return {
+    sur_style_summary_version: "sur-layout-data.v1",
+    flight_type: firstText(params.preparedDispatch?.flightMode, params.activeFlight?.flightModeCode, asText(params.reservation.flight_mode_code), "—"),
+    route: routeText,
+    route_string: routeText,
+    filed_route: routeText,
+    departure_wind_summary: formatWindSummary(departureWindDirection, departureWindSpeed),
+    arrival_wind_summary: formatWindSummary(arrivalWindDirection, arrivalWindSpeed),
+    departure_wind_speed_kt: Math.round(departureWindSpeed),
+    departure_wind_direction_deg: Math.round(departureWindDirection),
+    arrival_wind_speed_kt: Math.round(arrivalWindSpeed),
+    arrival_wind_direction_deg: Math.round(arrivalWindDirection),
+    pic_false_count: picFalseCount,
+    pic_checks_total: picChecksTotal,
+    stall_seconds: stallSeconds,
+    overspeed_seconds: overspeedSeconds,
+    pause_seconds: pauseSeconds,
+    landing_g_force: Number(maxGForce.toFixed(2)),
+    touchdown_g: Number(maxGForce.toFixed(2)),
+    landing_vs_fpm: params.official.landingVsFpm,
+    touchdown_vs_fpm: params.official.landingVsFpm,
+    max_descent_rate_fpm: Math.round(maxDescentRateFpm),
+    max_ascent_rate_fpm: Math.round(maxAscentRateFpm),
+    actual_block_minutes: blockMinutes,
+    actual_block_hhmm: compactDuration(blockMinutes),
+    actual_flight_minutes: flightMinutes,
+    actual_flight_hhmm: compactDuration(flightMinutes),
+    tow_dispatched_kg: Math.round(plannedTowKg),
+    tow_aircraft_kg: Math.round(takeoffWeightKg),
+    takeoff_weight_kg: Math.round(takeoffWeightKg),
+    landing_weight_kg: Math.round(landingWeightKg),
+    planned_fuel_kg: Math.round(plannedFuelKg),
+    fuel_start_kg: Math.round(fuelStartKg),
+    fuel_end_kg: Math.round(fuelEndKg),
+    fuel_used_kg: Math.round(params.official.fuelUsedKg),
+    planned_zfw_kg: Math.round(plannedZfwKg),
+    actual_zfw_kg: Math.round(actualZfwKg),
+    payload_kg: Math.round(actualPayloadKg),
+    max_altitude_ft: Math.round(params.official.maxAltitudeFeet),
+    max_speed_kts: Math.round(params.official.maxSpeedKts),
+    simulator: simulatorName,
+    simulator_type: simulatorName,
+    aircraft_title: aircraftTitle,
+    aircraft_variant_code: aircraftVariantCode,
+    addon_provider: addonProvider,
+    transponder_code: asNumber(lastSample?.transponderCode),
+    transponder_state_raw: asNumber(lastSample?.transponderStateRaw),
+    com1_frequency_mhz: asNumber(lastSample?.com1FrequencyMhz),
+    com1_standby_frequency_mhz: asNumber(lastSample?.com1StandbyFrequencyMhz),
+    com2_frequency_mhz: asNumber(lastSample?.com2FrequencyMhz),
+    com2_standby_frequency_mhz: asNumber(lastSample?.com2StandbyFrequencyMhz),
+    pic_radio_source: firstText(asText(params.report?.picRadioSource), asText(closeoutBlackbox.pic_radio_source)),
+    pic_last_required_frequency_mhz: firstNumber(asNumber(params.report?.lastPicRequiredFrequencyMhz), asNumber(closeoutBlackbox.pic_last_required_frequency_mhz), extractXmlNumber(rawXml, "PICUltimaFrecuencia")),
+    qnh_hpa: firstNumber(lastSample?.qnh, touchdownSample?.qnh, firstSample?.qnh),
+    economy_eligible: params.official.economyEligible,
+    evaluation_status: params.official.evaluationStatus,
+    scoring_status: params.official.scoringStatus,
+    closeout_quality_message: qualityText,
+  };
+}
+
 function extractPirepLogEvents(rawXml: string) {
   if (!rawXml) return [] as Array<Record<string, unknown>>;
   const logMatches = [...rawXml.matchAll(/<Log>([\s\S]*?)<\/Log>/gi)];
@@ -394,6 +618,136 @@ async function maybeUpsertReservationRow(table: string, reservationId: string, p
   if (error && !isMissingRelationError(error)) {
     throw error;
   }
+}
+
+
+async function loadServerScoringReglaje(aircraftTypeCode?: string | null) {
+  const supabase = createSupabaseAdminClient();
+  const warnings: string[] = [];
+
+  const readRows = async (table: string, limit = 100): Promise<GenericRow[]> => {
+    const { data, error } = await supabase.from(table).select("*").limit(limit);
+    if (error) {
+      if (isMissingRelationError(error)) {
+        warnings.push(`reglaje_table_missing:${table}`);
+        return [];
+      }
+      warnings.push(`reglaje_table_read_failed:${table}:${error.message}`);
+      return [];
+    }
+    return (data ?? []) as GenericRow[];
+  };
+
+  const scoringRules = await readRows("pw_scoring_rules", 200);
+  const scoringOverrides = await readRows("pw_scoring_rule_overrides", 200);
+  const penaltyCatalog = await readRows("acars_penalty_catalog", 200);
+  const acarsOverrides = await readRows("acars_rule_overrides", 200);
+  const damageRules = await readRows("aircraft_damage_rule_catalog", 200);
+  const aircraftOperationRules = await readRows("aircraft_type_operation_rules", 200);
+  const normalizedAircraft = normalizeIcao(aircraftTypeCode ?? "");
+  const matchingOperationRules = normalizedAircraft
+    ? aircraftOperationRules.filter((row) => normalizeIcao(row.aircraft_type_code).startsWith(normalizedAircraft) || normalizedAircraft.startsWith(normalizeIcao(row.aircraft_type_code)))
+    : [];
+
+  const enabledScoringRules = scoringRules.filter((row) => row.enabled !== false);
+  const enabledPenalties = penaltyCatalog.filter((row) => row.enabled_by_default !== false);
+
+  return {
+    warnings,
+    snapshot: {
+      version: "web_supabase_reglaje.v1",
+      authority: "web_supabase",
+      loaded_at: new Date().toISOString(),
+      aircraft_type_code: normalizedAircraft || null,
+      counts: {
+        pw_scoring_rules: scoringRules.length,
+        pw_scoring_rules_enabled: enabledScoringRules.length,
+        pw_scoring_rule_overrides: scoringOverrides.length,
+        acars_penalty_catalog: penaltyCatalog.length,
+        acars_penalty_catalog_enabled: enabledPenalties.length,
+        acars_rule_overrides: acarsOverrides.length,
+        aircraft_damage_rule_catalog: damageRules.length,
+        aircraft_type_operation_rules: aircraftOperationRules.length,
+        aircraft_type_operation_rules_matching: matchingOperationRules.length,
+      },
+      rules: enabledScoringRules.map((row) => ({
+        rule_id: asText(row.rule_id),
+        phase: asText(row.phase),
+        category: asText(row.category),
+        severity: asText(row.severity),
+        rule_type: asText(row.rule_type),
+        score_target: asText(row.score_target),
+        score_delta: asNumber(row.score_delta),
+        data_source: asText(row.data_source),
+        required_telemetry: row.required_telemetry ?? [],
+        applicable_aircraft: row.applicable_aircraft ?? [],
+        metadata: asObject(row.metadata),
+      })),
+      penalties: enabledPenalties.map((row) => ({
+        penalty_code: asText(row.penalty_code),
+        system_code: asText(row.system_code),
+        phase: asText(row.phase),
+        severity: asText(row.severity),
+        default_points: asNumber(row.default_points),
+        trigger_description: asText(row.trigger_description),
+      })),
+      matching_aircraft_operation_rules: matchingOperationRules,
+    },
+  };
+}
+
+async function applyPilotScoreProgression(params: {
+  callsign: string;
+  reservationId: string;
+  procedureScore: number;
+  blockMinutes: number;
+  officialPayload: Record<string, unknown>;
+  notes?: string | null;
+}) {
+  const warnings: string[] = [];
+  const callsign = normalizeIcao(params.callsign);
+  if (!callsign || !params.reservationId) {
+    return { warnings: ["score_progression_skipped_missing_callsign_or_reservation"] };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: existingLedger, error: existingError } = await supabase
+    .from("pw_pilot_score_ledger")
+    .select("id")
+    .eq("pilot_callsign", callsign)
+    .eq("source_ref", params.reservationId)
+    .maybeSingle();
+
+  if (existingError && !isMissingRelationError(existingError)) {
+    warnings.push(`score_progression_precheck_failed:${existingError.message}`);
+  }
+
+  if (existingLedger?.id) {
+    return { warnings: [...warnings, "score_progression_already_applied"] };
+  }
+
+  const rpcPayload = {
+    p_callsign: callsign,
+    p_reservation_id: params.reservationId,
+    p_procedure_score: params.procedureScore,
+    p_block_minutes: Math.max(0, Math.round(params.blockMinutes)),
+    p_critical_cap: null,
+    p_payload: params.officialPayload,
+    p_notes: params.notes ?? "official_web_supabase_closeout",
+  };
+
+  const { data, error } = await supabase.rpc("pw_apply_completed_flight_score", rpcPayload);
+  if (error) {
+    if (isMissingRelationError(error)) {
+      return { warnings: [...warnings, "score_progression_rpc_missing:pw_apply_completed_flight_score"] };
+    }
+    return { warnings: [...warnings, `score_progression_rpc_failed:${error.message}`] };
+  }
+
+  return {
+    warnings,
+    result: Array.isArray(data) ? (data[0] as GenericRow | undefined) : (data as GenericRow | null),
+  };
 }
 
 async function maybeRecalculateAirlineBalance(airlineId: string) {
@@ -666,7 +1020,8 @@ export function evaluateOfficialCloseout(params: {
   const severeDamage = asNumber(damageSummary.severe_count) > 0 || requestedCloseoutStatus === "crashed";
   const crashEvent = damageEvents.some((event) => asText(event.eventCode).toLowerCase().includes("crash"));
   const touchdownVsAbs = Math.abs(asNumber(lastSample?.landingVS) || asNumber(report?.landingVS));
-  const hardLanding = touchdownVsAbs >= 1000;
+  const touchdownGAbs = Math.max(Math.abs(asNumber(report?.landingG)), ...samples.map((sample) => Math.abs(firstNumber(sample.gForce, sample.landingG))));
+  const hardLanding = touchdownVsAbs >= 1000 || touchdownGAbs >= 3.5;
   const routeMismatch =
     normalizeIcao(reservation.origin_ident) !== normalizeIcao(activeFlight?.departureIcao ?? preparedDispatch?.departureIcao ?? report?.departureIcao) ||
     normalizeIcao(reservation.destination_ident) !== normalizeIcao(activeFlight?.arrivalIcao ?? preparedDispatch?.arrivalIcao ?? report?.arrivalIcao);
@@ -832,14 +1187,26 @@ export function evaluateOfficialCloseout(params: {
     penalties.push(buildEvent("AIR_LANDING_LIGHTS_10000", "airborne", "medium", "Landing lights apagadas bajo 10.000 ft."));
   }
 
-  const picFailures = Math.max(extractXmlNumber(rawPirepXml, "PICsFailed"), 0);
-  const picCount = Math.max(extractXmlNumber(rawPirepXml, "CantidadPICs"), 0);
+  const reportForPic = asObject(params.report);
+  const closeoutBlackboxForPic = asObject((params.closeoutPayload as unknown as GenericRow)?.blackboxSummary);
+  const picFailures = Math.max(
+    extractXmlNumber(rawPirepXml, "PICsFailed"),
+    asNumber(reportForPic.picChecksFailed),
+    asNumber(closeoutBlackboxForPic.pic_checks_failed),
+    0
+  );
+  const picCount = Math.max(
+    extractXmlNumber(rawPirepXml, "CantidadPICs"),
+    asNumber(reportForPic.picChecksCompleted),
+    asNumber(closeoutBlackboxForPic.pic_checks_completed),
+    0
+  );
   if (picFailures > 0) {
     procedureScore -= picFailures * 5;
-    penalties.push(buildEvent("CRU_PIC_COM2_FAILED", "cruise", "medium", `PIC COM2 falló ${picFailures} vez/veces.`));
+    penalties.push(buildEvent("CRU_PIC_RADIO_FAILED", "cruise", "medium", `PIC radio falló ${picFailures} vez/veces.`));
   }
   if (picCount > 0 && picFailures === 0) {
-    events.push(buildEvent("CRU_PIC_COM2_OK", "cruise", "info", `PIC COM2 registrado correctamente: ${picCount} check(s).`));
+    events.push(buildEvent("CRU_PIC_RADIO_OK", "cruise", "info", `PIC radio registrado correctamente: ${picCount} check(s).`));
   }
 
   if (touchdownVsAbs >= 501 && touchdownVsAbs < 1000) {
@@ -848,6 +1215,14 @@ export function evaluateOfficialCloseout(params: {
   } else if (touchdownVsAbs >= 301) {
     safetyScore -= 8;
     penalties.push(buildEvent("LDG_VS_FIRM", "landing", "medium", "Aterrizaje duro por V/S."));
+  }
+
+  if (touchdownGAbs >= 2.5 && touchdownGAbs < 3.5) {
+    safetyScore -= 15;
+    penalties.push(buildEvent("LDG_G_FORCE_HIGH", "landing", "high", "G-Force elevada en touchdown. Requiere revisión operacional."));
+  } else if (touchdownGAbs >= 1.8) {
+    safetyScore -= 8;
+    penalties.push(buildEvent("LDG_G_FORCE_FIRM", "landing", "medium", "G-Force firme en touchdown."));
   }
   // "cancelled" = pilot never left the gate (no takeoff, no taxi).
   // "aborted" = pilot started rolling/taxied but didn't take off.
@@ -944,7 +1319,7 @@ export function evaluateOfficialCloseout(params: {
   const maxAltitudeFeet = Math.max(...samples.map((sample) => asNumber(sample.altitudeFeet)), asNumber(report?.maxAltitudeFeet));
   const maxSpeedKts = Math.max(...samples.map((sample) => asNumber(sample.indicatedAirspeed)), asNumber(report?.maxSpeedKts));
   const landingVsFpm = Math.max(Math.abs(asNumber(report?.landingVS)), ...samples.map((sample) => Math.abs(asNumber(sample.landingVS))));
-  const landingGForce = Math.max(asNumber(report?.landingG), ...samples.map((sample) => asNumber(sample.landingG)));
+  const landingGForce = Math.max(Math.abs(asNumber(report?.landingG)), ...samples.map((sample) => Math.abs(firstNumber(sample.gForce, sample.landingG))));
 
   const completedAt = endTime;
   // For completed flights, use the actual arrival airport.
@@ -1099,6 +1474,10 @@ export async function persistOfficialCloseout(params: {
   closeoutPayload?: AcarsCloseoutPayloadInput | null;
 }) {
   const official = evaluateOfficialCloseout(params);
+  const scoringReglaje = await loadServerScoringReglaje(
+    asText(params.reservation.aircraft_type_code ?? params.activeFlight?.aircraftTypeCode ?? params.preparedDispatch?.aircraftIcao)
+  );
+  const scoringPipelineWarnings: string[] = [...scoringReglaje.warnings];
   const supabase = createSupabaseServerClient(params.accessToken);
   const accountingSupabase = createSupabaseAdminClient();
   const nowIso = new Date().toISOString();
@@ -1110,9 +1489,25 @@ export async function persistOfficialCloseout(params: {
   const rawPirepFileName = asText(params.closeoutPayload?.pirepFileName);
   const rawPirepChecksum = asText(params.closeoutPayload?.pirepChecksumSha256);
   const evaluatedPirepXml = buildEvaluatedPirepXml(rawPirepXml, official, reservationId);
+  const telemetryLog = (params.telemetryLog ?? []).filter(Boolean);
+  const surStyleSummary = buildSurStyleSummary({
+    reservation: params.reservation,
+    dispatchPackage: params.dispatchPackage,
+    activeFlight: params.activeFlight,
+    preparedDispatch: params.preparedDispatch,
+    report: params.report,
+    telemetryLog,
+    lastSimData: params.lastSimData,
+    closeoutPayload: params.closeoutPayload,
+    official,
+  });
 
   const officialPayload = {
     ...existingPayload,
+    official_scoring_authority: "web_supabase",
+    official_scoring_engine: "src/lib/acars-official.ts::evaluateOfficialCloseout",
+    official_scoring_reglaje: scoringReglaje.snapshot,
+    acars_client_score_ignored: true,
     official_closeout: {
       status: official.finalStatus,
       scoring_status: official.scoringStatus,
@@ -1121,6 +1516,8 @@ export async function persistOfficialCloseout(params: {
       pilot_callsign: asText(params.profile.callsign),
     },
     official_pirep: official.officialPirep,
+    sur_style_summary: surStyleSummary,
+    ...surStyleSummary,
     raw_pirep_xml: rawPirepXml,
     raw_pirep_file_name: rawPirepFileName,
     raw_pirep_checksum: rawPirepChecksum,
@@ -1298,6 +1695,29 @@ export async function persistOfficialCloseout(params: {
     notes: asText(params.report?.remarks),
     scored_at: nowIso,
   }, "reservation_id");
+
+  if (official.finalStatus === "completed" && official.evaluationStatus === "evaluable") {
+    const scoreProgression = await applyPilotScoreProgression({
+      callsign: asText(params.profile.callsign),
+      reservationId,
+      procedureScore: official.procedureScore,
+      blockMinutes: official.actualBlockMinutes,
+      officialPayload,
+      notes: asText(params.report?.remarks) || "official_web_supabase_closeout",
+    });
+    scoringPipelineWarnings.push(...scoreProgression.warnings);
+    if (scoreProgression.result) {
+      (officialPayload as GenericRow).score_progression = {
+        source: "pw_apply_completed_flight_score",
+        applied_at: nowIso,
+        result: scoreProgression.result,
+      };
+      await accountingSupabase
+        .from("flight_reservations")
+        .update({ score_payload: officialPayload })
+        .eq("id", reservationId);
+    }
+  }
 
   await maybeUpsert("pirep_reports", {
     reservation_id: reservationId,
@@ -1593,7 +2013,7 @@ export async function persistOfficialCloseout(params: {
     economyEligible: official.economyEligible,
     salaryAccrued,
     ledgerWritten,
-    warnings: official.evidenceWarnings,
+    warnings: [...official.evidenceWarnings, ...scoringPipelineWarnings],
     resultUrl: `/flights/${reservationId}`,
   };
 }
