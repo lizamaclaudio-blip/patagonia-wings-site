@@ -1,12 +1,12 @@
 ﻿{
     "channel":  "stable",
-    "version":  "7.0.14",
-    "latestVersion":  "7.0.14",
-    "currentVersion":  "7.0.14",
+    "version":  "7.0.15",
+    "latestVersion":  "7.0.15",
+    "currentVersion":  "7.0.15",
     "minSupportedVersion":  "1.0.0",
-    "forceUpdateBelow":  "7.0.14",
-    "revision":  "2026.4.30.4",
-    "latestRevision":  "2026.4.30.4",
+    "forceUpdateBelow":  "7.0.15",
+    "revision":  "2026.5.2.1",
+    "latestRevision":  "2026.5.2.1",
     "manifestUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "packagesIndexUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "installerUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
@@ -17,7 +17,7 @@
     "forceUpdate":  false,
     "mandatory":  true,
     "required":  true,
-    "notes":  "- ACARS 7.0.14 hotfix closeout oficial: evidencia minima obligatoria para completar.\n- Vuelos no evaluables quedan pending_server_closeout/no_evaluable y sin pagos ni ledger.\n- Finalize API expone evaluationStatus/economyEligible/salaryAccrued/ledgerWritten para trazabilidad.\n- UI web y ACARS postflight muestran cierre incompleto con mensajes claros y sin falsos exitos.",
-    "releaseNotes":  "- ACARS 7.0.14 hotfix closeout oficial: evidencia minima obligatoria para completar.\n- Vuelos no evaluables quedan pending_server_closeout/no_evaluable y sin pagos ni ledger.\n- Finalize API expone evaluationStatus/economyEligible/salaryAccrued/ledgerWritten para trazabilidad.\n- UI web y ACARS postflight muestran cierre incompleto con mensajes claros y sin falsos exitos.",
-    "releaseDate":  "2026-04-30T18:07:21.181Z"
+    "notes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
+    "releaseNotes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
+    "releaseDate":  "2026-05-02T08:28:52.896Z"
 }
