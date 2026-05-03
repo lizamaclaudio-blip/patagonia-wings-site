@@ -1,25 +1,15 @@
 ﻿{
-    "version":  "7.0.16",
-    "latestVersion":  "7.0.16",
-    "currentVersion":  "7.0.16",
-    "minSupportedVersion":  "1.0.0",
-    "forceUpdateBelow":  "7.0.16",
-    "webVersion":  "2.0",
-    "downloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "installerUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "packageUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "directDownloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "mandatory":  true,
-    "required":  true,
-    "revision":  "2026.5.3.2",
-    "notes":  "ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.",
-    "releaseNotes":  "ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.",
-    "releaseDate":  "2026-05-03",
-    "minVersion":  "1.0.0",
-    "fileName":  "PatagoniaWingsACARSSetup.exe",
-    "size":  30217928,
-    "fileSize":  "28.8 MB",
-    "checksumSha256":  "6F410A3A1CF3247901D27A4524FDE23971EA15583C17F8B3DCD54F3F27F199A6",
-    "storageProvider":  "supabase"
+  "version": "7.0.17",
+  "webVersion": "2.0",
+  "downloadUrl": "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
+  "mandatory": true,
+  "notes": "- ACARS 7.0.17 - ACARS 7.0.17 - Hotfix C9: cierre en gate robusto, auditoria de superficie, deteccion de pista/rodaje/gate probable y correccion de BuildSurfaceContextDisplay.",
+  "releaseDate": "2026-04-29",
+  "minVersion": "1.0.0",
+  "fileSize": "24.7 MB",
+  "storageProvider": "supabase"
 }
+
+
+
+
