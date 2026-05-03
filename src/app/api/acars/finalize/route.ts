@@ -63,6 +63,51 @@ function firstNumber(...values: unknown[]): number {
   return 0;
 }
 
+
+function buildPirepPerfectFinalizeResponse(official: unknown): GenericObject {
+  const officialObject = asObject(official);
+  const evidenceSnapshot = asObject(officialObject.evidenceSnapshot);
+  const normalized = asObject(evidenceSnapshot.pirep_perfect_c0_c8);
+  const normalizedFlags = asObject(normalized.flags);
+  const altitudeSummary = asObject(normalized.altitude_summary ?? evidenceSnapshot.altitude_summary);
+  const phaseSequenceSummary = asObject(normalized.phase_sequence_summary ?? evidenceSnapshot.phase_sequence_summary);
+  const phaseAuditReport = asObject(normalized.phase_audit_report);
+  const phasePrevalidationPackage = asObject(normalized.phase_prevalidation_package);
+  const phaseTestRunManifest = asObject(normalized.phase_test_run_manifest);
+  const phaseAcceptanceMatrix = Array.isArray(normalized.phase_acceptance_matrix)
+    ? normalized.phase_acceptance_matrix
+    : [];
+  const parserVersionsDetected = asObject(normalized.parser_versions_detected ?? evidenceSnapshot.parser_versions_detected);
+  const detected =
+    asBoolean(normalizedFlags.pirepPerfectC0C8Detected) ||
+    Object.values(parserVersionsDetected).some(asBoolean) ||
+    Object.keys(normalized).length > 0;
+  const altitudeReliable = asBoolean(normalizedFlags.altitudeReliable ?? altitudeSummary.is_reliable);
+  const phaseAuditReady =
+    asBoolean(normalizedFlags.phaseAuditReady) ||
+    Object.keys(phaseAuditReport).length > 0 ||
+    Object.keys(phasePrevalidationPackage).length > 0 ||
+    phaseAcceptanceMatrix.length > 0;
+
+  return {
+    version: "D4",
+    source: "src/app/api/acars/finalize/route.ts",
+    detected,
+    altitudeReliable,
+    phaseAuditReady,
+    phaseScoreEligible: false,
+    parserVersionsDetected,
+    altitudeSummary,
+    phaseSequenceSummary,
+    phaseAuditReport,
+    phasePrevalidationPackage,
+    phaseAcceptanceMatrix,
+    phaseAcceptanceMatrixCount: phaseAcceptanceMatrix.length,
+    phaseTestRunManifest,
+    responseNote: "Contrato de respuesta D4 para ACARS: evidencia C0-C8 devuelta como trazabilidad; no habilita score por fases hasta prueba real.",
+  };
+}
+
 function extractXmlText(xml: string, tag: string): string {
   if (!xml) return "";
   const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "i"));
@@ -670,6 +715,8 @@ export async function POST(request: NextRequest) {
       : `${origin}${summaryPath.startsWith("/") ? "" : "/"}${summaryPath}`;
     const summaryUrlValid = /^https?:\/\//i.test(summaryUrl);
 
+    const pirepPerfectFinalizeResponse = buildPirepPerfectFinalizeResponse(result.official);
+
     if (!persisted || !reservationClosed || !summaryUrlValid) {
       const degraded = await persistDegradedForensicCloseout({
         reservationId,
@@ -708,6 +755,10 @@ export async function POST(request: NextRequest) {
           final_score: 0,
           scoring_status: "pending_server_closeout",
         },
+        pirepPerfectFinalizeResponse,
+        pirepPerfectC0C8: pirepPerfectFinalizeResponse,
+        altitudeSummary: pirepPerfectFinalizeResponse.altitudeSummary ?? null,
+        phaseSequenceSummary: pirepPerfectFinalizeResponse.phaseSequenceSummary ?? null,
         reservation: degraded.reservation,
       });
     }
@@ -735,6 +786,12 @@ export async function POST(request: NextRequest) {
         final_score: result.official.finalScore,
         scoring_status: result.official.scoringStatus,
       },
+      pirepPerfectFinalizeResponse,
+      pirepPerfectC0C8: pirepPerfectFinalizeResponse,
+      altitudeSummary: pirepPerfectFinalizeResponse.altitudeSummary ?? null,
+      phaseSequenceSummary: pirepPerfectFinalizeResponse.phaseSequenceSummary ?? null,
+      phaseAuditReady: pirepPerfectFinalizeResponse.phaseAuditReady ?? false,
+      phaseScoreEligible: false,
       reservation: result.reservation,
     });
   } catch (error) {
@@ -788,6 +845,12 @@ export async function POST(request: NextRequest) {
             final_score: 0,
             scoring_status: "pending_server_closeout",
           },
+          pirepPerfectFinalizeResponse: buildPirepPerfectFinalizeResponse(null),
+          pirepPerfectC0C8: null,
+          altitudeSummary: null,
+          phaseSequenceSummary: null,
+          phaseAuditReady: false,
+          phaseScoreEligible: false,
           reservation: degraded.reservation,
         });
       } catch (fallbackError) {

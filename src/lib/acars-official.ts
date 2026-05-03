@@ -1161,6 +1161,78 @@ export function evaluateOfficialCloseout(params: {
     preparedDispatch: preparedDispatch as unknown as GenericRow,
     report: report as unknown as GenericRow,
   });
+  const pirepPerfectFlags = {
+    pirepPerfectC0C8Detected: Boolean(
+      asBoolean(pirepPerfect.evidence.hasC0AltitudeResolver) ||
+      asBoolean(pirepPerfect.evidence.hasC1PhaseStateMachine) ||
+      asBoolean(pirepPerfect.evidence.hasC2OperationalChecklist) ||
+      asBoolean(pirepPerfect.evidence.hasC3TransitionMatrix) ||
+      asBoolean(pirepPerfect.evidence.hasC4AuditReport) ||
+      asBoolean(pirepPerfect.evidence.hasC5ReviewContract) ||
+      asBoolean(pirepPerfect.evidence.hasC6PrevalidationPackage) ||
+      asBoolean(pirepPerfect.evidence.hasC7AcceptanceMatrix) ||
+      asBoolean(pirepPerfect.evidence.hasC8PretestManifest)
+    ),
+    altitudeReliable: asBoolean(pirepPerfect.altitude.isReliable),
+    phaseAuditReady: Boolean(
+      asBoolean(pirepPerfect.evidence.hasC4AuditReport) ||
+      asBoolean(pirepPerfect.evidence.hasC6PrevalidationPackage) ||
+      asBoolean(pirepPerfect.evidence.hasC7AcceptanceMatrix)
+    ),
+    phaseScoreEligible: false,
+  };
+  const pirepPerfectObservedPhases = Array.isArray(pirepPerfect.phaseSummary)
+    ? pirepPerfect.phaseSummary
+        .map((phase) => asObject(phase))
+        .map((phase) => asText(phase.name ?? phase.phase ?? phase.code))
+        .filter(Boolean)
+    : [];
+  const pirepPerfectC0C8 = {
+    version: "D3-evaluate",
+    source: "src/lib/acars-official.ts::evaluateOfficialCloseout",
+    parser_versions_detected: {
+      c0_altitude_resolver: asBoolean(pirepPerfect.evidence.hasC0AltitudeResolver),
+      c1_phase_state_machine: asBoolean(pirepPerfect.evidence.hasC1PhaseStateMachine),
+      c2_operational_checklist: asBoolean(pirepPerfect.evidence.hasC2OperationalChecklist),
+      c3_transition_matrix: asBoolean(pirepPerfect.evidence.hasC3TransitionMatrix),
+      c4_audit_report: asBoolean(pirepPerfect.evidence.hasC4AuditReport),
+      c5_review_contract: asBoolean(pirepPerfect.evidence.hasC5ReviewContract),
+      c6_prevalidation_package: asBoolean(pirepPerfect.evidence.hasC6PrevalidationPackage),
+      c7_acceptance_matrix: asBoolean(pirepPerfect.evidence.hasC7AcceptanceMatrix),
+      c8_pretest_manifest: asBoolean(pirepPerfect.evidence.hasC8PretestManifest),
+    },
+    flags: pirepPerfectFlags,
+    altitude_summary: {
+      schema: asText(pirepPerfect.altitude.schema),
+      altitude_msl_ft_max: asNumber(pirepPerfect.altitude.maxAltitudeMslFt),
+      altitude_agl_ft_max: asNumber(pirepPerfect.altitude.maxAglFt),
+      altitude_agl_ft_min: asNumber(pirepPerfect.altitude.minAglFt),
+      pressure_altitude_ft_max: asNumber(pirepPerfect.altitude.maxPressureAltitudeFt),
+      first_altitude_msl_ft: asNumber(pirepPerfect.altitude.firstAltitudeMslFt),
+      first_altitude_agl_ft: asNumber(pirepPerfect.altitude.firstAltitudeAglFt),
+      last_altitude_msl_ft: asNumber(pirepPerfect.altitude.lastAltitudeMslFt),
+      last_altitude_agl_ft: asNumber(pirepPerfect.altitude.lastAltitudeAglFt),
+      last_flight_level: asText(pirepPerfect.altitude.lastFlightLevel),
+      last_display_mode: asText(pirepPerfect.altitude.lastDisplayMode),
+      last_display_text: asText(pirepPerfect.altitude.lastDisplayText),
+      transition_altitude_ft: asNumber(pirepPerfect.altitude.transitionAltitudeFt),
+      altitude_source: asText(pirepPerfect.altitude.altitudeSource),
+      is_reliable: asBoolean(pirepPerfect.altitude.isReliable),
+    },
+    phase_sequence_summary: {
+      observed_phases: pirepPerfectObservedPhases,
+      observed_phase_count: pirepPerfectObservedPhases.length,
+      reached_phase_count: asNumber(pirepPerfect.evidence.reachedPhaseCount),
+      total_phase_count: asNumber(pirepPerfect.evidence.totalPhaseCount),
+      has_takeoff: asBoolean(pirepPerfect.evidence.hasTakeoff),
+      has_airborne: asBoolean(pirepPerfect.evidence.hasAirborne),
+      has_landing: asBoolean(pirepPerfect.evidence.hasLanding),
+      has_taxi_in_or_gate: asBoolean(pirepPerfect.evidence.hasTaxiInOrGate),
+      has_shutdown_or_stop: asBoolean(pirepPerfect.evidence.hasShutdownOrStop),
+      block_minutes: asNumber(pirepPerfect.evidence.blockMinutes),
+      distance_nm: asNumber(pirepPerfect.evidence.distanceNm),
+    },
+  };
   const stages = buildStageBreakdown(samples);
   const damageSummary = summarizeDamage(damageEvents);
   const penalties: Array<Record<string, unknown>> = [];

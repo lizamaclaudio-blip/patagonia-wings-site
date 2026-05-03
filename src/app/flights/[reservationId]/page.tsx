@@ -673,6 +673,97 @@ function FlightResultContent() {
     [mergedScorePayload, reservation, scoreReport]
   );
 
+  const pirepPerfectNormalized = useMemo(() => {
+    const normalized = asObject(mergedScorePayload.pirep_perfect_normalized);
+    const c0c8 = asObject(mergedScorePayload.pirep_perfect_c0_c8);
+    return Object.keys(normalized).length ? normalized : c0c8;
+  }, [mergedScorePayload]);
+
+  const pirepPerfectFlags = asObject(pirepPerfectNormalized.flags);
+  const parserVersionsDetected = asObject(
+    pirepPerfectNormalized.parser_versions_detected ?? mergedScorePayload.parser_versions_detected
+  );
+  const altitudeSummaryPayload = asObject(
+    pirepPerfectNormalized.altitude_summary ?? mergedScorePayload.altitude_summary
+  );
+  const phaseSequencePayload = asObject(
+    pirepPerfectNormalized.phase_sequence_summary ?? mergedScorePayload.phase_sequence_summary
+  );
+  const phaseAuditPayload = asObject(
+    pirepPerfectNormalized.phase_audit_report ?? mergedScorePayload.phase_audit_report
+  );
+  const phasePrevalidationPayload = asObject(
+    pirepPerfectNormalized.phase_prevalidation_package ?? mergedScorePayload.phase_prevalidation_package
+  );
+  const phaseAcceptancePayload = Array.isArray(pirepPerfectNormalized.phase_acceptance_matrix)
+    ? (pirepPerfectNormalized.phase_acceptance_matrix as unknown[])
+    : Array.isArray(mergedScorePayload.phase_acceptance_matrix)
+      ? (mergedScorePayload.phase_acceptance_matrix as unknown[])
+      : [];
+  const phaseTestRunPayload = asObject(
+    pirepPerfectNormalized.phase_test_run_manifest ?? mergedScorePayload.phase_test_run_manifest
+  );
+
+  const c0c8Detected =
+    mergedScorePayload.pirepPerfectC0C8Detected === true ||
+    asText(mergedScorePayload.pirepPerfectC0C8Detected).toLowerCase() === "true" ||
+    Object.values(parserVersionsDetected).some((value) => formatBool(value) === "Sí") ||
+    pirepPerfect.phaseAcceptanceMatrix.length > 0 ||
+    Object.keys(pirepPerfect.phaseAuditReport).length > 0 ||
+    Object.keys(pirepPerfect.phasePrevalidationPackage).length > 0 ||
+    Object.keys(pirepPerfect.phaseTestRunManifest).length > 0;
+
+  const altitudeReliable =
+    mergedScorePayload.altitudeReliable === true ||
+    pirepPerfect.altitudeEvidence.isReliable ||
+    formatBool(pirepPerfectFlags.altitudeReliable ?? altitudeSummaryPayload.is_reliable) === "Sí";
+
+  const phaseAuditReady =
+    mergedScorePayload.phaseAuditReady === true ||
+    formatBool(pirepPerfectFlags.phaseAuditReady) === "Sí" ||
+    Object.keys(phaseAuditPayload).length > 0 ||
+    Object.keys(phasePrevalidationPayload).length > 0 ||
+    phaseAcceptancePayload.length > 0 ||
+    pirepPerfect.phaseAcceptanceMatrix.length > 0;
+
+  const phaseScoreEligible =
+    mergedScorePayload.phaseScoreEligible === true ||
+    formatBool(pirepPerfectFlags.phaseScoreEligible) === "Sí";
+
+  const d5ParserBlocks = [
+    { label: "C0 Altitud", ready: formatBool(parserVersionsDetected.c0_altitude_resolver) === "Sí" || Boolean(pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.lastAltitudeMslFt) },
+    { label: "C1 Fases", ready: formatBool(parserVersionsDetected.c1_phase_state_machine) === "Sí" || pirepPerfect.phases.length > 0 },
+    { label: "C2 Checklist", ready: formatBool(parserVersionsDetected.c2_operational_checklist) === "Sí" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseMeasuredMetrics || phase.phaseExpectedActions)) },
+    { label: "C3 Transiciones", ready: formatBool(parserVersionsDetected.c3_transition_matrix) === "Sí" || pirepPerfect.eventTimeline.some((event) => Boolean((event as Record<string, unknown>).phaseAuditStatus)) },
+    { label: "C4 Auditoría", ready: formatBool(parserVersionsDetected.c4_audit_report) === "Sí" || Object.keys(pirepPerfect.phaseAuditReport).length > 0 || Object.keys(phaseAuditPayload).length > 0 },
+    { label: "C5 Contrato", ready: formatBool(parserVersionsDetected.c5_review_contract) === "Sí" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseReviewQuestion)) },
+    { label: "C6 Prevalidación", ready: formatBool(parserVersionsDetected.c6_prevalidation_package) === "Sí" || Object.keys(pirepPerfect.phasePrevalidationPackage).length > 0 || Object.keys(phasePrevalidationPayload).length > 0 },
+    { label: "C7 Matriz", ready: formatBool(parserVersionsDetected.c7_acceptance_matrix) === "Sí" || pirepPerfect.phaseAcceptanceMatrix.length > 0 || phaseAcceptancePayload.length > 0 },
+    { label: "C8 Manifest", ready: formatBool(parserVersionsDetected.c8_pretest_manifest) === "Sí" || Object.keys(pirepPerfect.phaseTestRunManifest).length > 0 || Object.keys(phaseTestRunPayload).length > 0 },
+  ];
+
+  const d5MissingBlocks = d5ParserBlocks.filter((block) => !block.ready).map((block) => block.label);
+  const d5ObservedPhases = Array.isArray(phaseSequencePayload.observed_phases)
+    ? (phaseSequencePayload.observed_phases as unknown[]).map(asText).filter(Boolean)
+    : pirepPerfect.phases.map((phase) => phase.name).filter(Boolean);
+  const d5ReadinessStatus = !pirepPerfect.hasRawXml
+    ? "WAIT"
+    : !c0c8Detected
+      ? "WARN"
+      : d5MissingBlocks.length > 0
+        ? "REVIEW"
+        : altitudeReliable && phaseAuditReady
+          ? "READY"
+          : "WARN";
+
+  const d5ActionItems = [
+    !pirepPerfect.hasRawXml ? "Esperar cierre ACARS con raw_pirep_xml." : "XML PIREP recibido.",
+    !altitudeReliable ? "Revisar bloque Altitude C0: MSL/AGL/fuente/confiabilidad." : "Altitud C0 legible.",
+    !phaseAuditReady ? "Revisar PhaseAudit/Prevalidation/Acceptance antes de activar score por fases." : "Auditoría de fases disponible.",
+    phaseScoreEligible ? "Score por fases activo." : "Score por fases aún bloqueado intencionalmente hasta prueba real.",
+    d5MissingBlocks.length ? `Faltan bloques: ${d5MissingBlocks.join(", ")}.` : "C0-C8 completos según parser.",
+  ];
+
   const currentAppeal = useMemo(
     () => asObject(mergedScorePayload.flight_appeal) as Partial<FlightAppeal>,
     [mergedScorePayload]
@@ -1076,6 +1167,55 @@ function FlightResultContent() {
                   { label: "Evidencia", value: pirepPerfect.hasAnyEvidence ? "Leída" : "Insuficiente", tone: pirepPerfect.hasAnyEvidence ? "text-emerald-300" : "text-rose-200" },
                 ]]}
               />
+
+              <SurHeading icon="🩺" label="Diagnóstico operativo" strong="D5" />
+              <div className={`mb-6 rounded-[24px] border px-5 py-4 ${phaseStatusTone(d5ReadinessStatus)}`}>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">Estado D5</p>
+                    <p className="mt-1 text-2xl font-semibold text-white">{d5ReadinessStatus}</p>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
+                      Este panel no cambia el score. Solo confirma si la Web leyó la evidencia C0-C8 que ACARS enviará para auditar altitud, fases, touchdown y gate antes de activar evaluación por fases.
+                    </p>
+                  </div>
+                  <div className="grid min-w-[260px] gap-2 text-sm text-white/72">
+                    <span>C0-C8 detectado: <strong className="text-white">{formatBool(c0c8Detected)}</strong></span>
+                    <span>Altitud confiable: <strong className="text-white">{formatBool(altitudeReliable)}</strong></span>
+                    <span>Auditoría lista: <strong className="text-white">{formatBool(phaseAuditReady)}</strong></span>
+                    <span>Score por fases: <strong className="text-white">{phaseScoreEligible ? "Activo" : "Bloqueado"}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+                {d5ParserBlocks.map((block) => (
+                  <div key={block.label} className={`rounded-[18px] border px-4 py-3 ${block.ready ? "border-emerald-400/20 bg-emerald-400/10" : "border-amber-400/20 bg-amber-400/10"}`}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">Bloque</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{block.label}</p>
+                    <p className={`mt-2 text-xs font-semibold ${block.ready ? "text-emerald-200" : "text-amber-200"}`}>{block.ready ? "Detectado" : "Pendiente"}</p>
+                  </div>
+                ))}
+              </div>
+
+              <InfoTable
+                columns={["Fases observadas", "Acceptance", "Eventos", "Unsupported", "MSL máx", "AGL máx", "Acción"]}
+                rows={[[
+                  { label: "Fases observadas", value: d5ObservedPhases.length ? d5ObservedPhases.join(" → ") : "N/D", tone: d5ObservedPhases.length ? "text-emerald-200" : "text-amber-200" },
+                  { label: "Acceptance", value: `${pirepPerfect.phaseAcceptanceMatrix.length || phaseAcceptancePayload.length} fases` },
+                  { label: "Eventos", value: `${pirepPerfect.eventTimeline.length}` },
+                  { label: "Unsupported", value: `${pirepPerfect.unsupportedEvents.length}`, tone: pirepPerfect.unsupportedEvents.length ? "text-amber-200" : "text-emerald-200" },
+                  { label: "MSL máx", value: formatFt(pirepPerfect.maxAltitudeMslFt || altitudeSummaryPayload.altitude_msl_ft_max) },
+                  { label: "AGL máx", value: formatFt(pirepPerfect.maxAglFt || altitudeSummaryPayload.altitude_agl_ft_max) },
+                  { label: "Acción", value: phaseScoreEligible ? "Evaluar" : "Auditar", tone: phaseScoreEligible ? "text-emerald-200" : "text-amber-200" },
+                ]]}
+              />
+
+              <div className="mt-4 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Checklist D5 para prueba final</p>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
+                  {d5ActionItems.map((item) => <li key={item}>• {item}</li>)}
+                </ul>
+              </div>
 
               <SurHeading icon="🧩" label="Capacidades por" strong="Aeronave" />
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
