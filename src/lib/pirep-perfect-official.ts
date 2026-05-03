@@ -8,6 +8,39 @@ export type PirepPerfectCapabilityInput = {
   value: string;
 };
 
+export type PirepPerfectAltitudeEvidence = {
+  schema: string;
+  transitionAltitudeFt: number;
+  sampleCount: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
+  minAglFt: number;
+  maxPressureAltitudeFt: number;
+  firstAltitudeMslFt: number;
+  firstAltitudeAglFt: number;
+  lastAltitudeMslFt: number;
+  lastAltitudeAglFt: number;
+  lastFlightLevel: string;
+  lastDisplayMode: string;
+  lastDisplayText: string;
+  altitudeSource: string;
+  isReliable: boolean;
+};
+
+export type PirepPerfectPhaseAcceptance = {
+  phase: string;
+  name: string;
+  status: string;
+  samples: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
+  maxGs: number;
+  minVs: number;
+  maxVs: number;
+  flags: string;
+  reviewQuestion: string;
+};
+
 export type PirepPerfectOfficialInput = {
   hasRawXml: boolean;
   schemaVersion: string;
@@ -27,6 +60,16 @@ export type PirepPerfectOfficialInput = {
   evidence: {
     isPirepPerfect: boolean;
     isEvidentiary: boolean;
+    hasC0AltitudeResolver: boolean;
+    hasC1PhaseStateMachine: boolean;
+    hasC2OperationalChecklist: boolean;
+    hasC3TransitionMatrix: boolean;
+    hasC4AuditReport: boolean;
+    hasC5ReviewContract: boolean;
+    hasC6PrevalidationPackage: boolean;
+    hasC7AcceptanceMatrix: boolean;
+    hasC8PretestManifest: boolean;
+    readyForFullSimulatorValidation: boolean;
     hasTakeoff: boolean;
     hasAirborne: boolean;
     hasLanding: boolean;
@@ -42,6 +85,8 @@ export type PirepPerfectOfficialInput = {
     fuelUsedKg: number;
     maxIas: number;
     maxAltitudeFt: number;
+    maxAltitudeMslFt: number;
+    maxAglFt: number;
     landingVsFpm: number;
     landingGForce: number;
     overspeedEvents: number;
@@ -67,7 +112,12 @@ export type PirepPerfectOfficialInput = {
   };
   capabilities: PirepPerfectCapabilityInput[];
   unsupportedProtectedMetrics: PirepPerfectCapabilityInput[];
+  altitude: PirepPerfectAltitudeEvidence;
   phaseSummary: Array<Record<string, unknown>>;
+  phaseAuditReport: Record<string, unknown>;
+  phasePrevalidationPackage: Record<string, unknown>;
+  phaseAcceptanceMatrix: PirepPerfectPhaseAcceptance[];
+  phaseTestRunManifest: Record<string, unknown>;
   eventTimeline: Array<Record<string, unknown>>;
   eventsJson: Array<Record<string, unknown>>;
   penaltiesJson: Array<Record<string, unknown>>;
@@ -165,6 +215,114 @@ function parseAttrs(openTag: string): Record<string, string> {
   return attrs;
 }
 
+
+function hasSection(xml: string, tag: string): boolean {
+  return new RegExp(`<${tag}(?:\\s[^>]*)?[\\s\\S]*?<\/${tag}>`, "i").test(xml);
+}
+function parseAltitudeEvidence(xml: string): PirepPerfectAltitudeEvidence {
+  const section = sectionXml(xml, "Altitude");
+  return {
+    schema: firstText(xmlText(section, "Schema"), xmlText(section, "SchemaVersion"), ""),
+    transitionAltitudeFt: firstNumber(xmlNumber(section, "TransitionAltitudeFt"), 10000),
+    sampleCount: xmlNumber(section, "SampleCount"),
+    maxAltitudeMslFt: firstNumber(xmlNumber(section, "MaxAltitudeMslFt"), xmlNumber(xml, "MaxAltitudeMslFt"), xmlNumber(xml, "MaxAltitude")),
+    maxAglFt: firstNumber(xmlNumber(section, "MaxAglFt"), xmlNumber(xml, "MaxAglFt")),
+    minAglFt: xmlNumber(section, "MinAglFt"),
+    maxPressureAltitudeFt: xmlNumber(section, "MaxPressureAltitudeFt"),
+    firstAltitudeMslFt: xmlNumber(section, "FirstAltitudeMslFt"),
+    firstAltitudeAglFt: xmlNumber(section, "FirstAltitudeAglFt"),
+    lastAltitudeMslFt: xmlNumber(section, "LastAltitudeMslFt"),
+    lastAltitudeAglFt: xmlNumber(section, "LastAltitudeAglFt"),
+    lastFlightLevel: xmlText(section, "LastFlightLevel"),
+    lastDisplayMode: xmlText(section, "LastDisplayMode"),
+    lastDisplayText: xmlText(section, "LastDisplayText"),
+    altitudeSource: xmlText(section, "AltitudeSource"),
+    isReliable: asBoolean(xmlText(section, "IsReliable")),
+  };
+}
+
+function parsePhaseAuditReport(xml: string): Record<string, unknown> {
+  const section = sectionXml(xml, "PhaseAuditReport");
+  if (!section) return {};
+  return {
+    schemaVersion: firstText(xmlText(section, "SchemaVersion"), xmlText(section, "Schema")),
+    policy: xmlText(section, "Policy"),
+    samples: xmlNumber(section, "Samples"),
+    observedSequence: firstText(xmlText(section, "ObservedSequence"), xmlText(section, "Sequence")),
+    status: firstText(xmlText(section, "Status"), xmlText(section, "GlobalStatus")),
+    flags: firstText(xmlText(section, "Flags"), xmlText(section, "PhaseAuditFlags")),
+    touchdownDetected: asBoolean(xmlText(section, "TouchdownDetected")),
+    gateDetected: asBoolean(xmlText(section, "GateDetected")),
+  };
+}
+
+function parsePhasePrevalidationPackage(xml: string): Record<string, unknown> {
+  const section = sectionXml(xml, "PhasePrevalidationPackage");
+  if (!section) return {};
+  return {
+    schemaVersion: firstText(xmlText(section, "SchemaVersion"), xmlText(section, "Schema")),
+    policy: xmlText(section, "Policy"),
+    globalStatus: firstText(xmlText(section, "GlobalStatus"), xmlText(section, "Status")),
+    observedSequence: xmlText(section, "ObservedSequence"),
+    missingRecommendedPhases: xmlText(section, "MissingRecommendedPhases"),
+    flags: xmlText(section, "Flags"),
+  };
+}
+
+function parsePhaseTestRunManifest(xml: string): Record<string, unknown> {
+  const section = sectionXml(xml, "PhaseTestRunManifest");
+  if (!section) return {};
+  return {
+    schemaVersion: firstText(xmlText(section, "SchemaVersion"), xmlText(section, "Schema")),
+    policy: xmlText(section, "Policy"),
+    officialScoringAuthority: xmlText(section, "OfficialScoringAuthority"),
+    flightNumber: xmlText(section, "FlightNumber"),
+    origin: xmlText(section, "Origin"),
+    destination: xmlText(section, "Destination"),
+    samples: xmlNumber(section, "Samples"),
+    observedSequence: xmlText(section, "ObservedSequence"),
+    readyForFullSimulatorValidation: asBoolean(xmlText(section, "ReadyForFullSimulatorValidation")),
+    altitudeResolver: asBoolean(xmlText(section, "AltitudeResolver")),
+    phaseStateMachine: asBoolean(xmlText(section, "PhaseStateMachine")),
+    phaseOperationalChecklist: asBoolean(xmlText(section, "PhaseOperationalChecklist")),
+    phaseTransitionMatrix: asBoolean(xmlText(section, "PhaseTransitionMatrix")),
+    phaseAuditReport: asBoolean(xmlText(section, "PhaseAuditReport")),
+    phasePrevalidationPackage: asBoolean(xmlText(section, "PhasePrevalidationPackage")),
+    phaseAcceptanceMatrix: asBoolean(xmlText(section, "PhaseAcceptanceMatrix")),
+    touchdownSamples: xmlNumber(section, "TouchdownSamples"),
+    gateReadySamples: xmlNumber(section, "GateReadySamples"),
+    groundAglNormalized: asBoolean(xmlText(section, "GroundAglNormalized")),
+    airborneAltitudeEvidence: asBoolean(xmlText(section, "AirborneAltitudeEvidence")),
+  };
+}
+
+function parsePhaseAcceptanceMatrix(xml: string): PirepPerfectPhaseAcceptance[] {
+  const section = sectionXml(xml, "PhaseAcceptanceMatrix");
+  if (!section) return [];
+  const rows: PirepPerfectPhaseAcceptance[] = [];
+  const re = /<(?:Phase|AcceptancePhase|PhaseAcceptance)\b([^>]*)>([\s\S]*?)<\/(?:Phase|AcceptancePhase|PhaseAcceptance)>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(section))) {
+    const attrs = parseAttrs(match[1] ?? "");
+    const body = match[2] ?? "";
+    const phase = firstText(attrs.code, attrs.phase, xmlText(body, "Code"), xmlText(body, "Phase"), attrs.name);
+    rows.push({
+      phase: phase || "UNKNOWN",
+      name: firstText(attrs.name, xmlText(body, "Name"), phase),
+      status: firstText(attrs.status, xmlText(body, "Status"), "NOT_OBSERVED"),
+      samples: firstNumber(xmlNumber(body, "Samples"), xmlNumber(body, "ObservedSamples")),
+      maxAltitudeMslFt: firstNumber(xmlNumber(body, "MaxAltitudeMslFt"), xmlNumber(body, "MaxMslFt")),
+      maxAglFt: firstNumber(xmlNumber(body, "MaxAglFt"), xmlNumber(body, "MaxAglFt")),
+      maxGs: firstNumber(xmlNumber(body, "MaxGS"), xmlNumber(body, "MaxGs")),
+      minVs: firstNumber(xmlNumber(body, "MinVS"), xmlNumber(body, "MinVs")),
+      maxVs: firstNumber(xmlNumber(body, "MaxVS"), xmlNumber(body, "MaxVs")),
+      flags: xmlText(body, "Flags"),
+      reviewQuestion: xmlText(body, "ReviewQuestion"),
+    });
+  }
+  return rows;
+}
+
 function parseCapabilities(xml: string): PirepPerfectCapabilityInput[] {
   const section = sectionXml(xml, "Capabilities");
   if (!section) return [];
@@ -213,8 +371,10 @@ function parsePhases(xml: string): Array<Record<string, unknown>> {
       duration: xmlText(body, "Duration"),
       maxIas: firstNumber(xmlNumber(body, "MaxIAS"), xmlNumber(body, "MaxIas")),
       maxGs: xmlNumber(body, "MaxGS"),
-      maxAltitude: firstNumber(xmlNumber(body, "MaxAltitude"), xmlNumber(body, "MaxAltitudeFt")),
-      minAgl: xmlNumber(body, "MinAGL"),
+      maxAltitude: firstNumber(xmlNumber(body, "MaxAltitudeMslFt"), xmlNumber(body, "MaxAltitude"), xmlNumber(body, "MaxAltitudeFt")),
+      maxAltitudeMslFt: firstNumber(xmlNumber(body, "MaxAltitudeMslFt"), xmlNumber(body, "MaxAltitude"), xmlNumber(body, "MaxAltitudeFt")),
+      maxAglFt: firstNumber(xmlNumber(body, "MaxAglFt"), xmlNumber(body, "MaxAGL")),
+      minAgl: firstNumber(xmlNumber(body, "MinAGL"), xmlNumber(body, "MinAglFt")),
       maxVs: xmlNumber(body, "MaxVS"),
       minVs: xmlNumber(body, "MinVS"),
       maxBank: xmlNumber(body, "MaxBank"),
@@ -223,6 +383,11 @@ function parsePhases(xml: string): Array<Record<string, unknown>> {
       fuelStartKg: xmlNumber(body, "FuelStartKg"),
       fuelEndKg: xmlNumber(body, "FuelEndKg"),
       distanceNm: xmlNumber(body, "DistanceNm"),
+      phaseExpectedActions: xmlText(body, "PhaseExpectedActions"),
+      phaseMeasuredMetrics: xmlText(body, "PhaseMeasuredMetrics"),
+      phaseScoringHints: xmlText(body, "PhaseScoringHints"),
+      phaseReviewQuestion: xmlText(body, "PhaseReviewQuestion"),
+      phaseReviewVersion: xmlText(body, "PhaseReviewVersion"),
     });
   }
   return phases;
@@ -310,6 +475,11 @@ export function buildPirepPerfectOfficialScoringInput(params: {
   const capabilities = parseCapabilities(rawXml);
   const phases = parsePhases(rawXml);
   const eventTimeline = parseEvents(rawXml);
+  const altitude = parseAltitudeEvidence(rawXml);
+  const phaseAuditReport = parsePhaseAuditReport(rawXml);
+  const phasePrevalidationPackage = parsePhasePrevalidationPackage(rawXml);
+  const phaseAcceptanceMatrix = parsePhaseAcceptanceMatrix(rawXml);
+  const phaseTestRunManifest = parsePhaseTestRunManifest(rawXml);
   const unsupportedProtectedMetrics = capabilities.filter((metric) => !metric.supported || !metric.penaltyEligible || metric.reliability.toLowerCase().includes("unsupported"));
   const unsupportedNames = new Set(unsupportedProtectedMetrics.map((metric) => metric.name.toLowerCase()));
   const eventsUpper = eventTimeline.map((event) => asText(event.code).toUpperCase());
@@ -339,7 +509,8 @@ export function buildPirepPerfectOfficialScoringInput(params: {
   const landingVsFpm = Math.abs(firstNumber(xmlNumber(rawXml, "TouchdownVS"), xmlNumber(rawXml, "TouchDownVS"), xmlNumber(rawXml, "LandingVS"), params.report?.landingVS));
   const landingGForce = Math.abs(firstNumber(xmlNumber(rawXml, "TouchdownG"), xmlNumber(rawXml, "TouchdownGForce"), xmlNumber(rawXml, "LandingG"), params.report?.landingG));
   const maxIas = firstNumber(xmlNumber(rawXml, "MaxIAS"), xmlNumber(rawXml, "MaxIas"), ...phases.map((phase) => phase.maxIas));
-  const maxAltitudeFt = firstNumber(xmlNumber(rawXml, "MaxAltitude"), xmlNumber(rawXml, "MaxAltitudeFt"), ...phases.map((phase) => phase.maxAltitude));
+  const maxAltitudeFt = firstNumber(altitude.maxAltitudeMslFt, xmlNumber(rawXml, "MaxAltitudeMslFt"), xmlNumber(rawXml, "MaxAltitude"), xmlNumber(rawXml, "MaxAltitudeFt"), ...phases.map((phase) => phase.maxAltitudeMslFt), ...phases.map((phase) => phase.maxAltitude));
+  const maxAglFt = firstNumber(altitude.maxAglFt, xmlNumber(rawXml, "MaxAglFt"), ...phases.map((phase) => phase.maxAglFt));
   const overspeedEvents = eventTimeline.filter((event) => asText(event.code).toUpperCase().includes("OVERSPEED")).length;
   const stallEvents = eventTimeline.filter((event) => asText(event.code).toUpperCase().includes("STALL")).length;
   const picFalseCount = firstNumber(xmlNumber(rawXml, "PICsFailed"), xmlNumber(rawXml, "PicFalseCount"));
@@ -348,7 +519,16 @@ export function buildPirepPerfectOfficialScoringInput(params: {
   const totalPhaseCount = Math.max(phases.length, 8);
   const hasCoreEvidence = hasTakeoff && hasLanding && (distanceNm > 1 || blockMinutes >= 2 || reachedPhaseCount >= 4);
   const hasRawXml = rawXml.length > 0;
-  const isPirepPerfect = /<FlightPhaseSummary[\s>]/i.test(rawXml) || /<EventTimeline[\s>]/i.test(rawXml) || /<Capabilities[\s>]/i.test(rawXml);
+  const hasC0AltitudeResolver = hasSection(rawXml, "Altitude");
+  const hasC1PhaseStateMachine = phases.some((phase) => Boolean(asText(phase.PhaseMatrixVersion ?? phase.phaseMatrixVersion))) || eventTimeline.some((event) => Boolean(asText(event.OperationalPhaseCode ?? event.operationalPhaseCode)));
+  const hasC2OperationalChecklist = hasSection(rawXml, "PhaseOperationalChecklist");
+  const hasC3TransitionMatrix = /PhaseTransition/i.test(rawXml) || phases.some((phase) => Boolean(asText(phase.phaseReviewVersion)));
+  const hasC4AuditReport = hasSection(rawXml, "PhaseAuditReport");
+  const hasC5ReviewContract = hasSection(rawXml, "PhaseReviewContracts") || phases.some((phase) => Boolean(asText(phase.phaseReviewQuestion)));
+  const hasC6PrevalidationPackage = hasSection(rawXml, "PhasePrevalidationPackage");
+  const hasC7AcceptanceMatrix = hasSection(rawXml, "PhaseAcceptanceMatrix");
+  const hasC8PretestManifest = hasSection(rawXml, "PhaseTestRunManifest");
+  const isPirepPerfect = /<FlightPhaseSummary[\s>]/i.test(rawXml) || /<EventTimeline[\s>]/i.test(rawXml) || /<Capabilities[\s>]/i.test(rawXml) || hasC0AltitudeResolver || hasC8PretestManifest;
 
   let procedureDelta = 0;
   let missionDelta = 0;
@@ -439,11 +619,22 @@ export function buildPirepPerfectOfficialScoringInput(params: {
       hasRawXml ? null : "missing_raw_pirep_xml",
       hasRawXml && !isPirepPerfect ? "legacy_xml_without_pirep_perfect_sections" : null,
       unsupportedNames.size ? "unsupported_metrics_protected_from_penalty" : null,
+      hasC8PretestManifest && !asBoolean(phaseTestRunManifest.readyForFullSimulatorValidation) ? "phase_pretest_manifest_not_ready_for_full_validation" : null,
     ].filter(Boolean) as string[],
     identity,
     evidence: {
       isPirepPerfect,
       isEvidentiary: hasCoreEvidence,
+      hasC0AltitudeResolver,
+      hasC1PhaseStateMachine,
+      hasC2OperationalChecklist,
+      hasC3TransitionMatrix,
+      hasC4AuditReport,
+      hasC5ReviewContract,
+      hasC6PrevalidationPackage,
+      hasC7AcceptanceMatrix,
+      hasC8PretestManifest,
+      readyForFullSimulatorValidation: asBoolean(phaseTestRunManifest.readyForFullSimulatorValidation),
       hasTakeoff,
       hasAirborne,
       hasLanding,
@@ -459,6 +650,8 @@ export function buildPirepPerfectOfficialScoringInput(params: {
       fuelUsedKg,
       maxIas,
       maxAltitudeFt,
+      maxAltitudeMslFt: maxAltitudeFt,
+      maxAglFt,
       landingVsFpm,
       landingGForce,
       overspeedEvents,
@@ -484,7 +677,12 @@ export function buildPirepPerfectOfficialScoringInput(params: {
     },
     capabilities,
     unsupportedProtectedMetrics,
+    altitude,
     phaseSummary: phases,
+    phaseAuditReport,
+    phasePrevalidationPackage,
+    phaseAcceptanceMatrix,
+    phaseTestRunManifest,
     eventTimeline,
     eventsJson,
     penaltiesJson,

@@ -411,6 +411,63 @@ function InfoTable({ columns, rows }: { columns: string[]; rows: InfoCell[][] })
   );
 }
 
+function formatFt(value: unknown) {
+  const number = asNumber(value);
+  return number !== 0 ? `${Math.round(number)} ft` : "—";
+}
+
+function formatFpm(value: unknown) {
+  const number = asNumber(value);
+  return number !== 0 ? `${Math.round(number)} ft/min` : "—";
+}
+
+function formatKts(value: unknown) {
+  const number = asNumber(value);
+  return number !== 0 ? `${Math.round(number)} kt` : "—";
+}
+
+function formatBool(value: unknown) {
+  if (value === true) return "Sí";
+  if (value === false) return "No";
+  const text = asText(value);
+  if (!text) return "—";
+  const normalized = text.toLowerCase();
+  if (["true", "1", "yes", "si", "sí", "ok", "ready"].includes(normalized)) return "Sí";
+  if (["false", "0", "no"].includes(normalized)) return "No";
+  return text;
+}
+
+function phaseStatusTone(status?: string | null) {
+  const normalized = asText(status).toUpperCase();
+  if (["OK", "READY", "CONFIRMED", "PASS"].includes(normalized)) return "text-emerald-200 border-emerald-400/20 bg-emerald-400/10";
+  if (["WARN", "WAIT", "REVIEW", "PENDING"].includes(normalized)) return "text-amber-200 border-amber-400/20 bg-amber-400/10";
+  if (["BLOCK", "ERROR", "FAIL"].includes(normalized)) return "text-rose-200 border-rose-400/20 bg-rose-400/10";
+  return "text-white/72 border-white/10 bg-white/5";
+}
+
+function shortRecordEntries(record: Record<string, string | number | boolean>, limit = 12) {
+  return Object.entries(record)
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+    .slice(0, limit);
+}
+
+function EvidenceGrid({ record, empty = "Sin evidencia declarada", limit = 12 }: { record: Record<string, string | number | boolean>; empty?: string; limit?: number }) {
+  const entries = shortRecordEntries(record, limit);
+  if (!entries.length) {
+    return <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64">{empty}</p>;
+  }
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {entries.map(([key, value]) => (
+        <div key={key} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/42">{key.replace(/_/g, " ")}</p>
+          <p className="mt-2 break-words text-sm font-semibold text-white">{formatDetailValue(value) || "—"}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EvaluationBlock({ title, score, label, stars, description, groups, noEvaluable }: {
   title: string;
   score: number;
@@ -1006,7 +1063,7 @@ function FlightResultContent() {
 
           {pirepPerfect.hasRawXml ? (
             <section className="glass-panel rounded-[30px] p-7">
-              <SurHeading icon="🧾" label="PIREP Perfect" strong="A3 · Parser Web" />
+              <SurHeading icon="🧾" label="PIREP Perfect" strong="D2 · C0-C8 Web" />
               <InfoTable
                 columns={["XML", "Schema", "Ruta", "Avión", "Matrícula", "Perfil/Add-on", "Evidencia"]}
                 rows={[[
@@ -1035,17 +1092,33 @@ function FlightResultContent() {
                 ))}
               </div>
 
+              <SurHeading icon="🛰️" label="Altitud C0" strong="MSL · AGL · FL" />
+              <InfoTable
+                columns={["ALT MSL máx", "AGL máx", "MSL inicial", "MSL final", "AGL final", "FL", "Fuente", "Confiable"]}
+                rows={[[
+                  { label: "ALT MSL máx", value: formatFt(pirepPerfect.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.cruiseAltitude) },
+                  { label: "AGL máx", value: formatFt(pirepPerfect.maxAglFt || pirepPerfect.altitudeEvidence.maxAglFt) },
+                  { label: "MSL inicial", value: formatFt(pirepPerfect.altitudeEvidence.firstAltitudeMslFt) },
+                  { label: "MSL final", value: formatFt(pirepPerfect.altitudeEvidence.lastAltitudeMslFt) },
+                  { label: "AGL final", value: formatFt(pirepPerfect.altitudeEvidence.lastAltitudeAglFt) },
+                  { label: "FL", value: pirepPerfect.altitudeEvidence.lastFlightLevel || cruiseLevel },
+                  { label: "Fuente", value: pirepPerfect.altitudeEvidence.altitudeSource || "N/D" },
+                  { label: "Confiable", value: formatBool(pirepPerfect.altitudeEvidence.isReliable), tone: pirepPerfect.altitudeEvidence.isReliable ? "text-emerald-200" : "text-amber-200" },
+                ]]}
+              />
+
               <SurHeading icon="🛬" label="Métricas reales" strong="del XML" />
               <InfoTable
-                columns={["Distancia", "Max IAS", "Crucero", "Fuel usado", "Touchdown VS", "Touchdown G", "XPDR"]}
+                columns={["Distancia", "Max IAS", "Fuel usado", "Touchdown VS", "Touchdown G", "XPDR", "Doors", "Gear"]}
                 rows={[[
                   { label: "Distancia", value: formatNm(pirepPerfect.distanceNm || distanceNmEvidence || reservation.distance_nm) },
-                  { label: "Max IAS", value: pirepPerfect.maxIas ? `${Math.round(pirepPerfect.maxIas)} kt` : "—" },
-                  { label: "Crucero", value: pirepPerfect.cruiseAltitude ? `${Math.round(pirepPerfect.cruiseAltitude)} ft` : cruiseLevel },
+                  { label: "Max IAS", value: formatKts(pirepPerfect.maxIas) },
                   { label: "Fuel usado", value: formatKg(fuelUsedKg || actualSnapshot?.fuel_kg_actual) },
-                  { label: "Touchdown VS", value: landingVs ? `${Math.round(landingVs)} ft/min` : "—", tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
+                  { label: "Touchdown VS", value: formatFpm(landingVs), tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
                   { label: "Touchdown G", value: pirepPerfect.touchdownG ? `${pirepPerfect.touchdownG.toFixed(2)}g` : "—" },
                   { label: "XPDR", value: pirepPerfect.transponderState || pirepPerfect.transponder || "N/D", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("XPDR")) ? "text-amber-200" : "text-emerald-200" },
+                  { label: "Doors", value: pirepPerfect.doorOpen || "N/D", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("DOORS")) ? "text-amber-200" : "text-white" },
+                  { label: "Gear", value: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "N/D" : "Según perfil", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "text-amber-200" : "text-white" },
                 ]]}
               />
 
@@ -1053,14 +1126,62 @@ function FlightResultContent() {
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {pirepPerfect.phases.length ? pirepPerfect.phases.map((phase) => (
                   <div key={phase.name} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-sm font-semibold text-white">{phase.name}</p>
-                    <p className="mt-1 text-xs text-white/52">{phase.samples} muestras · {phase.duration || "sin duración"}</p>
-                    <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt · ALT {Math.round(phase.maxAltitude)} ft · VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-white">{phase.name}</p>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/48">{phase.samples} muestras</span>
+                    </div>
+                    <p className="mt-1 text-xs text-white/52">{phase.duration || "sin duración"}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt || phase.maxAltitude)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
+                    <p className="mt-1 text-xs leading-5 text-white/56">VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)} · Dist {Math.round(phase.distanceNm)} NM</p>
+                    {phase.phaseReviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-emerald-100/70">{phase.phaseReviewQuestion}</p> : null}
                   </div>
                 )) : (
                   <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran métricas legacy desde Resumen/Indicadores.</p>
                 )}
               </div>
+
+              <SurHeading icon="✅" label="Matriz de aceptación" strong="C7" />
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {pirepPerfect.phaseAcceptanceMatrix.length ? pirepPerfect.phaseAcceptanceMatrix.map((phase) => (
+                  <div key={`${phase.phase}-${phase.name}`} className={`rounded-[18px] border px-4 py-3 ${phaseStatusTone(phase.status)}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-white">{phase.phase}</p>
+                      <span className="rounded-full border border-current/20 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em]">{phase.status || "N/D"}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-white/60">{phase.name}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/70">Muestras {phase.samples} · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
+                    {phase.flags ? <p className="mt-1 text-xs leading-5 text-amber-100/80">Flags: {phase.flags}</p> : null}
+                    {phase.reviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-white/64">{phase.reviewQuestion}</p> : null}
+                  </div>
+                )) : (
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-5">Este XML no trae PhaseAcceptanceMatrix C7. Se validará con FlightPhaseSummary/EventTimeline.</p>
+                )}
+              </div>
+
+              <SurHeading icon="🧪" label="Auditoría y prevalidación" strong="C4-C8" />
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhaseAuditReport C4</p>
+                  <EvidenceGrid record={pirepPerfect.phaseAuditReport} empty="Sin PhaseAuditReport C4 en este XML" />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhasePrevalidationPackage C6</p>
+                  <EvidenceGrid record={pirepPerfect.phasePrevalidationPackage} empty="Sin PhasePrevalidationPackage C6 en este XML" />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhaseTestRunManifest C8</p>
+                  <EvidenceGrid record={pirepPerfect.phaseTestRunManifest} empty="Sin PhaseTestRunManifest C8 en este XML" />
+                </div>
+              </div>
+
+              {pirepPerfect.notes.length ? (
+                <div className="mt-6 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Notas del parser</p>
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
+                    {pirepPerfect.notes.map((note) => <li key={note}>• {note}</li>)}
+                  </ul>
+                </div>
+              ) : null}
             </section>
           ) : null}
 

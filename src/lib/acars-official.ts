@@ -101,6 +101,65 @@ export type AcarsTelemetrySample = {
   longitude?: number | null;
   altitudeFeet?: number | null;
   altitudeAGL?: number | null;
+
+  // PIREP Perfect C0 — altitude resolver evidence.
+  // Keep legacy altitudeFeet/altitudeAGL above for backward compatibility,
+  // but prefer these fields for official Web/Supabase interpretation.
+  altitudeMslFt?: number | null;
+  altitudeMslFeet?: number | null;
+  altitudeAglFt?: number | null;
+  altitudeAglFeet?: number | null;
+  groundElevationFt?: number | null;
+  groundElevationFeet?: number | null;
+  indicatedAltitudeFt?: number | null;
+  indicatedAltitudeFeet?: number | null;
+  pressureAltitudeFt?: number | null;
+  pressureAltitudeFeet?: number | null;
+  transitionAltitudeFt?: number | null;
+  transitionAltitudeFeet?: number | null;
+  flightLevel?: string | null;
+  displayAltitudeMode?: string | null;
+  displayAltitudeText?: string | null;
+  altitudeSource?: string | null;
+  isAltitudeReliable?: boolean | null;
+
+  // PIREP Perfect C1-C8 — operational phase/audit evidence.
+  operationalPhaseCode?: string | null;
+  operationalPhaseName?: string | null;
+  operationalPhaseReason?: string | null;
+  hasBeenAirborne?: boolean | null;
+  isAirborneSample?: boolean | null;
+  touchdownDetected?: boolean | null;
+  gateReadyCandidate?: boolean | null;
+  phaseChecklistStatus?: string | null;
+  phaseChecklistRequired?: string | null;
+  phaseChecklistSatisfied?: string | null;
+  phaseChecklistMissing?: string | null;
+  phaseChecklistWarnings?: string | null;
+  phaseTransitionFromCode?: string | null;
+  phaseTransitionToCode?: string | null;
+  phaseTransitionReason?: string | null;
+  phaseTransitionChanged?: boolean | null;
+  phaseTransitionIndex?: number | null;
+  phaseStabilitySamples?: number | null;
+  phaseCandidateSamples?: number | null;
+  phaseDwellSeconds?: number | null;
+  phaseDecisionConfidence?: string | null;
+  phaseMatrixVersion?: string | null;
+  phaseAuditStatus?: string | null;
+  phaseAuditSummary?: string | null;
+  phaseAuditFlags?: string | null;
+  phaseAuditVersion?: string | null;
+  phaseExpectedActions?: string | null;
+  phaseMeasuredMetrics?: string | null;
+  phaseScoringHints?: string | null;
+  phaseReviewQuestion?: string | null;
+  phaseReviewVersion?: string | null;
+  phasePrevalidationStatus?: string | null;
+  phasePrevalidationSummary?: string | null;
+  phasePrevalidationFlags?: string | null;
+  phasePrevalidationVersion?: string | null;
+
   indicatedAirspeed?: number | null;
   groundSpeed?: number | null;
   verticalSpeed?: number | null;

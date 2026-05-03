@@ -125,6 +125,71 @@ function haversineNm(a?: AcarsTelemetrySample | null, b?: AcarsTelemetrySample |
   return Math.round(earthRadiusNm * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)) * 10) / 10;
 }
 
+
+function sampleAltitudeMslFt(sample?: AcarsTelemetrySample | null): number {
+  if (!sample) return 0;
+  const row = sample as unknown as GenericObject;
+  return firstNumber(
+    row.altitudeMslFt,
+    row.altitudeMslFeet,
+    row.AltitudeMslFt,
+    row.AltitudeMslFeet,
+    sample.altitudeFeet
+  );
+}
+
+function sampleAltitudeAglFt(sample?: AcarsTelemetrySample | null): number {
+  if (!sample) return 0;
+  const row = sample as unknown as GenericObject;
+  const onGround = asBoolean(sample.onGround);
+  const resolved = firstNumber(
+    row.altitudeAglFt,
+    row.altitudeAglFeet,
+    row.AltitudeAglFt,
+    row.AltitudeAglFeet,
+    sample.altitudeAGL
+  );
+  return onGround && resolved < 25 ? 0 : resolved;
+}
+
+function sampleAltitudeEvidence(sample?: AcarsTelemetrySample | null): GenericObject {
+  if (!sample) return {};
+  const row = sample as unknown as GenericObject;
+  return {
+    altitudeMslFt: sampleAltitudeMslFt(sample),
+    altitudeAglFt: sampleAltitudeAglFt(sample),
+    groundElevationFt: firstNumber(row.groundElevationFt, row.groundElevationFeet, row.GroundElevationFt, row.GroundElevationFeet),
+    indicatedAltitudeFt: firstNumber(row.indicatedAltitudeFt, row.indicatedAltitudeFeet, row.IndicatedAltitudeFt, row.IndicatedAltitudeFeet),
+    pressureAltitudeFt: firstNumber(row.pressureAltitudeFt, row.pressureAltitudeFeet, row.PressureAltitudeFt, row.PressureAltitudeFeet),
+    transitionAltitudeFt: firstNumber(row.transitionAltitudeFt, row.transitionAltitudeFeet, row.TransitionAltitudeFt, row.TransitionAltitudeFeet),
+    flightLevel: firstText(row.flightLevel, row.FlightLevel),
+    displayAltitudeMode: firstText(row.displayAltitudeMode, row.DisplayAltitudeMode),
+    displayAltitudeText: firstText(row.displayAltitudeText, row.DisplayAltitudeText),
+    altitudeSource: firstText(row.altitudeSource, row.AltitudeSource),
+    isAltitudeReliable: asBoolean(row.isAltitudeReliable ?? row.IsAltitudeReliable),
+  };
+}
+
+function samplePhaseEvidence(sample?: AcarsTelemetrySample | null): GenericObject {
+  if (!sample) return {};
+  const row = sample as unknown as GenericObject;
+  return {
+    operationalPhaseCode: firstText(row.operationalPhaseCode, row.OperationalPhaseCode),
+    operationalPhaseName: firstText(row.operationalPhaseName, row.OperationalPhaseName),
+    operationalPhaseReason: firstText(row.operationalPhaseReason, row.OperationalPhaseReason),
+    phaseChecklistStatus: firstText(row.phaseChecklistStatus, row.PhaseChecklistStatus),
+    phaseChecklistMissing: firstText(row.phaseChecklistMissing, row.PhaseChecklistMissing),
+    phaseTransitionFromCode: firstText(row.phaseTransitionFromCode, row.PhaseTransitionFromCode),
+    phaseTransitionToCode: firstText(row.phaseTransitionToCode, row.PhaseTransitionToCode),
+    phaseTransitionChanged: asBoolean(row.phaseTransitionChanged ?? row.PhaseTransitionChanged),
+    phaseDecisionConfidence: firstText(row.phaseDecisionConfidence, row.PhaseDecisionConfidence),
+    phaseAuditStatus: firstText(row.phaseAuditStatus, row.PhaseAuditStatus),
+    phaseAuditFlags: firstText(row.phaseAuditFlags, row.PhaseAuditFlags),
+    phasePrevalidationStatus: firstText(row.phasePrevalidationStatus, row.PhasePrevalidationStatus),
+    phasePrevalidationFlags: firstText(row.phasePrevalidationFlags, row.PhasePrevalidationFlags),
+  };
+}
+
 function buildForensicSummaries(payload: AcarsFinalizeRequest, reservationId: string) {
   const samples = Array.isArray(payload.telemetryLog) ? payload.telemetryLog : [];
   const firstSample = samples[0] ?? null;
@@ -191,7 +256,14 @@ function buildForensicSummaries(payload: AcarsFinalizeRequest, reservationId: st
     on_ground_samples: samples.length - airborneSamples.length,
     firstSampleAt: asText(firstSample?.capturedAtUtc),
     lastSampleAt: asText(lastSample?.capturedAtUtc),
-    maxAltitudeFt: Math.round(Math.max(0, ...samples.map((s) => asNumber(s.altitudeFeet)), extractXmlNumber(rawXml, "MaxAltitude"))),
+    maxAltitudeFt: Math.round(Math.max(0, ...samples.map((s) => sampleAltitudeMslFt(s)), extractXmlNumber(rawXml, "MaxAltitudeMslFt"), extractXmlNumber(rawXml, "MaxAltitude"))),
+    maxAltitudeMslFt: Math.round(Math.max(0, ...samples.map((s) => sampleAltitudeMslFt(s)), extractXmlNumber(rawXml, "MaxAltitudeMslFt"), extractXmlNumber(rawXml, "MaxAltitude"))),
+    maxAglFt: Math.round(Math.max(0, ...samples.map((s) => sampleAltitudeAglFt(s)), extractXmlNumber(rawXml, "MaxAglFt"), extractXmlNumber(rawXml, "MaxAGL"))),
+    firstAltitude: sampleAltitudeEvidence(firstSample),
+    lastAltitude: sampleAltitudeEvidence(lastSample),
+    takeoffAltitude: sampleAltitudeEvidence(takeoffSample),
+    touchdownAltitude: sampleAltitudeEvidence(touchdownSample),
+    lastOperationalPhase: samplePhaseEvidence(lastSample),
     maxGroundSpeedKt: Math.round(Math.max(0, ...samples.map((s) => asNumber(s.groundSpeed)), extractXmlNumber(rawXml, "MaxGS"), extractXmlNumber(rawXml, "MaxIAS"))),
     distanceNm: firstNumber(payload.report?.distance, closeoutBlackbox.distanceNm, closeoutBlackbox.distance_nm, haversineNm(firstSample, lastSample)),
     touchdownGForce: landingGForce,

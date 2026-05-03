@@ -17,6 +17,8 @@ export type PirepPerfectPhase = {
   maxIas: number;
   maxGs: number;
   maxAltitude: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
   minAgl: number;
   maxVs: number;
   minVs: number;
@@ -26,6 +28,11 @@ export type PirepPerfectPhase = {
   fuelStartKg: number;
   fuelEndKg: number;
   distanceNm: number;
+  phaseExpectedActions?: string;
+  phaseMeasuredMetrics?: string;
+  phaseScoringHints?: string;
+  phaseReviewQuestion?: string;
+  phaseReviewVersion?: string;
 };
 
 export type PirepPerfectEvent = {
@@ -44,6 +51,39 @@ export type PirepPerfectEvent = {
   gs?: number;
   vs?: number;
   fuelKg?: number;
+};
+
+export type PirepPerfectAltitudeEvidence = {
+  schema: string;
+  transitionAltitudeFt: number;
+  sampleCount: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
+  minAglFt: number;
+  maxPressureAltitudeFt: number;
+  firstAltitudeMslFt: number;
+  firstAltitudeAglFt: number;
+  lastAltitudeMslFt: number;
+  lastAltitudeAglFt: number;
+  lastFlightLevel: string;
+  lastDisplayMode: string;
+  lastDisplayText: string;
+  altitudeSource: string;
+  isReliable: boolean;
+};
+
+export type PirepPerfectPhaseAcceptance = {
+  phase: string;
+  name: string;
+  status: string;
+  samples: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
+  maxGs: number;
+  minVs: number;
+  maxVs: number;
+  flags: string;
+  reviewQuestion: string;
 };
 
 export type PirepPerfectSummary = {
@@ -74,6 +114,9 @@ export type PirepPerfectSummary = {
   distanceNm: number;
   maxIas: number;
   cruiseAltitude: number;
+  maxAltitudeMslFt: number;
+  maxAglFt: number;
+  altitudeEvidence: PirepPerfectAltitudeEvidence;
   fuelStartKg: number;
   fuelEndKg: number;
   fuelUsedKg: number;
@@ -107,6 +150,10 @@ export type PirepPerfectSummary = {
   phases: PirepPerfectPhase[];
   eventTimeline: PirepPerfectEvent[];
   unsupportedEvents: PirepPerfectEvent[];
+  phaseAuditReport: Record<string, string | number | boolean>;
+  phasePrevalidationPackage: Record<string, string | number | boolean>;
+  phaseAcceptanceMatrix: PirepPerfectPhaseAcceptance[];
+  phaseTestRunManifest: Record<string, string | number | boolean>;
   landingMetrics: Record<string, string | number | boolean>;
   notes: string[];
 };
@@ -139,6 +186,26 @@ const EMPTY_SUMMARY: PirepPerfectSummary = {
   distanceNm: 0,
   maxIas: 0,
   cruiseAltitude: 0,
+  maxAltitudeMslFt: 0,
+  maxAglFt: 0,
+  altitudeEvidence: {
+    schema: "",
+    transitionAltitudeFt: 10000,
+    sampleCount: 0,
+    maxAltitudeMslFt: 0,
+    maxAglFt: 0,
+    minAglFt: 0,
+    maxPressureAltitudeFt: 0,
+    firstAltitudeMslFt: 0,
+    firstAltitudeAglFt: 0,
+    lastAltitudeMslFt: 0,
+    lastAltitudeAglFt: 0,
+    lastFlightLevel: "",
+    lastDisplayMode: "",
+    lastDisplayText: "",
+    altitudeSource: "",
+    isReliable: false,
+  },
   fuelStartKg: 0,
   fuelEndKg: 0,
   fuelUsedKg: 0,
@@ -172,6 +239,10 @@ const EMPTY_SUMMARY: PirepPerfectSummary = {
   phases: [],
   eventTimeline: [],
   unsupportedEvents: [],
+  phaseAuditReport: {},
+  phasePrevalidationPackage: {},
+  phaseAcceptanceMatrix: [],
+  phaseTestRunManifest: {},
   landingMetrics: {},
   notes: [],
 };
@@ -344,8 +415,10 @@ function parsePhases(doc: XMLDocument): PirepPerfectPhase[] {
     duration: textDirect(phase, "Duration"),
     maxIas: numberDirect(phase, "MaxIAS"),
     maxGs: numberDirect(phase, "MaxGS"),
-    maxAltitude: numberDirect(phase, "MaxAltitude"),
-    minAgl: numberDirect(phase, "MinAGL"),
+    maxAltitude: firstNumber(numberDirect(phase, "MaxAltitudeMslFt"), numberDirect(phase, "MaxAltitude")),
+    maxAltitudeMslFt: firstNumber(numberDirect(phase, "MaxAltitudeMslFt"), numberDirect(phase, "MaxAltitude")),
+    maxAglFt: firstNumber(numberDirect(phase, "MaxAglFt"), numberDirect(phase, "MaxAGL")),
+    minAgl: firstNumber(numberDirect(phase, "MinAGL"), numberDirect(phase, "MinAglFt")),
     maxVs: numberDirect(phase, "MaxVS"),
     minVs: numberDirect(phase, "MinVS"),
     maxBank: numberDirect(phase, "MaxBank"),
@@ -374,12 +447,17 @@ function parseEventTimeline(doc: XMLDocument): PirepPerfectEvent[] {
       reliability,
       penaltyEligible,
       severity: penaltyEligible ? "evaluable" : "N/D sin penalización",
-      altitude: numberDirect(event, "Altitude"),
-      agl: numberDirect(event, "AGL"),
+      altitude: firstNumber(numberDirect(event, "AltitudeMslFt"), numberDirect(event, "Altitude")),
+      agl: firstNumber(numberDirect(event, "AltitudeAglFt"), numberDirect(event, "AGL")),
       ias: numberDirect(event, "IAS"),
       gs: numberDirect(event, "GS"),
       vs: numberDirect(event, "VS"),
       fuelKg: numberDirect(event, "FuelKg"),
+      operationalPhaseCode: textDirect(event, "OperationalPhaseCode"),
+      operationalPhaseName: textDirect(event, "OperationalPhaseName"),
+      phaseAuditStatus: textDirect(event, "PhaseAuditStatus"),
+      phaseAuditFlags: textDirect(event, "PhaseAuditFlags"),
+      phasePrevalidationStatus: textDirect(event, "PhasePrevalidationStatus"),
     };
   });
 }
@@ -422,6 +500,77 @@ function inferPhaseFromLegacyEvent(code: string): string {
   return "PREFLIGHT";
 }
 
+
+function parseAltitudeEvidence(doc: XMLDocument): PirepPerfectAltitudeEvidence {
+  const root = firstDescendant(doc, "Altitude");
+  return {
+    schema: firstText(textDirect(root, "Schema"), textDirect(root, "SchemaVersion")),
+    transitionAltitudeFt: firstNumber(numberDirect(root, "TransitionAltitudeFt"), 10000),
+    sampleCount: numberDirect(root, "SampleCount"),
+    maxAltitudeMslFt: firstNumber(numberDirect(root, "MaxAltitudeMslFt"), numberDeep(doc, "MaxAltitudeMslFt"), numberDeep(doc, "MaxAltitude")),
+    maxAglFt: firstNumber(numberDirect(root, "MaxAglFt"), numberDeep(doc, "MaxAglFt")),
+    minAglFt: numberDirect(root, "MinAglFt"),
+    maxPressureAltitudeFt: numberDirect(root, "MaxPressureAltitudeFt"),
+    firstAltitudeMslFt: numberDirect(root, "FirstAltitudeMslFt"),
+    firstAltitudeAglFt: numberDirect(root, "FirstAltitudeAglFt"),
+    lastAltitudeMslFt: numberDirect(root, "LastAltitudeMslFt"),
+    lastAltitudeAglFt: numberDirect(root, "LastAltitudeAglFt"),
+    lastFlightLevel: textDirect(root, "LastFlightLevel"),
+    lastDisplayMode: textDirect(root, "LastDisplayMode"),
+    lastDisplayText: textDirect(root, "LastDisplayText"),
+    altitudeSource: textDirect(root, "AltitudeSource"),
+    isReliable: asBoolean(textDirect(root, "IsReliable")),
+  };
+}
+
+function parseSimpleSection(doc: XMLDocument, tag: string): Record<string, string | number | boolean> {
+  const root = firstDescendant(doc, tag);
+  if (!root) return {};
+  const out: Record<string, string | number | boolean> = {};
+  for (const child of childrenByLocalName(root, "SchemaVersion")) out.schemaVersion = child.textContent?.trim() ?? "";
+  const known = [
+    "Schema", "SchemaVersion", "Policy", "Samples", "ObservedSequence", "Status", "GlobalStatus", "Flags",
+    "TouchdownDetected", "GateDetected", "MissingRecommendedPhases", "ReadyForFullSimulatorValidation",
+    "OfficialScoringAuthority", "FlightNumber", "Origin", "Destination", "AltitudeResolver", "PhaseStateMachine",
+    "PhaseOperationalChecklist", "PhaseTransitionMatrix", "PhaseAuditReport", "PhasePrevalidationPackage",
+    "PhaseAcceptanceMatrix", "TouchdownSamples", "GateReadySamples", "GroundAglNormalized", "AirborneAltitudeEvidence"
+  ];
+  for (const key of known) {
+    const text = textDeep(root, key);
+    if (!text) continue;
+    if (["Samples", "TouchdownSamples", "GateReadySamples"].includes(key)) out[key] = asNumber(text);
+    else if (["TouchdownDetected", "GateDetected", "ReadyForFullSimulatorValidation", "AltitudeResolver", "PhaseStateMachine", "PhaseOperationalChecklist", "PhaseTransitionMatrix", "PhaseAuditReport", "PhasePrevalidationPackage", "PhaseAcceptanceMatrix", "GroundAglNormalized", "AirborneAltitudeEvidence"].includes(key)) out[key] = asBoolean(text);
+    else out[key] = text;
+  }
+  return out;
+}
+
+function parsePhaseAcceptanceMatrix(doc: XMLDocument): PirepPerfectPhaseAcceptance[] {
+  const root = firstDescendant(doc, "PhaseAcceptanceMatrix");
+  if (!root) return [];
+  const nodes = [
+    ...childrenByLocalName(root, "Phase"),
+    ...childrenByLocalName(root, "AcceptancePhase"),
+    ...childrenByLocalName(root, "PhaseAcceptance"),
+  ];
+  return nodes.map((node) => {
+    const phase = firstText(attr(node, "code"), attr(node, "phase"), textDirect(node, "Code"), textDirect(node, "Phase"), attr(node, "name"));
+    return {
+      phase: phase || "UNKNOWN",
+      name: firstText(attr(node, "name"), textDirect(node, "Name"), phase),
+      status: firstText(attr(node, "status"), textDirect(node, "Status"), "NOT_OBSERVED"),
+      samples: firstNumber(numberDirect(node, "Samples"), numberDirect(node, "ObservedSamples")),
+      maxAltitudeMslFt: firstNumber(numberDirect(node, "MaxAltitudeMslFt"), numberDirect(node, "MaxMslFt")),
+      maxAglFt: numberDirect(node, "MaxAglFt"),
+      maxGs: firstNumber(numberDirect(node, "MaxGS"), numberDirect(node, "MaxGs")),
+      minVs: firstNumber(numberDirect(node, "MinVS"), numberDirect(node, "MinVs")),
+      maxVs: firstNumber(numberDirect(node, "MaxVS"), numberDirect(node, "MaxVs")),
+      flags: textDirect(node, "Flags"),
+      reviewQuestion: textDirect(node, "ReviewQuestion"),
+    };
+  });
+}
+
 function parseLandingMetrics(doc: XMLDocument): Record<string, string | number | boolean> {
   const landing = firstDescendant(doc, "LandingMetrics");
   if (landing) {
@@ -462,6 +611,73 @@ function runwaySummary(section: Element | null): string {
   return firstText(textDeep(section, "Runway"), textDeep(section, "Pista"), textDeep(section, "RWY"));
 }
 
+
+function xmlTextFallback(rawXml: string, tag: string): string {
+  if (!rawXml) return "";
+  const match = rawXml.match(new RegExp(`<${tag}(?:\s[^>]*)?>([\s\S]*?)<\/${tag}>`, "i"));
+  return match ? match[1].replace(/<[^>]*>/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/\s+/g, " ").trim() : "";
+}
+
+function xmlNumberFallback(rawXml: string, tag: string): number {
+  return asNumber(xmlTextFallback(rawXml, tag));
+}
+
+function buildFallbackSummaryFromRawXml(rawXml: string, reservation: GenericRow): PirepPerfectSummary {
+  const hasCapabilities = /<Capabilities[\s>]/i.test(rawXml);
+  const hasPhaseSummary = /<FlightPhaseSummary[\s>]/i.test(rawXml);
+  const hasEventTimeline = /<EventTimeline[\s>]/i.test(rawXml);
+  const hasC8 = /<PhaseTestRunManifest[\s>]/i.test(rawXml);
+  const altitudeEvidence: PirepPerfectAltitudeEvidence = {
+    schema: xmlTextFallback(rawXml, "Schema"),
+    transitionAltitudeFt: firstNumber(xmlNumberFallback(rawXml, "TransitionAltitudeFt"), 10000),
+    sampleCount: xmlNumberFallback(rawXml, "SampleCount"),
+    maxAltitudeMslFt: firstNumber(xmlNumberFallback(rawXml, "MaxAltitudeMslFt"), xmlNumberFallback(rawXml, "MaxAltitude")),
+    maxAglFt: xmlNumberFallback(rawXml, "MaxAglFt"),
+    minAglFt: xmlNumberFallback(rawXml, "MinAglFt"),
+    maxPressureAltitudeFt: xmlNumberFallback(rawXml, "MaxPressureAltitudeFt"),
+    firstAltitudeMslFt: xmlNumberFallback(rawXml, "FirstAltitudeMslFt"),
+    firstAltitudeAglFt: xmlNumberFallback(rawXml, "FirstAltitudeAglFt"),
+    lastAltitudeMslFt: xmlNumberFallback(rawXml, "LastAltitudeMslFt"),
+    lastAltitudeAglFt: xmlNumberFallback(rawXml, "LastAltitudeAglFt"),
+    lastFlightLevel: xmlTextFallback(rawXml, "LastFlightLevel"),
+    lastDisplayMode: xmlTextFallback(rawXml, "LastDisplayMode"),
+    lastDisplayText: xmlTextFallback(rawXml, "LastDisplayText"),
+    altitudeSource: xmlTextFallback(rawXml, "AltitudeSource"),
+    isReliable: asBoolean(xmlTextFallback(rawXml, "IsReliable")),
+  };
+  return {
+    ...EMPTY_SUMMARY,
+    hasRawXml: Boolean(rawXml),
+    hasAnyEvidence: Boolean(rawXml),
+    rawXmlLength: rawXml.length,
+    schemaVersion: firstText(xmlTextFallback(rawXml, "SchemaVersion"), xmlTextFallback(rawXml, "AcarsVersion"), hasC8 ? "PIREP_PERFECT_C8" : ""),
+    flightNumber: firstText(xmlTextFallback(rawXml, "NroVuelo"), asText(reservation.reservation_code), asText(reservation.route_code)),
+    originIdent: firstText(xmlTextFallback(rawXml, "Origen"), asText(reservation.origin_ident)),
+    destinationIdent: firstText(xmlTextFallback(rawXml, "Destino"), asText(reservation.destination_ident)),
+    aircraftCode: firstText(xmlTextFallback(rawXml, "Avion"), xmlTextFallback(rawXml, "SimAvionTipo"), asText(reservation.aircraft_type_code)),
+    aircraftDisplayName: firstText(xmlTextFallback(rawXml, "ModeloCertificado"), xmlTextFallback(rawXml, "SimAvionRaw")),
+    aircraftRegistration: firstText(xmlTextFallback(rawXml, "Registracion"), asText(reservation.aircraft_registration)),
+    flightDuration: xmlTextFallback(rawXml, "FlightDuration"),
+    blockDuration: xmlTextFallback(rawXml, "BlockDuration"),
+    distanceNm: firstNumber(xmlNumberFallback(rawXml, "FlightLenght"), xmlNumberFallback(rawXml, "DistanceNm")),
+    maxIas: xmlNumberFallback(rawXml, "MaxIAS"),
+    cruiseAltitude: altitudeEvidence.maxAltitudeMslFt,
+    maxAltitudeMslFt: altitudeEvidence.maxAltitudeMslFt,
+    maxAglFt: altitudeEvidence.maxAglFt,
+    altitudeEvidence,
+    landingVs: firstNumber(xmlNumberFallback(rawXml, "TouchDownVS"), xmlNumberFallback(rawXml, "TouchdownVS")),
+    touchdownVs: firstNumber(xmlNumberFallback(rawXml, "TouchdownVS"), xmlNumberFallback(rawXml, "TouchDownVS")),
+    touchdownG: firstNumber(xmlNumberFallback(rawXml, "TouchdownG"), xmlNumberFallback(rawXml, "TouchdownGForce")),
+    notes: [
+      "XML parseado por fallback server-safe",
+      hasCapabilities ? "Capabilities presente" : "Capabilities no detectado",
+      hasPhaseSummary ? "FlightPhaseSummary presente" : "FlightPhaseSummary no detectado",
+      hasEventTimeline ? "EventTimeline presente" : "EventTimeline no detectado",
+      hasC8 ? "PhaseTestRunManifest C8 presente" : "C8 no detectado",
+    ],
+  };
+}
+
 export function buildPirepPerfectWebSummary(input: {
   scorePayload?: GenericRow | null;
   reservation?: GenericRow | null;
@@ -475,12 +691,20 @@ export function buildPirepPerfectWebSummary(input: {
     const rawFinalize = asObject(scorePayload.raw_finalize_payload);
     const telemetryLog = asObject(rawFinalize.telemetryLog);
     const sampleCount = firstNumber(telemetryLog.total_samples, asObject(scorePayload.raw_telemetry_summary).samples);
+    if (rawXml) {
+      const fallback = buildFallbackSummaryFromRawXml(rawXml, reservation);
+      return {
+        ...fallback,
+        hasAnyEvidence: fallback.hasAnyEvidence || sampleCount > 0,
+        notes: [...fallback.notes, "DOMParser no disponible o XML inválido; se usó fallback textual"],
+      };
+    }
     return {
       ...EMPTY_SUMMARY,
       hasRawXml: Boolean(rawXml),
       hasAnyEvidence: sampleCount > 0 || Boolean(rawXml),
       rawXmlLength: rawXml.length,
-      notes: rawXml ? ["raw_pirep_xml exists but could not be parsed as XML"] : [],
+      notes: [],
     };
   }
 
@@ -500,6 +724,11 @@ export function buildPirepPerfectWebSummary(input: {
   const phases = parsePhases(doc);
   const eventTimeline = parseEventTimeline(doc);
   const unsupportedEvents = eventTimeline.filter((event) => !event.penaltyEligible || event.reliability.toLowerCase().includes("unsupported"));
+  const altitudeEvidence = parseAltitudeEvidence(doc);
+  const phaseAuditReport = parseSimpleSection(doc, "PhaseAuditReport");
+  const phasePrevalidationPackage = parseSimpleSection(doc, "PhasePrevalidationPackage");
+  const phaseAcceptanceMatrix = parsePhaseAcceptanceMatrix(doc);
+  const phaseTestRunManifest = parseSimpleSection(doc, "PhaseTestRunManifest");
   const landingMetrics = parseLandingMetrics(doc);
   const schemaVersion = firstText(textDeep(doc, "SchemaVersion"), textDeep(doc, "AcarsVersion"));
 
@@ -541,7 +770,10 @@ export function buildPirepPerfectWebSummary(input: {
     flightDuration: textDirect(resumen, "FlightDuration"),
     distanceNm: numberDirect(resumen, "FlightLenght"),
     maxIas: numberDirect(resumen, "MaxIAS"),
-    cruiseAltitude: firstNumber(numberDirect(resumen, "CruiceAltitud"), phases.reduce((max, phase) => Math.max(max, phase.maxAltitude), 0)),
+    cruiseAltitude: firstNumber(altitudeEvidence.maxAltitudeMslFt, numberDirect(resumen, "CruiceAltitud"), phases.reduce((max, phase) => Math.max(max, phase.maxAltitudeMslFt || phase.maxAltitude), 0)),
+    maxAltitudeMslFt: firstNumber(altitudeEvidence.maxAltitudeMslFt, phases.reduce((max, phase) => Math.max(max, phase.maxAltitudeMslFt || phase.maxAltitude), 0)),
+    maxAglFt: firstNumber(altitudeEvidence.maxAglFt, phases.reduce((max, phase) => Math.max(max, phase.maxAglFt || 0), 0)),
+    altitudeEvidence,
     fuelStartKg: fuelStart,
     fuelEndKg: fuelEnd,
     fuelUsedKg: fuelUsed,
@@ -575,12 +807,19 @@ export function buildPirepPerfectWebSummary(input: {
     phases,
     eventTimeline,
     unsupportedEvents,
+    phaseAuditReport,
+    phasePrevalidationPackage,
+    phaseAcceptanceMatrix,
+    phaseTestRunManifest,
     landingMetrics,
     notes: [
       schemaVersion ? `Schema ${schemaVersion}` : "",
       capabilities.length ? `${capabilities.length} capabilities declaradas` : "Sin bloque Capabilities; usando fallback XML legacy",
       phases.length ? `${phases.length} fases resumidas` : "Sin FlightPhaseSummary; usando métricas Resumen/Indicadores",
       eventTimeline.length ? `${eventTimeline.length} eventos operacionales` : "Sin timeline operacional",
+      altitudeEvidence.maxAltitudeMslFt ? `ALT MSL max ${altitudeEvidence.maxAltitudeMslFt} ft / AGL max ${altitudeEvidence.maxAglFt} ft` : "Sin bloque Altitude C0",
+      phaseAcceptanceMatrix.length ? `${phaseAcceptanceMatrix.length} fases en PhaseAcceptanceMatrix` : "Sin PhaseAcceptanceMatrix C7",
+      asBoolean(phaseTestRunManifest.ReadyForFullSimulatorValidation) ? "C8 listo para validación completa" : "C8 pendiente/no presente",
     ].filter(Boolean),
   };
 }
