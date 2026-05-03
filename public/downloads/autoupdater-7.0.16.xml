@@ -9,14 +9,8 @@
   <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
   <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
   <revision>2026.5.3.2</revision>
-  <changelog>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
-- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
-- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
-- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</changelog>
-  <releaseNotes>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
-- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
-- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
-- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</releaseNotes>
+  <changelog>v7.0.16: ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.</changelog>
+  <releaseNotes>ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.</releaseNotes>
   <mandatory>true</mandatory>
   <required>true</required>
 </item>

@@ -14,10 +14,10 @@
     "url":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
     "packageUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
     "directDownloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
-    "forceUpdate":  false,
+    "forceUpdate":  true,
     "mandatory":  true,
     "required":  true,
-    "notes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
-    "releaseNotes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
+    "notes":  "ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.",
+    "releaseNotes":  "ACARS 7.0.16 - PIREP Perfect C0-C8: altitud MSL/AGL/FL, maquina de fases, auditoria operacional, prevalidacion, matriz de aceptacion y cierre oficial Web/Supabase.",
     "releaseDate":  "2026-05-03T06:00:25.150Z"
 }
