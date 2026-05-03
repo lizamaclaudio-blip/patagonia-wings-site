@@ -1615,6 +1615,11 @@ export function evaluateOfficialCloseout(params: {
       pirep_perfect: pirepPerfect.evidence,
       pirep_perfect_identity: pirepPerfect.identity,
       unsupported_protected_metrics: pirepPerfect.unsupportedProtectedMetrics.map((metric) => metric.name),
+      pirep_perfect_c0_c8: pirepPerfectC0C8,
+      parser_versions_detected: pirepPerfectC0C8.parser_versions_detected,
+      altitude_summary: pirepPerfectC0C8.altitude_summary,
+      phase_sequence_summary: pirepPerfectC0C8.phase_sequence_summary,
+      phase_score_eligible: pirepPerfectFlags.phaseScoreEligible,
     },
     procedureScore: clamp(procedureScore, 0, 100),
     missionScore: clamp(missionScore, 0, 100),
@@ -1688,6 +1693,105 @@ export async function persistOfficialCloseout(params: {
     official,
   });
 
+  const pirepPerfectScoringPayload = asObject(official.officialPirep.pirep_perfect_scoring);
+  const pirepPerfectEvidencePayload = asObject(pirepPerfectScoringPayload.evidence);
+  const pirepPerfectAltitudePayload = asObject(pirepPerfectScoringPayload.altitude);
+  const pirepPerfectIdentityPayload = asObject(pirepPerfectScoringPayload.identity);
+  const pirepPerfectFlags = {
+    pirepPerfectC0C8Detected: Boolean(
+      asBoolean(pirepPerfectEvidencePayload.hasC0AltitudeResolver) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC1PhaseStateMachine) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC2OperationalChecklist) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC3TransitionMatrix) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC4AuditReport) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC5ReviewContract) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC6PrevalidationPackage) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC7AcceptanceMatrix) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC8PretestManifest)
+    ),
+    altitudeReliable: asBoolean(pirepPerfectAltitudePayload.isReliable),
+    phaseAuditReady: Boolean(
+      asBoolean(pirepPerfectEvidencePayload.hasC4AuditReport) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC6PrevalidationPackage) ||
+      asBoolean(pirepPerfectEvidencePayload.hasC7AcceptanceMatrix)
+    ),
+    phaseScoreEligible: false,
+    unsupportedProtectedMetrics: Array.isArray(pirepPerfectScoringPayload.unsupportedProtectedMetrics)
+      ? pirepPerfectScoringPayload.unsupportedProtectedMetrics
+      : [],
+  };
+  const pirepPerfectPhaseSummary = Array.isArray(pirepPerfectScoringPayload.phaseSummary)
+    ? pirepPerfectScoringPayload.phaseSummary
+    : [];
+  const pirepPerfectObservedPhases = pirepPerfectPhaseSummary
+    .map((phase) => asObject(phase))
+    .map((phase) => asText(phase.name ?? phase.phase ?? phase.code))
+    .filter(Boolean);
+  const pirepPerfectC0C8 = {
+    version: "D3",
+    generated_at: nowIso,
+    source: "src/lib/acars-official.ts::persistOfficialCloseout",
+    note: "Normalizacion Web D3 para auditoria C0-C8. phaseScoreEligible queda false hasta validacion real en simulador.",
+    parser_versions_detected: {
+      c0_altitude_resolver: asBoolean(pirepPerfectEvidencePayload.hasC0AltitudeResolver),
+      c1_phase_state_machine: asBoolean(pirepPerfectEvidencePayload.hasC1PhaseStateMachine),
+      c2_operational_checklist: asBoolean(pirepPerfectEvidencePayload.hasC2OperationalChecklist),
+      c3_transition_matrix: asBoolean(pirepPerfectEvidencePayload.hasC3TransitionMatrix),
+      c4_audit_report: asBoolean(pirepPerfectEvidencePayload.hasC4AuditReport),
+      c5_review_contract: asBoolean(pirepPerfectEvidencePayload.hasC5ReviewContract),
+      c6_prevalidation_package: asBoolean(pirepPerfectEvidencePayload.hasC6PrevalidationPackage),
+      c7_acceptance_matrix: asBoolean(pirepPerfectEvidencePayload.hasC7AcceptanceMatrix),
+      c8_pretest_manifest: asBoolean(pirepPerfectEvidencePayload.hasC8PretestManifest),
+    },
+    flags: pirepPerfectFlags,
+    identity_summary: {
+      flight_number: asText(pirepPerfectIdentityPayload.flightNumber),
+      origin_icao: asText(pirepPerfectIdentityPayload.originIcao),
+      destination_icao: asText(pirepPerfectIdentityPayload.destinationIcao),
+      takeoff_airport: asText(pirepPerfectIdentityPayload.takeoffAirport),
+      landing_airport: asText(pirepPerfectIdentityPayload.landingAirport),
+      aircraft_type_code: asText(pirepPerfectIdentityPayload.aircraftTypeCode),
+      aircraft_display_name: asText(pirepPerfectIdentityPayload.aircraftDisplayName),
+      aircraft_registration: asText(pirepPerfectIdentityPayload.aircraftRegistration),
+    },
+    altitude_summary: {
+      schema: asText(pirepPerfectAltitudePayload.schema),
+      altitude_msl_ft_max: asNumber(pirepPerfectAltitudePayload.maxAltitudeMslFt),
+      altitude_agl_ft_max: asNumber(pirepPerfectAltitudePayload.maxAglFt),
+      altitude_agl_ft_min: asNumber(pirepPerfectAltitudePayload.minAglFt),
+      pressure_altitude_ft_max: asNumber(pirepPerfectAltitudePayload.maxPressureAltitudeFt),
+      first_altitude_msl_ft: asNumber(pirepPerfectAltitudePayload.firstAltitudeMslFt),
+      first_altitude_agl_ft: asNumber(pirepPerfectAltitudePayload.firstAltitudeAglFt),
+      last_altitude_msl_ft: asNumber(pirepPerfectAltitudePayload.lastAltitudeMslFt),
+      last_altitude_agl_ft: asNumber(pirepPerfectAltitudePayload.lastAltitudeAglFt),
+      last_flight_level: asText(pirepPerfectAltitudePayload.lastFlightLevel),
+      last_display_mode: asText(pirepPerfectAltitudePayload.lastDisplayMode),
+      last_display_text: asText(pirepPerfectAltitudePayload.lastDisplayText),
+      transition_altitude_ft: asNumber(pirepPerfectAltitudePayload.transitionAltitudeFt),
+      altitude_source: asText(pirepPerfectAltitudePayload.altitudeSource),
+      is_reliable: asBoolean(pirepPerfectAltitudePayload.isReliable),
+    },
+    phase_sequence_summary: {
+      observed_phases: pirepPerfectObservedPhases,
+      observed_phase_count: pirepPerfectObservedPhases.length,
+      reached_phase_count: asNumber(pirepPerfectEvidencePayload.reachedPhaseCount),
+      total_phase_count: asNumber(pirepPerfectEvidencePayload.totalPhaseCount),
+      has_takeoff: asBoolean(pirepPerfectEvidencePayload.hasTakeoff),
+      has_airborne: asBoolean(pirepPerfectEvidencePayload.hasAirborne),
+      has_landing: asBoolean(pirepPerfectEvidencePayload.hasLanding),
+      has_taxi_in_or_gate: asBoolean(pirepPerfectEvidencePayload.hasTaxiInOrGate),
+      has_shutdown_or_stop: asBoolean(pirepPerfectEvidencePayload.hasShutdownOrStop),
+      block_minutes: asNumber(pirepPerfectEvidencePayload.blockMinutes),
+      distance_nm: asNumber(pirepPerfectEvidencePayload.distanceNm),
+    },
+    phase_audit_report: asObject(pirepPerfectScoringPayload.phaseAuditReport),
+    phase_prevalidation_package: asObject(pirepPerfectScoringPayload.phasePrevalidationPackage),
+    phase_acceptance_matrix: Array.isArray(pirepPerfectScoringPayload.phaseAcceptanceMatrix)
+      ? pirepPerfectScoringPayload.phaseAcceptanceMatrix
+      : [],
+    phase_test_run_manifest: asObject(pirepPerfectScoringPayload.phaseTestRunManifest),
+  };
+
   const officialPayload = {
     ...existingPayload,
     official_scoring_authority: "web_supabase",
@@ -1703,6 +1807,19 @@ export async function persistOfficialCloseout(params: {
     },
     official_pirep: official.officialPirep,
     pirep_perfect_scoring: asObject(official.officialPirep).pirep_perfect_scoring ?? null,
+    pirep_perfect_c0_c8: pirepPerfectC0C8,
+    pirep_perfect_normalized: pirepPerfectC0C8,
+    parser_versions_detected: pirepPerfectC0C8.parser_versions_detected,
+    altitude_summary: pirepPerfectC0C8.altitude_summary,
+    phase_sequence_summary: pirepPerfectC0C8.phase_sequence_summary,
+    phase_audit_report: pirepPerfectC0C8.phase_audit_report,
+    phase_prevalidation_package: pirepPerfectC0C8.phase_prevalidation_package,
+    phase_acceptance_matrix: pirepPerfectC0C8.phase_acceptance_matrix,
+    phase_test_run_manifest: pirepPerfectC0C8.phase_test_run_manifest,
+    pirepPerfectC0C8Detected: pirepPerfectFlags.pirepPerfectC0C8Detected,
+    altitudeReliable: pirepPerfectFlags.altitudeReliable,
+    phaseAuditReady: pirepPerfectFlags.phaseAuditReady,
+    phaseScoreEligible: pirepPerfectFlags.phaseScoreEligible,
     officialScores: {
       procedure_score: official.procedureScore,
       mission_score: official.missionScore,
