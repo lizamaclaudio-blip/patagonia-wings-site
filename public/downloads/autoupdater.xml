@@ -1,18 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>7.0.20</version>
+  <version>7.0.20.0</version>
   <latestVersion>7.0.20</latestVersion>
-  <minimumVersion>1.0.0</minimumVersion>
+  <minSupportedVersion>1.0.0</minSupportedVersion>
   <forceUpdateBelow>7.0.20</forceUpdateBelow>
   <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</url>
-  <packageUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</packageUrl>
+  <downloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</downloadUrl>
   <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
   <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
-  <fileName>PatagoniaWingsACARSSetup.exe</fileName>
-  <revision>2026.5.8.9</revision>
-  <changelog>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Supabase Storage.</changelog>
-  <releaseNotes>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Supabase Storage.</releaseNotes>
+  <revision>2026.5.8.10</revision>
+  <changelog>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
+- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
+- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
+- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</changelog>
+  <releaseNotes>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
+- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
+- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
+- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</releaseNotes>
   <mandatory>true</mandatory>
   <required>true</required>
-  <forceUpdate>true</forceUpdate>
 </item>

@@ -318,13 +318,11 @@ function useRouteCatalog() {
           .select(
             "route_id, flight_number, simbrief_flight_number, route_key, origin_ident, destination_ident, origin_country, destination_country, route_name, route_category, service_type, operation_type, distance_nm, block_minutes, expected_block_p50, expected_block_p80, compatible_aircraft_types, aircraft_options, is_active",
           )
-          .eq("is_active", true)
           .order("route_category", { ascending: true })
           .order("flight_number", { ascending: true }),
         supabase
           .from("network_routes")
           .select("id, route_code, origin_ident, destination_ident, route_group, service_profile, service_level, distance_nm, is_active, notes, flight_number, flight_designator, route_pair_key")
-          .eq("is_active", true)
           .order("flight_designator", { ascending: true }),
         supabase
           .from("network_route_aircraft")
@@ -333,7 +331,9 @@ function useRouteCatalog() {
 
       if (!isMounted) return;
 
-      const viewRows = catalogRes.error ? [] : ((catalogRes.data ?? []) as RouteCatalogRow[]);
+      const viewRows = catalogRes.error
+        ? []
+        : ((catalogRes.data ?? []) as RouteCatalogRow[]).filter((row) => row.is_active !== false);
 
       const aircraftByRoute = new Map<string, string[]>();
       if (!networkAircraftRes.error) {
@@ -349,7 +349,9 @@ function useRouteCatalog() {
 
       const networkRows = networkRoutesRes.error
         ? []
-        : ((networkRoutesRes.data ?? []) as Array<Record<string, unknown>>).map((row) => {
+        : ((networkRoutesRes.data ?? []) as Array<Record<string, unknown>>)
+            .filter((row) => row.is_active !== false)
+            .map((row) => {
             const id = String(row.id ?? "");
             const origin = String(row.origin_ident ?? "").trim().toUpperCase();
             const destination = String(row.destination_ident ?? "").trim().toUpperCase();
