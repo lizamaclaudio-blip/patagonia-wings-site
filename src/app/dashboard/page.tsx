@@ -3322,10 +3322,13 @@ function AnimatedMetricValue({
       }
     };
 
-    setDisplayValue(0);
-    frame = window.requestAnimationFrame(tick);
+    const bootFrame = window.requestAnimationFrame(() => {
+      setDisplayValue(0);
+      frame = window.requestAnimationFrame(tick);
+    });
 
     return () => {
+      window.cancelAnimationFrame(bootFrame);
       window.cancelAnimationFrame(frame);
     };
   }, [animateKey, isNumeric, item.type, item.value]);
@@ -4226,7 +4229,8 @@ function CentralTransfersSectionWrapper({ central }: { central: CentralOverview 
   }, []);
 
   useEffect(() => {
-    setHasContent(false);
+    const frame = window.requestAnimationFrame(() => setHasContent(false));
+    return () => window.cancelAnimationFrame(frame);
   }, [central.airportCode]);
 
   return (
@@ -4897,13 +4901,16 @@ function DispatchAircraftCascadeSelector({
     if (!selectedAircraftId) return;
     const found = available.find((r) => r.aircraft_id === selectedAircraftId);
     if (found) {
-      setSelectedAircraftType(toFriendlyAircraftLabel(found.aircraft_variant_code?.trim() || found.aircraft_code));
-      setSelVariantKey(found.aircraft_type_code?.trim() || "");
+      const frame = window.requestAnimationFrame(() => {
+        setSelectedAircraftType(toFriendlyAircraftLabel(found.aircraft_variant_code?.trim() || found.aircraft_code));
+        setSelVariantKey(found.aircraft_type_code?.trim() || "");
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
-  }, [selectedAircraftId, available]);
+  }, [selectedAircraftId, available, toFriendlyAircraftLabel]);
 
   // Step 1: tipos únicos deduplicados solo por typeCode limpio (sin matrícula)
-  const aircraftTypeOptions = useMemo(() => {
+  const aircraftTypeOptions = (() => {
     const seen = new Map<string, { typeCode: string; displayName: string }>();
     for (const r of available) {
       const typeCode = toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code);
@@ -4917,7 +4924,7 @@ function DispatchAircraftCascadeSelector({
     return Array.from(seen.entries())
       .map(([, meta]) => meta)
       .sort((a, b) => `${a.typeCode} ${a.displayName}`.localeCompare(`${b.typeCode} ${b.displayName}`, "es"));
-  }, [available]);
+  })();
 
   // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
   // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
@@ -4942,7 +4949,7 @@ function DispatchAircraftCascadeSelector({
   };
 
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
-  const uniqueVariants = useMemo(() => {
+  const uniqueVariants = (() => {
     if (!selectedAircraftType) return [];
     // key → { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
@@ -4969,18 +4976,19 @@ function DispatchAircraftCascadeSelector({
         label: (addonCounts.get(addonLabel) ?? 0) > 1 ? displayName : addonLabel,
       }))
       .sort((a, b) => a.label.localeCompare(b.label, "es"));
-  }, [available, selectedAircraftType]);
+  })();
 
   // Auto-select variant when only one option available
   useEffect(() => {
     if (selectedAircraftType && uniqueVariants.length === 1 && !selVariantKey) {
-      setSelVariantKey(uniqueVariants[0].key);
+      const frame = window.requestAnimationFrame(() => setSelVariantKey(uniqueVariants[0].key));
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [selectedAircraftType, uniqueVariants, selVariantKey]);
 
   // Step 3: matrículas disponibles para modelo + variante seleccionada
   // Matrículas: filtra por modelo; variante es opcional y solo pre-filtra la lista
-  const registrations = useMemo(() => {
+  const registrations = (() => {
     if (!selectedAircraftType) return [];
     return available.filter((r) => {
       const modelKey = toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code);
@@ -4992,7 +5000,7 @@ function DispatchAircraftCascadeSelector({
       }
       return true;
     });
-  }, [available, selectedAircraftType, selVariantKey]);
+  })();
 
   // Auto-select registration when only one option available
   useEffect(() => {
@@ -5007,7 +5015,10 @@ function DispatchAircraftCascadeSelector({
     const found = available.find((r) => r.aircraft_id === selectedAircraftId);
     if (found && !selVariantKey) {
       const key = found.aircraft_type_code?.trim() || "__none__";
-      if (key !== "__none__") setSelVariantKey(key);
+      if (key !== "__none__") {
+        const frame = window.requestAnimationFrame(() => setSelVariantKey(key));
+        return () => window.cancelAnimationFrame(frame);
+      }
     }
   }, [selectedAircraftId, available, selVariantKey]);
 
@@ -6087,14 +6098,17 @@ function TrainingIcaoInput({
     let isActive = true;
 
     if (normalizedValue.length !== 4) {
-      setAirportLabel("");
-      setIsLoadingAirport(false);
+      const frame = window.requestAnimationFrame(() => {
+        setAirportLabel("");
+        setIsLoadingAirport(false);
+      });
       return () => {
         isActive = false;
+        window.cancelAnimationFrame(frame);
       };
     }
 
-    setIsLoadingAirport(true);
+    const loadingFrame = window.requestAnimationFrame(() => setIsLoadingAirport(true));
 
     void Promise.resolve(
       supabase
@@ -6124,6 +6138,7 @@ function TrainingIcaoInput({
 
     return () => {
       isActive = false;
+      window.cancelAnimationFrame(loadingFrame);
     };
   }, [normalizedValue]);
 
@@ -6810,7 +6825,7 @@ function TrainingTheoryExamModal({
                     </div>
                   </div>
                   <ul className="mt-5 space-y-3 text-sm leading-6 text-white/62">
-                    <li>• Tendrás un solo intento activo y el contador comenzará al presionar "Hacer intento".</li>
+                    <li>• Tendrás un solo intento activo y el contador comenzará al presionar &quot;Hacer intento&quot;.</li>
                     <li>• La prueba contiene {totalQuestions} preguntas con alternativas A/B/C/D.</li>
                     <li>• Puedes navegar entre preguntas antes de finalizar.</li>
                     <li>• Si apruebas, esta teórica queda bloqueada como aprobada.</li>
@@ -8255,7 +8270,12 @@ function DashboardWorkspace({
     return null;
   }, [availableAircraft, charterOperation, isCharterLikeDispatch, selectedAircraft]);
   const filteredItineraries = useMemo(() => {
-    const activeAirportCode = central.airportCode.trim().toUpperCase();
+    const activeAirportCode = (
+      selectedAircraftRecord?.current_airport_icao ??
+      central.airportCode
+    )
+      .trim()
+      .toUpperCase();
     const airportFiltered = availableItineraries.filter(
       (item) => item.origin_icao.trim().toUpperCase() === activeAirportCode,
     );
@@ -8425,6 +8445,61 @@ function DashboardWorkspace({
     } as AvailableItineraryOption;
   }, [charterOperation, charterReservationId, isCharterLikeDispatch, selectedFlightType]);
   const selectedItineraryRecord = charterSelectedItineraryRecord ?? regularSelectedItineraryRecord;
+  const aircraftRowsForSelectedStage = useMemo(() => {
+    if (!selectedItineraryRecord) {
+      return availableAircraft;
+    }
+
+    const itineraryCompatibleCodes = new Set(
+      (selectedItineraryRecord.compatible_aircraft_types ?? [])
+        .map((type) => getDispatchAircraftCompatibilityCode(type))
+        .filter(Boolean)
+    );
+
+    if (itineraryCompatibleCodes.size > 0) {
+      return availableAircraft.filter((aircraft) => {
+        const aircraftCode = getDispatchAircraftCompatibilityCode(
+          aircraft.aircraft_type_code ?? aircraft.aircraft_code
+        );
+        return Boolean(aircraftCode) && itineraryCompatibleCodes.has(aircraftCode);
+      });
+    }
+
+    const directItineraryType = getDispatchAircraftCompatibilityCode(
+      selectedItineraryRecord.aircraft_type_code
+    );
+    if (directItineraryType) {
+      return availableAircraft.filter((aircraft) => {
+        const aircraftCode = getDispatchAircraftCompatibilityCode(
+          aircraft.aircraft_type_code ?? aircraft.aircraft_code
+        );
+        return aircraftCode === directItineraryType;
+      });
+    }
+
+    const serviceProfile = (selectedItineraryRecord.service_profile ?? "")
+      .trim()
+      .toLowerCase();
+    const legacyRouteProfiles = new Set([
+      "feeder",
+      "regional",
+      "trunk",
+      "longhaul",
+      "heavy",
+      "cargo",
+    ]);
+
+    if (legacyRouteProfiles.has(serviceProfile)) {
+      return availableAircraft.filter((aircraft) =>
+        isAircraftCompatibleWithRoute(
+          aircraft.aircraft_type_code ?? aircraft.aircraft_code,
+          selectedItineraryRecord.service_profile
+        )
+      );
+    }
+
+    return availableAircraft;
+  }, [availableAircraft, selectedItineraryRecord]);
   const webFlightNumber = useMemo(
     () => buildDispatchFlightNumber(selectedItineraryRecord),
     [selectedItineraryRecord],
@@ -8536,6 +8611,15 @@ function DashboardWorkspace({
     () => getSimbriefFlightNumberValidationValue(simbriefSummary?.flightNumber, simbriefAirlineIcaoForDispatch),
     [simbriefAirlineIcaoForDispatch, simbriefSummary?.flightNumber],
   );
+  const simbriefOperationalFuelKg = useMemo(() => {
+    if (!simbriefSummary) return null;
+    const block = typeof simbriefSummary.blockFuelKg === "number" ? simbriefSummary.blockFuelKg : null;
+    const taxi = typeof simbriefSummary.taxiFuelKg === "number" ? simbriefSummary.taxiFuelKg : null;
+    // ACARS opera con combustible total de despacho; cuando hay taxi, sumarlo al bloque evita desfase visual.
+    if (block != null && taxi != null) return Math.round(block + taxi);
+    if (block != null) return Math.round(block);
+    return null;
+  }, [simbriefSummary]);
   const simbriefEconomyEstimate = useMemo(() => {
     if (!simbriefSummary) return null;
     return estimateSimbriefFlightEconomy({
@@ -9588,16 +9672,7 @@ function DashboardWorkspace({
 
                         <div className="mt-5">
                           <DispatchAircraftCascadeSelector
-                            rows={
-                              selectedItineraryRecord?.service_profile
-                                ? availableAircraft.filter((a) =>
-                                    isAircraftCompatibleWithRoute(
-                                      a.aircraft_type_code ?? a.aircraft_code,
-                                      selectedItineraryRecord.service_profile
-                                    )
-                                  )
-                                : availableAircraft
-                            }
+                            rows={aircraftRowsForSelectedStage}
                             selectedAircraftId={selectedAircraft}
                             onSelect={resetAfterAircraft}
                           />
@@ -9607,9 +9682,11 @@ function DashboardWorkspace({
                           <p className="text-sm leading-7 text-white/70">
                             {selectedAircraftRecord
                               ? `Aeronave seleccionada: ${selectedAircraftRecord.tail_number} · ${selectedAircraftRecord.aircraft_name}.`
-                              : availableAircraft.length > 0
+                              : aircraftRowsForSelectedStage.length > 0
                                 ? "Escoge una aeronave de la tabla para continuar al itinerario."
-                                : "No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual."}
+                                : availableAircraft.length > 0 && selectedItineraryRecord
+                                  ? "No hay aeronaves compatibles con el itinerario seleccionado para tu rango."
+                                  : "No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual."}
                           </p>
 
                           <div className="flex flex-wrap gap-3">
@@ -10275,8 +10352,8 @@ function DashboardWorkspace({
                           <DispatchValueCard
                             label="Comb. bloque"
                             value={
-                              typeof simbriefSummary?.blockFuelKg === "number"
-                                ? `${simbriefSummary.blockFuelKg.toLocaleString("es-CL")} kg`
+                              typeof simbriefOperationalFuelKg === "number"
+                                ? `${simbriefOperationalFuelKg.toLocaleString("es-CL")} kg`
                                 : "Pendiente"
                             }
                           />
@@ -10685,11 +10762,15 @@ function DashboardWorkspace({
                           setSummaryInfoMessage("");
                           setSummaryErrorMessage("");
                           setDispatchStep("flight_type");
-                        } catch {
-                          alert("No se pudo cancelar la reserva. Intenta de nuevo.");
-                        } finally {
-                          setCancellingReservation(false);
-                        }
+                          } catch (error) {
+                            const message =
+                              error instanceof Error && error.message.trim()
+                                ? error.message
+                                : "No se pudo cancelar la reserva. Intenta de nuevo.";
+                            alert(message);
+                          } finally {
+                            setCancellingReservation(false);
+                          }
                       }}
                       className="shrink-0 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -11414,13 +11495,12 @@ function DashboardContent() {
 
   useEffect(() => {
     const requestedTab = searchParams.get("tab");
-
-    if (requestedTab === "dispatch" || requestedTab === "office" || requestedTab === "training" || requestedTab === "central") {
-      setActiveTab(requestedTab);
-      return;
-    }
-
-    setActiveTab("central");
+    const nextTab: DashboardTabKey =
+      requestedTab === "dispatch" || requestedTab === "office" || requestedTab === "training" || requestedTab === "central"
+        ? requestedTab
+        : "central";
+    const frame = window.requestAnimationFrame(() => setActiveTab(nextTab));
+    return () => window.cancelAnimationFrame(frame);
   }, [searchParams]);
 
   useEffect(() => {

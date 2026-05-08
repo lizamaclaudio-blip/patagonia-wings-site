@@ -192,10 +192,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!reservation) {
-      return NextResponse.json(
-        { error: "No se encontro la reserva activa (ni por id ni por callsign)." },
-        { status: 404 }
-      );
+      // Idempotencia: si ya no existe reserva activa, el flujo cliente debe continuar desbloqueado.
+      return NextResponse.json({
+        ok: true,
+        deleted: false,
+        cancelled: true,
+        reservationId: reservationId || null,
+        warning: "NO_ACTIVE_RESERVATION",
+      });
     }
 
     if (!canUserCancelReservation(user, reservation, reservationCallsignHint)) {
