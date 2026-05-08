@@ -1,4 +1,5 @@
-import { supabase } from "@/lib/supabase/browser";
+﻿import { supabase } from "@/lib/supabase/browser";
+import { callSecureRpc } from "@/lib/secure-rpc/client";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import { resolveSimbriefType } from "@/lib/simbrief";
 import { estimateSimbriefFlightEconomy, filterAircraftTypesForRoute } from "@/lib/pilot-economy";
@@ -380,22 +381,22 @@ function buildAircraftVariantLabel(record: {
     record.addon_provider?.trim(),
   ]
     .filter((item): item is string => Boolean(item))
-    .join(" · ");
+    .join(" Â· ");
 }
 
 function getDisplayCategoryFromCode(code: string) {
   const normalized = normalizeUpper(code);
 
   if (["C208", "TBM9", "TBM8"].includes(normalized)) {
-    return "Monomotor turbohélice";
+      return "Monomotor turbohélice";
   }
 
   if (["BE58"].includes(normalized)) {
-    return "Bimotor pistón";
+      return "Bimotor pistón";
   }
 
   if (["B350", "AT76", "ATR72"].includes(normalized)) {
-    return "Bimotor turbohélice";
+      return "Bimotor turbohélice";
   }
 
   if (normalized.startsWith("E17") || normalized.startsWith("E19")) {
@@ -428,13 +429,20 @@ function normalizeRankCode(value: string | null | undefined) {
   return normalized || "CADET";
 }
 
+const LOW_RANK_DISPATCH_CODES = new Set(["CADET", "SECOND_OFFICER"]);
+
+function isLowRankDispatchPilot(rankCode: string) {
+  return LOW_RANK_DISPATCH_CODES.has(normalizeUpper(rankCode));
+}
+
 const AIRCRAFT_PERMISSION_FAMILIES: Record<string, string[]> = {
   C208:  ["C208",  "C208_MSFS",  "C208_BLACKSQUARE"],
   BE58:  ["BE58",  "BE58_MSFS",  "BE58_BLACKSQUARE", "BE58_BS_PRO"],
   B350:  ["B350",  "B350_MSFS",  "B350_BLACKSQUARE"],
   TBM9:  ["TBM9",  "TBM9_MSFS",  "TBM8_BLACKSQUARE"],
   TBM8:  ["TBM8",  "TBM8_BLACKSQUARE", "TBM9_MSFS"],
-  ATR72: ["ATR72", "ATR72_MSFS"],
+  ATR72: ["ATR72", "AT76", "ATR72_MSFS"],
+  AT76:  ["AT76",  "ATR72", "ATR72_MSFS"],
   E175:  ["E175",  "E175_FLIGHTSIM"],
   E190:  ["E190",  "E190_FLIGHTSIM"],
   E195:  ["E195",  "E195_FLIGHTSIM"],
@@ -515,19 +523,22 @@ function collectPermittedTypesFromRows(rows: GenericRecord[]) {
   return permitted;
 }
 
-async function fetchPilotPermittedAircraftTypes(rankCode: string) {
-  const { data, error } = await supabase
-    .from("pilot_rank_aircraft_permissions")
-    .select("aircraft_type_code")
-    .eq("rank_code", rankCode);
+async function fetchPilotPermittedAircraftTypes(
+  profile: Pick<PilotProfileRecord, "callsign" | "id">,
+  rankCode: string
+) {
+  try {
+    const { data } = await supabase
+      .from("pilot_rank_aircraft_permissions")
+      .select("aircraft_type_code")
+      .eq("rank_code", rankCode);
 
-  if (error) {
-    throw error;
-  }
-
-  const directPermissions = collectPermittedTypesFromRows((data ?? []) as GenericRecord[]);
-  if (directPermissions.size > 0) {
-    return directPermissions;
+    const directPermissions = collectPermittedTypesFromRows((data ?? []) as GenericRecord[]);
+    if (directPermissions.size > 0) {
+      return directPermissions;
+    }
+  } catch {
+    // If direct table read is blocked by RLS, continue with fallbacks.
   }
 
   for (const fallback of [
@@ -575,25 +586,166 @@ async function fetchPilotPermittedAircraftTypes(rankCode: string) {
     }
   }
 
+  const rpcFallbacks: Array<{ functionName: string; args: Record<string, unknown> }> = [
+    { functionName: "pw_get_available_aircraft_display", args: { p_callsign: profile.callsign } },
+    { functionName: "get_available_aircraft_for_pilot", args: { p_callsign: profile.callsign } },
+    { functionName: "get_available_aircraft_for_pilot", args: { p_pilot_id: profile.id } },
+  ];
+
+  for (const rpcFallback of rpcFallbacks) {
+    const { data, error } = await callSecureRpc(rpcFallback.functionName, rpcFallback.args);
+    if (error || !Array.isArray(data) || data.length === 0) {
+      continue;
+    }
+
+    const rpcPermissions = collectPermittedTypesFromRows((data ?? []) as GenericRecord[]);
+    if (rpcPermissions.size > 0) {
+      return rpcPermissions;
+    }
+  }
+
   return new Set<string>();
 }
 
 function filterAircraftRowsForPilot(
   rows: AvailableAircraftOption[],
   profile: PilotProfileRecord,
-  permittedTypes: Set<string>
+  permittedTypes: Set<string>,
+  allowedAirports?: Set<string>
 ) {
   const airport = getProfileAirport(profile);
+  const airportScope = allowedAirports ?? new Set([airport]);
 
   return rows.filter((row) => {
     const aircraftAirport = normalizeUpper(row.current_airport_icao ?? "");
     const aircraftTypeCode = row.aircraft_type_code ?? row.aircraft_code;
 
     return (
-      aircraftAirport === airport &&
+      airportScope.has(aircraftAirport || airport) &&
       isAircraftTypeAllowedForPilot(aircraftTypeCode, permittedTypes)
     );
   });
+}
+
+function dedupeAircraftRows(rows: AvailableAircraftOption[]) {
+  const unique = new Map<string, AvailableAircraftOption>();
+
+  for (const row of rows) {
+    const key =
+      row.aircraft_id ||
+      `${row.tail_number}|${row.aircraft_code}|${row.current_airport_icao}`;
+    if (!unique.has(key)) {
+      unique.set(key, row);
+    }
+  }
+
+  return Array.from(unique.values());
+}
+
+async function resolveDispatchOriginAirports(
+  profile: PilotProfileRecord,
+  rankCode: string,
+  permittedTypes: Set<string>
+) {
+  const primaryAirport = getProfileAirport(profile);
+
+  if (!isLowRankDispatchPilot(rankCode) || permittedTypes.size === 0) {
+    return [primaryAirport];
+  }
+
+  try {
+    const { data: primaryAirportRow } = await supabase
+      .from("airports")
+      .select("ident, iso_country")
+      .eq("ident", primaryAirport)
+      .maybeSingle();
+
+    const primaryCountry =
+      typeof primaryAirportRow?.iso_country === "string"
+        ? primaryAirportRow.iso_country.trim().toUpperCase()
+        : "";
+
+    let schoolHubsQuery = supabase
+      .from("airports")
+      .select("ident, iso_country")
+      .eq("is_hub", true)
+      .ilike("category", "%ESCUELA%")
+      .order("ident", { ascending: true });
+
+    if (primaryCountry) {
+      schoolHubsQuery = schoolHubsQuery.eq("iso_country", primaryCountry);
+    }
+
+    const { data: schoolHubRows, error: schoolHubError } = await schoolHubsQuery;
+    if (schoolHubError) {
+      return [primaryAirport];
+    }
+
+    const schoolHubCodes = ((schoolHubRows ?? []) as GenericRecord[])
+      .map((row) =>
+        typeof row.ident === "string" ? normalizeUpper(row.ident) : ""
+      )
+      .filter(Boolean);
+
+    if (schoolHubCodes.length === 0) {
+      return [primaryAirport];
+    }
+
+    const lookupAirports = Array.from(
+      new Set([primaryAirport, ...schoolHubCodes])
+    );
+
+    const { data: aircraftRows, error: aircraftError } = await supabase
+      .from("aircraft")
+      .select(
+        "current_airport_code, aircraft_type_code, aircraft_model_code, status, is_active"
+      )
+      .in("current_airport_code", lookupAirports)
+      .eq("status", "available")
+      .eq("is_active", true);
+
+    if (aircraftError) {
+      return [primaryAirport];
+    }
+
+    const allowedByAirport = new Map<string, number>();
+    for (const row of (aircraftRows ?? []) as GenericRecord[]) {
+      const airportCode =
+        typeof row.current_airport_code === "string"
+          ? normalizeUpper(row.current_airport_code)
+          : "";
+      if (!airportCode) continue;
+
+      const aircraftTypeCode =
+        typeof row.aircraft_type_code === "string"
+          ? row.aircraft_type_code
+          : typeof row.aircraft_model_code === "string"
+            ? row.aircraft_model_code
+            : "";
+
+      if (!isAircraftTypeAllowedForPilot(aircraftTypeCode, permittedTypes)) {
+        continue;
+      }
+
+      allowedByAirport.set(airportCode, (allowedByAirport.get(airportCode) ?? 0) + 1);
+    }
+
+    if ((allowedByAirport.get(primaryAirport) ?? 0) > 0) {
+      return [primaryAirport];
+    }
+
+    const schoolFallback = schoolHubCodes
+      .filter((code) => (allowedByAirport.get(code) ?? 0) > 0)
+      .sort((left, right) => (allowedByAirport.get(right) ?? 0) - (allowedByAirport.get(left) ?? 0));
+
+    if (schoolFallback.length === 0) {
+      return [primaryAirport];
+    }
+
+    return Array.from(new Set([primaryAirport, ...schoolFallback]));
+  } catch {
+    return [primaryAirport];
+  }
 }
 
 function parseCompatibleAircraftTypes(value: unknown) {
@@ -895,13 +1047,30 @@ async function updateReservationStatusLegacy(
     })
     .eq("id", reservationId)
     .select("*")
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
   }
 
-  return data as DbFlightReservationRow;
+  if (data) {
+    return data as DbFlightReservationRow;
+  }
+
+  const { data: fallbackRow, error: fallbackError } = await supabase
+    .from("flight_reservations")
+    .select("*")
+    .eq("id", reservationId)
+    .maybeSingle();
+
+  if (fallbackError) {
+    throw fallbackError;
+  }
+  if (!fallbackRow) {
+    throw new Error(`No se encontró flight_reservations para id=${reservationId}`);
+  }
+
+  return fallbackRow as DbFlightReservationRow;
 }
 
 function extractErrorMessage(e: unknown): string {
@@ -1215,8 +1384,8 @@ export function getDispatchBlockingReasons(
   return reasons;
 }
 
-// Categorías permitidas por service_profile de ruta.
-// Replicado desde la lógica de la RPC create_flight_reservation en Supabase.
+// CategorÃ­as permitidas por service_profile de ruta.
+// Replicado desde la lÃ³gica de la RPC create_flight_reservation en Supabase.
 const ROUTE_PROFILE_ALLOWED_CATEGORIES: Record<string, string[]> = {
   feeder:   ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
   regional: ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet", "narrowbody_jet"],
@@ -1233,13 +1402,13 @@ export function isAircraftCompatibleWithRoute(
   if (!routeServiceProfile || !aircraftTypeCode) return true; // sin datos: no filtrar
   const allowed = ROUTE_PROFILE_ALLOWED_CATEGORIES[routeServiceProfile.toLowerCase()];
   if (!allowed) return true; // profile desconocido: no filtrar
-  // Buscamos la categoría del tipo en la lista estática de aircraft_types
+  // Buscamos la categorÃ­a del tipo en la lista estÃ¡tica de aircraft_types
   const cat = AIRCRAFT_TYPE_CATEGORY[aircraftTypeCode.toUpperCase()] ?? null;
   if (!cat) return true; // tipo desconocido: no filtrar
   return allowed.includes(cat);
 }
 
-// Mapa aircraft_type_code → category (sincronizado con tabla aircraft_types de Supabase)
+// Mapa aircraft_type_code â†’ category (sincronizado con tabla aircraft_types de Supabase)
 const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
   C208: "single_turboprop", TBM9: "single_turboprop", TBM8: "single_turboprop",
   B350: "twin_turboprop", ATR72: "twin_turboprop",
@@ -1271,7 +1440,13 @@ const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
 export async function listAvailableAircraft(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
   const rankCode = normalizeRankCode(profile.career_rank_code ?? profile.rank_code);
-  const permittedTypes = await fetchPilotPermittedAircraftTypes(rankCode);
+  const permittedTypes = await fetchPilotPermittedAircraftTypes(profile, rankCode);
+  const dispatchAirports = await resolveDispatchOriginAirports(
+    profile,
+    rankCode,
+    permittedTypes
+  );
+  const dispatchAirportSet = new Set(dispatchAirports);
 
   const mapDisplayRows = (rows: GenericRecord[]) =>
     rows.map((row) => {
@@ -1342,17 +1517,29 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     });
 
   try {
-    const { data, error } = await supabase.rpc("pw_list_dispatch_aircraft", {
-      p_origin_icao: airport,
-    });
+    const dispatchRows: AvailableAircraftOption[] = [];
 
-    if (!error && Array.isArray(data) && data.length > 0) {
+    for (const dispatchAirport of dispatchAirports) {
+      const { data, error } = await callSecureRpc("pw_list_dispatch_aircraft", {
+        p_origin_icao: dispatchAirport,
+      });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        dispatchRows.push(...mapDisplayRows((data ?? []) as GenericRecord[]));
+      }
+    }
+
+    if (dispatchRows.length > 0) {
+      const filteredRows = filterAircraftRowsForPilot(
+        dedupeAircraftRows(dispatchRows),
+        profile,
+        permittedTypes,
+        dispatchAirportSet
+      );
+      if (filteredRows.length === 0) {
+        throw new Error("NO_DISPATCH_AIRCRAFT_IN_SCOPE");
+      }
       return await attachAircraftCondition(
-        filterAircraftRowsForPilot(
-          mapDisplayRows((data ?? []) as GenericRecord[]),
-          profile,
-          permittedTypes
-        )
+        filteredRows
       );
     }
   } catch {
@@ -1360,17 +1547,22 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
   }
 
   try {
-    const { data, error } = await supabase.rpc("pw_get_available_aircraft_display", {
+    const { data, error } = await callSecureRpc("pw_get_available_aircraft_display", {
       p_callsign: profile.callsign,
     });
 
     if (!error) {
+      const filteredRows = filterAircraftRowsForPilot(
+        mapDisplayRows((data ?? []) as GenericRecord[]),
+        profile,
+        permittedTypes,
+        dispatchAirportSet
+      );
+      if (filteredRows.length === 0) {
+        throw new Error("NO_AIRCRAFT_DISPLAY_IN_SCOPE");
+      }
       return await attachAircraftCondition(
-        filterAircraftRowsForPilot(
-          mapDisplayRows((data ?? []) as GenericRecord[]),
-          profile,
-          permittedTypes
-        )
+        filteredRows
       );
     }
   } catch {
@@ -1381,9 +1573,9 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     const { data, error } = await supabase
       .from("aircraft")
       .select(
-        "id, registration, tail_number, aircraft_type_code, aircraft_model_code, aircraft_variant_code, addon_provider, variant_name, aircraft_display_name, current_airport_code, status"
+        "id, registration, aircraft_type_code, aircraft_model_code, aircraft_variant_code, addon_provider, variant_name, aircraft_display_name, current_airport_code, status"
       )
-      .eq("current_airport_code", airport)
+      .in("current_airport_code", dispatchAirports)
       .eq("status", "available")
       .eq("is_active", true)
       .order("aircraft_model_code")
@@ -1394,7 +1586,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
       throw error;
     }
 
-    return await attachAircraftCondition(filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
+    const tableRows = filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
       const isAvailable =
         typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
       const operationalCode = getOperationalAircraftCode(row);
@@ -1427,7 +1619,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
           typeof row.variant_name === "string" && row.variant_name
             ? row.variant_name
             : typeof row.addon_provider === "string" && row.addon_provider
-              ? `${typeof row.aircraft_model_code === "string" ? row.aircraft_model_code : ""} · ${row.addon_provider}`
+              ? `${typeof row.aircraft_model_code === "string" ? row.aircraft_model_code : ""} Â· ${row.addon_provider}`
               : "",
         current_airport_icao:
           typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
@@ -1436,7 +1628,13 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
         selectable: isAvailable,
         display_category: getDisplayCategoryFromCode(operationalCode),
       } satisfies AvailableAircraftOption;
-    }), profile, permittedTypes));
+    }), profile, permittedTypes, dispatchAirportSet);
+
+    if (tableRows.length > 0) {
+      return await attachAircraftCondition(tableRows);
+    }
+
+    throw new Error("NO_AIRCRAFT_TABLE_IN_SCOPE");
   } catch (tableError) {
     const rpcAttempts: Array<Record<string, unknown>> = [
       { p_callsign: profile.callsign, p_route_code: null },
@@ -1445,9 +1643,9 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
     ];
 
     for (const params of rpcAttempts) {
-      const { data, error } = await supabase.rpc("get_available_aircraft_for_pilot", params);
+      const { data, error } = await callSecureRpc("get_available_aircraft_for_pilot", params as Record<string, unknown>);
       if (!error) {
-        return await attachAircraftCondition(filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
+        const fallbackRows = filterAircraftRowsForPilot(((data ?? []) as GenericRecord[]).map((row) => {
           const isAvailable =
             typeof row.status === "string" ? row.status.trim().toLowerCase() === "available" : false;
           const operationalCode = getOperationalAircraftCode(row);
@@ -1500,7 +1698,11 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
                     operationalCode
                   ),
           } satisfies AvailableAircraftOption;
-        }), profile, permittedTypes));
+        }), profile, permittedTypes, dispatchAirportSet);
+
+        if (fallbackRows.length > 0) {
+          return await attachAircraftCondition(fallbackRows);
+        }
       }
     }
 
@@ -1511,7 +1713,13 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
 export async function listAvailableItineraries(profile: PilotProfileRecord) {
   const airport = getProfileAirport(profile);
   const rankCode = normalizeRankCode(profile.career_rank_code ?? profile.rank_code);
-  const permittedTypes = await fetchPilotPermittedAircraftTypes(rankCode);
+  const permittedTypes = await fetchPilotPermittedAircraftTypes(profile, rankCode);
+  const dispatchAirports = await resolveDispatchOriginAirports(
+    profile,
+    rankCode,
+    permittedTypes
+  );
+  const dispatchAirportSet = new Set(dispatchAirports);
   const rawProfile = profile as PilotProfileRecord & {
     qualifications?: string | null;
     certifications?: string | null;
@@ -1622,7 +1830,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         );
 
         if (!routeCode || !origin || !destination) return null;
-        if (normalizeUpper(origin) !== airport) return null;
+        if (!dispatchAirportSet.has(normalizeUpper(origin))) return null;
         if (economyFiltered.length === 0) return null;
         if (!routeMatchesOperationalRequirements(row, pilotQualifications, pilotCertifications)) return null;
 
@@ -1633,7 +1841,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         return {
           itinerary_id: routeId,
           itinerary_code: routeCode,
-          itinerary_name: typeof row.route_name === "string" ? row.route_name : `${origin} → ${destinationCity}`,
+          itinerary_name: typeof row.route_name === "string" ? row.route_name : `${origin} -> ${destinationCity}`,
           flight_mode: "itinerary" as FlightMode,
           origin_icao: origin,
           destination_icao: destination,
@@ -1711,24 +1919,35 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
     }
   };
 
-  for (const rpcAttempt of [
-    { name: "pw_list_dispatch_itineraries", params: { p_origin_icao: airport } },
+  const rpcAttempts: Array<{ name: string; params: Record<string, unknown> }> = [
+    ...dispatchAirports.map((dispatchAirport) => ({
+      name: "pw_list_dispatch_itineraries",
+      params: { p_origin_icao: dispatchAirport },
+    })),
     { name: "pw_get_visible_routes_for_pilot", params: { p_callsign: profile.callsign } },
     { name: "get_available_itineraries_for_pilot", params: { p_callsign: profile.callsign } },
     { name: "get_available_itineraries_for_pilot", params: { p_pilot_id: profile.id } },
-  ] as Array<{ name: string; params: Record<string, unknown> }>) {
-    const { data, error } = await supabase.rpc(rpcAttempt.name, rpcAttempt.params);
+  ];
+
+  for (const rpcAttempt of rpcAttempts) {
+    const { data, error } = await callSecureRpc(String(rpcAttempt.name), rpcAttempt.params as Record<string, unknown>);
     if (!error) {
       pushUnique(mapItineraryRows(normalizeRpcRows(data)));
     }
   }
 
-  const { data: catalogRoutes } = await supabase
+  let catalogRouteQuery = supabase
     .from("pw_v_route_catalog_v2")
     .select("route_id, flight_number, simbrief_flight_number, route_key, origin_ident, destination_ident, origin_country, destination_country, route_name, route_category, service_type, operation_type, distance_nm, block_minutes, expected_block_p50, expected_block_p80, compatible_aircraft_types, aircraft_options, is_active")
-    .eq("origin_ident", airport)
     .eq("is_active", true)
     .order("flight_number", { ascending: true });
+
+  catalogRouteQuery =
+    dispatchAirports.length > 1
+      ? catalogRouteQuery.in("origin_ident", dispatchAirports)
+      : catalogRouteQuery.eq("origin_ident", airport);
+
+  const { data: catalogRoutes } = await catalogRouteQuery;
 
   pushUnique(mapItineraryRows((catalogRoutes ?? []) as GenericRecord[]));
 
@@ -1737,37 +1956,56 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
       supabase
         .from("network_routes")
         .select("*")
-        .eq("origin_ident", airport)
+        .in("origin_ident", dispatchAirports)
         .eq("is_active", true)
         .order("priority")
         .order("route_code"),
       supabase.from("network_route_aircraft").select("route_id, aircraft_type_code"),
       supabase
         .from("aircraft")
-        .select("aircraft_model_code, aircraft_type_code")
-        .eq("current_airport_code", airport)
+        .select("aircraft_model_code, aircraft_type_code, current_airport_code")
+        .in("current_airport_code", dispatchAirports)
         .eq("status", "available"),
     ]);
 
   if (routesError && collected.length === 0) throw routesError;
   if (routeAircraftError && collected.length === 0) throw routeAircraftError;
 
-  const availableTypes = new Set(
-    ((aircraftError ? [] : aircraft ?? []) as GenericRecord[])
-      .map((row) => getOperationalAircraftCode(row))
-      .filter(Boolean)
-  );
+  const allowedTypesByOrigin = new Map<string, Set<string>>();
+  for (const row of ((aircraftError ? [] : aircraft ?? []) as GenericRecord[])) {
+    const originCode =
+      typeof row.current_airport_code === "string"
+        ? normalizeUpper(row.current_airport_code)
+        : "";
+    if (!originCode) continue;
+    const operationalCode = getOperationalAircraftCode(row);
+    if (!operationalCode) continue;
+    if (!isAircraftTypeAllowedForPilot(operationalCode, permittedTypes)) continue;
+    if (!allowedTypesByOrigin.has(originCode)) {
+      allowedTypesByOrigin.set(originCode, new Set<string>());
+    }
+    allowedTypesByOrigin.get(originCode)?.add(operationalCode);
+  }
 
-  const allowedTypes = new Set(
-    Array.from(availableTypes).filter((code) => isAircraftTypeAllowedForPilot(code, permittedTypes))
-  );
+  const routeOriginById = new Map<string, string>();
+  for (const row of ((routes ?? []) as GenericRecord[])) {
+    if (typeof row.id === "string") {
+      routeOriginById.set(row.id, normalizeUpper(row.origin_ident));
+    }
+  }
 
   const compatibilityMap = new Map<string, string[]>();
   for (const row of ((routeAircraft ?? []) as GenericRecord[])) {
     const routeId = typeof row.route_id === "string" ? row.route_id : "";
     const typeCode = typeof row.aircraft_type_code === "string" ? normalizeUpper(row.aircraft_type_code) : "";
     if (!routeId || !typeCode) continue;
-    if (allowedTypes.size > 0 && !allowedTypes.has(typeCode)) continue;
+    const originCode = routeOriginById.get(routeId) ?? "";
+    if (originCode) {
+      const allowedAtOrigin = allowedTypesByOrigin.get(originCode);
+      if (allowedAtOrigin && allowedAtOrigin.size > 0 && !allowedAtOrigin.has(typeCode)) {
+        continue;
+      }
+    }
     const current = compatibilityMap.get(routeId) ?? [];
     current.push(typeCode);
     compatibilityMap.set(routeId, current);
@@ -1780,22 +2018,29 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         const routeCode = typeof row.route_code === "string" ? row.route_code : "";
         const origin = typeof row.origin_ident === "string" ? row.origin_ident : airport;
         const destination = typeof row.destination_ident === "string" ? row.destination_ident : "";
+        const originAllowedTypes = allowedTypesByOrigin.get(normalizeUpper(origin)) ?? new Set<string>();
         const compatibleAircraftTypes =
           compatibilityMap.get(routeId) ??
           parseCompatibleAircraftTypes(row.aircraft_type_code).filter((type) =>
             isAircraftTypeAllowedForPilot(type, permittedTypes)
           );
+        const originFilteredTypes =
+          originAllowedTypes.size > 0
+            ? compatibleAircraftTypes.filter((type) =>
+                originAllowedTypes.has(normalizeUpper(type))
+              )
+            : compatibleAircraftTypes;
         const distanceNm = toFiniteNumber(row.distance_nm);
         const routeCategory = normalizeRouteCategoryForDispatch(row);
         const economyFiltered = distanceNm && distanceNm > 0
           ? filterAircraftTypesForRoute({
-              aircraftTypeCodes: compatibleAircraftTypes,
+              aircraftTypeCodes: originFilteredTypes,
               distanceNm,
               operationCategory: routeCategory,
               originCountry: null,
               destinationCountry: null,
             }).compatibleTypes
-          : compatibleAircraftTypes;
+          : originFilteredTypes;
         const normalizedFlightIdentity = normalizeItineraryFlightIdentity(
           typeof row.flight_number === "string" || typeof row.flight_number === "number" ? row.flight_number : null,
           typeof row.flight_designator === "string" ? row.flight_designator : null,
@@ -1807,7 +2052,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
         return {
           itinerary_id: routeId,
           itinerary_code: routeCode,
-          itinerary_name: `${origin} → ${destination}`,
+          itinerary_name: `${origin} -> ${destination}`,
           flight_mode: "itinerary" as FlightMode,
           origin_icao: origin,
           destination_icao: destination,
@@ -1849,7 +2094,7 @@ export async function listAvailableItineraries(profile: PilotProfileRecord) {
 }
 export async function getActiveFlightReservation(profile: PilotProfileRecord) {
   try {
-    const { data, error } = await supabase.rpc("pw_get_active_reservation_for_pilot", {
+    const { data, error } = await callSecureRpc("pw_get_active_reservation_for_pilot", {
       p_callsign: profile.callsign,
     });
 
@@ -1860,7 +2105,7 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
     if (!firstRow) return null;
     return mapLegacyReservationFromRpc(firstRow, profile);
   } catch (rpcError) {
-    // flight_reservations no tiene columna pilot_id — solo pilot_callsign.
+    // flight_reservations no tiene columna pilot_id â€” solo pilot_callsign.
     const attempts = [
       supabase
         .from("flight_reservations")
@@ -1912,36 +2157,17 @@ export async function saveFlightOperation(
 ) {
   if (status === "reserved") {
     const reservationDispatchIdentifier = resolveReservationDispatchIdentifier(profile, operation);
-    const { data, error } = await supabase.rpc("create_flight_reservation", {
-      p_callsign: profile.callsign,
-      p_route_code: reservationDispatchIdentifier,
-      p_aircraft_id: operation.aircraftId,
-      p_hold_minutes: 15,
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    const rows = (data ?? []) as GenericRecord[];
-    const firstRow = rows[0];
-
-    if (!firstRow) {
-      throw new Error("La RPC create_flight_reservation no devolvió una reserva válida.");
-    }
-
-    const reservationId = typeof firstRow.id === "string" ? firstRow.id : "";
     const operationalAircraftCode = normalizeUpper(
       operation.aircraftTypeCode || operation.aircraftCode || ""
     );
 
-    if (reservationId && operationalAircraftCode) {
+    const normalizeReservation = async (reservationId: string) => {
       const { data: normalizedReservation, error: normalizeError } = await supabase
         .from("flight_reservations")
         .update({
           flight_number: reservationDispatchIdentifier || operation.flightNumber || null,
           route_code: reservationDispatchIdentifier || operation.routeCode || null,
-          aircraft_type_code: operationalAircraftCode,
+          aircraft_type_code: operationalAircraftCode || null,
           aircraft_variant_code: operation.aircraftVariantCode || null,
           addon_provider: operation.aircraftAddonProvider || null,
           variant_name: operation.aircraftVariantLabel || null,
@@ -1949,13 +2175,68 @@ export async function saveFlightOperation(
         })
         .eq("id", reservationId)
         .select("*")
-        .single();
+        .maybeSingle();
 
       if (normalizeError) {
         throw normalizeError;
       }
 
-      return normalizedReservation as DbFlightReservationRow;
+      if (normalizedReservation) {
+        return normalizedReservation as DbFlightReservationRow;
+      }
+
+      const { data: normalizedFallback, error: normalizedFallbackError } = await supabase
+        .from("flight_reservations")
+        .select("*")
+        .eq("id", reservationId)
+        .maybeSingle();
+
+      if (normalizedFallbackError) {
+        throw normalizedFallbackError;
+      }
+      if (!normalizedFallback) {
+        throw new Error(`No se encontro la reserva ${reservationId} despues de normalizar.`);
+      }
+
+      return normalizedFallback as DbFlightReservationRow;
+    };
+
+    const activeReservation = await getActiveFlightReservation(profile);
+    if (activeReservation?.id) {
+      return normalizeReservation(activeReservation.id);
+    }
+
+    const { data, error } = await callSecureRpc("create_flight_reservation", {
+      p_callsign: profile.callsign,
+      p_route_code: reservationDispatchIdentifier,
+      p_aircraft_id: operation.aircraftId,
+      p_hold_minutes: 15,
+    });
+
+    if (error) {
+      const isActivePilotConflict =
+        typeof (error as { code?: string }).code === "string" &&
+        (error as { code?: string }).code === "23505";
+      if (isActivePilotConflict) {
+        const recoveredReservation = await getActiveFlightReservation(profile);
+        if (recoveredReservation?.id) {
+          return normalizeReservation(recoveredReservation.id);
+        }
+      }
+      throw error;
+    }
+
+    const rows = (data ?? []) as GenericRecord[];
+    const firstRow = rows[0];
+
+    if (!firstRow) {
+      throw new Error("La RPC create_flight_reservation no devolvio una reserva valida.");
+    }
+
+    const reservationId = typeof firstRow.id === "string" ? firstRow.id : "";
+
+    if (reservationId) {
+      return normalizeReservation(reservationId);
     }
 
     return mapLegacyReservationFromRpc(firstRow, profile);
@@ -1975,13 +2256,30 @@ export async function saveFlightOperation(
       .update({ status: "dispatched", updated_at: new Date().toISOString() })
       .eq("id", operation.reservationId)
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (error) {
       throw error;
     }
 
-    return data as DbFlightReservationRow;
+    if (data) {
+      return data as DbFlightReservationRow;
+    }
+
+    const { data: statusFallback, error: statusFallbackError } = await supabase
+      .from("flight_reservations")
+      .select("*")
+      .eq("id", operation.reservationId)
+      .maybeSingle();
+
+    if (statusFallbackError) {
+      throw statusFallbackError;
+    }
+    if (!statusFallback) {
+      throw new Error(`No se encontro la reserva ${operation.reservationId} al marcar dispatch_ready.`);
+    }
+
+    return statusFallback as DbFlightReservationRow;
   }
 
   const { data, error } = await supabase
@@ -1992,15 +2290,31 @@ export async function saveFlightOperation(
     })
     .eq("id", operation.reservationId)
     .select("*")
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
   }
 
-  return data as DbFlightReservationRow;
-}
+  if (data) {
+    return data as DbFlightReservationRow;
+  }
 
+  const { data: updateFallback, error: updateFallbackError } = await supabase
+    .from("flight_reservations")
+    .select("*")
+    .eq("id", operation.reservationId)
+    .maybeSingle();
+
+  if (updateFallbackError) {
+    throw updateFallbackError;
+  }
+  if (!updateFallback) {
+    throw new Error(`No se encontro la reserva ${operation.reservationId} despues de actualizar.`);
+  }
+
+  return updateFallback as DbFlightReservationRow;
+}
 export type DispatchSimBriefData = {
   routeText?: string | null;
   cruiseLevel?: string | null;
@@ -2312,7 +2626,7 @@ export async function markDispatchPrepared(
         .update(economyReservationPatch)
         .eq("id", reservationId);
     } catch (economyErr) {
-      console.warn("[markDispatchPrepared] No se pudo guardar economía OFP planificada en reserva:", economyErr);
+      console.warn("[markDispatchPrepared] No se pudo guardar economÃ­a OFP planificada en reserva:", economyErr);
     }
 
     try {
@@ -2376,13 +2690,13 @@ export async function markDispatchPrepared(
           },
         });
     } catch (snapshotErr) {
-      console.warn("[markDispatchPrepared] No se pudo guardar snapshot económico OFP:", snapshotErr);
+      console.warn("[markDispatchPrepared] No se pudo guardar snapshot econÃ³mico OFP:", snapshotErr);
     }
   }
 
   if (effectivePilotCallsign) {
     try {
-      const { data, error } = await supabase.rpc("pw_create_dispatch_package_v2", {
+      const { data, error } = await callSecureRpc("pw_create_dispatch_package_v2", {
         p_callsign: normalizeUpper(effectivePilotCallsign),
         p_reservation_id: reservationId,
         p_dispatch_source: dispatchSource,
@@ -2434,13 +2748,13 @@ export async function markDispatchPrepared(
     }
   }
 
-  // Chárter no requiere route_id de network_routes. Itinerario lo mantiene cuando existe.
+  // ChÃ¡rter no requiere route_id de network_routes. Itinerario lo mantiene cuando existe.
   try {
     const { data, error } = await supabase
       .from("dispatch_packages")
       .upsert(packagePayload, { onConflict: "reservation_id" })
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (error) {
       throw error;
@@ -2463,8 +2777,18 @@ export async function markDispatchPrepared(
       })
       .eq("reservation_id", reservationId);
 
+    const dispatchRow = data ?? {
+      reservation_id: reservationId,
+      simbrief_username: simbriefUsername,
+      status: "released",
+      prepared_at: now,
+      released_at: now,
+      created_at: now,
+      updated_at: now,
+    };
+
     return {
-      ...(data as DispatchPackageRow),
+      ...(dispatchRow as DispatchPackageRow),
       status: "released",
       updated_at: now,
     } as DispatchPackageRow;
@@ -2478,44 +2802,30 @@ export async function cancelFlightOperation(
   reservationId: string,
   pilotCallsign?: string
 ) {
-  if (pilotCallsign?.trim()) {
-    try {
-      const { error } = await supabase.rpc("pw_cancel_active_reservation", {
-        p_callsign: normalizeUpper(pilotCallsign),
-        p_reason: "manual_cancel_from_web",
-      });
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token ?? null;
 
-      if (!error) {
-        return;
-      }
-    } catch {
-      // fallback legacy below
-    }
-  }
+  const response = await fetch("/api/reservations/cancel", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({
+      reservationId,
+      pilotCallsign: pilotCallsign?.trim() ? normalizeUpper(pilotCallsign) : null,
+    }),
+    cache: "no-store",
+  });
 
-  const nowIso = new Date().toISOString();
+  const payload = (await response.json().catch(() => null)) as
+    | { ok?: boolean; deleted?: boolean; cancelled?: boolean; warning?: string; error?: string }
+    | null;
 
-  // Obtener aircraft_id antes de cancelar para liberar el avión
-  const { data: resRow } = await supabase
-    .from("flight_reservations")
-    .select("aircraft_id")
-    .eq("id", reservationId)
-    .single();
-
-  const { error } = await supabase
-    .from("flight_reservations")
-    .update({ status: "cancelled", updated_at: nowIso })
-    .eq("id", reservationId);
-
-  if (error) throw error;
-
-  // Liberar el avión si existe
-  const aircraftId = (resRow as { aircraft_id?: string } | null)?.aircraft_id;
-  if (aircraftId) {
-    await supabase
-      .from("aircraft")
-      .update({ status: "available", updated_at: nowIso })
-      .eq("id", aircraftId);
+  if (!response.ok || payload?.ok !== true || payload?.cancelled !== true) {
+    throw new Error(
+      payload?.error || `No se pudo eliminar la reserva (${response.status}).`
+    );
   }
 }
 
@@ -2537,3 +2847,4 @@ export function fromDateTimeLocalValue(value: string) {
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
 }
+
