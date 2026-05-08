@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadReservationContext } from "@/lib/acars-official";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 function getBearerToken(request: NextRequest) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -54,7 +55,19 @@ export async function POST(request: NextRequest) {
       scoring_status: "pending_server_closeout",
     };
 
-    const { data, error } = await context.supabase
+    const currentStatus = String(context.reservation.status ?? "").trim().toLowerCase();
+    if (currentStatus === "in_progress") {
+      return NextResponse.json({
+        ok: true,
+        reservationId,
+        status: "in_progress",
+        serverAuthoritative: true,
+        reservation: context.reservation,
+      });
+    }
+
+    const adminSupabase = createSupabaseAdminClient();
+    const { data, error } = await adminSupabase
       .from("flight_reservations")
       .update({
         status: "in_progress",
@@ -72,7 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await context.supabase
+    await adminSupabase
       .from("dispatch_packages")
       .update({
         dispatch_status: "released",

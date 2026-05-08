@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/browser";
+import { callSecureRpc } from "@/lib/secure-rpc/client";
 
 export type PilotProfileRecord = {
   id: string;
@@ -132,7 +133,7 @@ async function getPatagoniaAirlineId() {
 }
 
 async function getNextPwgCallsign() {
-  const { data, error } = await supabase.rpc("generate_next_pwg_callsign");
+  const { data, error } = await callSecureRpc<string>("generate_next_pwg_callsign");
 
   if (error) {
     console.error("No se pudo generar el próximo callsign PWG:", error.message);

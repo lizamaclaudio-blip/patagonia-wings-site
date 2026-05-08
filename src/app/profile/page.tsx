@@ -985,7 +985,7 @@ function ProfileContent() {
                     : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
                 }`}
               >
-                💰 Mi economía
+                Mi economía
               </button>
             </div>
           </div>
@@ -1131,7 +1131,7 @@ function ProfileContent() {
           <section className="glass-panel rounded-[30px] p-6 sm:p-7">
             <div className="mb-5">
               <span className="section-chip">Mi economía</span>
-              <h2 className="mt-4 text-3xl font-semibold text-white">💰 Liquidación del período actual</h2>
+              <h2 className="mt-4 text-3xl font-semibold text-white">Liquidación del período actual</h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
                 Tus comisiones, sueldo base y deducciones del mes en curso. El pago se realiza el último día hábil del mes.
               </p>

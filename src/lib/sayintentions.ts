@@ -80,13 +80,27 @@ export async function upsertSayIntentionsSettings(accessToken: string, pilotId: 
     .from("pilot_sayintentions_settings")
     .upsert(payload, { onConflict: "pilot_id" })
     .select("*")
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return data;
+  if (data) {
+    return data;
+  }
+
+  const { data: fallback, error: fallbackError } = await supabase
+    .from("pilot_sayintentions_settings")
+    .select("*")
+    .eq("pilot_id", pilotId)
+    .maybeSingle();
+
+  if (fallbackError) {
+    throw new Error(fallbackError.message);
+  }
+
+  return fallback ?? { ...DEFAULT_SAYINTENTIONS_SETTINGS, ...payload };
 }
 
 export async function writeSayIntentionsLog(entry: Record<string, unknown>) {

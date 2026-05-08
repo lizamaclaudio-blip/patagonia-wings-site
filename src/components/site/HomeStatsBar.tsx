@@ -19,8 +19,10 @@ function AnimatedStatValue({ value }: { value: number }) {
     const to = value;
 
     if (from === to) {
-      setDisplayValue(to);
-      return;
+      const frame = window.requestAnimationFrame(() => setDisplayValue(to));
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
     }
 
     const duration = 900;

@@ -13,7 +13,7 @@ const navItems = [
   { href: "/#flota",     label: "Flota" },
   { href: "/#descargas", label: "Descargas" },
   { href: "/routes",     label: "Rutas" },
-  { href: "/economia",   label: "Economía" },
+  { href: "/economia",   label: "Economia" },
 ];
 
 function isPublicNavActive(pathname: string, href: string) {
@@ -50,7 +50,10 @@ export default function PublicHeader() {
   }, []);
 
   // Close dropdown on navigation
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMenuOpen(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -105,7 +108,7 @@ export default function PublicHeader() {
       <div className="public-header-actions hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[220px] lg:gap-3">
 
         {isAuthenticated ? (
-          /* ── LOGGED IN: dropdown with direct "Dashboard" as primary action ── */
+          /* LOGGED IN: dropdown with direct "Dashboard" as primary action */
           <div className="relative flex items-center gap-2" ref={dropdownRef}>
             {/* Direct dashboard link */}
             <Link href="/dashboard" className="parallax-login-button px-6 py-3 text-sm">
@@ -115,11 +118,11 @@ export default function PublicHeader() {
             {/* Chevron button for extra options */}
             <button
               type="button"
-              aria-label="Más opciones"
+              aria-label="Mas opciones"
               className="parallax-account-button px-3 py-3 text-sm"
               onClick={() => setMenuOpen((v) => !v)}
             >
-              <span className={`inline-block text-xs transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}>▼</span>
+              <span className={`inline-block text-xs transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}>v</span>
             </button>
 
             {/* Dropdown */}
@@ -130,21 +133,21 @@ export default function PublicHeader() {
                   className="flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  👤 Mi perfil
+                  Mi perfil
                 </Link>
                 <Link
                   href="/dashboard?tab=dispatch"
                   className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  ✈ Despacho
+                  Despacho
                 </Link>
                 <Link
                   href="/economia"
                   className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  💰 Economía
+                  Economia
                 </Link>
                 <div className="my-2 border-t border-white/[0.07]" />
                 <button
@@ -152,16 +155,16 @@ export default function PublicHeader() {
                   onClick={() => void handleSignOut()}
                   className="flex w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-rose-300 transition hover:bg-rose-400/10"
                 >
-                  ⏏ Cerrar sesión
+                  Cerrar sesion
                 </button>
               </div>
             )}
           </div>
         ) : (
-          /* ── NOT LOGGED IN: always show both buttons ── */
+          /* NOT LOGGED IN: always show both buttons */
           <>
             <Link href="/login" className="button-ghost px-5 py-3 text-sm">
-              Iniciar sesión
+              Iniciar sesion
             </Link>
             <Link href="/register" className="parallax-login-button px-6 py-3 text-sm">
               Crear cuenta

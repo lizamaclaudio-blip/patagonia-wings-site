@@ -5,6 +5,7 @@ import {
   type FlightOperationRecord,
 } from "@/lib/flight-ops";
 import { supabase } from "@/lib/supabase/browser";
+import { callSecureRpc } from "@/lib/secure-rpc/client";
 
 export type CharterAirportOption = {
   icao: string;
@@ -126,7 +127,7 @@ export async function searchCharterAirports(query: string, limit = 20) {
   const cleanQuery = query.trim();
   if (cleanQuery.length < 2) return [] as CharterAirportOption[];
 
-  const { data, error } = await supabase.rpc("pw_search_airports_for_dispatch", {
+  const { data, error } = await callSecureRpc("pw_search_airports_for_dispatch", {
     p_query: cleanQuery,
     p_limit: limit,
   });
@@ -153,7 +154,7 @@ export async function listCharterAircraftAtOrigin(originIcao: string, profile?: 
       .filter((row) => row.aircraft_id);
   }
 
-  const { data, error } = await supabase.rpc("pw_list_charter_aircraft", {
+  const { data, error } = await callSecureRpc("pw_list_charter_aircraft", {
     p_origin_icao: origin,
   });
 
@@ -239,7 +240,7 @@ export async function createCharterReservation(params: {
   plannedBlockMinutes?: number | null;
   remarks?: string | null;
 }) {
-  const { data, error } = await supabase.rpc("pw_create_charter_reservation_v2", {
+  const { data, error } = await callSecureRpc("pw_create_charter_reservation_v2", {
     p_aircraft_id: params.aircraftId,
     p_origin_ident: normalizeIcao(params.originIcao),
     p_destination_ident: normalizeIcao(params.destinationIcao),

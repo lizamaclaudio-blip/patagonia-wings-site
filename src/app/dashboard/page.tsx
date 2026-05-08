@@ -170,6 +170,15 @@ type DispatchMetarSummary = {
   raw: string;
 };
 
+type DispatchDepartureBoardRow = {
+  time: string;
+  destination: string;
+  flight: string;
+  gate: string;
+  remark: string;
+  active?: boolean;
+};
+
 type FlightReservationRow = {
   id?: string | null;
   pilot_callsign: string | null;
@@ -2108,6 +2117,21 @@ function buildDepartureTimeOptions(): { value: string; label: string }[] {
   return options;
 }
 const DEPARTURE_TIME_OPTIONS = buildDepartureTimeOptions();
+
+/**
+ * Hora sugerida de salida:
+ * toma hora local del usuario y propone el bloque de 15 min más cercano
+ * por debajo de (ahora + 30 min). Ej: 16:24 -> 16:45.
+ */
+function getSuggestedDepartureHHMM(now = new Date()): string {
+  const totalMinutes = now.getHours() * 60 + now.getMinutes();
+  const target = totalMinutes + 30;
+  const normalized = ((target % 1440) + 1440) % 1440;
+  const roundedDown15 = Math.floor(normalized / 15) * 15;
+  const hh = String(Math.floor(roundedDown15 / 60)).padStart(2, "0");
+  const mm = String(roundedDown15 % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
 
 /** Convierte HH:MM (hora local del aeropuerto, tratada como UTC para SimBrief) a ISO string. */
 function departureHHMMtoISO(hhMm: string): string {
@@ -5548,6 +5572,8 @@ function EconomyMiniGrid({
 
 function DispatchItineraryTable({
   rows,
+  expandedItineraryId,
+  onExpand,
   selectedItineraryId,
   onSelect,
   airportsByIcao,
@@ -5559,6 +5585,8 @@ function DispatchItineraryTable({
   onDepartureTimeChange,
 }: {
   rows: AvailableItineraryOption[];
+  expandedItineraryId: string | null;
+  onExpand: (itineraryId: string) => void;
   selectedItineraryId: string | null;
   onSelect: (itineraryId: string) => void;
   airportsByIcao: Record<string, ItineraryAirportMeta>;
@@ -5589,6 +5617,7 @@ function DispatchItineraryTable({
           <tbody>
             {rows.map((row) => {
               const isSelected = selectedItineraryId === row.itinerary_id;
+              const isExpanded = expandedItineraryId === row.itinerary_id;
               const originCode = row.origin_icao.trim().toUpperCase();
               const destinationCode = row.destination_icao.trim().toUpperCase();
               const rowKey = row.itinerary_id || row.itinerary_code || `${originCode}-${destinationCode}-${row.flight_number ?? row.flight_designator ?? "route"}`;
@@ -5640,7 +5669,8 @@ function DispatchItineraryTable({
               return (
                 <tr
                   key={rowKey}
-                  className={`border-t border-white/8 align-middle transition ${
+                  onClick={() => onExpand(row.itinerary_id)}
+                  className={`cursor-pointer border-t border-white/8 align-middle transition ${
                     isSelected ? "bg-emerald-500/[0.08]" : ""
                   }`}
                 >
@@ -5720,33 +5750,48 @@ function DispatchItineraryTable({
                   </td>
                   {/* HORA DE SALIDA */}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <select
-                      value={departureHHMM}
-                      onChange={(e) => onDepartureTimeChange(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded-xl border border-white/12 bg-white/[0.06] px-3 py-1.5 text-sm font-semibold text-white outline-none focus:border-emerald-400/60 focus:ring-0 cursor-pointer"
-                      aria-label="Hora de salida local"
-                    >
-                      {DEPARTURE_TIME_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value} className="bg-[#0a1628] text-white">
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    {isExpanded ? (
+                      <select
+                        value={departureHHMM}
+                        onChange={(e) => onDepartureTimeChange(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-xl border border-white/12 bg-white/[0.06] px-3 py-1.5 text-sm font-semibold text-white outline-none focus:border-emerald-400/60 focus:ring-0 cursor-pointer"
+                        aria-label="Hora de salida local"
+                      >
+                        {DEPARTURE_TIME_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value} className="bg-[#0a1628] text-white">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/44">
+                        Toca fila
+                      </span>
+                    )}
                   </td>
                   {/* ACCION */}
                   <td className="px-4 py-3 min-w-[170px] text-right">
-                    <button
-                      type="button"
-                      onClick={() => onSelect(row.itinerary_id)}
-                      className={`inline-flex w-full items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-                        isSelected
-                          ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
-                          : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      {isSelected ? "Seleccionado" : "Seleccionar"}
-                    </button>
+                    {isExpanded ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect(row.itinerary_id);
+                        }}
+                        className={`inline-flex w-full items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                          isSelected
+                            ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100"
+                            : "border-white/10 bg-white/[0.04] text-white/76 hover:bg-white/[0.08]"
+                        }`}
+                      >
+                        {isSelected ? "Seleccionado" : "Seleccionar"}
+                      </button>
+                    ) : (
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/44">
+                        Elegir hora
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -5840,6 +5885,66 @@ function DispatchWideValueStrip({
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
       <p className="mt-3 text-xl font-bold leading-7 tracking-[0.06em] text-white">{value}</p>
       {hint ? <p className="mt-2 text-sm leading-6 text-white/58">{hint}</p> : null}
+    </div>
+  );
+}
+
+function DispatchDepartureBoard({
+  title,
+  subtitle,
+  rows,
+  className,
+}: {
+  title: string;
+  subtitle: string;
+  rows: DispatchDepartureBoardRow[];
+  className?: string;
+}) {
+  return (
+    <div className={`overflow-hidden rounded-[24px] border border-amber-300/20 bg-[#0f1319] shadow-[0_0_0_1px_rgba(255,214,102,0.08),0_18px_44px_rgba(0,0,0,0.45)] ${className ?? ""}`}>
+      <div className="border-b border-amber-300/18 bg-[#0b0f14] px-6 py-4">
+        <p className="font-mono text-[13px] font-bold uppercase tracking-[0.24em] text-amber-300">{title}</p>
+        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-white/58">{subtitle}</p>
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-[0.95fr_1.8fr_1fr_0.72fr_1fr] gap-x-4 border-b border-white/12 pb-3 font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-amber-200/92">
+          <span>Hora</span>
+          <span>Destino</span>
+          <span>Vuelo</span>
+          <span>Gate</span>
+          <span>Estado</span>
+        </div>
+        <div className="mt-3 space-y-1.5">
+          {rows.map((row) => (
+            <div
+              key={`${row.flight}-${row.destination}-${row.time}`}
+              className={`grid grid-cols-[0.95fr_1.8fr_1fr_0.72fr_1fr] gap-x-4 rounded-md px-2 py-2 font-mono text-[18px] leading-none tracking-[0.08em] ${
+                row.active
+                  ? "bg-amber-300/[0.08] text-amber-300 animate-[boardBlink_1.6s_steps(2,end)_infinite]"
+                  : "text-white/86"
+              }`}
+            >
+              <span>{row.time}</span>
+              <span className="truncate">{row.destination}</span>
+              <span>{row.flight}</span>
+              <span>{row.gate}</span>
+              <span className="truncate">{row.remark}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style jsx>{`
+        @keyframes boardBlink {
+          0%,
+          49% {
+            opacity: 1;
+          }
+          50%,
+          100% {
+            opacity: 0.68;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -7572,7 +7677,8 @@ function DashboardWorkspace({
   const [selectedFlightType, setSelectedFlightType] = useState<DispatchFlightTypeId | null>(null);
   const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
   const [selectedItinerary, setSelectedItinerary] = useState<string | null>(null);
-  const [selectedDepartureHHMM, setSelectedDepartureHHMM] = useState<string>("08:00");
+  const [expandedItineraryId, setExpandedItineraryId] = useState<string | null>(null);
+  const [selectedDepartureHHMM, setSelectedDepartureHHMM] = useState<string>(() => getSuggestedDepartureHHMM());
   const [dispatchReady, setDispatchReady] = useState(false);
   const [simbriefSummary, setSimbriefSummary] = useState<SimbriefOfpSummary | null>(null);
   const [syncingSimbrief, setSyncingSimbrief] = useState(false);
@@ -8964,6 +9070,7 @@ function DashboardWorkspace({
 
   const resetAfterItinerary = (nextItinerary: string) => {
     setSelectedItinerary(nextItinerary);
+    setExpandedItineraryId(nextItinerary);
     setCharterReservationId(null);
     setCharterOperation(null);
     invalidateDispatchOfp("Cambiaste datos críticos. Debes generar/cargar OFP nuevamente.");
@@ -9018,11 +9125,47 @@ function DashboardWorkspace({
 
       setSimbriefGenerationActive(false);
       setSimbriefSummary(data.summary);
-      setSimbriefInfoMessage(
-        "OFP cargado automáticamente desde SimBrief. Revisa la validación antes de continuar al resumen."
-      );
       setSimbriefErrorMessage("");
       setPreparedReservationId(null);
+
+      const expectedFlightNumber = normalizePatagoniaFlightIdentifier(webFlightNumberValidationValue);
+      const expectedOrigin = normalizeDispatchComparisonValue(webOriginCode);
+      const expectedDestination = normalizeDispatchComparisonValue(webDestinationCode);
+      const expectedAirframe = normalizeDispatchComparisonValue(webAirframe);
+      const actualFlightNumber = normalizePatagoniaFlightIdentifier(
+        getSimbriefFlightNumberValidationValue(data.summary.flightNumber, simbriefAirlineIcaoForDispatch),
+      );
+      const actualOrigin = normalizeDispatchComparisonValue(data.summary.origin);
+      const actualDestination = normalizeDispatchComparisonValue(data.summary.destination);
+      const actualAirframe = normalizeDispatchComparisonValue(resolveSimbriefType(data.summary.airframe ?? ""));
+
+      const autoValidated =
+        Boolean(expectedFlightNumber) &&
+        Boolean(actualFlightNumber) &&
+        expectedFlightNumber === actualFlightNumber &&
+        Boolean(expectedOrigin) &&
+        Boolean(actualOrigin) &&
+        expectedOrigin === actualOrigin &&
+        Boolean(expectedDestination) &&
+        Boolean(actualDestination) &&
+        expectedDestination === actualDestination &&
+        Boolean(expectedAirframe) &&
+        Boolean(actualAirframe) &&
+        expectedAirframe === actualAirframe;
+
+      if (autoValidated) {
+        setDispatchReady(true);
+        setSimbriefInfoMessage("OFP cargado y validado automáticamente. Abriendo resumen...");
+        setDispatchStep("summary");
+        window.requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      } else {
+        setDispatchReady(false);
+        setSimbriefInfoMessage(
+          "OFP cargado. Revisa coincidencia de vuelo, origen, destino y airframe antes de continuar."
+        );
+      }
     } catch (error) {
       setSimbriefGenerationActive(false);
       setSimbriefSummary(null);
@@ -9757,6 +9900,11 @@ function DashboardWorkspace({
                         <div className="mt-5">
                           <DispatchItineraryTable
                             rows={filteredItineraries}
+                            expandedItineraryId={expandedItineraryId}
+                            onExpand={(itineraryId) => {
+                              setExpandedItineraryId(itineraryId);
+                              setSelectedDepartureHHMM(getSuggestedDepartureHHMM());
+                            }}
                             selectedItineraryId={selectedItinerary}
                             onSelect={resetAfterItinerary}
                             airportsByIcao={itineraryAirportsByIcao}
@@ -9947,7 +10095,7 @@ function DashboardWorkspace({
                           {isCharterLikeDispatch ? "Despacho Chárter" : "Despacho de itinerario"}
                         </h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          Primero revisa la reserva web, luego prepara o importa el OFP de SimBrief, valida que los datos coincidan y finalmente continúa al resumen para dejar el vuelo listo para ACARS.
+                          Flujo rápido: Generar OFP, cargar OFP y continuar a resumen.
                         </p>
                       </div>
 
@@ -10001,9 +10149,7 @@ function DashboardWorkspace({
                           </span>
                         </div>
 
-                        <p className="mt-3 text-sm text-white/58">
-                          Patagonia Wings prepara el vuelo con número, origen, destino, aeronave y matrícula. En modo seguro, SimBrief se abre prellenado: el piloto solo revisa, presiona Generate Flight y luego carga el OFP automático en esta página.
-                        </p>
+                        <p className="mt-3 text-sm text-white/58">Datos web prellenados y control cruzado automático con SimBrief.</p>
 
                         <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
@@ -10124,7 +10270,7 @@ function DashboardWorkspace({
                             disabled={syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord || Boolean(appliedRoutePreview.error)}
                             className={`py-3 ${syncingSimbrief || !selectedAircraftRecord || !selectedItineraryRecord || Boolean(appliedRoutePreview.error) ? "button-secondary cursor-not-allowed opacity-55" : "button-primary"}`}
                           >
-                            {syncingSimbrief ? "[1] Preparando..." : simbriefStaticId ? "[1] Rehacer OFP SimBrief" : "[1] Generar OFP SimBrief"}
+                            {syncingSimbrief ? "[1] Preparando..." : simbriefStaticId ? "[1] Rehacer OFP" : "[1] Generar OFP"}
                           </button>
 
                           <button
@@ -10133,16 +10279,7 @@ function DashboardWorkspace({
                             disabled={syncingSimbrief || !profile?.simbrief_username?.trim()}
                             className={`py-3 ${syncingSimbrief || !profile?.simbrief_username?.trim() ? "button-secondary cursor-not-allowed opacity-55" : "button-secondary"}`}
                           >
-                            {syncingSimbrief ? "[2] Cargando..." : "[2] Cargar OFP"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={handleValidateDispatch}
-                            disabled={!simbriefSummary || !canValidateDispatch}
-                            className={`py-3 ${simbriefSummary && canValidateDispatch ? "button-primary" : "button-secondary cursor-not-allowed opacity-55"}`}
-                          >
-                            [3] Validar OFP
+                            {syncingSimbrief ? "[2] Cargando..." : "[2] Cargar y validar OFP"}
                           </button>
                         </div>
 
@@ -10203,258 +10340,72 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Manifiesto de salida Patagonia Wings</h4>
+                        <h4 className="mt-3 text-2xl font-semibold text-white">Panel de salida Patagonia Wings</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
-                          SimBrief/OFP validado. Revisa el manifiesto final antes de enviar el vuelo a ACARS.
+                          Validacion web + SimBrief en segundo plano. Vista final operativa antes de enviar a ACARS.
                         </p>
                       </div>
 
-                      <div className="rounded-[22px] border border-cyan-400/14 bg-[#031428]/65 p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Que vuelo hare
-                            </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Resumen operacional pre-ACARS</h5>
-                          </div>
-                          <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
-                            Listo para despacho
-                          </span>
-                        </div>
-
-                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.85fr_1fr_1fr_1fr]">
-                          <DispatchValueCard
-                            label="Numero de vuelo"
-                            value={webFlightNumber}
-                            hint={selectedItineraryRecord?.itinerary_code ?? "Pendiente"}
-                          />
-                          <DispatchLocationCard
-                            label="Origen"
-                            icao={webOriginCode}
-                            city={webOriginCity}
-                            countryCode={webOriginCountryCode}
-                          />
-                          <DispatchLocationCard
-                            label="Destino"
-                            icao={webDestinationCode}
-                            city={webDestinationCity}
-                            countryCode={webDestinationCountryCode}
-                          />
-                          <DispatchValueCard
-                            label="Aeronave"
-                            value={summaryAirframeDisplay}
-                            hint={selectedAircraftRecord?.tail_number || "Pendiente"}
-                            valueClassName="text-[1.35rem] leading-tight"
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                          <DispatchValueCard
-                            label="Itinerario"
-                            value={selectedItineraryRecord?.itinerary_name || selectedItineraryRecord?.itinerary_code || "Pendiente"}
-                            hint={selectedItineraryRecord ? `${selectedItineraryRecord.origin_icao} → ${selectedItineraryRecord.destination_icao}` : undefined}
-                            valueClassName="text-[1.3rem] leading-tight"
-                          />
-                          <DispatchValueCard
-                            label="Distancia"
-                            value={summaryDispatchDistance}
-                          />
-                          <DispatchValueCard
-                            label="Duracion aprox."
-                            value={summaryDispatchDuration}
-                          />
-                          <DispatchValueCard
-                            label="Despacho"
-                            value={stepStatusLabel.dispatch}
-                            valueClassName={`text-[1.3rem] leading-tight ${preparedReservationId ? "text-emerald-300" : dispatchReady ? "text-sky-300" : ""}`}
-                          />
-                        </div>
-
-                        <div className="mt-4">
-                          <DispatchWideValueStrip
-                            label="Ruta OFP"
-                            value={summaryDispatchRoute}
-                          />
-                        </div>
-                      </div>
-
-                      {simbriefSummary ? (
-                      <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                              Que lleva el avion
-                            </p>
-                            <h5 className="mt-2 text-xl font-semibold text-white">Carga, pesos y combustible del manifiesto</h5>
-                          </div>
-                          <span className="rounded-full border border-emerald-300/25 bg-emerald-500/[0.12] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
-                            {preparedReservationId ? "Despachado" : "Validado"}
-                          </span>
-                        </div>
-
-                        <div className="mt-5 grid gap-4 xl:grid-cols-[0.85fr_1fr_1fr_0.95fr]">
-                          <DispatchValueCard
-                            label="Numero de vuelo"
-                            value={simbriefFlightNumberDisplay}
-                            hint={profile?.simbrief_username?.trim() || "Usuario SimBrief pendiente"}
-                          />
-                          <DispatchLocationCard
-                            label="Origen"
-                            icao={simbriefOriginCode}
-                            city={simbriefOriginCity}
-                            countryCode={simbriefOriginCountryCode}
-                          />
-                          <DispatchLocationCard
-                            label="Destino"
-                            icao={simbriefDestinationCode}
-                            city={simbriefDestinationCity}
-                            countryCode={simbriefDestinationCountryCode}
-                          />
-                          <DispatchValueCard
-                            label="Airframe ICAO"
-                            value={simbriefAirframe}
-                            hint={simbriefSummary?.aircraftRegistration?.trim() || "Matricula no informada"}
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                          <DispatchValueCard
-                            label="Crucero"
-                            value={simbriefSummary?.cruiseAltitude?.trim() || "Pendiente"}
-                          />
-                          <DispatchValueCard
-                            label="Pasajeros"
-                            value={
-                              typeof simbriefSummary?.pax === "number"
-                                ? String(simbriefSummary.pax)
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Payload"
-                            value={
-                              typeof simbriefSummary?.payloadKg === "number"
-                                ? `${simbriefSummary.payloadKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="ZFW"
-                            value={
-                              typeof simbriefSummary?.zfwKg === "number"
-                                ? `${simbriefSummary.zfwKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                          <DispatchValueCard
-                            label="Comb. bloque"
-                            value={
+                      <DispatchDepartureBoard
+                        title="Departures"
+                        subtitle="Patagonia Wings Dispatch Board"
+                        className="min-h-[480px]"
+                        rows={[
+                          {
+                            time: selectedDepartureHHMM || "--:--",
+                            destination: webDestinationCode || "PENDIENTE",
+                            flight: webFlightNumber || "PWG---",
+                            gate: (selectedAircraftRecord?.tail_number || "D01").slice(-3).toUpperCase(),
+                            remark: preparedReservationId ? "DISPATCHED" : "BOARDING",
+                            active: true,
+                          },
+                          {
+                            time: summaryDispatchDuration === "Pendiente" ? "--:--" : summaryDispatchDuration,
+                            destination: simbriefDestinationCode || "PENDIENTE",
+                            flight: simbriefFlightNumberDisplay === "Pendiente" ? "PWG---" : simbriefFlightNumberDisplay,
+                            gate: "OFP",
+                            remark: simbriefSummary ? "OFP CHECK" : "OFP PEND",
+                          },
+                          {
+                            time: "--:--",
+                            destination: webOriginCode || "PENDIENTE",
+                            flight: "RUTA",
+                            gate: "OPS",
+                            remark: summaryDispatchRoute === "Pendiente" ? "WAIT ROUTE" : "ROUTE READY",
+                          },
+                          {
+                            time: "--:--",
+                            destination: webDestinationCode || "PENDIENTE",
+                            flight: "PAX",
+                            gate: "A",
+                            remark: typeof simbriefSummary?.pax === "number" ? `${simbriefSummary.pax} PAX` : "PAX PEND",
+                          },
+                          {
+                            time: "--:--",
+                            destination: webDestinationCode || "PENDIENTE",
+                            flight: "FUEL",
+                            gate: "B",
+                            remark:
                               typeof simbriefOperationalFuelKg === "number"
-                                ? `${simbriefOperationalFuelKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Comb. trip"
-                            value={
-                              typeof simbriefSummary?.tripFuelKg === "number"
-                                ? `${simbriefSummary.tripFuelKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Comb. reserva"
-                            value={
-                              typeof simbriefSummary?.reserveFuelKg === "number"
-                                ? `${simbriefSummary.reserveFuelKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Comb. taxi"
-                            value={
-                              typeof simbriefSummary?.taxiFuelKg === "number"
-                                ? `${simbriefSummary.taxiFuelKg.toLocaleString("es-CL")} kg`
-                                : "Pendiente"
-                            }
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                          <DispatchValueCard
-                            label="Alternativo"
-                            value={simbriefSummary?.alternate?.trim() || "No informado"}
-                          />
-                          <DispatchValueCard
-                            label="Peso estimado pax"
-                            value={
-                              typeof simbriefSummary?.pax === "number"
-                                ? `${formatInteger(simbriefSummary.pax * 84)} kg`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="Distancia OFP"
-                            value={
-                              typeof simbriefSummary?.distanceNm === "number"
-                                ? `${formatInteger(simbriefSummary.distanceNm)} NM`
-                                : "Pendiente"
-                            }
-                          />
-                          <DispatchValueCard
-                            label="OFP cargado"
-                            value={simbriefSummary ? "Listo" : "Pendiente"}
-                            valueClassName={simbriefSummary ? "text-[1.3rem] leading-tight text-emerald-400" : "text-[1.3rem] leading-tight text-white/50"}
-                          />
-                        </div>
-
-                        {simbriefEconomyEstimate ? (
-                          <div className="mt-4 rounded-[20px] border border-emerald-300/16 bg-emerald-300/[0.045] p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Cuanto gana el piloto y la aerolinea</p>
-                                <p className="mt-1 text-sm text-white/58">Valores planificados antes de ACARS. El cierre oficial recalcula con datos reales.</p>
-                              </div>
-                              <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
-                                Fuente: SimBrief/OFP
-                              </span>
-                            </div>
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                              {[
-                                { label: "Comision piloto estimada", value: formatEconomyUsd(simbriefEconomyEstimate.pilotPaymentUsd), tone: "text-emerald-100" },
-                                { label: "Ingreso pasajeros", value: formatEconomyUsd(simbriefEconomyEstimate.passengerRevenueUsd), tone: "text-cyan-100" },
-                                { label: "Ingreso carga", value: formatEconomyUsd(simbriefEconomyEstimate.cargoRevenueUsd), tone: "text-cyan-100" },
-                                { label: "Servicios a bordo", value: formatEconomyUsd(simbriefEconomyEstimate.onboardServiceRevenueUsd), tone: "text-cyan-100" },
-                                { label: "Ventas a bordo", value: formatEconomyUsd(simbriefEconomyEstimate.onboardSalesRevenueUsd), tone: "text-cyan-100" },
-                                { label: "Costo combustible", value: formatEconomyUsd(simbriefEconomyEstimate.fuelCostUsd), tone: "text-amber-100" },
-                                { label: "Costo mantenimiento", value: formatEconomyUsd(simbriefEconomyEstimate.maintenanceCostUsd), tone: "text-white/82" },
-                                { label: "Tasas y handling", value: formatEconomyUsd(simbriefEconomyEstimate.airportFeesUsd + simbriefEconomyEstimate.handlingCostUsd), tone: "text-white/82" },
-                                { label: "Costo total", value: formatEconomyUsd(simbriefEconomyEstimate.totalCostUsd), tone: "text-white/82" },
-                                { label: "Utilidad esperada aerolinea", value: formatEconomyUsd(simbriefEconomyEstimate.netProfitUsd), tone: simbriefEconomyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100" },
-                              ].map((item) => (
-                                <div key={item.label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
-                                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{item.label}</p>
-                                  <p className={`mt-1 text-sm font-black ${item.tone}`}>{item.value}</p>
-                                </div>
-                              ))}
-                            </div>
-                            <p className="mt-4 rounded-[14px] border border-amber-200/16 bg-amber-300/[0.06] px-3 py-2 text-xs font-semibold text-amber-100/92">
-                              La comision queda devengada y se paga en la liquidacion mensual.
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                      ) : null}
+                                ? `${simbriefOperationalFuelKg.toLocaleString("es-CL")} KG`
+                                : "FUEL PEND",
+                          },
+                          {
+                            time: "--:--",
+                            destination: webDestinationCode || "PENDIENTE",
+                            flight: "STATUS",
+                            gate: "C",
+                            remark: canDispatchFlight ? "READY TO SEND" : "HOLD",
+                          },
+                        ]}
+                      />
 
                       <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-5">
                         <div className="space-y-4">
                           <div className="rounded-[18px] border border-white/8 bg-[#031428]/58 p-4">
-                            <p className="text-sm font-semibold text-white">Que debe hacer ahora</p>
+                            <p className="text-sm font-semibold text-white">Siguiente paso</p>
                             <p className="mt-2 text-sm leading-7 text-white/72">
-                              Revisa una ultima vez los datos del manifiesto y luego presiona <span className="font-semibold text-white">Enviar a ACARS</span> para dejar el vuelo listo en la base operativa.
+                              Si el panel esta correcto, presiona <span className="font-semibold text-white">Enviar a ACARS</span>.
                             </p>
                           </div>
 

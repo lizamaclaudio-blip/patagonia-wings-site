@@ -9,6 +9,7 @@ import { ensurePilotProfile } from "@/lib/pilot-profile";
 import { supabase } from "@/lib/supabase/browser";
 import { resolvePatagoniaScore } from "@/lib/sur-score";
 import { buildPirepPerfectWebSummary } from "@/lib/pirep-perfect-web";
+import { normalizeAircraftDisplayName } from "@/lib/flight-ops";
 
 type FlightReservationResultRow = {
   id: string;
@@ -865,8 +866,16 @@ function FlightResultContent() {
   const originIdent = pirepPerfect.originIdent || asText(reservation?.origin_ident) || "---";
   const destinationIdent = pirepPerfect.destinationIdent || asText(reservation?.destination_ident) || "---";
   const aircraftCode = pirepPerfect.aircraftCode || asText(reservation?.aircraft_type_code) || "—";
+  const aircraftVariant = asText(reservation?.aircraft_variant_code);
   const aircraftRegistration = pirepPerfect.aircraftRegistration || asText(reservation?.aircraft_registration) || "—";
-  const aircraftDisplay = pirepPerfect.aircraftDisplayName || [aircraftCode, aircraftRegistration].filter((item) => item && item !== "—").join(" · ") || "—";
+  const aircraftName = pirepPerfect.aircraftDisplayName || normalizeAircraftDisplayName(aircraftVariant || aircraftCode);
+  const aircraftDisplayHasRegistration =
+    Boolean(aircraftRegistration && aircraftRegistration !== "—") &&
+    aircraftName.toUpperCase().includes(aircraftRegistration.toUpperCase());
+  const aircraftDisplay = [
+    aircraftName,
+    aircraftDisplayHasRegistration ? "" : aircraftRegistration,
+  ].filter((item) => item && item !== "—").join(" · ") || aircraftName || aircraftCode || "—";
   const flightTypeLabel = pirepPerfect.flightType || payloadText(mergedScorePayload, ["flight_type", "operation_type", "route_band", "mission_type"], "—");
   const rankLabel = payloadText(mergedScorePayload, ["pilot_rank", "rank_name", "career_rank"], "Piloto Patagonia Wings");
   const pilotHours = payloadNumber(mergedScorePayload, ["pilot_hours", "pilot_total_hours", "total_hours"]);
@@ -949,7 +958,7 @@ function FlightResultContent() {
       report_id: reservation.id,
       pilot_callsign: asText(reservation.pilot_callsign),
       flight_number: flightNumber,
-      aircraft: asText(reservation.aircraft_type_code),
+      aircraft: aircraftDisplay,
       aircraft_registration: asText(reservation.aircraft_registration),
       aircraft_variant_code: asText(reservation.aircraft_variant_code),
       addon_provider: asText(reservation.addon_provider),

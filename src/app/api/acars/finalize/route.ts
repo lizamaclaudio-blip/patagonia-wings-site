@@ -43,6 +43,15 @@ function asNumber(value: unknown): number {
   return 0;
 }
 
+function asFiniteNumberOrNull(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function asBoolean(value: unknown): boolean {
   return value === true || value === "true" || value === 1 || value === "1";
 }
@@ -155,11 +164,20 @@ function limitedTelemetryLog(samples: AcarsTelemetrySample[]): GenericObject {
 }
 
 function haversineNm(a?: AcarsTelemetrySample | null, b?: AcarsTelemetrySample | null): number {
-  const lat1 = asNumber(a?.latitude);
-  const lon1 = asNumber(a?.longitude);
-  const lat2 = asNumber(b?.latitude);
-  const lon2 = asNumber(b?.longitude);
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  const lat1 = asFiniteNumberOrNull(a?.latitude);
+  const lon1 = asFiniteNumberOrNull(a?.longitude);
+  const lat2 = asFiniteNumberOrNull(b?.latitude);
+  const lon2 = asFiniteNumberOrNull(b?.longitude);
+  const coordinatesValid =
+    lat1 !== null &&
+    lon1 !== null &&
+    lat2 !== null &&
+    lon2 !== null &&
+    Math.abs(lat1) <= 90 &&
+    Math.abs(lat2) <= 90 &&
+    Math.abs(lon1) <= 180 &&
+    Math.abs(lon2) <= 180;
+  if (!coordinatesValid) return 0;
   const toRad = (deg: number) => deg * Math.PI / 180;
   const earthRadiusNm = 3440.065;
   const dLat = toRad(lat2 - lat1);

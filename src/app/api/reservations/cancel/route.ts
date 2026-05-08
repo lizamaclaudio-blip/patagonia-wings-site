@@ -111,6 +111,32 @@ async function tryResolveReservationByCallsign(
   return (data ?? null) as Record<string, unknown> | null;
 }
 
+async function purgeByCallsign(
+  admin: SupabaseClient,
+  callsign: string,
+) {
+  const normalized = asText(callsign).toUpperCase();
+  if (!normalized) return 0;
+  const reservationIds = await listPilotActiveReservationIds(admin, "", normalized);
+  let removed = 0;
+  for (const id of reservationIds) {
+    await purgeReservationArtifacts(admin, id);
+    const { error } = await admin.from("flight_reservations").delete().eq("id", id);
+    if (error && !isIgnorableDeleteError(error)) {
+      throw new Error(`No se pudo eliminar reserva ${id}: ${error.message}`);
+    }
+    removed += 1;
+  }
+  const { error: orphanDispatchError } = await admin
+    .from("dispatch_packages")
+    .delete()
+    .eq("pilot_callsign", normalized);
+  if (orphanDispatchError && !isIgnorableDeleteError(orphanDispatchError)) {
+    throw new Error(`No se pudieron limpiar dispatch packages del callsign: ${orphanDispatchError.message}`);
+  }
+  return removed;
+}
+
 async function safeDeleteByField(
   client: SupabaseClient,
   table: string,
@@ -121,6 +147,57 @@ async function safeDeleteByField(
   if (error && !isIgnorableDeleteError(error)) {
     throw new Error(`[${table}] ${error.message}`);
   }
+}
+
+const RESERVATION_CHILD_DELETE_TARGETS: Array<[string, string]> = [
+  ["dispatch_packages", "reservation_id"],
+  ["flight_economy_snapshots", "reservation_id"],
+  ["airline_ledger", "reservation_id"],
+  ["aircraft_damage_events", "reservation_id"],
+  ["flight_reservation_audit", "reservation_id"],
+  ["pw_flight_score_reports", "reservation_id"],
+  ["pw_pilot_score_ledger", "reservation_id"],
+  ["pw_pilot_scores", "reservation_id"],
+  ["acars_test_evaluations", "reservation_id"],
+  ["pirep_reports", "reservation_id"],
+  ["pirep_reports", "reference_code"],
+  ["sayintentions_sync_log", "reservation_id"],
+];
+
+async function purgeReservationArtifacts(
+  admin: SupabaseClient,
+  reservationId: string,
+) {
+  for (const [table, field] of RESERVATION_CHILD_DELETE_TARGETS) {
+    await safeDeleteByField(admin, table, field, reservationId);
+  }
+}
+
+async function listPilotActiveReservationIds(
+  admin: SupabaseClient,
+  pilotId: string,
+  pilotCallsign: string,
+) {
+  let query = admin
+    .from("flight_reservations")
+    .select("id,status")
+    .in("status", [...DELETABLE_STATUSES])
+    .order("updated_at", { ascending: false })
+    .limit(30);
+
+  if (pilotId) {
+    query = query.eq("pilot_id", pilotId);
+  } else if (pilotCallsign) {
+    query = query.eq("pilot_callsign", pilotCallsign);
+  } else {
+    return [] as string[];
+  }
+
+  const { data, error } = await query;
+  if (error || !Array.isArray(data)) return [] as string[];
+  return data
+    .map((row) => asText((row as Record<string, unknown>).id))
+    .filter(Boolean);
 }
 
 async function releaseAircraft(
@@ -192,7 +269,27 @@ export async function POST(request: NextRequest) {
     }
 
     if (!reservation) {
-      // Idempotencia: si ya no existe reserva activa, el flujo cliente debe continuar desbloqueado.
+      // Si viene callsign, purgar cualquier residuo activo ligado al piloto.
+      if (adminClient && reservationCallsignHint) {
+        const removed = await purgeByCallsign(adminClient, reservationCallsignHint);
+        return NextResponse.json({
+          ok: true,
+          deleted: removed > 0,
+          cancelled: true,
+          reservationId: reservationId || null,
+          warning: removed > 0 ? "PURGED_BY_CALLSIGN" : "NO_ACTIVE_RESERVATION",
+        });
+      }
+
+      // Fallback sin admin: intenta RPC autenticado para cancelar activa por usuario.
+      const { error: rpcCancelError } = await ownerClient.rpc("pw_cancel_active_reservation");
+      if (rpcCancelError && !isIgnorableDeleteError(rpcCancelError)) {
+        return NextResponse.json(
+          { error: `No se encontró reserva por id y tampoco se pudo cancelar la activa: ${rpcCancelError.message}` },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         deleted: false,
@@ -215,26 +312,57 @@ export async function POST(request: NextRequest) {
     }
 
     const aircraftId = asText(reservation.aircraft_id);
+    const pilotId = asText(reservation.pilot_id);
     const rowCallsign = asText(reservation.pilot_callsign).toUpperCase();
     const nowIso = new Date().toISOString();
 
     if (adminClient) {
-      const children: Array<[string, string]> = [
-        ["dispatch_packages", "reservation_id"],
-        ["flight_economy_snapshots", "reservation_id"],
-        ["airline_ledger", "reservation_id"],
-        ["aircraft_damage_events", "reservation_id"],
-        ["flight_reservation_audit", "reservation_id"],
-        ["pw_flight_score_reports", "reservation_id"],
-        ["pw_pilot_score_ledger", "reservation_id"],
-        ["pw_pilot_scores", "reservation_id"],
-        ["acars_test_evaluations", "reservation_id"],
-        ["pirep_reports", "reservation_id"],
-        ["pirep_reports", "reference_code"],
-      ];
-      for (const [table, field] of children) {
-        await safeDeleteByField(adminClient, table, field, reservationId);
+      // Purga fuerte de esta reserva y cualquier reserva activa residual del mismo piloto.
+      const activeReservationIds = await listPilotActiveReservationIds(adminClient, pilotId, rowCallsign);
+      const reservationIds = Array.from(
+        new Set([reservationId, ...activeReservationIds].filter(Boolean))
+      );
+
+      for (const id of reservationIds) {
+        await purgeReservationArtifacts(adminClient, id);
       }
+
+      for (const id of reservationIds) {
+        const { error: hardDeleteError } = await adminClient
+          .from("flight_reservations")
+          .delete()
+          .eq("id", id);
+
+        if (hardDeleteError && !isIgnorableDeleteError(hardDeleteError)) {
+          return NextResponse.json(
+            { error: `No se pudo eliminar la reserva ${id}: ${hardDeleteError.message}` },
+            { status: 500 }
+          );
+        }
+      }
+
+      if (rowCallsign) {
+        // Limpia paquetes huérfanos ligados al callsign.
+        const { error: orphanDispatchError } = await adminClient
+          .from("dispatch_packages")
+          .delete()
+          .eq("pilot_callsign", rowCallsign);
+        if (orphanDispatchError && !isIgnorableDeleteError(orphanDispatchError)) {
+          return NextResponse.json(
+            { error: `No se pudieron limpiar dispatch packages: ${orphanDispatchError.message}` },
+            { status: 500 }
+          );
+        }
+      }
+
+      await releaseAircraft(adminClient, null, aircraftId, nowIso);
+
+      return NextResponse.json({
+        ok: true,
+        deleted: true,
+        cancelled: true,
+        reservationId,
+      });
     }
 
     const { error: deleteReservationError } = await writer

@@ -300,7 +300,9 @@ function DarkDropdown({
   const selected = options.find((item) => item.value === value) ?? null;
 
   useEffect(() => {
-    if (disabled) setOpen(false);
+    if (!disabled) return;
+    const frame = window.requestAnimationFrame(() => setOpen(false));
+    return () => window.cancelAnimationFrame(frame);
   }, [disabled]);
 
   return (
@@ -391,14 +393,17 @@ export default function CharterOriginDestinationStep({
     let mounted = true;
 
     if (!routeReady || aircraftTypes.length === 0) {
-      setTypeCompatibility({});
-      setLoadingCompatibility(false);
+      const frame = window.requestAnimationFrame(() => {
+        setTypeCompatibility({});
+        setLoadingCompatibility(false);
+      });
       return () => {
         mounted = false;
+        window.cancelAnimationFrame(frame);
       };
     }
 
-    setLoadingCompatibility(true);
+    const startCompatibilityFrame = window.requestAnimationFrame(() => setLoadingCompatibility(true));
     Promise.all(
       aircraftTypes.map(async (code) => {
         const params = new URLSearchParams({
@@ -427,6 +432,7 @@ export default function CharterOriginDestinationStep({
 
     return () => {
       mounted = false;
+      window.cancelAnimationFrame(startCompatibilityFrame);
     };
   }, [aircraftTypes, normalizedDestination, normalizedOrigin, routeReady]);
 
@@ -438,8 +444,11 @@ export default function CharterOriginDestinationStep({
   useEffect(() => {
     if (!routeReady || !selectedType) return;
     if (typeCompatibility[selectedType] && typeCompatibility[selectedType].compatible === false) {
-      setSelectedType("");
-      onAircraftChange(null);
+      const frame = window.requestAnimationFrame(() => {
+        setSelectedType("");
+        onAircraftChange(null);
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [onAircraftChange, routeReady, selectedType, typeCompatibility]);
 
@@ -470,15 +479,18 @@ export default function CharterOriginDestinationStep({
     let mounted = true;
 
     if (normalizedOrigin.length !== 4) {
-      setAircraft([]);
-      setSelectedType("");
-      onAircraftChange(null);
+      const frame = window.requestAnimationFrame(() => {
+        setAircraft([]);
+        setSelectedType("");
+        onAircraftChange(null);
+      });
       return () => {
         mounted = false;
+        window.cancelAnimationFrame(frame);
       };
     }
 
-    setLoadingAircraft(true);
+    const startAircraftFrame = window.requestAnimationFrame(() => setLoadingAircraft(true));
     listCharterAircraftAtOrigin(normalizedOrigin, profile)
       .then((items) => {
         if (!mounted) return;
@@ -506,6 +518,7 @@ export default function CharterOriginDestinationStep({
 
     return () => {
       mounted = false;
+      window.cancelAnimationFrame(startAircraftFrame);
     };
   }, [normalizedOrigin, onAircraftChange, profile, selectedAircraftId]);
 
@@ -520,14 +533,17 @@ export default function CharterOriginDestinationStep({
     const aircraftType = selectedAircraft ? getAircraftTypeCode(selectedAircraft) : selectedType;
 
     if (!routeReady || !aircraftType) {
-      setEconomyEstimate(null);
-      setLoadingEconomy(false);
+      const frame = window.requestAnimationFrame(() => {
+        setEconomyEstimate(null);
+        setLoadingEconomy(false);
+      });
       return () => {
         mounted = false;
+        window.cancelAnimationFrame(frame);
       };
     }
 
-    setLoadingEconomy(true);
+    const startEconomyFrame = window.requestAnimationFrame(() => setLoadingEconomy(true));
     const params = new URLSearchParams({
       origin: normalizedOrigin,
       destination: normalizedDestination,
@@ -554,6 +570,7 @@ export default function CharterOriginDestinationStep({
 
     return () => {
       mounted = false;
+      window.cancelAnimationFrame(startEconomyFrame);
     };
   }, [normalizedDestination, normalizedOrigin, routeReady, selectedAircraft, selectedType]);
 

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { callSecureRpc } from "@/lib/secure-rpc/client";
 
 export type HomeStatItem = {
   key: string;
@@ -174,7 +175,7 @@ function mapPublicMetricsRow(row: PublicSiteMetricsRow | null | undefined): Home
 }
 
 async function loadHomeStatsFromPublicRpc(supabase: SupabaseClient): Promise<HomeStatItem[] | null> {
-  const { data, error } = await supabase.rpc("pw_get_public_site_metrics");
+  const { data, error } = await callSecureRpc<PublicSiteMetricsRow | PublicSiteMetricsRow[]>("pw_get_public_site_metrics");
 
   if (error) {
     throw error;
