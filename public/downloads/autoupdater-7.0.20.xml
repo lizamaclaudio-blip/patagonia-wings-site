@@ -10,8 +10,8 @@
   <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
   <fileName>PatagoniaWingsACARSSetup.exe</fileName>
   <revision>2026.5.8.9</revision>
-  <changelog>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Web y Supabase Storage.</changelog>
-  <releaseNotes>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Web y Supabase Storage.</releaseNotes>
+  <changelog>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Supabase Storage.</changelog>
+  <releaseNotes>ACARS 7.0.20 - Autoupdate obligatorio publicado. Revision 2026.5.8.9. Installer real sincronizado con Supabase Storage.</releaseNotes>
   <mandatory>true</mandatory>
   <required>true</required>
   <forceUpdate>true</forceUpdate>
