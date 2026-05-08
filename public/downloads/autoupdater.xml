@@ -1,22 +1,18 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <item>
-  <version>7.0.19.0</version>
+  <version>7.0.19</version>
   <latestVersion>7.0.19</latestVersion>
-  <minSupportedVersion>1.0.0</minSupportedVersion>
+  <minimumVersion>1.0.0</minimumVersion>
   <forceUpdateBelow>7.0.19</forceUpdateBelow>
   <url>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</url>
-  <downloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</downloadUrl>
+  <packageUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</packageUrl>
   <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
   <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
+  <fileName>PatagoniaWingsACARSSetup.exe</fileName>
   <revision>2026.5.8.8</revision>
-  <changelog>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
-- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
-- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
-- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</changelog>
-  <releaseNotes>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
-- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
-- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.
-- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.</releaseNotes>
+  <changelog>ACARS 7.0.19 - Autoupdate obligatorio publicado. Revision 2026.5.8.8. Incluye build actual, manifests sincronizados y actualizacion forzada para versiones anteriores.</changelog>
+  <releaseNotes>ACARS 7.0.19 - Autoupdate obligatorio publicado. Revision 2026.5.8.8. Incluye build actual, manifests sincronizados y actualizacion forzada para versiones anteriores.</releaseNotes>
   <mandatory>true</mandatory>
   <required>true</required>
+  <forceUpdate>true</forceUpdate>
 </item>
