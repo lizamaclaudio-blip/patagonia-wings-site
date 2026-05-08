@@ -2126,11 +2126,16 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
     ];
     for (const attempt of attempts) {
       const { data, error } = await attempt;
-      if (!error && data) {
+      if (error && !isNoRowsPostgrestError(error)) {
+        continue;
+      }
+      if (data) {
         return mapLegacyReservationFromRpc(data as GenericRecord, profile);
       }
     }
-    throw rpcError instanceof Error ? rpcError : new Error("No se pudo obtener la reserva activa.");
+    // Flujo tolerante: si no hay reserva activa recuperable, devolvemos null
+    // para que la siguiente etapa cree la reserva sin bloquear el despacho.
+    return null;
   }
 }
 
