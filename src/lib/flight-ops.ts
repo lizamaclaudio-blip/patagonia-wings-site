@@ -190,6 +190,14 @@ function normalizeUpper(value: unknown) {
   return typeof value === "string" ? value.trim().toUpperCase() : "";
 }
 
+function isNoRowsPostgrestError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const payload = error as { code?: string; message?: string; details?: string; hint?: string };
+  const code = (payload.code ?? "").trim().toUpperCase();
+  const text = `${payload.message ?? ""} ${payload.details ?? ""} ${payload.hint ?? ""}`.toLowerCase();
+  return code === "PGRST116" || text.includes("result contains 0 rows");
+}
+
 const ACTIVE_RESERVATION_STATUSES = [
   // Oficiales
   "reserved",
@@ -1049,7 +1057,7 @@ async function updateReservationStatusLegacy(
     .select("*")
     .maybeSingle();
 
-  if (error) {
+  if (error && !isNoRowsPostgrestError(error)) {
     throw error;
   }
 
@@ -1063,7 +1071,7 @@ async function updateReservationStatusLegacy(
     .eq("id", reservationId)
     .maybeSingle();
 
-  if (fallbackError) {
+  if (fallbackError && !isNoRowsPostgrestError(fallbackError)) {
     throw fallbackError;
   }
   if (!fallbackRow) {
@@ -1582,7 +1590,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
       .order("addon_provider")
       .order("registration");
 
-    if (error) {
+    if (error && !isNoRowsPostgrestError(error)) {
       throw error;
     }
 
@@ -2098,7 +2106,7 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
       p_callsign: profile.callsign,
     });
 
-    if (error) throw error;
+    if (error && !isNoRowsPostgrestError(error)) throw error;
 
     const rows = (data ?? []) as GenericRecord[];
     const firstRow = rows[0];
@@ -2177,7 +2185,7 @@ export async function saveFlightOperation(
         .select("*")
         .maybeSingle();
 
-      if (normalizeError) {
+      if (normalizeError && !isNoRowsPostgrestError(normalizeError)) {
         throw normalizeError;
       }
 
@@ -2191,7 +2199,7 @@ export async function saveFlightOperation(
         .eq("id", reservationId)
         .maybeSingle();
 
-      if (normalizedFallbackError) {
+      if (normalizedFallbackError && !isNoRowsPostgrestError(normalizedFallbackError)) {
         throw normalizedFallbackError;
       }
       if (!normalizedFallback) {
@@ -2272,7 +2280,7 @@ export async function saveFlightOperation(
       .eq("id", operation.reservationId)
       .maybeSingle();
 
-    if (statusFallbackError) {
+    if (statusFallbackError && !isNoRowsPostgrestError(statusFallbackError)) {
       throw statusFallbackError;
     }
     if (!statusFallback) {
@@ -2292,7 +2300,7 @@ export async function saveFlightOperation(
     .select("*")
     .maybeSingle();
 
-  if (error) {
+  if (error && !isNoRowsPostgrestError(error)) {
     throw error;
   }
 
@@ -2306,7 +2314,7 @@ export async function saveFlightOperation(
     .eq("id", operation.reservationId)
     .maybeSingle();
 
-  if (updateFallbackError) {
+  if (updateFallbackError && !isNoRowsPostgrestError(updateFallbackError)) {
     throw updateFallbackError;
   }
   if (!updateFallback) {

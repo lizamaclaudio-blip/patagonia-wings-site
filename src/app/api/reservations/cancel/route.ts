@@ -24,6 +24,7 @@ const DELETABLE_STATUSES = new Set([
   "booked",
   "ready",
   "cancelled",
+  "manual_review",
 ]);
 
 function asText(value: unknown) {
@@ -91,6 +92,23 @@ function tryCreateSupabaseAdminClient() {
   } catch {
     return null;
   }
+}
+
+async function tryResolveReservationByCallsign(
+  client: SupabaseClient,
+  callsign: string
+) {
+  const normalized = asText(callsign).toUpperCase();
+  if (!normalized) return null;
+  const { data } = await client
+    .from("flight_reservations")
+    .select("id,pilot_id,pilot_callsign,status,aircraft_id")
+    .eq("pilot_callsign", normalized)
+    .in("status", [...DELETABLE_STATUSES])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data ?? null) as Record<string, unknown> | null;
 }
 
 async function safeDeleteByField(
@@ -167,8 +185,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!reservation && reservationCallsignHint) {
+      reservation =
+        (await tryResolveReservationByCallsign(ownerClient, reservationCallsignHint)) ??
+        (adminClient ? await tryResolveReservationByCallsign(adminClient, reservationCallsignHint) : null);
+    }
+
     if (!reservation) {
-      return NextResponse.json({ error: "No se encontro la reserva activa." }, { status: 404 });
+      return NextResponse.json(
+        { error: "No se encontro la reserva activa (ni por id ni por callsign)." },
+        { status: 404 }
+      );
     }
 
     if (!canUserCancelReservation(user, reservation, reservationCallsignHint)) {
