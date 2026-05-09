@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage from "@/components/site/ProtectedPage";
-import { supabase } from "@/lib/supabase/browser";
 import { estimateEconomyRangeForAircraftTypes } from "@/lib/pilot-economy";
 
 type RouteCategory =
@@ -66,106 +65,106 @@ const CATEGORY_META: CategoryMeta[] = [
     id: "regional",
     label: "Regionales / locales",
     shortLabel: "Regionales",
-    description: "Tramos locales y regionales para avionetas, turbohélices y operación de corta distancia.",
-    icon: "🛩️",
+    description: "Tramos locales y regionales para avionetas, turbohÃ©lices y operaciÃ³n de corta distancia.",
+    icon: "ðŸ›©ï¸",
   },
   {
     id: "national",
     label: "Nacionales",
     shortLabel: "Nacionales",
     description: "Vuelos interregionales dentro de Chile o Argentina.",
-    icon: "🇨🇱",
+    icon: "ðŸ‡¨ðŸ‡±",
   },
   {
     id: "international",
     label: "Internacionales",
     shortLabel: "Internacionales",
-    description: "Rutas entre países dentro de Sudamérica y el cono sur.",
-    icon: "🌎",
+    description: "Rutas entre paÃ­ses dentro de SudamÃ©rica y el cono sur.",
+    icon: "ðŸŒŽ",
   },
   {
     id: "long_haul",
     label: "Long haul",
     shortLabel: "Long haul",
     description: "Vuelos de largo alcance para flota widebody y operaciones de varias horas.",
-    icon: "🛫",
+    icon: "ðŸ›«",
   },
   {
     id: "intercontinental",
     label: "Intercontinentales",
     shortLabel: "Intercont.",
     description: "Rutas hacia otro continente, pensadas para aeronaves de largo alcance.",
-    icon: "🌐",
+    icon: "ðŸŒ",
   },
 ];
 
 const CATEGORY_ORDER = new Map(CATEGORY_META.map((item, index) => [item.id, index]));
 
 const AIRPORTS: Record<string, AirportInfo> = {
-  SCTB: { city: "Santiago", airport: "Eulogio Sánchez / Tobalaba", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCPF: { city: "Puerto Montt", airport: "Marcel Marchant / La Paloma", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCRD: { city: "Viña del Mar / Valparaíso", airport: "Rodelillo", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
+  SCTB: { city: "Santiago", airport: "Eulogio SÃ¡nchez / Tobalaba", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCPF: { city: "Puerto Montt", airport: "Marcel Marchant / La Paloma", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCRD: { city: "ViÃ±a del Mar / ValparaÃ­so", airport: "Rodelillo", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
 
-  SCTE: { city: "Puerto Montt", airport: "El Tepual Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCJO: { city: "Osorno", airport: "Cañal Bajo Carlos Hott Siebert", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCPQ: { city: "Castro / Mocopulli", airport: "Aeródromo Mocopulli", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCTN: { city: "Chaitén", airport: "Aeródromo Chaitén", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCFT: { city: "Futaleufú", airport: "Aeródromo Futaleufú", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCIE: { city: "Concepción", airport: "Carriel Sur Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCQP: { city: "Temuco", airport: "La Araucanía Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCVD: { city: "Valdivia", airport: "Pichoy", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCEL: { city: "Santiago", airport: "Arturo Merino Benítez Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCSN: { city: "Santo Domingo", airport: "Aeródromo Santo Domingo", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCCI: { city: "Punta Arenas", airport: "Presidente Carlos Ibáñez del Campo Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCNT: { city: "Puerto Natales", airport: "Teniente Julio Gallardo", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCBA: { city: "Balmaceda", airport: "Balmaceda", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCFA: { city: "Antofagasta", airport: "Andrés Sabella", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCCF: { city: "Calama", airport: "El Loa", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
-  SCDA: { city: "Iquique", airport: "Diego Aracena Intl", country: "Chile", countryCode: "CL", flag: "🇨🇱" },
+  SCTE: { city: "Puerto Montt", airport: "El Tepual Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCJO: { city: "Osorno", airport: "CaÃ±al Bajo Carlos Hott Siebert", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCPQ: { city: "Castro / Mocopulli", airport: "AerÃ³dromo Mocopulli", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCTN: { city: "ChaitÃ©n", airport: "AerÃ³dromo ChaitÃ©n", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCFT: { city: "FutaleufÃº", airport: "AerÃ³dromo FutaleufÃº", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCIE: { city: "ConcepciÃ³n", airport: "Carriel Sur Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCQP: { city: "Temuco", airport: "La AraucanÃ­a Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCVD: { city: "Valdivia", airport: "Pichoy", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCEL: { city: "Santiago", airport: "Arturo Merino BenÃ­tez Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCSN: { city: "Santo Domingo", airport: "AerÃ³dromo Santo Domingo", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCCI: { city: "Punta Arenas", airport: "Presidente Carlos IbÃ¡Ã±ez del Campo Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCNT: { city: "Puerto Natales", airport: "Teniente Julio Gallardo", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCBA: { city: "Balmaceda", airport: "Balmaceda", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCFA: { city: "Antofagasta", airport: "AndrÃ©s Sabella", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCCF: { city: "Calama", airport: "El Loa", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
+  SCDA: { city: "Iquique", airport: "Diego Aracena Intl", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" },
 
-  SADF: { city: "Buenos Aires", airport: "San Fernando", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SADM: { city: "Buenos Aires", airport: "Morón / Presidente Rivadavia", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SADL: { city: "La Plata", airport: "La Plata", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAAR: { city: "Rosario", airport: "Rosario / Islas Malvinas", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
+  SADF: { city: "Buenos Aires", airport: "San Fernando", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SADM: { city: "Buenos Aires", airport: "MorÃ³n / Presidente Rivadavia", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SADL: { city: "La Plata", airport: "La Plata", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAAR: { city: "Rosario", airport: "Rosario / Islas Malvinas", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
 
-  SABE: { city: "Buenos Aires", airport: "Aeroparque Jorge Newbery", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAEZ: { city: "Buenos Aires", airport: "Ezeiza / Ministro Pistarini", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SACO: { city: "Córdoba", airport: "Ing. Aer. Ambrosio Taravella", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAME: { city: "Mendoza", airport: "El Plumerillo", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAZS: { city: "Bariloche", airport: "Teniente Luis Candelaria", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAVC: { city: "Comodoro Rivadavia", airport: "General Enrique Mosconi", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAWG: { city: "Río Gallegos", airport: "Piloto Civil Norberto Fernández", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SAWH: { city: "Ushuaia", airport: "Malvinas Argentinas", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SARI: { city: "Puerto Iguazú", airport: "Cataratas del Iguazú", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
-  SASA: { city: "Salta", airport: "Martín Miguel de Güemes", country: "Argentina", countryCode: "AR", flag: "🇦🇷" },
+  SABE: { city: "Buenos Aires", airport: "Aeroparque Jorge Newbery", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAEZ: { city: "Buenos Aires", airport: "Ezeiza / Ministro Pistarini", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SACO: { city: "CÃ³rdoba", airport: "Ing. Aer. Ambrosio Taravella", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAME: { city: "Mendoza", airport: "El Plumerillo", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAZS: { city: "Bariloche", airport: "Teniente Luis Candelaria", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAVC: { city: "Comodoro Rivadavia", airport: "General Enrique Mosconi", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAWG: { city: "RÃ­o Gallegos", airport: "Piloto Civil Norberto FernÃ¡ndez", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SAWH: { city: "Ushuaia", airport: "Malvinas Argentinas", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SARI: { city: "Puerto IguazÃº", airport: "Cataratas del IguazÃº", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
+  SASA: { city: "Salta", airport: "MartÃ­n Miguel de GÃ¼emes", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" },
 
-  SPJC: { city: "Lima", airport: "Jorge Chávez Intl", country: "Perú", countryCode: "PE", flag: "🇵🇪" },
-  SLLP: { city: "La Paz", airport: "El Alto Intl", country: "Bolivia", countryCode: "BO", flag: "🇧🇴" },
-  SBGR: { city: "São Paulo", airport: "Guarulhos Intl", country: "Brasil", countryCode: "BR", flag: "🇧🇷" },
+  SPJC: { city: "Lima", airport: "Jorge ChÃ¡vez Intl", country: "PerÃº", countryCode: "PE", flag: "ðŸ‡µðŸ‡ª" },
+  SLLP: { city: "La Paz", airport: "El Alto Intl", country: "Bolivia", countryCode: "BO", flag: "ðŸ‡§ðŸ‡´" },
+  SBGR: { city: "SÃ£o Paulo", airport: "Guarulhos Intl", country: "Brasil", countryCode: "BR", flag: "ðŸ‡§ðŸ‡·" },
 
-  KMIA: { city: "Miami", airport: "Miami Intl", country: "Estados Unidos", countryCode: "US", flag: "🇺🇸" },
-  KJFK: { city: "Nueva York", airport: "John F. Kennedy Intl", country: "Estados Unidos", countryCode: "US", flag: "🇺🇸" },
-  KLAX: { city: "Los Ángeles", airport: "Los Angeles Intl", country: "Estados Unidos", countryCode: "US", flag: "🇺🇸" },
+  KMIA: { city: "Miami", airport: "Miami Intl", country: "Estados Unidos", countryCode: "US", flag: "ðŸ‡ºðŸ‡¸" },
+  KJFK: { city: "Nueva York", airport: "John F. Kennedy Intl", country: "Estados Unidos", countryCode: "US", flag: "ðŸ‡ºðŸ‡¸" },
+  KLAX: { city: "Los Ãngeles", airport: "Los Angeles Intl", country: "Estados Unidos", countryCode: "US", flag: "ðŸ‡ºðŸ‡¸" },
 
-  LEMD: { city: "Madrid", airport: "Adolfo Suárez Madrid-Barajas", country: "España", countryCode: "ES", flag: "🇪🇸" },
-  LFPG: { city: "París", airport: "Charles de Gaulle", country: "Francia", countryCode: "FR", flag: "🇫🇷" },
-  EGLL: { city: "Londres", airport: "Heathrow", country: "Reino Unido", countryCode: "GB", flag: "🇬🇧" },
-  OMDB: { city: "Dubái", airport: "Dubai Intl", country: "Emiratos Árabes Unidos", countryCode: "AE", flag: "🇦🇪" },
+  LEMD: { city: "Madrid", airport: "Adolfo SuÃ¡rez Madrid-Barajas", country: "EspaÃ±a", countryCode: "ES", flag: "ðŸ‡ªðŸ‡¸" },
+  LFPG: { city: "ParÃ­s", airport: "Charles de Gaulle", country: "Francia", countryCode: "FR", flag: "ðŸ‡«ðŸ‡·" },
+  EGLL: { city: "Londres", airport: "Heathrow", country: "Reino Unido", countryCode: "GB", flag: "ðŸ‡¬ðŸ‡§" },
+  OMDB: { city: "DubÃ¡i", airport: "Dubai Intl", country: "Emiratos Ãrabes Unidos", countryCode: "AE", flag: "ðŸ‡¦ðŸ‡ª" },
 };
 
 function inferAirportInfo(ident: string): AirportInfo {
   if (AIRPORTS[ident]) return AIRPORTS[ident];
-  if (ident.startsWith("SC")) return { city: ident, airport: "Aeropuerto Chile", country: "Chile", countryCode: "CL", flag: "🇨🇱" };
-  if (ident.startsWith("SA")) return { city: ident, airport: "Aeropuerto Argentina", country: "Argentina", countryCode: "AR", flag: "🇦🇷" };
-  if (ident.startsWith("SP")) return { city: ident, airport: "Aeropuerto Perú", country: "Perú", countryCode: "PE", flag: "🇵🇪" };
-  if (ident.startsWith("SL")) return { city: ident, airport: "Aeropuerto Bolivia", country: "Bolivia", countryCode: "BO", flag: "🇧🇴" };
-  if (ident.startsWith("SB")) return { city: ident, airport: "Aeropuerto Brasil", country: "Brasil", countryCode: "BR", flag: "🇧🇷" };
-  if (ident.startsWith("K")) return { city: ident, airport: "Aeropuerto Estados Unidos", country: "Estados Unidos", countryCode: "US", flag: "🇺🇸" };
-  if (ident.startsWith("LE")) return { city: ident, airport: "Aeropuerto España", country: "España", countryCode: "ES", flag: "🇪🇸" };
-  if (ident.startsWith("LF")) return { city: ident, airport: "Aeropuerto Francia", country: "Francia", countryCode: "FR", flag: "🇫🇷" };
-  if (ident.startsWith("EG")) return { city: ident, airport: "Aeropuerto Reino Unido", country: "Reino Unido", countryCode: "GB", flag: "🇬🇧" };
-  if (ident.startsWith("OM")) return { city: ident, airport: "Aeropuerto EAU", country: "Emiratos Árabes Unidos", countryCode: "AE", flag: "🇦🇪" };
-  return { city: ident || "—", airport: "Aeropuerto", country: "", countryCode: "", flag: "🌐" };
+  if (ident.startsWith("SC")) return { city: ident, airport: "Aeropuerto Chile", country: "Chile", countryCode: "CL", flag: "ðŸ‡¨ðŸ‡±" };
+  if (ident.startsWith("SA")) return { city: ident, airport: "Aeropuerto Argentina", country: "Argentina", countryCode: "AR", flag: "ðŸ‡¦ðŸ‡·" };
+  if (ident.startsWith("SP")) return { city: ident, airport: "Aeropuerto PerÃº", country: "PerÃº", countryCode: "PE", flag: "ðŸ‡µðŸ‡ª" };
+  if (ident.startsWith("SL")) return { city: ident, airport: "Aeropuerto Bolivia", country: "Bolivia", countryCode: "BO", flag: "ðŸ‡§ðŸ‡´" };
+  if (ident.startsWith("SB")) return { city: ident, airport: "Aeropuerto Brasil", country: "Brasil", countryCode: "BR", flag: "ðŸ‡§ðŸ‡·" };
+  if (ident.startsWith("K")) return { city: ident, airport: "Aeropuerto Estados Unidos", country: "Estados Unidos", countryCode: "US", flag: "ðŸ‡ºðŸ‡¸" };
+  if (ident.startsWith("LE")) return { city: ident, airport: "Aeropuerto EspaÃ±a", country: "EspaÃ±a", countryCode: "ES", flag: "ðŸ‡ªðŸ‡¸" };
+  if (ident.startsWith("LF")) return { city: ident, airport: "Aeropuerto Francia", country: "Francia", countryCode: "FR", flag: "ðŸ‡«ðŸ‡·" };
+  if (ident.startsWith("EG")) return { city: ident, airport: "Aeropuerto Reino Unido", country: "Reino Unido", countryCode: "GB", flag: "ðŸ‡¬ðŸ‡§" };
+  if (ident.startsWith("OM")) return { city: ident, airport: "Aeropuerto EAU", country: "Emiratos Ãrabes Unidos", countryCode: "AE", flag: "ðŸ‡¦ðŸ‡ª" };
+  return { city: ident || "â€”", airport: "Aeropuerto", country: "", countryCode: "", flag: "ðŸŒ" };
 }
 
 function toNumber(value: number | string | null | undefined) {
@@ -176,13 +175,13 @@ function toNumber(value: number | string | null | undefined) {
 
 function formatDistance(value: number | string | null | undefined) {
   const parsed = toNumber(value);
-  if (parsed == null) return "—";
+  if (parsed == null) return "â€”";
   return `${Math.round(parsed).toLocaleString("es-CL")} NM`;
 }
 
 function formatBlock(value: number | string | null | undefined) {
   const parsed = toNumber(value);
-  if (parsed == null) return "—";
+  if (parsed == null) return "â€”";
   const minutes = Math.max(0, Math.round(parsed));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -190,7 +189,7 @@ function formatBlock(value: number | string | null | undefined) {
   return `${hours} h ${String(rest).padStart(2, "0")} min`;
 }
 function formatUsd(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
+  if (value == null || !Number.isFinite(value)) return "â€”";
   const sign = value < 0 ? "-" : "";
   return `${sign}$${Math.abs(value).toLocaleString("es-CL", { maximumFractionDigits: 0 })} USD`;
 }
@@ -215,17 +214,17 @@ function routeEconomyRangeEstimate(route: RouteCatalogRow | null) {
 }
 
 function formatUsdRange(min: number | null | undefined, max: number | null | undefined) {
-  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "—";
+  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "â€”";
   const a = formatUsd(min);
   const b = formatUsd(max);
-  return a === b ? a : `${a} – ${b}`;
+  return a === b ? a : `${a} â€“ ${b}`;
 }
 
 function formatNumberRange(min: number | null | undefined, max: number | null | undefined, suffix = "") {
-  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "—";
+  if (min == null || max == null || !Number.isFinite(min) || !Number.isFinite(max)) return "â€”";
   const a = Math.round(min).toLocaleString("es-CL");
   const b = Math.round(max).toLocaleString("es-CL");
-  return a === b ? `${a}${suffix}` : `${a} – ${b}${suffix}`;
+  return a === b ? `${a}${suffix}` : `${a} â€“ ${b}${suffix}`;
 }
 
 
@@ -239,8 +238,8 @@ function getCategoryMeta(category: string | null | undefined) {
 
 function aircraftSummaryFromTypes(types: string[]) {
   if (!types.length) return "Sin aeronaves compatibles reales";
-  if (types.length <= 8) return types.join(" · ");
-  return `${types.slice(0, 8).join(" · ")} +${types.length - 8}`;
+  if (types.length <= 8) return types.join(" Â· ");
+  return `${types.slice(0, 8).join(" Â· ")} +${types.length - 8}`;
 }
 
 function routeAircraftTypes(route: RouteCatalogRow | null) {
@@ -294,7 +293,7 @@ function useRouteCatalog() {
     function routeNameFromIdents(origin: string, destination: string) {
       const originInfo = inferAirportInfo(origin);
       const destinationInfo = inferAirportInfo(destination);
-      return `${originInfo.city} → ${destinationInfo.city}`;
+      return `${originInfo.city} â†’ ${destinationInfo.city}`;
     }
 
     function dedupeRoutes(items: RouteCatalogRow[]) {
@@ -312,32 +311,25 @@ function useRouteCatalog() {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [catalogRes, networkRoutesRes, networkAircraftRes] = await Promise.all([
-        supabase
-          .from("pw_v_route_catalog_v2")
-          .select(
-            "route_id, flight_number, simbrief_flight_number, route_key, origin_ident, destination_ident, origin_country, destination_country, route_name, route_category, service_type, operation_type, distance_nm, block_minutes, expected_block_p50, expected_block_p80, compatible_aircraft_types, aircraft_options, is_active",
-          )
-          .order("route_category", { ascending: true })
-          .order("flight_number", { ascending: true }),
-        supabase
-          .from("network_routes")
-          .select("id, route_code, origin_ident, destination_ident, route_group, service_profile, service_level, distance_nm, is_active, notes, flight_number, flight_designator, route_pair_key")
-          .order("flight_designator", { ascending: true }),
-        supabase
-          .from("network_route_aircraft")
-          .select("route_id, aircraft_type_code"),
-      ]);
+      const apiRes = await fetch("/api/routes/catalog", { cache: "no-store" });
+      const payload = (await apiRes.json().catch(() => ({}))) as {
+        ok?: boolean;
+        catalogRows?: RouteCatalogRow[];
+        networkRoutesRows?: Array<Record<string, unknown>>;
+        networkAircraftRows?: Array<{ route_id?: string | null; aircraft_type_code?: string | null }>;
+        errors?: { catalog?: string | null; networkRoutes?: string | null; networkAircraft?: string | null };
+        error?: string;
+      };
 
       if (!isMounted) return;
 
-      const viewRows = catalogRes.error
+      const viewRows = payload.errors?.catalog || payload.error
         ? []
-        : ((catalogRes.data ?? []) as RouteCatalogRow[]).filter((row) => row.is_active !== false);
+        : ((payload.catalogRows ?? []) as RouteCatalogRow[]).filter((row) => row.is_active !== false);
 
       const aircraftByRoute = new Map<string, string[]>();
-      if (!networkAircraftRes.error) {
-        for (const row of (networkAircraftRes.data ?? []) as Array<{ route_id?: string | null; aircraft_type_code?: string | null }>) {
+      if (!payload.errors?.networkAircraft && !payload.error) {
+        for (const row of (payload.networkAircraftRows ?? []) as Array<{ route_id?: string | null; aircraft_type_code?: string | null }>) {
           const routeId = row.route_id ?? "";
           const typeCode = (row.aircraft_type_code ?? "").trim().toUpperCase();
           if (!routeId || !typeCode) continue;
@@ -347,9 +339,9 @@ function useRouteCatalog() {
         }
       }
 
-      const networkRows = networkRoutesRes.error
+      const networkRows = payload.errors?.networkRoutes || payload.error
         ? []
-        : ((networkRoutesRes.data ?? []) as Array<Record<string, unknown>>)
+        : ((payload.networkRoutesRows ?? []) as Array<Record<string, unknown>>)
             .filter((row) => row.is_active !== false)
             .map((row) => {
             const id = String(row.id ?? "");
@@ -384,9 +376,9 @@ function useRouteCatalog() {
 
       const mergedRoutes = dedupeRoutes([...viewRows, ...networkRows]);
 
-      if (catalogRes.error && networkRoutesRes.error) {
+      if (mergedRoutes.length === 0) {
         setRoutes([]);
-        setErrorMessage(catalogRes.error.message ?? networkRoutesRes.error.message ?? "No se pudo cargar el catálogo de rutas.");
+        setErrorMessage(payload.error ?? payload.errors?.catalog ?? payload.errors?.networkRoutes ?? "No se pudo cargar el catálogo de rutas.");
       } else {
         setRoutes(mergedRoutes);
       }
@@ -410,7 +402,7 @@ function AirportCell({ ident, align = "left" }: { ident: string; align?: "left" 
     <div className={`min-w-0 ${align === "right" ? "text-right" : "text-left"}`}>
       <div className={`flex min-w-0 items-center gap-2 ${align === "right" ? "justify-end" : "justify-start"}`}>
         <span className="text-lg leading-none">{airport.flag}</span>
-        <span className="text-base font-black tracking-tight text-white sm:text-lg">{ident || "—"}</span>
+        <span className="text-base font-black tracking-tight text-white sm:text-lg">{ident || "â€”"}</span>
         <span className="truncate text-sm font-semibold text-white/88">{airport.city}</span>
       </div>
       <p className="mt-1 truncate text-xs font-medium text-white/48">{airport.airport}</p>
@@ -438,14 +430,14 @@ function DirectionCell({ title, route }: { title: string; route: RouteCatalogRow
       <div className="flex items-start justify-between gap-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/54">{title}</p>
         <div className="text-right">
-          <p className="text-sm font-black text-white">{flight || "—"}</p>
-          <p className="text-[11px] font-semibold text-white/42">SimBrief {simbrief || "—"}</p>
+          <p className="text-sm font-black text-white">{flight || "â€”"}</p>
+          <p className="text-[11px] font-semibold text-white/42">SimBrief {simbrief || "â€”"}</p>
         </div>
       </div>
 
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-start gap-3">
         <AirportCell ident={origin} />
-        <span className="pt-1 text-lg text-cyan-100/52">→</span>
+        <span className="pt-1 text-lg text-cyan-100/52">â†’</span>
         <AirportCell ident={destination} align="right" />
       </div>
 
@@ -468,45 +460,45 @@ function DirectionCell({ title, route }: { title: string; route: RouteCatalogRow
         const economy = routeEconomyRangeEstimate(route);
         return economy ? (
           <>
-          <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">Rango según aeronave: {economy.minAircraftTypeCode} → {economy.maxAircraftTypeCode}</div>
+          <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">Rango segÃºn aeronave: {economy.minAircraftTypeCode} â†’ {economy.maxAircraftTypeCode}</div>
           <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
             <div className="rounded-xl border border-emerald-300/14 bg-emerald-300/[0.06] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-emerald-100/50">💵 Piloto</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-emerald-100/50">ðŸ’µ Piloto</p>
               <p className="mt-1 font-black text-emerald-100">{formatUsdRange(economy.min.pilotCommissionUsd, economy.max.pilotCommissionUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">👥 Pax est.</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">ðŸ‘¥ Pax est.</p>
               <p className="mt-1 font-bold text-white/78">{formatNumberRange(economy.min.estimatedPassengers, economy.max.estimatedPassengers)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">📦 Carga</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">ðŸ“¦ Carga</p>
               <p className="mt-1 font-bold text-white/78">{formatNumberRange(economy.min.estimatedCargoKg, economy.max.estimatedCargoKg, " kg")}</p>
             </div>
             <div className="rounded-xl border border-cyan-300/14 bg-cyan-300/[0.06] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">🏢 Aerolínea</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">ðŸ¢ AerolÃ­nea</p>
               <p className="mt-1 font-black text-cyan-100">{formatUsdRange(economy.min.airlineRevenueUsd, economy.max.airlineRevenueUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">🧾 Operación</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">ðŸ§¾ OperaciÃ³n</p>
               <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.airportFeesUsd + economy.min.handlingCostUsd + economy.min.repairReserveUsd + economy.min.onboardServiceCostUsd, economy.max.airportFeesUsd + economy.max.handlingCostUsd + economy.max.repairReserveUsd + economy.max.onboardServiceCostUsd)}</p>
             </div>
             <div className="rounded-xl border border-cyan-300/14 bg-cyan-300/[0.06] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">📈 Utilidad</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-cyan-100/50">ðŸ“ˆ Utilidad</p>
               <p className="mt-1 font-black text-cyan-100">{formatUsdRange(economy.min.netProfitUsd, economy.max.netProfitUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">⛽ Combustible</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">â›½ Combustible</p>
               <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.fuelCostUsd, economy.max.fuelCostUsd)}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">🛠 Mantención</p>
+              <p className="font-semibold uppercase tracking-[0.14em] text-white/36">ðŸ›  MantenciÃ³n</p>
               <p className="mt-1 font-bold text-white/78">{formatUsdRange(economy.min.maintenanceCostUsd, economy.max.maintenanceCostUsd)}</p>
             </div>
           </div>
           </>
         ) : (
           <div className="mt-3 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2 text-[11px] text-white/48">
-            Economía estimada no disponible.
+            EconomÃ­a estimada no disponible.
           </div>
         );
       })()}
@@ -536,7 +528,7 @@ function RoutePairRow({ pair }: { pair: RoutePair }) {
             </span>
           </div>
           <h3 className="mt-3 text-base font-black text-white sm:text-lg">
-            {originName} ↔ {destinationName}
+            {originName} â†” {destinationName}
           </h3>
           <p className="mt-2 text-xs leading-5 text-white/54">
             Ruta ida/vuelta agrupada. Los ICAO se mantienen visibles junto al nombre del aeropuerto.
@@ -551,7 +543,7 @@ function RoutePairRow({ pair }: { pair: RoutePair }) {
           <p className="mt-2 text-sm leading-6 text-white/70">{aircraftSummaryFromTypes(compatibleAircraftTypes)}</p>
           {pairEconomy?.excludedAircraftTypes?.length ? (
             <p className="mt-3 rounded-xl border border-amber-300/12 bg-amber-300/[0.06] px-3 py-2 text-[11px] leading-5 text-amber-50/70">
-              Excluidas por alcance/rango: {pairEconomy.excludedAircraftTypes.slice(0, 6).join(" · ")}{pairEconomy.excludedAircraftTypes.length > 6 ? ` +${pairEconomy.excludedAircraftTypes.length - 6}` : ""}
+              Excluidas por alcance/rango: {pairEconomy.excludedAircraftTypes.slice(0, 6).join(" Â· ")}{pairEconomy.excludedAircraftTypes.length > 6 ? ` +${pairEconomy.excludedAircraftTypes.length - 6}` : ""}
             </p>
           ) : null}
         </div>
@@ -653,17 +645,17 @@ function RoutesContent() {
               Red oficial Patagonia Wings
             </p>
             <h1 className="mt-3 text-3xl font-semibold leading-tight text-white sm:text-5xl">
-              Catálogo de rutas
+              CatÃ¡logo de rutas
             </h1>
             <p className="mt-4 max-w-4xl text-sm leading-7 text-white/70 sm:text-[15px]">
-              Consulta la red operativa cargada en la base limpia V2. Las rutas se muestran agrupadas por ida y vuelta, con ICAO, ciudad, aeropuerto, número PWG, equivalente SimBrief PGW, distancia, duración y aeronaves compatibles.
+              Consulta la red operativa cargada en la base limpia V2. Las rutas se muestran agrupadas por ida y vuelta, con ICAO, ciudad, aeropuerto, nÃºmero PWG, equivalente SimBrief PGW, distancia, duraciÃ³n y aeronaves compatibles.
             </p>
           </div>
           <Link
             href="/dashboard?tab=dispatch"
             className="inline-flex w-fit items-center justify-center rounded-full border border-cyan-100/20 bg-cyan-300/12 px-5 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/18"
           >
-            Ir a despacho →
+            Ir a despacho â†’
           </Link>
         </div>
       </section>
@@ -707,7 +699,7 @@ function RoutesContent() {
               <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">{activeMeta.description}</p>
             </div>
             <span className="rounded-full border border-emerald-100/16 bg-emerald-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-100/70">
-              {filteredRoutes.length} rutas · {routePairs.length} pares
+              {filteredRoutes.length} rutas Â· {routePairs.length} pares
             </span>
           </div>
         </div>
@@ -722,7 +714,7 @@ function RoutesContent() {
           </div>
         ) : routePairs.length === 0 ? (
           <div className="mt-6 rounded-[28px] border border-white/10 bg-black/16 px-6 py-12 text-center text-sm text-white/62">
-            No hay rutas para esta categoría con el filtro actual.
+            No hay rutas para esta categorÃ­a con el filtro actual.
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -762,3 +754,4 @@ export default function RoutesPage() {
     </main>
   );
 }
+
