@@ -8,7 +8,7 @@
   <downloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</downloadUrl>
   <installerUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</installerUrl>
   <directDownloadUrl>https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe</directDownloadUrl>
-  <revision>2026.5.8.10</revision>
+  <revision>2026.5.9.1</revision>
   <changelog>- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).
 - Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.
 - HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.

@@ -1,12 +1,12 @@
 ﻿{
     "channel":  "stable",
-    "version":  "7.0.20",
-    "latestVersion":  "7.0.20",
-    "currentVersion":  "7.0.20",
+    "version":  "7.0.21",
+    "latestVersion":  "7.0.21",
+    "currentVersion":  "7.0.21",
     "minSupportedVersion":  "1.0.0",
-    "forceUpdateBelow":  "7.0.20",
-    "revision":  "2026.5.8.10",
-    "latestRevision":  "2026.5.8.10",
+    "forceUpdateBelow":  "7.0.21",
+    "revision":  "2026.5.9.2",
+    "latestRevision":  "2026.5.9.2",
     "manifestUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "packagesIndexUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "installerUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
@@ -19,5 +19,5 @@
     "required":  true,
     "notes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
     "releaseNotes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
-    "releaseDate":  "2026-05-08T23:19:39.941Z"
+    "releaseDate":  "2026-05-09T02:06:50.249Z"
 }
