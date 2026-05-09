@@ -12,14 +12,14 @@
     "directDownloadUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
     "mandatory":  true,
     "required":  true,
-    "revision":  "2026.5.9.2",
+    "revision":  "2026.5.9.4",
     "notes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
     "releaseNotes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
     "releaseDate":  "2026-05-09",
     "minVersion":  "1.0.0",
     "fileName":  "PatagoniaWingsACARSSetup.exe",
-    "size":  30255815,
+    "size":  30257088,
     "fileSize":  "28.9 MB",
-    "checksumSha256":  "4723FB4669291BB9A87B64247D8D1BE842FA45D7FB5CF0BC8EAE974279D0A2E9",
+    "checksumSha256":  "B08851C3EBFCAF5D832283662CA5CD1A7EDCEE5AC989E7EB4D8586EE19B56EEB",
     "storageProvider":  "supabase"
 }
