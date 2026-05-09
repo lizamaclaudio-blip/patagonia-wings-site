@@ -774,8 +774,7 @@ function FlightResultContent() {
     pilotCallsign.length > 0 &&
     asText(reservation?.pilot_callsign).toUpperCase() === pilotCallsign;
   const canSeeAppeal = isReservationOwner || isAdminReviewer;
-  const canUsePirepTester =
-    isAdminReviewer || isOwnerIdentity(pilotCallsign, session?.user?.email ?? "");
+  const canUsePirepTester = false;
 
   const damageSummary = useMemo(
     () => asObject(mergedScorePayload.damage_summary),
@@ -1111,6 +1110,70 @@ function FlightResultContent() {
               </p>
             </section>
           ) : null}
+
+          <section className="glass-panel rounded-[30px] p-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-200/90">Panel operativo de salida</p>
+            <div className="mt-4 overflow-hidden rounded-[24px] border border-amber-300/25 bg-[#120f06]">
+              <div className="grid grid-cols-[110px_1fr_140px_100px_180px] border-b border-amber-300/20 bg-[#1b1609] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-200/90">
+                <span>Hora</span>
+                <span>Destino</span>
+                <span>Vuelo</span>
+                <span>Gate</span>
+                <span>Estado</span>
+              </div>
+              <div className="grid grid-cols-[110px_1fr_140px_100px_180px] items-center px-4 py-5 font-mono text-3xl text-amber-100 sm:text-4xl">
+                <span className="tabular-nums">{scheduledDeparture}</span>
+                <span className="truncate px-2">{destinationIdent}</span>
+                <span className="tabular-nums">{flightNumber}</span>
+                <span>G--</span>
+                <span className={`${noEvaluableCloseout ? "text-rose-300" : "text-emerald-300"} animate-pulse text-xl font-semibold sm:text-2xl`}>
+                  {noEvaluableCloseout ? "REVISAR" : formatStatus(reservation.status).toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Origen: {originIdent}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Aeronave: {aircraftDisplay}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Distancia: {formatNm(distanceNmEvidence || reservation.distance_nm)}</p>
+            </div>
+          </section>
+
+          <details className="glass-panel rounded-[30px] p-7" open>
+            <summary className="cursor-pointer list-none text-sm font-semibold uppercase tracking-[0.18em] text-white/80">Resumen operativo</summary>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/dashboard" className="button-ghost">Volver al dashboard</Link>
+              <Link href={`/flights/${reservationId}`} className="button-ghost">Resumen del vuelo</Link>
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+                Log ACARS: {rawPirepFileName || "score_payload"}
+              </span>
+            </div>
+
+            <SurHeading icon="👨‍✈️" label="Piloto al" strong="Mando" />
+            <InfoTable
+              columns={["Piloto al mando", "Rango", "Horas", "Tipo de vuelo"]}
+              rows={[[
+                { label: "Piloto al mando", value: `${asText(reservation.pilot_callsign) || "—"}` },
+                { label: "Rango", value: rankLabel },
+                { label: "Horas", value: pilotHours > 0 ? pilotHours.toFixed(1) : formatMinutes(reservation.actual_block_minutes) },
+                { label: "Tipo de vuelo", value: flightTypeLabel },
+              ]]}
+            />
+
+            <SurHeading icon="📋" label="Vuelo" strong="Programado" />
+            <InfoTable
+              columns={["Nro. vuelo", "Origen", "ETD", "Destino", "ETA", "Equipo", "Matrícula"]}
+              rows={[[
+                { label: "Nro. vuelo", value: flightNumber, tone: "text-emerald-200" },
+                { label: "Origen", value: originIdent },
+                { label: "ETD", value: scheduledDeparture },
+                { label: "Destino", value: destinationIdent },
+                { label: "ETA", value: scheduledArrival },
+                { label: "Equipo", value: aircraftCode },
+                { label: "Matrícula", value: aircraftRegistration },
+              ]]}
+            />
+          </details>
 
           <section className="glass-panel rounded-[30px] p-7">
             <div className="flex flex-wrap gap-3">
