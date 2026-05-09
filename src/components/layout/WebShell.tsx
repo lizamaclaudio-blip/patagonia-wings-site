@@ -24,7 +24,7 @@ export function WebShell({
               <div>
                 <BrandLogo compact />
                 <div className="mt-5 panel-chip">PATAGONIA WINGS / WEB</div>
-                <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">{title}</h1>
+                <h1 className="header-strip mt-4 text-3xl font-semibold text-white sm:text-4xl">{title}</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-white/82 sm:text-base">{subtitle}</p>
               </div>
               {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}

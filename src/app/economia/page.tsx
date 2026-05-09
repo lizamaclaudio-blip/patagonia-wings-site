@@ -163,7 +163,7 @@ function SectionCard({ section }: { section: Section }) {
     <div className={`rounded-[24px] border border-white/10 bg-gradient-to-br ${section.color} bg-white/[0.03] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl`}>
       <div className="flex items-center gap-3">
         <span className="text-3xl">{section.icon}</span>
-        <h2 className="text-xl font-black text-white">{section.title}</h2>
+        <h2 className="header-strip text-xl font-black text-white">{section.title}</h2>
       </div>
       <div className="mt-5 space-y-4">
         {section.items.map((item, i) => (
@@ -706,7 +706,7 @@ function PilotExpensePlanPanel() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Plan económico del piloto</p>
-          <h2 className="mt-1 text-2xl font-black text-white">🎓 Gastos, licencias y pruebas</h2>
+          <h2 className="header-strip mt-1 text-2xl font-black text-white">🎓 Gastos, licencias y pruebas</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
             La billetera del piloto no solo recibe pagos por vuelos: también financia traslados, licencias, habilitaciones, entrenamientos y pruebas teóricas.
             Estos valores quedan en catálogo para descontarlos después en forma trazable desde la cuenta del piloto.
@@ -886,7 +886,7 @@ function FleetAssetsPanel() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Activos de aerolínea</p>
-          <h2 className="mt-1 text-2xl font-black text-white">🏦 Flota, inversión y crecimiento</h2>
+          <h2 className="header-strip mt-1 text-2xl font-black text-white">🏦 Flota, inversión y crecimiento</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
             Cada aeronave tiene valor patrimonial, costo fijo mensual y costo técnico por hora. Las nuevas aeronaves deberán comprarse con caja de la aerolínea y serán entregadas al hub asignado desde fábrica.
           </p>
@@ -1101,7 +1101,7 @@ function FleetPurchasePanel() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
-            <h2 className="mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
+            <h2 className="header-strip mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
               Los pilotos pueden revisar cómo Patagonia Wings compra aeronaves, conserva reserva operacional y entrega cada unidad al hub asignado.
               La compra real queda reservada para la dirección de la aerolínea.
@@ -1146,7 +1146,7 @@ function FleetPurchasePanel() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
-          <h2 className="mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
+          <h2 className="header-strip mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
             La aerolínea compra aeronaves con su caja operacional. Cada compra descuenta el ledger, crea la aeronave en flota y la deja entregada en el hub asignado desde fábrica.
           </p>
@@ -1349,7 +1349,7 @@ function MonthlyFixedCostsPanel() {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/70">Operación mensual</p>
-          <h2 className="mt-1 text-2xl font-black text-white">🏢 Costos fijos de aerolínea</h2>
+          <h2 className="header-strip mt-1 text-2xl font-black text-white">🏢 Costos fijos de aerolínea</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/64">
             Estos costos representan la operación mensual de Patagonia Wings: staff, hubs, flota, seguros, sistemas,
             administración y reserva técnica. Solo la dirección puede aplicar el cierre mensual al ledger.
@@ -1511,7 +1511,7 @@ function MonthlyPilotPayoutPanel() {
   return (
     <section className="mb-10 rounded-[30px] border border-cyan-400/14 bg-gradient-to-br from-cyan-400/[0.08] to-white/[0.025] p-6 sm:p-7">
       <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Liquidación mensual piloto</p>
-      <h2 className="mt-1 text-xl font-black text-white">Cierre manual owner/admin</h2>
+      <h2 className="header-strip mt-1 text-xl font-black text-white">Cierre manual owner/admin</h2>
       <p className="mt-2 text-sm leading-6 text-white/58">
         La comisión se devenga por vuelo y se paga solo aquí en cierre mensual. Futuro cron sugerido: último día hábil.
       </p>
@@ -1606,7 +1606,7 @@ function EconomyHistoricalMetricsPanel() {
     return (
       <section className="mb-8 rounded-[28px] border border-cyan-400/12 bg-cyan-400/[0.04] p-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Métricas históricas</p>
-        <h2 className="mt-1 text-xl font-black text-white">📈 Centro de métricas listo</h2>
+        <h2 className="header-strip mt-1 text-xl font-black text-white">📈 Centro de métricas listo</h2>
         <p className="mt-2 text-sm leading-6 text-white/58">
           Cuando existan cierres ACARS y snapshots económicos, esta sección mostrará pasajeros, carga, combustible, rutas rentables, aeronaves y pilotos productivos.
         </p>
@@ -1636,7 +1636,7 @@ function EconomyHistoricalMetricsPanel() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Métricas históricas</p>
-          <h2 className="mt-1 text-2xl font-black text-white">📊 Operación acumulada Patagonia Wings</h2>
+          <h2 className="header-strip mt-1 text-2xl font-black text-white">📊 Operación acumulada Patagonia Wings</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
             Lectura consolidada desde snapshots económicos, ledger, nómina y gastos piloto. Permite auditar pasajeros, carga, combustible, utilidad, rutas, aeronaves y pilotos.
           </p>
@@ -1746,7 +1746,7 @@ export default function EconomiaPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-400/70">
               Patagonia Wings
             </p>
-            <h1 className="mt-2 text-4xl font-black text-white">💰 Sistema económico</h1>
+            <h1 className="header-strip mt-2 text-4xl font-black text-white">💰 Sistema económico</h1>
             <p className="mt-3 max-w-2xl text-base leading-7 text-white/60">
               Cómo se calculan tus ingresos, comisiones, sueldo mensual y deducciones dentro de la simulación de aerolínea virtual.
             </p>
@@ -1797,7 +1797,7 @@ export default function EconomiaPage() {
         <div className="mt-8">
           <div className="mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Referencia rápida</p>
-            <h2 className="mt-1 text-xl font-bold text-white">📊 Ejemplos de comisión por ruta</h2>
+            <h2 className="header-strip mt-1 text-xl font-bold text-white">📊 Ejemplos de comisión por ruta</h2>
             <p className="mt-1 text-sm text-white/48">Los valores se calculan por banda de ruta, aeronave y operación; long haul e intercontinental tienen topes superiores a rutas regionales.</p>
           </div>
           <CommissionTable />
@@ -1806,7 +1806,7 @@ export default function EconomiaPage() {
         {/* Monthly timeline */}
         <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Ciclo mensual</p>
-          <h2 className="mt-1 text-xl font-bold text-white">🗓 ¿Qué pasa cada mes?</h2>
+          <h2 className="header-strip mt-1 text-xl font-bold text-white">🗓 ¿Qué pasa cada mes?</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { day: "Día 1", title: "Inicio del período", desc: "Comienza el conteo de vuelos y acumulación de comisiones para el nuevo mes." },

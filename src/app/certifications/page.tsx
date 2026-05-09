@@ -61,7 +61,7 @@ function CertificationsContent() {
         <section className="glass-panel rounded-[34px] p-7 sm:p-9">
         <span className="parallax-chip mb-6">CERTIFICACIONES</span>
 
-        <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
+        <h1 className="header-strip text-4xl font-semibold leading-tight text-white sm:text-5xl">
           Habilitaciones y control operacional
         </h1>
 

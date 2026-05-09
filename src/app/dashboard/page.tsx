@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/site/PublicHeader";
 import CharterDispatchPanel from "@/components/dashboard/CharterDispatchPanel";
+import IcaoFlagBadge from "@/components/ui/IcaoFlagBadge";
 import ProtectedPage, {
   useProtectedSession,
 } from "@/components/site/ProtectedPage";
@@ -163,11 +164,13 @@ const DASHBOARD_PARTNERS: DashboardPartner[] = [
 
 type DispatchMetarSummary = {
   condition: string;
+  conditionIcon: string;
   temperature: string;
   qnh: string;
   wind: string;
   visibility: string;
   raw: string;
+  source: string;
 };
 
 type DispatchDepartureBoardRow = {
@@ -490,7 +493,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCTE",
       destination: "SCIE",
-      label: "Puerto Montt → Concepción",
+      label: "Puerto Montt ? Concepción",
       remarks: "Tramo corto y controlado para revisar salida instrumental, navegación en ruta y llegada estabilizada.",
     },
     routeWaypoints: [
@@ -583,7 +586,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SCTE",
-      label: "Santiago → Puerto Montt",
+      label: "Santiago ? Puerto Montt",
       remarks: "Perfil comercial nacional para practicar briefing, interceptación y decisión en mínimos CAT I.",
     },
     routeWaypoints: [
@@ -676,7 +679,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SAEZ",
       destination: "SCEL",
-      label: "Buenos Aires Ezeiza → Santiago",
+      label: "Buenos Aires Ezeiza ? Santiago",
       remarks: "Perfil internacional corto para practicar baja visibilidad en operación comercial jet.",
     },
     routeWaypoints: [
@@ -769,7 +772,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SAEZ",
-      label: "Santiago → Buenos Aires Ezeiza",
+      label: "Santiago ? Buenos Aires Ezeiza",
       remarks: "Vuelo comercial de precisión para evaluar un perfil LVO completo.",
     },
     routeWaypoints: [
@@ -862,7 +865,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCEL",
       destination: "SCIE",
-      label: "Santiago → Concepción",
+      label: "Santiago ? Concepción",
       remarks: "Perfil corto con enfoque en técnica de viento cruzado durante aproximación, flare y aterrizaje.",
     },
     routeWaypoints: [
@@ -955,7 +958,7 @@ const TRAINING_CHECKRIDE_CATALOG: TrainingCheckrideCatalogItem[] = [
     route: {
       origin: "SCTE",
       destination: "SCCI",
-      label: "Puerto Montt → Punta Arenas",
+      label: "Puerto Montt ? Punta Arenas",
       remarks: "Perfil patagónico para evaluar planeamiento, meteorología y criterio de seguridad en entorno especial.",
     },
     routeWaypoints: [
@@ -2354,7 +2357,7 @@ function getDestinationCityLabel(
     return destinationAirport.name.trim();
   }
 
-  const splitByArrow = itinerary.itinerary_name.split("→");
+  const splitByArrow = itinerary.itinerary_name.split("?");
   const parsed = splitByArrow.length > 1 ? splitByArrow[splitByArrow.length - 1].trim() : "";
   return parsed || itinerary.destination_icao;
 }
@@ -2567,7 +2570,7 @@ function buildTransferOptions(countryCode: string, airportCode: string): Transfe
     {
       mode: "ground_taxi",
       title: "Taxi urbano / interaeródromo",
-      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL ↔ SCTB o SCTE ↔ SCPF.`,
+      subtitle: `Traslado inmediato dentro de la misma ciudad desde ${airportCode}, por ejemplo SCEL ? SCTB o SCTE ? SCPF.`,
       accent: "amber",
     },
     {
@@ -2665,7 +2668,11 @@ function formatMetarQnh(rawMetar: string) {
 function formatMetarCondition(rawMetar: string) {
   const normalized = rawMetar.toUpperCase();
 
-  if (normalized.includes("TS")) {
+  if (/(TS|LTG|VCTS|TSRA|TSGR)/.test(normalized)) {
+    return "Tormenta eléctrica";
+  }
+
+  if (/(SQ|FC|\+TS)/.test(normalized)) {
     return "Tormenta";
   }
 
@@ -2681,21 +2688,44 @@ function formatMetarCondition(rawMetar: string) {
     return "Niebla";
   }
 
-  if (normalized.includes("CAVOK")) {
-    return "Estable";
+  if (normalized.includes("CAVOK") || /(SKC|CLR|NSC)/.test(normalized)) {
+    return "Despejado";
   }
 
   if (/(OVC|BKN)/.test(normalized)) {
-    return "Cubierto";
+    return "Nublado";
   }
 
-  if (/(FEW|SCT|SKC|CLR|NSC)/.test(normalized)) {
+  if (/(FEW|SCT)/.test(normalized)) {
     return "Parcial";
   }
 
-  return "Variable";
+  return "Condición variable";
 }
 
+
+function getMetarConditionIcon(condition: string) {
+  switch (condition) {
+    case "Tormenta eléctrica":
+      return "\u26A1";
+    case "Tormenta":
+      return "\u26C8";
+    case "Nieve":
+      return "\u2744";
+    case "Lluvia":
+      return "\uD83C\uDF27";
+    case "Niebla":
+      return "\uD83C\uDF2B";
+    case "Despejado":
+      return "\u2600";
+    case "Nublado":
+      return "\u2601";
+    case "Parcial":
+      return "\u26C5";
+    default:
+      return "\uD83C\uDF24";
+  }
+}
 const METAR_FALLBACK_BY_AIRPORT: Record<string, string[]> = {
   // Santiago / Región Metropolitana: aeródromos sin METAR propio toman SCEL.
   SCTB: ["SCEL"],
@@ -2746,26 +2776,30 @@ function buildDispatchMetarSummary(rawMetar?: string | null): DispatchMetarSumma
   if (!normalized || normalized.toUpperCase().includes("PENDIENTE")) {
     return {
       condition: "Pendiente",
+      conditionIcon: "\u23F3",
       temperature: "Pendiente",
       qnh: "Pendiente",
       wind: "Pendiente",
       visibility: "Pendiente",
       raw: normalized || "METAR pendiente de actualización",
+      source: "aviationweather.gov",
     };
   }
 
   const temperatureMatch = normalized.match(/\b(M?\d{2})\/(M?\d{2})\b/i);
+  const condition = formatMetarCondition(normalized);
 
   return {
-    condition: formatMetarCondition(normalized),
+    condition,
+    conditionIcon: getMetarConditionIcon(condition),
     temperature: formatMetarTemperature(temperatureMatch?.[1]),
     qnh: formatMetarQnh(normalized),
     wind: formatMetarWind(normalized),
     visibility: formatMetarVisibility(normalized),
     raw: normalized,
+    source: "aviationweather.gov",
   };
 }
-
 /** Returns raw visibility in meters from a METAR string, or null if not parseable. */
 function parseMetarVisibilityMeters(rawMetar: string): number | null {
   const upper = rawMetar.toUpperCase();
@@ -2939,7 +2973,7 @@ function formatFlightStatusLabel(status?: string | null) {
 function formatRouteTag(row: FlightReservationRow) {
   const origin = row.origin_ident?.trim().toUpperCase() ?? "---";
   const destination = row.destination_ident?.trim().toUpperCase() ?? "---";
-  return `${origin} → ${destination}`;
+  return `${origin} ? ${destination}`;
 }
 
 function topEntries(
@@ -3391,26 +3425,22 @@ function PilotStatsRail({
             Estadísticas del piloto
           </p>
           <p className="mt-1 text-sm leading-6 text-white/56">
-            Resumen operacional rápido al estilo sala de despacho: estado, rango, horas, score y billetera.
+            Resumen operacional rápido al estilo sala de despacho: rango, horas, score y billetera.
           </p>
         </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-          Panel vivo
-        </span>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex min-h-[104px] flex-col justify-between rounded-[20px] border border-white/8 bg-white/[0.035] px-4 py-4"
+            className="flex min-h-[104px] flex-col items-center justify-center rounded-[20px] border border-white/8 bg-white/[0.035] px-4 py-4 text-center"
           >
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/56">
               {item.label}
             </span>
             {item.label === "Rango" ? (
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex items-center justify-center gap-3">
                 <img
                   src={rank.asset}
                   alt={`Insignia ${rank.name}`}
@@ -3418,12 +3448,12 @@ function PilotStatsRail({
                   loading="lazy"
                   decoding="async"
                 />
-                <span className="text-base font-semibold leading-tight text-white">
+                <span className="text-base font-extrabold leading-tight text-white">
                   <AnimatedMetricValue item={item} animateKey={animationSeed} />
                 </span>
               </div>
             ) : (
-              <span className="mt-4 text-2xl font-semibold tracking-tight text-white">
+              <span className="mt-4 text-2xl font-extrabold tracking-tight text-white">
                 <AnimatedMetricValue item={item} animateKey={animationSeed} />
               </span>
             )}
@@ -3561,42 +3591,42 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
     : `METAR disponible para ${central.airportCode}. Confirma QNH ${metar.qnh}, viento ${metar.wind}, visibilidad ${metar.visibility} y restricciones internas antes del push.`;
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.9),rgba(4,15,30,0.94))]">
-      <div className="flex flex-col gap-6 p-5 sm:p-6 lg:p-7">
+    <section className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.9),rgba(4,15,30,0.94))]">
+      <div className="flex flex-col gap-4 p-4 sm:p-5 lg:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Central del hub actual
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <h2 className="header-strip text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 {central.countryName}
               </h2>
               {flagUrl ? (
                 <img
                   src={flagUrl}
                   alt={`Bandera de ${central.countryName}`}
-                  className="h-[18px] w-auto rounded-[2px] object-cover shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
+                  className="h-[16px] w-auto rounded-[2px] object-cover shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
                 />
               ) : null}
             </div>
-            <p className="mt-2 text-base text-white/78">
+            <p className="mt-1 text-sm text-white/78">
               {central.airportCode} · {central.airportName}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
               Pilotos en esta ubicación
             </p>
-            <p className="mt-2 text-2xl font-semibold text-white">
+            <p className="mt-1 text-xl font-semibold text-white">
               {formatInteger(central.pilotsOnField)}
             </p>
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch">
-          <div className="relative min-h-[260px] overflow-hidden rounded-[24px] bg-[#07131f] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+        <div className="grid gap-4">
+          <div className="relative min-h-[290px] overflow-hidden rounded-[20px] bg-[#07131f] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
             {displayImageUrl ? (
               <img
                 src={displayImageUrl}
@@ -3618,7 +3648,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               <img
                 src="/branding/patagonia-logo.png"
                 alt="Patagonia Wings"
-                className="h-40 w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]"
+                className="h-28 w-auto drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]"
               />
             </div>
 
@@ -3642,12 +3672,12 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
               </div>
             ) : null}
 
-            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-4 bg-[#15683e] px-5 py-4">
+            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-3 bg-[#0f3f7a] px-4 py-3">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="truncate text-[17px] font-bold leading-6 text-white">
+                <p className="truncate text-[22px] font-extrabold leading-6 !text-white">
                   {central.airportName}
                 </p>
-                <p className="truncate text-[13px] font-medium leading-5 text-white/80">
+                <p className="truncate text-[16px] font-bold leading-5 !text-white">
                   {central.municipality} · {central.countryName}
                 </p>
               </div>
@@ -3655,85 +3685,87 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                 <img
                   src={flagUrl}
                   alt={`Bandera de ${central.countryName}`}
-                  className="h-[28px] w-auto flex-shrink-0 rounded-[3px] object-cover shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                  className="h-[22px] w-auto flex-shrink-0 rounded-[3px] object-cover shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
                 />
               ) : null}
             </div>
           </div>
 
-          <div className="grid gap-4">
-            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+          <div className="grid gap-3">
+            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Aeropuerto actual
               </p>
-              <h3 className="mt-3 text-2xl font-semibold text-white">{central.airportName}</h3>
-              <p className="mt-2 text-sm leading-7 text-white/74">
+              <h3 className="header-strip mt-2 text-xl font-semibold text-white">{central.airportName}</h3>
+              <p className="mt-1 text-sm leading-6 text-white/74">
                 {central.municipality} · {central.countryName}
               </p>
             </div>
 
-            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                   METAR
                 </p>
                 <span className="rounded-full border border-emerald-100/16 bg-emerald-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100/72">
-                  {metar.condition}
+                  {metar.conditionIcon} {metar.condition}
                 </span>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-4">
                 {[
                   ["Temp", metar.temperature],
                   ["QNH", metar.qnh],
                   ["Viento", metar.wind],
                   ["Visibilidad", metar.visibility],
                 ].map(([label, value]) => (
-                  <div key={`central-metar-${label}`} className="rounded-2xl border border-white/8 bg-black/16 px-3 py-2">
+                  <div key={`central-metar-${label}`} className="rounded-2xl border border-white/8 bg-black/16 px-3 py-2 text-center">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/38">{label}</p>
                     <p className="mt-1 text-sm font-bold text-white/84">{value}</p>
                   </div>
                 ))}
               </div>
 
-              <p className="mt-3 truncate text-[11px] font-medium text-white/42" title={metar.raw}>
+              <p className="mt-2 truncate text-[11px] font-medium text-white/42" title={metar.raw}>
                 {metar.raw}
               </p>
             </div>
 
-            <div className="rounded-[24px] border border-amber-300/16 bg-amber-300/[0.055] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="notam-warning-box rounded-[20px] border border-amber-600 bg-[#f6cf3a] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200/18 bg-amber-300/[0.12] text-lg">
-                    Aviso
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-800/50 bg-amber-200 text-lg font-black text-amber-900">
+                  ⚠
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-100/72">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-black">
                       NOTAM PWG · {central.airportCode}
                     </p>
-                    <span className="rounded-full border border-amber-200/18 bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-100/72">
+                    <span className="rounded-full border border-black/30 bg-[#fbe899] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-black">
                       Operacional interno
                     </span>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-white/76">
+                  <p className="mt-2 text-sm font-medium leading-6 text-black">
                     {advisoryText}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
+                <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                   ICAO actual
                 </p>
-                <h3 className="mt-3 text-2xl font-semibold text-white">{central.airportCode}</h3>
+                <h3 className="mx-auto mt-2 inline-flex min-h-[42px] w-fit max-w-full items-center justify-center rounded-[10px] border border-blue-300/40 bg-[#2e7fc4] px-5 text-center text-[26px] font-semibold leading-none text-white">
+                  {central.airportCode}
+                </h3>
               </div>
-              <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
+                <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                   País / bandera
                 </p>
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-3 flex items-center justify-center gap-3">
                   {flagUrl ? (
                     <img
                       src={flagUrl}
@@ -3741,7 +3773,9 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
                       className="h-[18px] w-auto rounded-[2px] object-cover"
                     />
                   ) : null}
-                  <h3 className="text-2xl font-semibold text-white">{central.countryName}</h3>
+                  <h3 className="inline-flex min-h-[42px] w-fit max-w-full items-center justify-center rounded-[10px] border border-blue-300/40 bg-[#2e7fc4] px-5 text-center text-[26px] font-semibold leading-none text-white">
+                    {central.countryName}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -3753,6 +3787,7 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
 }
 
 function CentralAirportActivityBoard({ central }: { central: CentralOverview }) {
+  const [activeTab, setActiveTab] = useState<"departures" | "arrivals" | "all">("departures");
   const airportCode = central.airportCode.trim().toUpperCase();
   const uniqueRows = new Map<string, FlightReservationRow>();
 
@@ -3770,69 +3805,47 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
   const arrivals = movementRows
     .filter((row) => row.destination_ident?.trim().toUpperCase() === airportCode)
     .slice(0, 6);
+  const boardRows = useMemo(() => {
+    const mapRows = (rows: FlightReservationRow[], direction: "departure" | "arrival") =>
+      rows.map((row, index) => {
+        const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
+        const aircraft =
+          row.aircraft_type_code?.trim()?.split("_")[0] || row.aircraft_registration?.trim() || "---";
+        const origin = row.origin_ident?.trim().toUpperCase() || "---";
+        const destination = row.destination_ident?.trim().toUpperCase() || "---";
+        const status = formatFlightStatusLabel(row.status);
+        const updatedAt = row.updated_at || row.created_at || null;
+        const hhmm = updatedAt
+          ? new Date(updatedAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+          : "--:--";
 
-  const renderMovement = (row: FlightReservationRow, direction: "departure" | "arrival", index: number) => {
-    const otherAirport = direction === "departure" ? row.destination_ident : row.origin_ident;
-    const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
-    const aircraft = row.aircraft_type_code?.trim()?.split("_")[0] || row.aircraft_registration?.trim() || "---";
-    const status = formatFlightStatusLabel(row.status);
-    const active = ["dispatched", "dispatch_ready", "in_progress", "in_flight"].includes((row.status ?? "").trim().toLowerCase());
+        return {
+          key: `${direction}-${row.id ?? routeLabel}-${index}`,
+          direction,
+          routeLabel,
+          aircraft,
+          origin,
+          destination,
+          status,
+          mode: formatFlightModeLabel(row.flight_mode_code),
+          hhmm,
+          active: ["dispatched", "dispatch_ready", "in_progress", "in_flight"].includes(
+            (row.status ?? "").trim().toLowerCase(),
+          ),
+        };
+      });
 
-    return (
-      <div
-        key={`${direction}-${row.id ?? routeLabel}-${index}`}
-        className="grid grid-cols-[76px_minmax(0,1fr)_72px] items-center gap-3 rounded-[18px] border border-white/8 bg-[#031428]/58 px-3 py-3"
-      >
-        <div>
-          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.13em] ${active ? "border-emerald-300/18 bg-emerald-400/[0.09] text-emerald-200" : "border-white/10 bg-white/[0.04] text-white/58"}`}>
-            {status}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{routeLabel}</p>
-          <p className="mt-1 truncate text-[11px] text-white/48">
-            {aircraft} · {formatFlightModeLabel(row.flight_mode_code)}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm font-black text-white">{otherAirport?.trim().toUpperCase() ?? "---"}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/34">
-            {direction === "departure" ? "Destino" : "Origen"}
-          </p>
-        </div>
-      </div>
-    );
-  };
+    return {
+      departures: mapRows(departures, "departure"),
+      arrivals: mapRows(arrivals, "arrival"),
+    };
+  }, [arrivals, departures]);
 
-  const renderColumn = (
-    title: string,
-    subtitle: string,
-    rows: FlightReservationRow[],
-    direction: "departure" | "arrival",
-    icon: string,
-  ) => (
-    <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/48">{subtitle}</p>
-          <h4 className="mt-1 text-lg font-semibold text-white">{icon} {title}</h4>
-        </div>
-        <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-bold text-white/72">
-          {formatInteger(rows.length)}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        {rows.length ? (
-          rows.map((row, index) => renderMovement(row, direction, index))
-        ) : (
-          <div className="rounded-[18px] border border-dashed border-white/10 bg-[#031428]/45 px-4 py-6 text-center text-sm text-white/46">
-            Sin movimientos registrados para esta lectura.
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const visibleRows = useMemo(() => {
+    if (activeTab === "departures") return boardRows.departures;
+    if (activeTab === "arrivals") return boardRows.arrivals;
+    return [...boardRows.departures, ...boardRows.arrivals].slice(0, 12);
+  }, [activeTab, boardRows.arrivals, boardRows.departures]);
 
   return (
     <section className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.018))] p-5">
@@ -3841,7 +3854,7 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
             Actividad del aeropuerto
           </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">Movimientos en {airportCode}</h3>
+          <h3 className="header-strip mt-2 text-2xl font-semibold text-white">Movimientos en {airportCode}</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">
             Vista inspirada en una sala de despacho: separa salidas, arribos y control operacional usando reservas y vuelos recientes de Patagonia Wings.
           </p>
@@ -3853,9 +3866,141 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        {renderColumn("Partidas", "Desde la posición actual", departures, "departure", "")}
-        {renderColumn("Arribos", "Hacia la posición actual", arrivals, "arrival", "")}
+      <div className="mt-5 rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { key: "departures", label: "Partidas", count: boardRows.departures.length },
+            { key: "arrivals", label: "Arribos", count: boardRows.arrivals.length },
+            { key: "all", label: "Todos", count: boardRows.departures.length + boardRows.arrivals.length },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key as "departures" | "arrivals" | "all")}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition ${
+                activeTab === tab.key
+                  ? "border-cyan-300/45 bg-cyan-300/14 text-cyan-100"
+                  : "border-white/12 bg-white/[0.03] text-white/62 hover:border-cyan-300/35 hover:text-cyan-100"
+              }`}
+            >
+              {tab.label}
+              <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10px]">{formatInteger(tab.count)}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          {[
+            { key: "departures", title: "Partidas", rows: boardRows.departures },
+            { key: "arrivals", title: "Arribos", rows: boardRows.arrivals },
+          ].map((section) => (
+            <div key={section.key} className="overflow-x-auto rounded-[18px] border border-white/8">
+              <table className="min-w-full border-collapse text-sm text-white/85">
+                <thead>
+                  <tr className="bg-[#031428]/75 text-[10px] uppercase tracking-[0.18em] text-white/48">
+                    <th colSpan={5} className="px-3 py-2 text-left">{section.title}</th>
+                  </tr>
+                  <tr className="bg-[#031428]/60 text-[10px] uppercase tracking-[0.16em] text-white/42">
+                    <th className="px-2 py-1.5 text-left">Vuelo</th>
+                    <th className="px-2 py-1.5 text-left">Ruta</th>
+                    <th className="px-2 py-1.5 text-left">Aeronave</th>
+                    <th className="px-2 py-1.5 text-left">Estado</th>
+                    <th className="px-2 py-1.5 text-left">Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.rows.length ? (
+                    section.rows.map((row) => (
+                      <tr key={`${section.key}-${row.key}`} className="border-t border-white/8 bg-[#031428]/55">
+                        <td className="px-2 py-1.5 font-semibold">{row.routeLabel}</td>
+                        <td className="px-2 py-1.5 text-white/74">
+                          <span className="inline-flex items-center gap-1.5">
+                            <IcaoFlagBadge icao={row.origin} size="sm" />
+                            <span className="text-white/45">→</span>
+                            <IcaoFlagBadge icao={row.destination} size="sm" />
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5">{row.aircraft}</td>
+                        <td className="px-2 py-1.5">
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                              row.active
+                                ? "border-emerald-300/25 bg-emerald-400/[0.12] text-emerald-200"
+                                : "border-white/12 bg-white/[0.04] text-white/64"
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 font-mono text-xs text-white/60">{row.hhmm}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-4 text-center text-sm text-white/46">
+                        Sin movimientos.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ))}
+
+          <div className="xl:col-span-2 overflow-x-auto rounded-[18px] border border-white/8">
+            <table className="min-w-full border-collapse text-sm text-white/85">
+              <thead>
+                <tr className="bg-[#031428]/75 text-[10px] uppercase tracking-[0.18em] text-white/48">
+                  <th className="px-3 py-2 text-left">Estado</th>
+                  <th className="px-3 py-2 text-left">Vuelo</th>
+                  <th className="px-3 py-2 text-left">Ruta</th>
+                  <th className="px-3 py-2 text-left">Aeronave</th>
+                  <th className="px-3 py-2 text-left">Modo</th>
+                  <th className="px-3 py-2 text-left">Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRows.length ? (
+                  visibleRows.map((row) => (
+                    <tr key={row.key} className="border-t border-white/8 bg-[#031428]/55">
+                      <td className="px-3 py-2">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                            row.active
+                              ? "border-emerald-300/25 bg-emerald-400/[0.12] text-emerald-200"
+                              : "border-white/12 bg-white/[0.04] text-white/64"
+                          }`}
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-semibold">{row.routeLabel}</td>
+                      <td className="px-2 py-2 text-white/74">
+                        <span className="inline-flex items-center gap-1.5">
+                          <IcaoFlagBadge icao={row.origin} size="sm" />
+                          <span className="text-white/45">→</span>
+                          <IcaoFlagBadge icao={row.destination} size="sm" />
+                        </span>
+                        <span className="ml-2 rounded-full border border-white/10 bg-black/18 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/58">
+                          {row.direction === "departure" ? "Salida" : "Arribo"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">{row.aircraft}</td>
+                      <td className="px-3 py-2 text-white/62">{row.mode}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-white/60">{row.hhmm}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-white/46">
+                      Sin movimientos registrados para esta lectura.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -3878,11 +4023,10 @@ function CentralNewsSection({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Novedades operacionales
             </p>
-            <h3 className="mt-1 text-2xl font-semibold text-white">Comunicados de la central</h3>
+            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-4 py-2 text-xl font-semibold text-white">
+              Comunicados de la central
+            </h3>
           </div>
-          <span className="rounded-full border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-            PWG
-          </span>
         </div>
 
         <div className="mt-4 space-y-2">
@@ -3913,11 +4057,10 @@ function CentralNewsSection({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Noticias locales
             </p>
-            <h3 className="mt-1 text-2xl font-semibold text-white">Actualidad cerca de tu base</h3>
+            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-4 py-2 text-xl font-semibold text-white">
+              Actualidad cerca de tu base
+            </h3>
           </div>
-          <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${hasLiveNews ? "border-cyan-300/18 bg-cyan-400/[0.08] text-cyan-100" : "border-white/10 bg-white/[0.045] text-white/48"}`}>
-            {hasLiveNews ? "Live" : "Local"}
-          </span>
         </div>
 
         {hasLiveNews ? (
@@ -3943,7 +4086,7 @@ function CentralNewsSection({
                         {article.title}
                       </h4>
                     </div>
-                    <span className="shrink-0 text-white/35">↗</span>
+                    <span className="shrink-0 text-white/35">?</span>
                   </div>
                   {article.description ? (
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/52">{article.description}</p>
@@ -4023,7 +4166,7 @@ function CentralFlightsTable({
           <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.18em] text-white/50">
             <tr>
               {headers.map((header) => (
-                <th key={header} className="px-4 py-3 font-semibold">
+                <th key={header} className="px-2.5 py-2.5 font-semibold">
                   {header}
                 </th>
               ))}
@@ -4034,7 +4177,7 @@ function CentralFlightsTable({
             {rows.length ? (
               rows.map((row, index) => {
                 const routeLabel = row.flight_number?.trim() || row.route_code?.trim() || formatRouteTag(row);
-                // Show just the ICAO model code, not the addon suffix (A319_FENIX → A319)
+                // Show just the ICAO model code, not the addon suffix (A319_FENIX ? A319)
                 const rawTypeCode = row.aircraft_type_code?.trim() || "";
                 const aircraftPrimary = rawTypeCode
                   ? rawTypeCode.split("_")[0]
@@ -4046,35 +4189,35 @@ function CentralFlightsTable({
                     key={`${row.pilot_callsign ?? "pwg"}-${index}`}
                     className="border-t border-white/8 align-top"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       <div className="font-semibold text-white">
                         {row.pilot_callsign?.trim().toUpperCase() ?? "PWG"}
                       </div>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       <div className="font-semibold text-white">{routeLabel}</div>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       <div className="font-semibold text-white">{aircraftPrimary}</div>
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       <div className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
                         {registration ?? "—"}
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 font-medium text-white/84">
-                      {row.origin_ident?.trim().toUpperCase() ?? "---"}
+                    <td className="px-2.5 py-2.5 font-medium text-white/84">
+                      <IcaoFlagBadge icao={row.origin_ident?.trim().toUpperCase() ?? "---"} size="sm" />
                     </td>
 
-                    <td className="px-4 py-3 font-medium text-white/84">
-                      {row.destination_ident?.trim().toUpperCase() ?? "---"}
+                    <td className="px-2.5 py-2.5 font-medium text-white/84">
+                      <IcaoFlagBadge icao={row.destination_ident?.trim().toUpperCase() ?? "---"} size="sm" />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       {variant === "active" ? (
                         <span
                           className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusTone(row.status)}`}
@@ -4090,7 +4233,7 @@ function CentralFlightsTable({
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2.5">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${modeTone(row.flight_mode_code)}`}
                       >
@@ -4099,7 +4242,7 @@ function CentralFlightsTable({
                     </td>
 
                     {variant === "recent" ? (
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2.5 py-2.5 text-right">
                         {row.id ? (
                           <a
                             href={`/flights/${row.id}`}
@@ -4191,7 +4334,7 @@ function OfficeEconomyPanel() {
       <div className="flex items-center justify-between gap-3 mb-5">
         <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Economía aerolínea</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">{airline.name}</h3>
+          <h3 className="header-strip mt-1 text-lg font-semibold text-white">{airline.name}</h3>
           {airline.has_real_ledger === false ? (
             <p className="mt-2 max-w-xl text-xs leading-5 text-white/48">
               Capital inicial operativo cargado. Sin operaciones registradas aún.
@@ -4199,7 +4342,7 @@ function OfficeEconomyPanel() {
           ) : null}
         </div>
         <Link href="/economia" className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90">
-          Ver completo →
+          Ver completo ?
         </Link>
       </div>
 
@@ -4287,15 +4430,31 @@ function CentralTransfersSectionControlled({
   const [transferError, setTransferError] = useState<string | null>(null);
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
 
-  const accentMap: Record<TransferOption["accent"], string> = {
-    emerald: "border-emerald-400/14 bg-emerald-500/[0.05] text-emerald-200",
-    amber: "border-amber-400/18 bg-amber-400/[0.06] text-amber-100",
-    cyan: "border-cyan-400/14 bg-cyan-500/[0.05] text-cyan-200",
-  };
-
   const visibleOptions = options.filter(
     (option) => option.mode === "ground_taxi" || option.mode === "ground_bus" || option.mode === "air_ticket",
   );
+
+  const transferModeMeta: Record<TransferMode, {
+    chip: string;
+    icon: string;
+    iconTone: string;
+  }> = {
+    ground_taxi: {
+      chip: "TAXI",
+      icon: "\uD83D\uDE95",
+      iconTone: "bg-[#d3a11f]",
+    },
+    ground_bus: {
+      chip: "RETORNO",
+      icon: "\uD83D\uDE8C",
+      iconTone: "bg-[#2b8a3e]",
+    },
+    air_ticket: {
+      chip: "JUMPSEATING",
+      icon: "\u2708",
+      iconTone: "bg-[#1f5c99]",
+    },
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -4414,128 +4573,95 @@ function CentralTransfersSectionControlled({
     return null;
   }
 
-  const hasAbandonmentPenalty = destinations.some((d) => d.abandonment_penalty_usd > 0);
+  const transferCards = visibleOptions.flatMap((option) => {
+    const optionDestinations = destinations
+      .filter((item) => normalizeTransferModeForUi(item.mode) === option.mode)
+      .slice(0, 4);
+    return optionDestinations.map((destination) => ({
+      mode: option.mode,
+      destination,
+    }));
+  });
 
   return (
     <section>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Traslados</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h3 className="text-2xl font-semibold text-white">Reposicionamiento</h3>
-            {!isLoadingTransfers && destinations.length > 0 && (
-              hasAbandonmentPenalty ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200">
-                  Atención: Aeropuerto no-hub · +$350 multa
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200">
-                  ✓ Hub designado · sin multa
-                </span>
-              )
-            )}
-          </div>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
-            Reposiciónate de inmediato desde <span className="font-semibold text-white">{airportCode}</span>.
-            {hasAbandonmentPenalty ? " Se aplica multa operacional de $350 por aeronave disponible fuera de hub." : " Sin multa adicional — partís desde un hub."}
-          </p>
-        </div>
+      <div className="flex items-center gap-2 border-b border-slate-300/70 pb-3">
+        <span className="text-[24px]">🚗</span>
+        <h3 className="text-[28px] font-semibold tracking-tight text-slate-800">Reposicionamiento</h3>
       </div>
 
       {transferMessage ? (
-        <div className="mt-4 rounded-2xl border border-emerald-300/18 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100">
+        <div className="mt-4 rounded-2xl border border-emerald-300/50 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
           {transferMessage}
         </div>
       ) : null}
 
       {transferError ? (
-        <div className="mt-4 rounded-2xl border border-rose-300/18 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100">
+        <div className="mt-4 rounded-2xl border border-rose-300/40 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
           {transferError}
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-3">
-        {visibleOptions.map((option, optionIndex) => {
-          const optionDestinations = destinations
-            .filter((item) => normalizeTransferModeForUi(item.mode) === option.mode)
-            .slice(0, 4);
-
-          return (
-            <article
-              key={`${option.mode}-${optionIndex}`}
-              className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentMap[option.accent]}`}>
-                  {option.title}
-                </div>
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+        <div className="p-3">
+            {isLoadingTransfers ? (
+              <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-6 text-sm font-semibold text-slate-500">
+                Calculando alternativas...
               </div>
-              <p className="mt-3 text-[11px] leading-5 text-white/52">{option.subtitle}</p>
+            ) : transferCards.length === 0 ? (
+              <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-6 text-sm font-semibold text-slate-500">
+                Sin alternativas desde esta ubicación.
+              </div>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {transferCards.map(({ mode, destination }, destinationIndex) => {
+                  const submitKey = `${destination.mode}:${destination.destination_ident}`;
+                  const renderKey = `${mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
+                  const isSubmitting = submittingKey === submitKey;
+                  const blocked = isSubmitting || !destination.can_afford;
+                  const modeMeta = transferModeMeta[mode];
 
-              <div className="mt-4 rounded-xl border border-white/8 bg-[#031428]/30 px-3 py-2">
-                <div className="hidden grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/34 md:grid">
-                  <span>Aeropuerto</span>
-                  <span>Tarifa</span>
-                  <span className="text-right">Acción</span>
-                </div>
-
-                <div className="mt-0 space-y-2 md:mt-2">
-                  {isLoadingTransfers ? (
-                    <div className="rounded-xl border border-white/8 bg-[#031428]/55 px-3 py-3 text-[11px] font-semibold text-white/50">
-                      Calculando alternativas...
-                    </div>
-                  ) : optionDestinations.length === 0 ? (
-                    <div className="rounded-xl border border-white/8 bg-[#031428]/55 px-3 py-3 text-[11px] font-semibold text-white/50">
-                      Sin alternativas desde esta ubicación.
-                    </div>
-                  ) : (
-                    optionDestinations.map((destination, destinationIndex) => {
-                      const submitKey = `${destination.mode}:${destination.destination_ident}`;
-                      const renderKey = `${option.mode}:${destination.mode}:${destination.destination_ident}:${destinationIndex}`;
-                      const isSubmitting = submittingKey === submitKey;
-                      const blocked = isSubmitting || !destination.can_afford;
-                      const hasPenalty = destination.abandonment_penalty_usd > 0;
-
-                      return (
-                        <div
-                          key={renderKey}
-                          className="rounded-xl border border-white/8 bg-[#031428]/58"
-                        >
-                          <div className="grid gap-2 px-3 py-2.5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-bold text-white">{destination.destination_ident}</p>
-                              <p className="mt-0.5 truncate text-[10px] text-white/48">{destination.destination_name}</p>
-                            </div>
-                            <div className="text-left md:text-right">
-                              <p className={`text-xs font-black ${destination.can_afford ? "text-emerald-300" : "text-rose-300"}`}>
-                                {formatTransferUsd(destination.total_cost_usd)}
-                              </p>
-                              {hasPenalty ? <p className="text-[10px] text-amber-300">incluye multa</p> : null}
-                            </div>
-                            <div className="md:text-right">
-                              <button
-                                type="button"
-                                disabled={blocked}
-                                onClick={() => void submitTransfer(destination)}
-                                className={`inline-flex h-9 min-w-[136px] items-center justify-center rounded-lg px-3 py-2 text-[11px] font-semibold transition ${
-                                  blocked
-                                    ? "cursor-not-allowed border border-white/8 bg-white/[0.03] text-white/32"
-                                    : "border border-emerald-400/18 bg-emerald-500/[0.06] text-emerald-200 hover:bg-emerald-500/10"
-                                }`}
-                              >
-                                {isSubmitting ? "Trasladando..." : destination.can_afford ? "Trasladar" : "Sin saldo"}
-                              </button>
-                            </div>
+                  return (
+                    <div key={renderKey} className="rounded-lg border border-slate-300 bg-white px-3 py-2">
+                      <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-white ${modeMeta.iconTone}`}>
+                            {modeMeta.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-extrabold tracking-[0.12em] text-slate-600">{modeMeta.chip}</p>
+                            <p className="truncate text-[24px] font-extrabold leading-tight text-slate-900">
+                              {destination.destination_city ?? destination.destination_name ?? destination.destination_ident}
+                            </p>
+                            <p className="mt-0.5">
+                              <IcaoFlagBadge icao={destination.destination_ident} size="sm" />
+                            </p>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                        <div className="text-right">
+                          <p className={`text-xs font-black ${destination.can_afford ? "text-emerald-700" : "text-rose-700"}`}>
+                            {formatTransferUsd(destination.total_cost_usd)}
+                          </p>
+                          <button
+                            type="button"
+                            disabled={blocked}
+                            onClick={() => void submitTransfer(destination)}
+                            className={`mt-1 inline-flex h-7 min-w-[96px] items-center justify-center rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                              blocked
+                                ? "cursor-not-allowed border border-slate-300 bg-slate-100 text-slate-400"
+                                : "border border-[#1f5c99]/25 bg-[#1f5c99]/10 text-[#1f5c99] hover:bg-[#1f5c99]/15"
+                            }`}
+                          >
+                            {isSubmitting ? "Trasladando..." : destination.can_afford ? "Trasladar" : "Sin saldo"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </article>
-          );
-        })}
+            )}
+        </div>
       </div>
     </section>
   );
@@ -4610,7 +4736,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Rankings mensuales
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del mes</h3>
+            <h3 className="header-strip mt-2 text-2xl font-semibold text-white">Resumen del mes</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -4633,7 +4759,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Rankings anuales
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Resumen del año</h3>
+            <h3 className="header-strip mt-2 text-2xl font-semibold text-white">Resumen del año</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -4656,7 +4782,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Pilotos volando
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Operación viva</h3>
+            <h3 className="header-strip mt-2 text-2xl font-semibold text-white">Operación viva</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -4683,7 +4809,7 @@ function CentralWorkspace({ central }: { central: CentralOverview }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Últimos 20 vuelos
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
+            <h3 className="header-strip mt-2 text-2xl font-semibold text-white">Historial reciente</h3>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-right">
@@ -4724,17 +4850,17 @@ function DispatchOverviewHeader({
         {backgroundStyle ? (
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-cover bg-center opacity-20"
+            className="absolute inset-0 bg-cover bg-center opacity-40"
             style={backgroundStyle}
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.18),rgba(4,12,24,0.86))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.08),rgba(4,12,24,0.56))]" />
 
         <div className="relative z-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
             Workspace Dispatch
           </p>
-          <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-[52px]">
+          <h3 className="header-strip mt-3 text-2xl font-medium tracking-tight text-white sm:text-3xl">
             Centro de Despachos
           </h3>
           <p className="mx-auto mt-5 max-w-4xl text-base leading-8 text-white/76 sm:text-[18px]">
@@ -4751,7 +4877,7 @@ function DispatchOverviewHeader({
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
           Workspace Dispatch
         </p>
-        <h3 className="mt-2 text-xl font-semibold text-white sm:text-[28px]">
+        <h3 className="header-strip mt-2 text-xl font-semibold text-white sm:text-[28px]">
           Flujo central reutilizando la lógica real del despacho
         </h3>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-white/72 sm:text-[15px]">
@@ -4794,7 +4920,7 @@ function DispatchAirportBannerCard({
         <div className="relative z-10 flex h-full min-h-[280px] flex-col justify-between p-5">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h4 className="text-[32px] font-semibold tracking-tight text-white">
+              <h4 className="header-strip text-2xl font-medium tracking-tight text-white">
                 {central.municipality}
               </h4>
               {flagUrl ? (
@@ -4811,14 +4937,14 @@ function DispatchAirportBannerCard({
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="dispatch-workspace space-y-4">
             <div className="overflow-hidden rounded-[20px] border border-white/10 bg-black/18">
               <div className="grid gap-px bg-white/10 sm:grid-cols-2">
                 <div className="bg-[#071526]/86 px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
                     Estado
                   </p>
-                  <p className="mt-2 text-base font-semibold text-white">{metar.condition}</p>
+                  <p className="mt-2 text-base font-semibold text-white">{metar.conditionIcon} {metar.condition}</p>
                 </div>
                 <div className="bg-[#071526]/86 px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
@@ -4951,7 +5077,7 @@ function DispatchAircraftCascadeSelector({
   })();
 
   // Deriva el nombre del addon desde aircraft_type_code si addon_provider está vacío
-  // Ej: "B737_PMDG" → "PMDG" | "C208_BLACKSQUARE" → "Black Square" | "ATR72_MSFS" → "Estándar"
+  // Ej: "B737_PMDG" ? "PMDG" | "C208_BLACKSQUARE" ? "Black Square" | "ATR72_MSFS" ? "Estándar"
   const deriveAddonLabel = (typeCode: string | undefined | null): string => {
     if (!typeCode) return "Estándar";
     const suffix = typeCode.split("_").pop()?.toUpperCase() ?? "";
@@ -4975,13 +5101,13 @@ function DispatchAircraftCascadeSelector({
   // Step 2: variantes únicas (aircraft_type_code) para el modelo seleccionado
   const uniqueVariants = (() => {
     if (!selectedAircraftType) return [];
-    // key → { addonLabel, displayName }
+    // key ? { addonLabel, displayName }
     const seen = new Map<string, { addonLabel: string; displayName: string }>();
     for (const r of available.filter(
       (r) => toFriendlyAircraftLabel(r.aircraft_variant_code?.trim() || r.aircraft_code) === selectedAircraftType
     )) {
       const key = r.aircraft_type_code?.trim() || "__none__";
-      // Preferir addon_provider → variant_name → derivar de aircraft_type_code
+      // Preferir addon_provider ? variant_name ? derivar de aircraft_type_code
       const addonLabel =
         r.addon_provider?.trim() ||
         r.variant_name?.trim() ||
@@ -5127,7 +5253,7 @@ function DispatchAircraftCascadeSelector({
       {selectedReg ? (
         <>
           <div className="flex items-center gap-3 rounded-[14px] border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-            <span className="text-lg text-emerald-300">✓</span>
+            <span className="text-lg text-emerald-300">?</span>
             <div>
               <p className="text-sm font-semibold text-emerald-100">
                 {`${selectedReg.tail_number} · ${
@@ -5338,7 +5464,7 @@ function parsePreSimbriefRouteInput(params: {
           validatedOrigin: parsedOrigin,
           validatedDestination: parsedDestination,
           source,
-          error: `Origen/Destino del FPL (${parsedOrigin ?? "----"} → ${parsedDestination ?? "----"}) no coincide con la reserva (${origin} → ${destination}).`,
+          error: `Origen/Destino del FPL (${parsedOrigin ?? "----"} ? ${parsedDestination ?? "----"}) no coincide con la reserva (${origin} ? ${destination}).`,
         };
       }
 
@@ -5645,8 +5771,6 @@ function DispatchItineraryTable({
                 destinationAirport?.iso_country ?? row.destination_country,
                 destinationCode,
               );
-              const originFlagUrl = getFlagUrl(originCountryCode);
-              const destinationFlagUrl = getFlagUrl(destinationCountryCode);
               const rawDistance = Number(row.distance_nm);
               const distanceNm =
                 Number.isFinite(rawDistance) && rawDistance > 0
@@ -5677,32 +5801,14 @@ function DispatchItineraryTable({
                   {/* ORIGEN */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 whitespace-nowrap">
-                      <span className="text-sm font-bold tracking-[0.08em] text-white">
-                        {originCode || "---"}
-                      </span>
-                      {originFlagUrl ? (
-                        <img
-                          src={originFlagUrl}
-                          alt={`Bandera ${originCountryCode ?? originCode}`}
-                          className="h-[13px] w-[17px] rounded-[2px] object-cover"
-                        />
-                      ) : null}
+                      <IcaoFlagBadge icao={originCode || "---"} countryCode={originCountryCode} size="sm" />
                       <span className="text-sm text-white/60 truncate max-w-[140px]">{originCity}</span>
                     </div>
                   </td>
                   {/* DESTINO */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 whitespace-nowrap">
-                      <span className="text-sm font-bold tracking-[0.08em] text-white">
-                        {destinationCode || "---"}
-                      </span>
-                      {destinationFlagUrl ? (
-                        <img
-                          src={destinationFlagUrl}
-                          alt={`Bandera ${destinationCountryCode ?? destinationCode}`}
-                          className="h-[13px] w-[17px] rounded-[2px] object-cover"
-                        />
-                      ) : null}
+                      <IcaoFlagBadge icao={destinationCode || "---"} countryCode={destinationCountryCode} size="sm" />
                       <span className="text-sm text-white/60 truncate max-w-[140px]">{destinationCity}</span>
                     </div>
                   </td>
@@ -5849,22 +5955,12 @@ function DispatchLocationCard({
   countryCode?: string | null;
 }) {
   const resolvedCountryCode = resolveCountryCode(countryCode, icao);
-  const flagUrl = getFlagUrl(resolvedCountryCode);
 
   return (
     <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-5 py-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/44">{label}</p>
-      <div className="mt-3 flex items-center gap-3">
-        <span className="text-[1.7rem] font-semibold leading-none tracking-[0.12em] text-white">
-          {icao || "---"}
-        </span>
-        {flagUrl ? (
-          <img
-            src={flagUrl}
-            alt={`Bandera ${resolvedCountryCode ?? icao}`}
-            className="h-[18px] w-[26px] rounded-[3px] object-cover"
-          />
-        ) : null}
+      <div className="mt-3">
+        <IcaoFlagBadge icao={icao || "---"} countryCode={resolvedCountryCode} />
       </div>
       <p className="mt-3 text-[15px] leading-6 text-white/68">{city || "Pendiente"}</p>
     </div>
@@ -6330,7 +6426,7 @@ function TrainingCheckrideDispatchModal({
                   {checkride.code}
                 </span>
               </div>
-              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">{checkride.title}</h2>
+              <h2 className="header-strip mt-4 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">{checkride.title}</h2>
               <p className="mt-3 max-w-4xl text-sm leading-6 text-white/64">{checkride.introduction}</p>
             </div>
             <button
@@ -6375,7 +6471,11 @@ function TrainingCheckrideDispatchModal({
                   </div>
                   <div className="rounded-[16px] border border-white/8 bg-black/16 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-white/36">Ruta</p>
-                    <p className="mt-1 text-lg font-semibold text-white">{route.origin} → {route.destination}</p>
+                    <div className="mt-1 inline-flex items-center gap-2">
+                      <IcaoFlagBadge icao={route.origin} size="sm" />
+                      <span className="text-white/45">?</span>
+                      <IcaoFlagBadge icao={route.destination} size="sm" />
+                    </div>
                     <p className="mt-1 text-xs text-white/46">{route.label}</p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -6402,7 +6502,7 @@ function TrainingCheckrideDispatchModal({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Ruta del vuelo</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">{route.label}</h3>
+                <h3 className="header-strip mt-2 text-xl font-semibold text-white">{route.label}</h3>
                 <p className="mt-2 max-w-4xl text-sm leading-6 text-white/56">{route.remarks}</p>
               </div>
             </div>
@@ -6421,7 +6521,7 @@ function TrainingCheckrideDispatchModal({
                     <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">{point.type}</p>
                   </div>
                   {index < routeWaypoints.length - 1 ? (
-                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">→</div>
+                    <div className="pointer-events-none absolute -right-2 top-1/2 hidden -translate-y-1/2 text-xl text-cyan-200/45 lg:block">?</div>
                   ) : null}
                 </div>
               ))}
@@ -6496,7 +6596,7 @@ function TrainingCheckrideDispatchModal({
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Opciones oficiales de aeronave</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Selecciona una opción asignada</h3>
+                <h3 className="header-strip mt-2 text-xl font-semibold text-white">Selecciona una opción asignada</h3>
                 <p className="mt-2 max-w-4xl text-sm leading-6 text-white/56">
                   Patagonia Wings asigna estas dos opciones para la habilitación. Elegir una u otra no te reprueba; ambas son válidas siempre que uses una de las aeronaves publicadas para este checkride.
                 </p>
@@ -6738,7 +6838,7 @@ function TrainingTheoryExamModal({
                   {gate.label}
                 </span>
               </div>
-              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">{exam.title}</h2>
+              <h2 className="header-strip mt-4 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">{exam.title}</h2>
               <p className="mt-3 max-w-4xl text-sm leading-6 text-white/64">{exam.description}</p>
             </div>
             <button
@@ -6802,7 +6902,7 @@ function TrainingTheoryExamModal({
                     : "border-rose-300/22 bg-rose-400/10"
                 }`}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/52">Acceso bloqueado</p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">
+                  <h3 className="header-strip mt-3 text-2xl font-semibold text-white">
                     {gate.tone === "passed" ? "Esta teórica ya fue aprobada" : "Reintento todavía no disponible"}
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-white/64">{gate.helper}</p>
@@ -6918,7 +7018,7 @@ function TrainingTheoryExamModal({
 
                 <div className="rounded-[24px] border border-white/10 bg-white/[0.035] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">Instrucciones de la prueba</p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">{exam.title}</h3>
+                  <h3 className="header-strip mt-3 text-2xl font-semibold text-white">{exam.title}</h3>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-[18px] border border-cyan-300/14 bg-cyan-400/[0.055] p-4">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/56">Duración</p>
@@ -7017,7 +7117,7 @@ function TrainingTheoryExamModal({
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/42">
                         Pregunta {currentIndex + 1} de {totalQuestions}
                       </p>
-                      <h3 className="mt-2 text-xl font-semibold leading-7 text-white">{currentQuestion.prompt}</h3>
+                      <h3 className="header-strip mt-2 text-xl font-semibold leading-7 text-white">{currentQuestion.prompt}</h3>
                     </div>
                     <span className="rounded-full border border-white/10 bg-black/18 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/54">
                       {currentQuestion.topic}
@@ -7462,7 +7562,7 @@ function TrainingReservationModal({
               <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-100/56">
                 Entrenamiento Patagonia Wings
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
+              <h2 className="header-strip mt-2 text-2xl font-semibold text-white sm:text-3xl">
                 Entrenamiento de {aircraft.display_name}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-white/62">
@@ -7556,7 +7656,12 @@ function TrainingReservationModal({
             </p>
             <div className="mt-3 grid gap-3 text-sm text-white/72 sm:grid-cols-4">
               <span><strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}</span>
-              <span><strong className="text-white">Ruta:</strong> {cleanOrigin || "----"} → {cleanDestination || "----"}</span>
+              <span className="inline-flex items-center gap-2">
+                <strong className="text-white">Ruta:</strong>
+                <IcaoFlagBadge icao={cleanOrigin || "----"} size="sm" />
+                <span className="text-white/45">?</span>
+                <IcaoFlagBadge icao={cleanDestination || "----"} size="sm" />
+              </span>
               <span><strong className="text-white">Avión:</strong> {aircraft.aircraft_type_code}</span>
               <span><strong className="text-white">Matrícula:</strong> {TRAINING_AIRCRAFT_REGISTRATION_LABEL}</span>
             </div>
@@ -7568,7 +7673,7 @@ function TrainingReservationModal({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">
                   SimBrief / despacho
                 </p>
-                <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief obligatorio</h3>
+                <h3 className="header-strip mt-1 text-lg font-semibold text-white">OFP SimBrief obligatorio</h3>
               </div>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/58">
                 {reservationData?.reservation_id ? "Reserva creada" : "Pendiente reserva"}
@@ -9016,7 +9121,7 @@ function DashboardWorkspace({
       ? `${selectedItineraryRecord.itinerary_code} · ${selectedItineraryRecord.origin_icao} - ${selectedItineraryRecord.destination_icao}`
       : "Pendiente",
     dispatch: preparedReservationId
-      ? "Despachado ✓"
+      ? "Despachado ?"
       : dispatchReady
         ? "Listo para despachar"
         : "Pendiente",
@@ -9517,8 +9622,8 @@ function DashboardWorkspace({
 
   return (
     <section className="glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
-      <div className="border-b border-white/10 pb-4">
-        <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="border-b border-slate-300/80 pb-2">
+        <nav className="dashboard-tab-nav flex flex-wrap items-end" aria-label="Secciones del dashboard">
           {DASHBOARD_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
             // Bloquear Despacho si hay un vuelo reservado/despachado activo
@@ -9530,23 +9635,22 @@ function DashboardWorkspace({
                 onClick={() => { if (!isDispatchBlocked) onChangeTab(tab.key); }}
                 disabled={isDispatchBlocked}
                 title={isDispatchBlocked ? `Vuelo ${activeReservation?.route_code ?? "activo"} en curso — finaliza o cancela el vuelo para despachar uno nuevo` : undefined}
-                className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                className={`shrink-0 border-b-4 bg-transparent px-2 pb-3 pt-2 text-[22px] font-semibold transition ${
                   isActive
-                    ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                    ? "border-[#2b9bff] text-[#1f5c99]"
                     : isDispatchBlocked
-                    ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/28 opacity-60"
-                    : "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
+                      ? "cursor-not-allowed border-transparent text-slate-300 opacity-70"
+                      : "border-transparent text-slate-600 hover:text-slate-800"
                 }`}
               >
                 {tab.label}
-                        {isDispatchBlocked ? " Bloqueado" : ""}
               </button>
             );
           })}
-        </div>
+        </nav>
       </div>
 
-      <div className="pt-5">
+      <div className="dashboard-boxes-sky-strip pt-5">
         {activeTab === "central" ? (
           <div className="surface-outline rounded-[28px] p-4 sm:p-5 lg:p-6">
             <CentralWorkspace central={central} />
@@ -9559,7 +9663,7 @@ function DashboardWorkspace({
               <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(6,22,44,0.88),rgba(4,15,30,0.92))] p-4 sm:p-5">
                 <DispatchOverviewHeader central={central} metar={dispatchMetar} />
 
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-2 border-b border-white/8 pb-4">
+                <div className="dispatch-steps-nav mt-5 flex flex-wrap items-center border-b border-white/8 pb-4">
                   {DISPATCH_STEPS.map((step) => {
                     const isActive = step.key === dispatchStep;
                     const isEnabled = isStepEnabled(step.key);
@@ -9569,12 +9673,14 @@ function DashboardWorkspace({
                         type="button"
                         onClick={() => handleStepChange(step.key)}
                         disabled={!isEnabled}
-                        className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                        data-active={isActive ? "true" : "false"}
+                        data-disabled={isEnabled ? "false" : "true"}
+                        className={`dispatch-step-link shrink-0 transition ${
                           isActive
-                            ? "bg-emerald-500 text-white shadow-[0_12px_30px_rgba(17,181,110,0.22)]"
+                            ? ""
                             : isEnabled
-                            ? "border border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.07]"
-                            : "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/28 opacity-70"
+                            ? "text-slate-600"
+                            : "cursor-not-allowed text-slate-300"
                         }`}
                         title={isEnabled ? step.shortLabel : "Completa el paso anterior para habilitarlo"}
                       >
@@ -9591,7 +9697,7 @@ function DashboardWorkspace({
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                           Paso 1
                         </p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Tipo de vuelo</h4>
                         <p className="hidden mt-3 text-sm leading-7 text-white/72">
                           Antes de tomar aeronave, aquí defines el perfil operativo del vuelo. Hasta que no elijas una
                           modalidad, Aeronave seguirá bloqueado.
@@ -9620,10 +9726,10 @@ function DashboardWorkspace({
                                 }}
                                 className={`group block w-full overflow-hidden rounded-[20px] border text-left transition duration-200 ${
                                   isComingSoon
-                                    ? "cursor-not-allowed border-white/8 bg-white/[0.025] text-white/46"
+                                    ? "cursor-not-allowed border-white/8 bg-white/[0.025] text-slate-500"
                                     : isSelected
-                                    ? "border-emerald-400/45 bg-emerald-500/[0.12] text-white shadow-[0_16px_34px_rgba(17,181,110,0.18)]"
-                                    : "border-white/8 bg-white/[0.03] text-white/76 hover:bg-white/[0.05]"
+                                    ? "border-emerald-400/45 bg-emerald-500/[0.12] text-slate-800 shadow-[0_16px_34px_rgba(17,181,110,0.18)]"
+                                    : "border-white/8 bg-white/[0.03] text-slate-700 hover:bg-white/[0.05]"
                                 }`}
                               >
                                 <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-[#07131f]">
@@ -9634,13 +9740,13 @@ function DashboardWorkspace({
                                     sizes="(min-width: 1280px) 26vw, (min-width: 640px) 42vw, 100vw"
                                     className={`object-cover object-center transition duration-500 ${
                                       isComingSoon
-                                        ? "scale-[1.02] opacity-50 grayscale"
-                                        : isSelected
+                                        ? "scale-[1.02] opacity-70 grayscale-[0.2]"
+                                      : isSelected
                                         ? "scale-[1.03]"
                                         : "group-hover:scale-[1.04]"
                                     }`}
                                   />
-                                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.08),rgba(4,12,24,0.68))]" />
+                                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,28,0.04),rgba(4,12,24,0.36))]" />
 
                                   {isComingSoon ? (
                                     <div className="absolute inset-0 flex items-center justify-center bg-[#020814]/48 backdrop-blur-[1px]">
@@ -9668,10 +9774,10 @@ function DashboardWorkspace({
                                 </div>
 
                                 <div className="px-4 py-4">
-                                  <span className={`block text-base font-semibold ${isComingSoon ? "text-white/68" : "text-white"}`}>
+                                  <span className={`block text-base font-semibold ${isComingSoon ? "text-slate-500" : "text-slate-800"}`}>
                                     {option.title}
                                   </span>
-                                  <span className={`mt-2 block text-sm leading-7 ${isComingSoon ? "text-white/46" : "text-white/68"}`}>
+                                  <span className={`mt-2 block text-sm leading-7 ${isComingSoon ? "text-slate-400" : "text-slate-600"}`}>
                                     {option.description}
                                   </span>
                                 </div>
@@ -9732,7 +9838,7 @@ function DashboardWorkspace({
                       <div className="space-y-4">
                         <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
-                          <h4 className="mt-3 text-2xl font-semibold text-white">Chárter: origen, destino y aeronave</h4>
+                          <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Chárter: origen, destino y aeronave</h4>
                           <p className="mt-3 text-sm leading-7 text-white/72">
                             Para vuelos Chárter y Vuelo libre no se usa el listado de itinerarios regulares. Aquí defines destino,
                             hora local, aeronave disponible en tu aeropuerto actual y creas la reserva directa para que ACARS la pueda leer.
@@ -9807,7 +9913,7 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 2</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Selección de aeronave</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Ahora sí puedes tomar aeronave. Al elegir una, se habilitará Itinerario. Si cambias el tipo de vuelo,
                           este paso se resetea para mantener el orden lógico.
@@ -9891,7 +9997,7 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 3</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Seleccion de itinerario</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Seleccion de itinerario</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Aqui eliges los itinerarios reales disponibles segun el tipo de vuelo y la aeronave que ya
                           seleccionaste. Sin una ruta confirmada, el paso de Despacho sigue bloqueado.
@@ -9941,8 +10047,10 @@ function DashboardWorkspace({
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Economía estimada del itinerario</p>
                                 <p className="mt-1 text-sm text-white/58">Valores previos al despacho; el cierre real se recalcula con el PIREP y el ledger.</p>
                               </div>
-                              <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
-                                {selectedItineraryRecord.origin_icao} → {selectedItineraryRecord.destination_icao}
+                              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/58">
+                                <IcaoFlagBadge icao={selectedItineraryRecord.origin_icao} size="sm" />
+                                <span className="text-white/45">?</span>
+                                <IcaoFlagBadge icao={selectedItineraryRecord.destination_icao} size="sm" />
                               </span>
                             </div>
                             <EconomyMiniGrid
@@ -10014,7 +10122,7 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Despacho</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Despacho</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Aquí queda el bloque OFP / SimBrief / Navigraph. Para habilitar Resumen, primero debes marcar este
                           despacho como listo y validado.
@@ -10091,7 +10199,7 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 4</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">
                           {isCharterLikeDispatch ? "Despacho Chárter" : "Despacho de itinerario"}
                         </h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
@@ -10119,7 +10227,12 @@ function DashboardWorkspace({
                             <strong className="text-white">Piloto:</strong> {profile?.callsign ?? "—"}
                           </span>
                           <span>
-                            <strong className="text-white">Ruta:</strong> {webOriginCode || "----"} → {webDestinationCode || "----"}
+                            <strong className="text-white">Ruta:</strong>{" "}
+                            <span className="inline-flex items-center gap-2">
+                              <IcaoFlagBadge icao={webOriginCode || "----"} countryCode={webOriginCountryCode} size="sm" />
+                              <span className="text-white/45">?</span>
+                              <IcaoFlagBadge icao={webDestinationCode || "----"} countryCode={webDestinationCountryCode} size="sm" />
+                            </span>
                           </span>
                           <span>
                             <strong className="text-white">Avión:</strong> {webAirframe || selectedAircraftRecord?.aircraft_type_code || "—"}
@@ -10136,7 +10249,7 @@ function DashboardWorkspace({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">
                               SimBrief / despacho
                             </p>
-                            <h3 className="mt-1 text-lg font-semibold text-white">OFP SimBrief automático</h3>
+                            <h3 className="header-strip mt-1 text-lg font-semibold text-white">OFP SimBrief automático</h3>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
                             dispatchReady
@@ -10216,7 +10329,12 @@ function DashboardWorkspace({
                           <div className="mt-3 space-y-1 text-xs text-white/70">
                             <p>Ruta enviada a SimBrief: {appliedRoutePreview.cleanedRoute || "SimBrief sugerirá ruta"}</p>
                             <p>Nivel detectado: {appliedRoutePreview.detectedCruiseLevel || "No detectado"}</p>
-                            <p>Origen/Destino validados: {webOriginCode} → {webDestinationCode}</p>
+                            <p className="inline-flex items-center gap-2">
+                              <span>Origen/Destino validados:</span>
+                              <IcaoFlagBadge icao={webOriginCode} countryCode={webOriginCountryCode} size="sm" />
+                              <span className="text-white/45">?</span>
+                              <IcaoFlagBadge icao={webDestinationCode} countryCode={webDestinationCountryCode} size="sm" />
+                            </p>
                           </div>
                           {routeFinderSummary ? (
                             <div className="mt-3 rounded-[14px] border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100/90">
@@ -10251,7 +10369,11 @@ function DashboardWorkspace({
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Ruta</p>
-                            <p className="mt-1 text-sm font-semibold text-white">{webOriginCode} → {webDestinationCode}</p>
+                            <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                              <IcaoFlagBadge icao={webOriginCode} countryCode={webOriginCountryCode} size="sm" />
+                              <span className="text-white/45">?</span>
+                              <IcaoFlagBadge icao={webDestinationCode} countryCode={webDestinationCountryCode} size="sm" />
+                            </p>
                           </div>
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">Airframe</p>
@@ -10340,7 +10462,7 @@ function DashboardWorkspace({
                     <div className="space-y-4">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Panel de salida Patagonia Wings</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Panel de salida Patagonia Wings</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Validacion web + SimBrief en segundo plano. Vista final operativa antes de enviar a ACARS.
                         </p>
@@ -10447,7 +10569,7 @@ function DashboardWorkspace({
                     <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                       <div className="rounded-[22px] border border-white/8 bg-[#031428]/65 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Paso 5</p>
-                        <h4 className="mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
+                        <h4 className="header-strip mt-3 text-2xl font-semibold text-white">Resumen final y envío a ACARS</h4>
                         <p className="mt-3 text-sm leading-7 text-white/72">
                           Última validación del flujo. Este paso solo se abre cuando los cuatro anteriores quedaron efectivamente completados.
                         </p>
@@ -10525,7 +10647,7 @@ function DashboardWorkspace({
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-semibold text-white leading-tight">
+                    <h2 className="header-strip text-2xl font-semibold text-white leading-tight">
                       {profile.first_name || profile.last_name
                         ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()
                         : profile.callsign}
@@ -10882,7 +11004,7 @@ function DashboardWorkspace({
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/58">Entrenamiento</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Centro de Capacitación y Perfeccionamiento</h2>
+                    <h2 className="header-strip mt-2 text-2xl font-semibold text-white">Centro de Capacitación y Perfeccionamiento</h2>
                     <p className="mt-2 max-w-4xl text-sm leading-6 text-white/66">
                       Vuelos de práctica por aeronave, con origen/destino libre y evaluación histórica. Estas sesiones acumulan horas por tipo de avión,
                       pero no modifican el Patagonia Score general ni el promedio de ascenso.
@@ -10936,7 +11058,7 @@ function DashboardWorkspace({
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Plan de entrenamiento</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Tarjetas desplegables por categoría de avión</h3>
+                  <h3 className="header-strip mt-2 text-xl font-semibold text-white">Tarjetas desplegables por categoría de avión</h3>
                   <p className="mt-2 max-w-4xl text-sm leading-6 text-white/56">
                     Cada bloque se abre según el rango del piloto. Siempre quedan habilitadas las aeronaves que ya puede volar y, además,
                     la siguiente categoría inmediata para practicarla antes del ascenso definitivo.
@@ -11159,7 +11281,7 @@ function DashboardWorkspace({
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Habilitaciones</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Checkrides operativos</h3>
+                  <h3 className="header-strip mt-2 text-xl font-semibold text-white">Checkrides operativos</h3>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
                     Aquí quedará el listado de habilitaciones prácticas del piloto. Cada bloque podrá conectarse después
                     con lógica real de aprobación, pero desde ya queda visible el flujo con botón de checkride.
@@ -11225,7 +11347,7 @@ function DashboardWorkspace({
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Teóricas</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Evaluaciones teóricas</h3>
+                  <h3 className="header-strip mt-2 text-xl font-semibold text-white">Evaluaciones teóricas</h3>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
                     Bloque reservado para las pruebas teóricas del plan de formación. Queda preparado con seis evaluaciones
                     base y su acción directa para aplicar cada teórica.
@@ -11351,7 +11473,7 @@ function DashboardPartnersShowcase() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-200/70">
             Partners / Integraciones
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h2 className="header-strip mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             Programas recomendados para operar Patagonia Wings
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/68">
@@ -11393,11 +11515,11 @@ function DashboardPartnersShowcase() {
                 </p>
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h3 className="text-2xl font-semibold text-white">{partner.name}</h3>
+                    <h3 className="header-strip text-2xl font-semibold text-white">{partner.name}</h3>
                     <p className="mt-2 max-w-xl text-sm leading-6 text-white/62">{partner.description}</p>
                   </div>
                   <span className="inline-flex w-fit shrink-0 items-center justify-center rounded-full border border-cyan-200/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition group-hover:border-cyan-100/34 group-hover:bg-cyan-300/16">
-                    {partner.cta} →
+                    {partner.cta} ?
                   </span>
                 </div>
               </div>
@@ -11546,7 +11668,6 @@ function DashboardContent() {
 
   const compactMetrics = useMemo<MetricDisplayItem[]>(
     () => [
-      { label: "Estado", type: "text", value: metrics.pilotStatus },
       { label: "Patagonia Score", type: "number", value: metrics.patagoniaScore, decimals: 1 },
       { label: "Rango", type: "text", value: metrics.careerRank },
       {
@@ -11576,14 +11697,14 @@ function DashboardContent() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1680px] px-4 py-10 sm:px-6 sm:py-14 xl:px-10 lg:py-16">
-      <section className="glass-panel rounded-[30px] px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
+    <div className="dashboard-adaptive-scale mx-auto w-full max-w-[1680px] px-4 py-10 sm:px-6 sm:py-14 xl:px-10 lg:py-16">
+      <section className="dashboard-welcome-strip rounded-[30px] border px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
-            <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
+            <h1 className="text-3xl font-extrabold leading-tight text-white sm:text-4xl">
               Bienvenido, {pilotName}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-white/76 sm:text-[15px]">
+            <p className="mt-3 max-w-3xl text-base leading-8 text-white sm:text-[19px]">
               Queremos ser la mejor aerolínea virtual del sur del mundo. Ayúdanos a seguir mejorando cada vuelo.
             </p>
           </div>

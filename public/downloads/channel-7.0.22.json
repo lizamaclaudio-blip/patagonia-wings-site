@@ -5,8 +5,8 @@
     "currentVersion":  "7.0.22",
     "minSupportedVersion":  "1.0.0",
     "forceUpdateBelow":  "7.0.22",
-    "revision":  "2026.5.9.5",
-    "latestRevision":  "2026.5.9.5",
+    "revision":  "2026.5.9.12",
+    "latestRevision":  "2026.5.9.12",
     "manifestUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "packagesIndexUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/packages/index.json",
     "installerUrl":  "https://qoradagitvccyabfkgkw.supabase.co/storage/v1/object/public/acars-releases/PatagoniaWingsACARSSetup.exe",
@@ -19,5 +19,5 @@
     "required":  true,
     "notes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
     "releaseNotes":  "- ACARS 7.0.13 con finalize confirmado solo por servidor real (success+persisted+reservationClosed+summaryUrl).\n- Reenviar PIREP seguro para pendientes/queued_retry, sin marcar enviado en falsos positivos.\n- HUD MSFS2020 independiente + bridge localhost state/health y soporte operativo.\n- Publicacion de installer real 7.0.13 con autoupdate y manifests sincronizados.",
-    "releaseDate":  "2026-05-09T03:06:08.259Z"
+    "releaseDate":  "2026-05-09T04:47:27.004Z"
 }

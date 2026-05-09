@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+﻿import type { User } from "@supabase/supabase-js";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculateFlightCommission, calculateDamageDeduction, estimateFlightEconomy } from "@/lib/pilot-economy";
 import { buildPirepPerfectOfficialScoringInput } from "@/lib/pirep-perfect-official";
@@ -1525,7 +1525,7 @@ export function evaluateOfficialCloseout(params: {
     manualReviewReasons.push("missing_telemetry");
   }
 
-  if (!evidenceOk) {
+  if (!evidenceOk && finalStatus !== "crashed") {
     finalStatus = "manual_review";
     manualReviewReasons.push("insufficient_flight_evidence");
   }
@@ -1587,6 +1587,10 @@ export function evaluateOfficialCloseout(params: {
         ? reportedActualArrival
         : normalizeIcao(reservation.origin_ident);
   const aircraftStatus = finalStatus === "crashed" ? "maintenance" : "available";
+  const maintenanceHoldUntilUtc =
+    finalStatus === "crashed"
+      ? new Date(new Date(completedAt).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
 
   const healthPenalty = finalStatus === "crashed" ? 45 : severeDamage ? 25 : asNumber(damageSummary.events_count) * 3;
   const currentOverall = 100;
@@ -1599,17 +1603,17 @@ export function evaluateOfficialCloseout(params: {
     maintenance_required: finalStatus === "crashed" || severeDamage,
     maintenance_reason:
       finalStatus === "crashed"
-        ? "Accidente detectado por cierre oficial ACARS."
+        ? `Accidente detectado por cierre oficial ACARS. Bloqueo operativo por 3 dias hasta ${maintenanceHoldUntilUtc}.`
         : severeDamage
           ? "Daño severo detectado por cierre oficial ACARS."
           : null,
   };
 
-  const evaluationStatus: "evaluable" | "no_evaluable" = evidenceOk ? "evaluable" : "no_evaluable";
+  const evaluationStatus: "evaluable" | "no_evaluable" = evidenceOk || finalStatus === "crashed" ? "evaluable" : "no_evaluable";
   const scoringStatus = evaluationStatus === "no_evaluable"
     ? "pending_server_closeout"
-    : (finalStatus === "manual_review" || manualReviewReasons.length > 0 ? "manual_review" : "scored");
-  const economyEligible = finalStatus === "completed" && evaluationStatus === "evaluable";
+    : (finalStatus === "manual_review" || (manualReviewReasons.length > 0 && finalStatus !== "crashed") ? "manual_review" : "scored");
+  const economyEligible = (finalStatus === "completed" || finalStatus === "crashed") && evaluationStatus === "evaluable";
   const finalScore = clamp(
     procedureScore * 0.35 + missionScore * 0.25 + safetyScore * 0.25 + efficiencyScore * 0.15,
     0,
@@ -1628,6 +1632,7 @@ export function evaluateOfficialCloseout(params: {
     aircraft_type_code: asText(reservation.aircraft_type_code || activeFlight?.aircraftTypeCode || activeFlight?.aircraftIcao),
     aircraft_registration: asText(reservation.aircraft_registration),
     status: finalStatus,
+    maintenance_hold_until_utc: maintenanceHoldUntilUtc,
     block_minutes: actualBlockMinutes,
     distance_nm: asNumber(report?.distance),
     fuel_used_kg: Math.round(fuelUsedKg),

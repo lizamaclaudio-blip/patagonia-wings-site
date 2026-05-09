@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/browser";
 import { AcarsLiveLogPanel } from "./AcarsLiveLogPanel";
+import IcaoFlagBadge from "@/components/ui/IcaoFlagBadge";
 import {
   AIRCRAFT_LICENSE_REQUIREMENTS,
   CAREER_RANKS,
@@ -242,7 +243,7 @@ function SectionTitle({
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">{eyebrow}</p>
-      <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">{title}</h2>
+      <h2 className="header-strip mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">{title}</h2>
       {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">{description}</p> : null}
     </div>
   );
@@ -285,6 +286,16 @@ function routeLabel(flight: FlightLike) {
   const destination = flight.destination_ident ?? "";
   if (origin && destination) return `${origin} - ${destination}`;
   return flight.route_code ?? flight.flight_number ?? "Vuelo";
+}
+
+function RouteIcaoPair({ origin, destination }: { origin?: string | null; destination?: string | null }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <IcaoFlagBadge icao={origin ?? "---"} size="sm" />
+      <span className="text-white/45">→</span>
+      <IcaoFlagBadge icao={destination ?? "---"} size="sm" />
+    </span>
+  );
 }
 
 export default function PilotOfficePanel({
@@ -584,7 +595,7 @@ export default function PilotOfficePanel({
 
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">Oficina del piloto</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-white">{getDisplayName(profile)}</h2>
+              <h2 className="header-strip mt-1 text-2xl font-semibold tracking-[-0.03em] text-white">{getDisplayName(profile)}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-100">
                   {callsign || "Sin callsign"}
@@ -945,7 +956,9 @@ export default function PilotOfficePanel({
             {activeReservation ? (
               <div className="mt-5 rounded-[18px] border border-cyan-300/16 bg-cyan-300/[0.045] p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/55">Reserva activa</p>
-                <p className="mt-2 text-lg font-semibold text-white">{routeLabel(activeReservation)}</p>
+                <div className="mt-2 text-lg font-semibold text-white">
+                  <RouteIcaoPair origin={activeReservation.origin_ident} destination={activeReservation.destination_ident} />
+                </div>
                 <p className="mt-1 text-sm text-white/55">{activeReservation.aircraft_type_code ?? "Aeronave pendiente"} {activeReservation.aircraft_registration ? `- ${activeReservation.aircraft_registration}` : ""}</p>
               </div>
             ) : null}
@@ -1014,7 +1027,7 @@ export default function PilotOfficePanel({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Solicitados</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Estado actual</h3>
+                  <h3 className="header-strip mt-2 text-xl font-semibold text-white">Estado actual</h3>
                 </div>
                 <button
                   type="button"
@@ -1066,7 +1079,7 @@ export default function PilotOfficePanel({
 
             <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Elegibles</p>
-              <h3 className="mt-2 text-xl font-semibold text-white">Listos para solicitar</h3>
+              <h3 className="header-strip mt-2 text-xl font-semibold text-white">Listos para solicitar</h3>
 
               <div className="mt-5 space-y-3">
                 {checkrideCandidates.length > 0 ? (
@@ -1155,10 +1168,10 @@ export default function PilotOfficePanel({
                     <td className="py-3 font-medium text-white">
                       {flight.id ? (
                         <Link href={`/flights/${flight.id}`} className="transition hover:text-[#67d7ff]">
-                          {routeLabel(flight)}
+                          <RouteIcaoPair origin={flight.origin_ident} destination={flight.destination_ident} />
                         </Link>
                       ) : (
-                        routeLabel(flight)
+                        <RouteIcaoPair origin={flight.origin_ident} destination={flight.destination_ident} />
                       )}
                     </td>
                     <td className="py-3 text-white/65">{flight.aircraft_type_code ?? "Pendiente"}</td>

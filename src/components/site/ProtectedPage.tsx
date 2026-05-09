@@ -84,7 +84,7 @@ export default function ProtectedPage({ children }: ProtectedPageProps) {
       <div className="pw-container py-12 sm:py-16 lg:py-20">
         <section className="glass-panel rounded-[34px] p-7 sm:p-9">
           <span className="parallax-chip mb-6">Validando sesión</span>
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+          <h1 className="header-strip text-3xl font-semibold text-white sm:text-4xl">
             Cargando portal Patagonia Wings
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-8 text-white/78">

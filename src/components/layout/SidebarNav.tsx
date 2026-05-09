@@ -23,7 +23,7 @@ export function SidebarNav() {
         <BrandLogo compact />
         <div className="mt-5">
           <div className="panel-chip">SUR STYLE</div>
-          <h2 className="mt-4 text-2xl font-semibold text-white">Web Operations Center</h2>
+          <h2 className="header-strip mt-4 text-2xl font-semibold text-white">Web Operations Center</h2>
           <p className="mt-3 text-sm leading-6 text-white/78">
             Nuevo look Patagonia Wings en blanco, azul y verde, usando el mismo ADN visual de la aerolínea.
           </p>

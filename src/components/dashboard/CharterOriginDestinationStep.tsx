@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
+import IcaoFlagBadge from "@/components/ui/IcaoFlagBadge";
 import {
   listCharterAircraftAtOrigin,
   searchCharterAirports,
@@ -601,7 +602,7 @@ export default function CharterOriginDestinationStep({
     <div className="grid gap-5">
       <div className="rounded-[24px] border border-cyan-300/14 bg-cyan-300/[0.045] p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">Chárter</p>
-        <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">Origen / Destino libre</h3>
+        <h3 className="header-strip mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">Origen / Destino libre</h3>
         <p className="mt-2 text-sm leading-6 text-white/58">
           El origen queda bloqueado según la ubicación actual del piloto. Elige destino, tipo de aeronave, matrícula y hora local.
         </p>
@@ -627,9 +628,11 @@ export default function CharterOriginDestinationStep({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Estimación económica del chárter</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">
-              {normalizedOrigin || "---"} → {normalizedDestination || "---"}
-            </h3>
+            <div className="header-strip mt-2 inline-flex items-center gap-2 text-xl font-semibold text-white">
+              <IcaoFlagBadge icao={normalizedOrigin || "---"} />
+              <span className="text-white/45">→</span>
+              <IcaoFlagBadge icao={normalizedDestination || "---"} />
+            </div>
           </div>
           {loadingEconomy ? (
             <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/55">Calculando...</span>
@@ -679,7 +682,7 @@ export default function CharterOriginDestinationStep({
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Aeronaves disponibles</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">Selección de aeronave</h3>
+            <h3 className="header-strip mt-2 text-xl font-semibold text-white">Selección de aeronave</h3>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-semibold text-white/55">
             {loadingAircraft || loadingCompatibility ? "Cargando" : `${aircraft.length} disponibles`}

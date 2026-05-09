@@ -198,7 +198,7 @@ export default function HomeFleetShowcase() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-200/72">
               Flota certificada
             </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h3 className="header-strip mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Aeronaves disponibles
             </h3>
           </div>

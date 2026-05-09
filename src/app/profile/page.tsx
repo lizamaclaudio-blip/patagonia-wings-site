@@ -310,7 +310,7 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Billetera operacional</p>
-          <h3 className="mt-1 text-lg font-black text-white">Licencias, pruebas y habilitaciones</h3>
+          <h3 className="header-strip mt-1 text-lg font-black text-white">Licencias, pruebas y habilitaciones</h3>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-white/50">
             Usa tu saldo virtual para pagar pruebas teóricas, checkrides, licencias y habilitaciones. Cada movimiento queda registrado para historial y métricas.
           </p>
@@ -547,7 +547,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40 print:text-gray-500">Período actual</p>
-          <h3 className="mt-1 text-xl font-bold text-white print:text-black">{monthName} {data.period.year}</h3>
+          <h3 className="header-strip mt-1 text-xl font-bold text-white print:text-black">{monthName} {data.period.year}</h3>
           <p className="mt-1 text-xs text-white/48 print:text-gray-600">Fecha de pago estimada: {data.paymentDate}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -945,7 +945,7 @@ function ProfileContent() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <span className="parallax-chip">Cuenta piloto</span>
-              <h1 className="mt-4 text-3xl font-semibold text-white sm:text-[40px]">
+              <h1 className="header-strip mt-4 text-3xl font-semibold text-white sm:text-[40px]">
                 Área personal Patagonia Wings
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72 sm:text-base">
@@ -1002,7 +1002,7 @@ function ProfileContent() {
                 <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/56">
                   {form.callsign || "PWG000"}
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight text-white">
+                <h2 className="header-strip mt-3 text-3xl font-semibold leading-tight text-white">
                   {pilotName}
                 </h2>
 
@@ -1131,7 +1131,7 @@ function ProfileContent() {
           <section className="glass-panel rounded-[30px] p-6 sm:p-7">
             <div className="mb-5">
               <span className="section-chip">Mi economía</span>
-              <h2 className="mt-4 text-3xl font-semibold text-white">Liquidación del período actual</h2>
+              <h2 className="header-strip mt-4 text-3xl font-semibold text-white">Liquidación del período actual</h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
                 Tus comisiones, sueldo base y deducciones del mes en curso. El pago se realiza el último día hábil del mes.
               </p>
@@ -1144,7 +1144,7 @@ function ProfileContent() {
           <section className="glass-panel rounded-[30px] p-6 sm:p-7">
             <div className="mb-5">
               <span className="section-chip">Datos personales</span>
-              <h2 className="mt-4 text-3xl font-semibold text-white">Editar información del piloto</h2>
+              <h2 className="header-strip mt-4 text-3xl font-semibold text-white">Editar información del piloto</h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-white/72">
                 Dejamos el hub bloqueado porque solo se define al registrarte. El simulador también queda fijo en MSFS 2020 por ahora.
               </p>

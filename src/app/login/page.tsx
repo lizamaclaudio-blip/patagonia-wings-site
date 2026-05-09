@@ -72,7 +72,7 @@ function LoginPageContent() {
         <section className="glass-panel rounded-[34px] p-7 sm:p-9 lg:p-10">
           <span className="parallax-chip mb-6">ACCESO PILOTO</span>
 
-          <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
+          <h1 className="header-strip text-4xl font-semibold leading-tight text-white sm:text-5xl">
             Inicia sesión en el portal operacional
           </h1>
 
@@ -100,7 +100,7 @@ function LoginPageContent() {
         <section className="glass-panel rounded-[34px] p-7 sm:p-9">
           <span className="section-chip">Login</span>
 
-          <h2 className="mt-4 text-3xl font-semibold text-white">
+          <h2 className="header-strip mt-4 text-3xl font-semibold text-white">
             Entrar al sistema
           </h2>
 
@@ -184,7 +184,7 @@ export default function LoginPage() {
               <div className="pw-container flex min-h-[calc(100vh-108px)] items-center py-12 sm:py-16 lg:py-20">
                 <section className="glass-panel rounded-[34px] p-7 sm:p-9">
                   <span className="parallax-chip mb-6">ACCESO PILOTO</span>
-                  <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+                  <h1 className="header-strip text-3xl font-semibold text-white sm:text-4xl">
                     Cargando acceso Patagonia Wings
                   </h1>
                 </section>

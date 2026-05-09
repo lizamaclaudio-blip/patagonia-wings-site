@@ -89,7 +89,7 @@ export default function PublicHeader() {
       </Link>
 
       {/* Nav links */}
-      <nav className="public-header-nav hidden items-center gap-7 text-sm font-semibold tracking-[0.01em] text-white/94 lg:flex xl:gap-9 xl:text-[15px]">
+      <nav className="public-header-nav hidden items-center text-base font-semibold tracking-[0.02em] text-white/94 lg:flex xl:text-[17px]">
         {navItems.map((item) => {
           const active = isPublicNavActive(pathname, item.href);
           return (

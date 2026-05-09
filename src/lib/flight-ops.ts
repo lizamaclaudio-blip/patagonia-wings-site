@@ -389,7 +389,7 @@ function buildAircraftVariantLabel(record: {
     record.addon_provider?.trim(),
   ]
     .filter((item): item is string => Boolean(item))
-    .join(" Â· ");
+    .join(" · ");
 }
 
 function getDisplayCategoryFromCode(code: string) {
@@ -1392,8 +1392,8 @@ export function getDispatchBlockingReasons(
   return reasons;
 }
 
-// CategorÃ­as permitidas por service_profile de ruta.
-// Replicado desde la lÃ³gica de la RPC create_flight_reservation en Supabase.
+// Categorías permitidas por service_profile de ruta.
+// Replicado desde la lógica de la RPC create_flight_reservation en Supabase.
 const ROUTE_PROFILE_ALLOWED_CATEGORIES: Record<string, string[]> = {
   feeder:   ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet"],
   regional: ["single_turboprop", "twin_turboprop", "piston_twin", "regional_jet", "narrowbody_jet"],
@@ -1410,7 +1410,7 @@ export function isAircraftCompatibleWithRoute(
   if (!routeServiceProfile || !aircraftTypeCode) return true; // sin datos: no filtrar
   const allowed = ROUTE_PROFILE_ALLOWED_CATEGORIES[routeServiceProfile.toLowerCase()];
   if (!allowed) return true; // profile desconocido: no filtrar
-  // Buscamos la categorÃ­a del tipo en la lista estÃ¡tica de aircraft_types
+  // Buscamos la categoría del tipo en la lista estática de aircraft_types
   const cat = AIRCRAFT_TYPE_CATEGORY[aircraftTypeCode.toUpperCase()] ?? null;
   if (!cat) return true; // tipo desconocido: no filtrar
   return allowed.includes(cat);
@@ -1627,7 +1627,7 @@ export async function listAvailableAircraft(profile: PilotProfileRecord) {
           typeof row.variant_name === "string" && row.variant_name
             ? row.variant_name
             : typeof row.addon_provider === "string" && row.addon_provider
-              ? `${typeof row.aircraft_model_code === "string" ? row.aircraft_model_code : ""} Â· ${row.addon_provider}`
+              ? `${typeof row.aircraft_model_code === "string" ? row.aircraft_model_code : ""} · ${row.addon_provider}`
               : "",
         current_airport_icao:
           typeof row.current_airport_code === "string" ? row.current_airport_code : airport,
@@ -2639,7 +2639,7 @@ export async function markDispatchPrepared(
         .update(economyReservationPatch)
         .eq("id", reservationId);
     } catch (economyErr) {
-      console.warn("[markDispatchPrepared] No se pudo guardar economÃ­a OFP planificada en reserva:", economyErr);
+      console.warn("[markDispatchPrepared] No se pudo guardar economía OFP planificada en reserva:", economyErr);
     }
 
     try {
@@ -2703,7 +2703,7 @@ export async function markDispatchPrepared(
           },
         });
     } catch (snapshotErr) {
-      console.warn("[markDispatchPrepared] No se pudo guardar snapshot econÃ³mico OFP:", snapshotErr);
+      console.warn("[markDispatchPrepared] No se pudo guardar snapshot económico OFP:", snapshotErr);
     }
   }
 
@@ -2761,7 +2761,7 @@ export async function markDispatchPrepared(
     }
   }
 
-  // ChÃ¡rter no requiere route_id de network_routes. Itinerario lo mantiene cuando existe.
+  // Chárter no requiere route_id de network_routes. Itinerario lo mantiene cuando existe.
   try {
     const { data, error } = await supabase
       .from("dispatch_packages")
@@ -2860,4 +2860,5 @@ export function fromDateTimeLocalValue(value: string) {
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
 }
+
 

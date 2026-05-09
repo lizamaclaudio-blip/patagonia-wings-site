@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import type { PilotProfileRecord } from "@/lib/pilot-profile";
 import CharterOriginDestinationStep from "@/components/dashboard/CharterOriginDestinationStep";
+import IcaoFlagBadge from "@/components/ui/IcaoFlagBadge";
 import {
   buildCharterFlightOperation,
   createCharterReservation,
@@ -99,14 +100,14 @@ export default function CharterDispatchPanel({
       });
 
       if (!result.ok || !result.reservation_id) {
-        setError(result.error ? `No se pudo crear el Chárter: ${result.error}` : "No se pudo crear el Chárter.");
+        setError(result.error ? `No se pudo crear el ChÃ¡rter: ${result.error}` : "No se pudo crear el ChÃ¡rter.");
         return;
       }
 
       setMessage(`Chárter reservado. Continúa en Despacho para preparar el OFP.`);
       onReserved?.(result, operationDraft);
     } catch (err) {
-      setError(err instanceof Error ? `No se pudo crear el Chárter: ${err.message}` : "No se pudo crear el Chárter. Revisa aeropuertos, rango/licencia o disponibilidad de aeronave.");
+      setError(err instanceof Error ? `No se pudo crear el ChÃ¡rter: ${err.message}` : "No se pudo crear el ChÃ¡rter. Revisa aeropuertos, rango/licencia o disponibilidad de aeronave.");
     } finally {
       setSaving(false);
     }
@@ -122,7 +123,7 @@ export default function CharterDispatchPanel({
         selectedAircraftId={selectedAircraft?.aircraft_id ?? null}
         originLocked={true}
         onOriginChange={() => {
-          // Origen bloqueado por ubicación actual del piloto.
+          // Origen bloqueado por ubicaciÃ³n actual del piloto.
         }}
         onDestinationChange={setDestinationIcao}
         onScheduledDepartureChange={setScheduledDeparture}
@@ -141,10 +142,10 @@ export default function CharterDispatchPanel({
 
       {operationDraft ? (
         <div className="rounded-[22px] border border-cyan-300/16 bg-cyan-300/[0.045] p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60">Resumen Chárter</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">{operationDraft.origin} → {operationDraft.destination}</h3>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60">Resumen ChÃ¡rter</p>
+          <div className="header-strip mt-2 inline-flex items-center gap-2 text-xl font-semibold text-white"><IcaoFlagBadge icao={operationDraft.origin} /><span className="text-white/45">→</span><IcaoFlagBadge icao={operationDraft.destination} /></div>
           <p className="mt-2 text-sm text-white/58">
-            {operationDraft.aircraftTailNumber} · {operationDraft.aircraftTypeCode} · Meteo real obligatoria · Mueve piloto y aeronave al destino.
+            {operationDraft.aircraftTailNumber} Â· {operationDraft.aircraftTypeCode} Â· Meteo real obligatoria Â· Mueve piloto y aeronave al destino.
           </p>
         </div>
       ) : null}
@@ -168,7 +169,7 @@ export default function CharterDispatchPanel({
           onClick={reserveCharter}
           className="rounded-[14px] bg-[#67d7ff] px-5 py-3 text-sm font-bold text-[#04162a] transition hover:bg-[#8be2ff] disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {saving ? "Reservando..." : "Crear reserva Chárter"}
+          {saving ? "Reservando..." : "Crear reserva ChÃ¡rter"}
         </button>
       </div>
     </div>

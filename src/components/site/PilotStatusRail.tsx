@@ -266,7 +266,7 @@ export default function PilotStatusRail() {
           <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/56">
             {profile?.callsign ?? "PWG000"}
           </p>
-          <h3 className="mt-2 text-2xl font-semibold leading-tight text-white">
+          <h3 className="header-strip mt-2 text-2xl font-semibold leading-tight text-white">
             {pilotName}
           </h3>
 

@@ -187,7 +187,7 @@ export default async function HomePage() {
           <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch">
             <div className="flex h-full flex-col">
               <div className="parallax-chip">Integración oficial</div>
-              <h2 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+              <h2 className="header-strip mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 Patagonia Wings se conecta con Navigraph y SimBrief antes del login operacional
               </h2>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-200/84">
@@ -225,7 +225,7 @@ export default async function HomePage() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200/72">
                       Ecosistema operativo
                     </p>
-                    <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                    <h3 className="header-strip mt-3 text-3xl font-semibold tracking-tight text-white">
                       Integrado y listo para despacho
                     </h3>
                   </div>
@@ -263,7 +263,7 @@ export default async function HomePage() {
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <div className="parallax-chip">Nosotros</div>
-            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+            <h2 className="header-strip mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
               Una comunidad que crece con objetivos, inmersión y rol real
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200/88">
@@ -307,7 +307,7 @@ export default async function HomePage() {
           <div className="parallax-chip">Servicios</div>
           <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h2 className="max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+              <h2 className="header-strip max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 Operación web, economía y despacho en una sola plataforma
               </h2>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/78">
@@ -323,7 +323,7 @@ export default async function HomePage() {
                   {item.icon}
                 </div>
                 <div className="mt-5 h-1.5 w-16 rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300" />
-                <h3 className="mt-5 text-2xl font-semibold text-white">{item.title}</h3>
+                <h3 className="header-strip mt-5 text-2xl font-semibold text-white">{item.title}</h3>
                 <p className="mt-4 text-base leading-7 text-slate-200/82">{item.text}</p>
               </article>
             ))}
@@ -335,7 +335,7 @@ export default async function HomePage() {
         <div className="parallax-chip">Flota</div>
         <div className="mt-6 grid gap-9 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-stretch">
           <div className="flex h-full flex-col">
-            <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+            <h2 className="header-strip max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
               Flota Patagonia Wings en preparación operacional
             </h2>
 
@@ -376,7 +376,7 @@ export default async function HomePage() {
       <section id="certificaciones" className="border-y border-white/8 bg-[rgba(5,19,39,0.92)] py-20">
         <div className="pw-container">
           <div className="parallax-chip">Certificaciones</div>
-          <h2 className="mt-5 max-w-5xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+          <h2 className="header-strip mt-5 max-w-5xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
             Checkrides, habilitaciones y teoría para volar con estándar Patagonia Wings
           </h2>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">
@@ -422,7 +422,7 @@ export default async function HomePage() {
           <div className="parallax-chip mb-5">Descargas</div>
           <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
             <div>
-              <h2 className="text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+              <h2 className="header-strip text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 ACARS Patagonia Wings
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/82">
@@ -549,7 +549,7 @@ export default async function HomePage() {
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               <div className="parallax-chip">Integracion recomendada</div>
-              <h2 className="mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+              <h2 className="header-strip mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                 SayIntentions.AI
               </h2>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">

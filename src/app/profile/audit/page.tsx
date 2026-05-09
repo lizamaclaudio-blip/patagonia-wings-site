@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PublicHeader from "@/components/site/PublicHeader";
 import ProtectedPage, { useProtectedSession } from "@/components/site/ProtectedPage";
+import IcaoFlagBadge from "@/components/ui/IcaoFlagBadge";
 import { ensurePilotProfile } from "@/lib/pilot-profile";
 import { reglajeSections } from "@/lib/pwg-reglaje";
 import { supabase } from "@/lib/supabase/browser";
@@ -96,7 +97,7 @@ function AuditContent() {
         profilesRes.error
           ? profilesRes.error.message
           : profilesRow
-            ? `SCH ${profilesRow.scheduled_block_min ?? "—"} / P50 ${profilesRow.expected_block_p50 ?? "—"} / P80 ${profilesRow.expected_block_p80 ?? "—"} / buffers ${depHigh}-${arrHigh}`
+            ? `SCH ${profilesRow.scheduled_block_min ?? "â€”"} / P50 ${profilesRow.expected_block_p50 ?? "â€”"} / P80 ${profilesRow.expected_block_p80 ?? "â€”"} / buffers ${depHigh}-${arrHigh}`
             : "Sin perfiles legibles"
       );
 
@@ -117,7 +118,7 @@ function AuditContent() {
           ? scoreRes.error.message
           : scoreRes.data
             ? `Patagonia Score ${scoreRes.data.pulso_10 ?? 0}`
-            : "Sin score legible aún"
+            : "Sin score legible aÃºn"
       );
 
       mark(
@@ -167,12 +168,12 @@ function AuditContent() {
   return (
     <div className="pw-container py-12 sm:py-16 lg:py-20">
       <section className="glass-panel rounded-[34px] p-7 sm:p-9">
-        <span className="parallax-chip mb-6">AUDITORÍA INTERNA</span>
+        <span className="parallax-chip mb-6">AUDITORÃA INTERNA</span>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">Índice vivo Patagonia Wings</h1>
+            <h1 className="header-strip text-4xl font-semibold leading-tight text-white sm:text-5xl">Ãndice vivo Patagonia Wings</h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-white/80">
-              Registro interno de reglaje + chequeo rápido contra Supabase. Queda oculto del resto y visible solo para PWG001.
+              Registro interno de reglaje + chequeo rÃ¡pido contra Supabase. Queda oculto del resto y visible solo para PWG001.
             </p>
           </div>
           <div className="flex gap-3">
@@ -184,7 +185,7 @@ function AuditContent() {
 
       {!isAllowed && !loading ? (
         <section className="mt-6 glass-panel rounded-[30px] p-7">
-          <p className="text-white/80">Esta vista está reservada para PWG001.</p>
+          <p className="text-white/80">Esta vista estÃ¡ reservada para PWG001.</p>
         </section>
       ) : null}
 
@@ -208,9 +209,9 @@ function AuditContent() {
                   <tbody>
                     {appeals.map((row) => (
                       <tr key={row.id} className="border-b border-white/5 last:border-0">
-                        <td className="py-3 font-medium text-white">{`${row.origin_ident ?? "---"} → ${row.destination_ident ?? "---"}`}</td>
-                        <td className="py-3 text-white/70">{row.pilot_callsign ?? "—"}</td>
-                        <td className="py-3 text-white/54">{row.status ?? "—"}</td>
+                        <td className="py-3 font-medium text-white"><div className="flex items-center gap-2"><IcaoFlagBadge icao={row.origin_ident ?? "---"} size="sm" /><span className="text-white/45">→</span><IcaoFlagBadge icao={row.destination_ident ?? "---"} size="sm" /></div></td>
+                        <td className="py-3 text-white/70">{row.pilot_callsign ?? "â€”"}</td>
+                        <td className="py-3 text-white/54">{row.status ?? "â€”"}</td>
                         <td className="py-3 text-right">
                           <Link href={`/flights/${row.id}`} className="text-sm font-semibold text-[#67d7ff] transition hover:text-white">
                             Ver vuelo
@@ -232,7 +233,7 @@ function AuditContent() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">Reglas vigentes</p>
                   <div className="mt-4 space-y-3 text-sm leading-7 text-white/82">
                     {section.rules.map((rule) => (
-                      <p key={rule}>• {rule}</p>
+                      <p key={rule}>â€¢ {rule}</p>
                     ))}
                   </div>
                 </div>
