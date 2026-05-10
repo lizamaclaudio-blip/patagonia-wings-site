@@ -9558,7 +9558,7 @@ function DashboardWorkspace({
   const activeProgressPercent = Math.round(clamp01(activeFlightProgress) * 100);
 
   return (
-    <section className="glass-panel rounded-[30px] p-4 sm:p-5 lg:p-6">
+    <section className="rounded-[30px] border border-white/30 bg-white/14 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.14)] backdrop-blur-xl sm:p-5 lg:p-6">
       <div className="border-b border-slate-300/80 pb-2">
         <nav className="dashboard-tab-nav flex flex-wrap items-end" aria-label="Secciones del dashboard">
           {DASHBOARD_TABS.map((tab) => {

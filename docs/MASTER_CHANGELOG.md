@@ -1226,3 +1226,9 @@ Regla contable preservada:
 - QA visual por pantalla completado a nivel de estructura/código: sin bloqueos críticos detectados.
 - Validaciones: `npm run build` OK y `npx tsc --noEmit` OK.
 - Gate de release final queda condicionado al flujo de publicación de versión/installer en bloque separado.
+
+## 2026-05-10 - BLOQUE FINAL GLASS GLOBAL + CONTRASTE + QA
+- Ajuste puntual del wrapper principal del dashboard a estilo glass claro (translúcido + blur + borde blanco sutil + sombra premium), conservando estructura y flujo.
+- Revisión final de contraste en dashboard para evitar bloque oscuro pesado sin tocar lógica ni datos.
+- Validaciones técnicas ejecutadas: `npm run build` OK y `npx tsc --noEmit` OK.
+- Gate release condicionado a este bloque: sin cambios en APIs/Supabase/economía/scoring/SimBrief/Route Finder.
