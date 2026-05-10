@@ -1075,6 +1075,117 @@ canvas {
   color: #ffffff !important;
 }
 
+/* Despacho debe mantener contraste operacional (evita que la capa clara lave tarjetas e imágenes) */
+.ui-light-windows .dispatch-workspace [class*="bg-[#03"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#04"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#05"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#06"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#07"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#08"],
+.ui-light-windows .dispatch-workspace [class*="bg-[#0d"],
+.ui-light-windows .dispatch-workspace [class*="bg-black/"],
+.ui-light-windows .dispatch-workspace [class*="bg-[linear-gradient"],
+.ui-light-windows .dispatch-workspace [class*="bg-[radial-gradient"] {
+  background-image: initial !important;
+}
+
+.ui-light-windows .dispatch-workspace .dispatch-step-link[data-disabled="false"] {
+  color: #1f2937 !important;
+}
+
+.ui-light-windows .dispatch-workspace .dispatch-step-link[data-active="true"] {
+  color: #1f5c99 !important;
+}
+
+.ui-light-windows .office-workspace [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.ui-light-windows .office-workspace [class*="text-white/"] {
+  color: #334155 !important;
+}
+
+.ui-light-windows .office-workspace .header-strip {
+  color: #ffffff !important;
+}
+
+.office-workspace .surface-outline {
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.ui-light-windows .training-workspace [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+.ui-light-windows .training-workspace [class*="text-white/"] {
+  color: #334155 !important;
+}
+
+.ui-light-windows .training-workspace .header-strip {
+  color: #ffffff !important;
+}
+
+.training-workspace .surface-outline {
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.training-workspace .text-\[10px\] {
+  font-size: 11px;
+}
+
+.training-workspace .text-\[11px\] {
+  font-size: 12px;
+}
+
+/* Home en estilo claro tipo login/register */
+.home-light {
+  background: transparent;
+}
+
+.home-light .parallax-hero .parallax-overlay {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.08), transparent 22%),
+    radial-gradient(circle at 78% 84%, rgba(56, 189, 248, 0.10), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.52) 100%);
+}
+
+.home-light .parallax-hero .parallax-wing {
+  opacity: 0.22;
+}
+
+.home-light .parallax-hero .pointer-events-none.absolute.inset-0.z-\[3\] {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.22) 58%, rgba(255, 255, 255, 0.12) 100%) !important;
+}
+
+.home-light :is(h1, h2) {
+  font-weight: 700;
+}
+
+.home-light :is(p, li, a, span) {
+  font-size: 1.02rem;
+}
+
+.home-light .parallax-chip {
+  color: #1f5c99;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(147, 197, 253, 0.2);
+}
+
+.home-light .parallax-outline-button {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(255, 255, 255, 0.76);
+  color: #1f2937;
+}
+
+.home-light .button-primary,
+.home-light .parallax-login-button {
+  box-shadow: 0 14px 34px rgba(16, 185, 129, 0.22);
+}
+
 .input-premium {
   width: 100%;
   border-radius: 16px;
@@ -1322,4 +1433,90 @@ a.parallax-login-button {
     white-space: normal;
     padding-inline: 1.25rem;
   }
+}
+/* -------------------------------------------------------------------------- */
+/* Auth + Home light refresh                                                   */
+/* -------------------------------------------------------------------------- */
+.auth-light .parallax-overlay,
+.auth-light .parallax-wing {
+  opacity: 0;
+}
+
+.auth-light .glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
+}
+
+.auth-light .section-chip,
+.auth-light .parallax-chip,
+.home-light .section-chip,
+.home-light .parallax-chip {
+  background: linear-gradient(90deg, #2f8fd2 0%, #95c8eb 100%);
+  color: #ffffff;
+  border-color: rgba(30, 64, 175, 0.32);
+}
+
+.auth-light .header-strip,
+.home-light .header-strip {
+  background: #2f80c2;
+  color: #ffffff;
+  border-color: #1e5f99;
+}
+
+.auth-light .field-label,
+.home-light .field-label {
+  color: #334155;
+}
+
+.auth-light .input-premium,
+.home-light .input-premium {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.auth-light .input-premium::placeholder,
+.home-light .input-premium::placeholder {
+  color: #64748b;
+}
+
+.auth-light .input-premium option,
+.home-light .input-premium option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.auth-light .surface-outline,
+.home-light .surface-outline {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(248, 250, 252, 0.92);
+  color: #334155;
+}
+
+.auth-light .button-secondary,
+.home-light .button-secondary {
+  border-color: rgba(148, 163, 184, 0.65);
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.auth-light .button-ghost,
+.home-light .button-ghost,
+.auth-light .parallax-outline-button,
+.home-light .parallax-outline-button {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e293b;
+}
+
+.home-light .text-white\/82,
+.home-light .text-white\/80,
+.home-light .text-white\/76,
+.home-light .text-white\/72,
+.home-light .text-white\/70,
+.home-light .text-white\/60,
+.home-light .text-slate-200\/84,
+.home-light .text-slate-200\/82 {
+  color: #334155 !important;
 }

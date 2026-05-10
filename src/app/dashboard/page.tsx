@@ -3693,16 +3693,6 @@ function CentralAirportHero({ central }: { central: CentralOverview }) {
 
           <div className="grid gap-3">
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
-                Aeropuerto actual
-              </p>
-              <h3 className="header-strip mt-2 text-xl font-semibold text-white">{central.airportName}</h3>
-              <p className="mt-1 text-sm leading-6 text-white/74">
-                {central.municipality} · {central.countryName}
-              </p>
-            </div>
-
-            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                   METAR
@@ -3947,59 +3937,6 @@ function CentralAirportActivityBoard({ central }: { central: CentralOverview }) 
             </div>
           ))}
 
-          <div className="xl:col-span-2 overflow-x-auto rounded-[18px] border border-white/8">
-            <table className="min-w-full border-collapse text-sm text-white/85">
-              <thead>
-                <tr className="bg-[#031428]/75 text-[10px] uppercase tracking-[0.18em] text-white/48">
-                  <th className="px-3 py-2 text-left">Estado</th>
-                  <th className="px-3 py-2 text-left">Vuelo</th>
-                  <th className="px-3 py-2 text-left">Ruta</th>
-                  <th className="px-3 py-2 text-left">Aeronave</th>
-                  <th className="px-3 py-2 text-left">Modo</th>
-                  <th className="px-3 py-2 text-left">Hora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleRows.length ? (
-                  visibleRows.map((row) => (
-                    <tr key={row.key} className="border-t border-white/8 bg-[#031428]/55">
-                      <td className="px-3 py-2">
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-                            row.active
-                              ? "border-emerald-300/25 bg-emerald-400/[0.12] text-emerald-200"
-                              : "border-white/12 bg-white/[0.04] text-white/64"
-                          }`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 font-semibold">{row.routeLabel}</td>
-                      <td className="px-2 py-2 text-white/74">
-                        <span className="inline-flex items-center gap-1.5">
-                          <IcaoFlagBadge icao={row.origin} size="sm" />
-                          <span className="text-white/45">→</span>
-                          <IcaoFlagBadge icao={row.destination} size="sm" />
-                        </span>
-                        <span className="ml-2 rounded-full border border-white/10 bg-black/18 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/58">
-                          {row.direction === "departure" ? "Salida" : "Arribo"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">{row.aircraft}</td>
-                      <td className="px-3 py-2 text-white/62">{row.mode}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-white/60">{row.hhmm}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-white/46">
-                      Sin movimientos registrados para esta lectura.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </section>
@@ -4023,7 +3960,7 @@ function CentralNewsSection({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Novedades operacionales
             </p>
-            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-4 py-2 text-xl font-semibold text-white">
+            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-3 py-1.5 text-lg font-medium text-white">
               Comunicados de la central
             </h3>
           </div>
@@ -4039,7 +3976,7 @@ function CentralNewsSection({
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/56">
                   {item.tag}
                 </p>
-                <h4 className="mt-1 text-sm font-semibold leading-5 text-white">{item.title}</h4>
+                <h4 className="mt-1 text-[15px] font-medium leading-5 text-white">{item.title}</h4>
                 <p className="mt-2 text-xs leading-5 text-white/52">{item.body}</p>
               </article>
             ))
@@ -4057,7 +3994,7 @@ function CentralNewsSection({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
               Noticias locales
             </p>
-            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-4 py-2 text-xl font-semibold text-white">
+            <h3 className="mt-1 inline-flex rounded-[10px] border border-blue-900/40 bg-[#0f3f7a] px-3 py-1.5 text-lg font-medium text-white">
               Actualidad cerca de tu base
             </h3>
           </div>
@@ -4082,7 +4019,7 @@ function CentralNewsSection({
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100/56">
                         {article.source || "Fuente local"} {dateStr ? `· ${dateStr}` : ""}
                       </p>
-                      <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white">
+                      <h4 className="mt-1 line-clamp-2 text-[15px] font-medium leading-5 text-white">
                         {article.title}
                       </h4>
                     </div>
@@ -10628,7 +10565,7 @@ function DashboardWorkspace({
         ) : null}
 
         {activeTab === "office" && profile ? (
-          <div className="flex flex-col gap-4">
+          <div className="office-workspace flex flex-col gap-4">
 
             {/* -- Fila 1: Perfil + Accesos -- */}
             <div className="grid gap-4 lg:grid-cols-3">
@@ -10638,6 +10575,7 @@ function DashboardWorkspace({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                   Oficina del piloto
                 </p>
+                <h3 className="header-strip mt-2 text-lg font-medium text-white">Perfil operativo</h3>
                 <div className="mt-4 flex items-center gap-5">
                   {/* Avatar initials */}
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
@@ -10704,6 +10642,7 @@ function DashboardWorkspace({
               {/* Accesos rápidos */}
               <div className="surface-outline rounded-[24px] p-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Accesos</p>
+                <h3 className="header-strip mt-2 text-lg font-medium text-white">Accesos rápidos</h3>
                 <div className="mt-4 flex flex-col gap-3">
                   <Link href="/profile" className="button-secondary text-center text-sm">
                     Editar perfil
@@ -10777,6 +10716,7 @@ function DashboardWorkspace({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Reserva activa
               </p>
+              <h3 className="header-strip mt-2 text-lg font-medium text-white">Estado de vuelo actual</h3>
               {activeReservation ? (
                 <div className="mt-4 space-y-5">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -10938,6 +10878,7 @@ function DashboardWorkspace({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">
                 Historial de vuelos
               </p>
+              <h3 className="header-strip mt-2 text-lg font-medium text-white">Últimos registros</h3>
               {central.recentFlights.length === 0 ? (
                 <p className="mt-4 text-sm text-white/38">Sin vuelos registrados aún.</p>
               ) : (
@@ -10984,7 +10925,7 @@ function DashboardWorkspace({
         ) : null}
 
         {activeTab === "training" ? (
-          <div className="flex flex-col gap-5">
+          <div className="training-workspace flex flex-col gap-5">
 
             <div className="surface-outline relative overflow-hidden rounded-[24px] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.38)]">
               <div className="absolute inset-0">
@@ -11004,7 +10945,7 @@ function DashboardWorkspace({
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/58">Entrenamiento</p>
-                    <h2 className="header-strip mt-2 text-2xl font-semibold text-white">Centro de Capacitación y Perfeccionamiento</h2>
+                    <h2 className="header-strip mt-2 text-xl font-medium text-white">Centro de Capacitación y Perfeccionamiento</h2>
                     <p className="mt-2 max-w-4xl text-sm leading-6 text-white/66">
                       Vuelos de práctica por aeronave, con origen/destino libre y evaluación histórica. Estas sesiones acumulan horas por tipo de avión,
                       pero no modifican el Patagonia Score general ni el promedio de ascenso.
@@ -11012,7 +10953,7 @@ function DashboardWorkspace({
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[16px] border border-amber-300/20 bg-[#0d1723]/72 px-4 py-3 text-sm leading-6 text-amber-100/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md">
+                <div className="mt-5 rounded-[16px] border border-amber-300/25 bg-amber-100 px-4 py-3 text-sm leading-6 text-amber-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
                   Para solicitar checkride de una aeronave necesitas completar al menos {TRAINING_MIN_AIRCRAFT_HOURS} horas de entrenamiento en ese tipo.
                   El score del entrenamiento queda visible como historial técnico, sin sumar ni restar al puntaje general del piloto.
                 </div>

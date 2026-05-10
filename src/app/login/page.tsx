@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -169,7 +169,7 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <main className="grid-overlay">
+    <main className="grid-overlay auth-light">
       <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
@@ -198,3 +198,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
 import PublicHeader from "@/components/site/PublicHeader";
@@ -127,7 +127,7 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="bg-[#03162f] text-white">
+    <main className="home-light text-slate-900">
       <section className="parallax-hero relative min-h-screen overflow-hidden">
         <div className="parallax-bg" />
         <div className="parallax-wing" />
@@ -176,13 +176,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="border-y border-white/8 bg-[rgba(4,17,35,0.95)] py-8">
+      <section className="border-y border-slate-300/70 bg-white/85 py-8">
         <div className="pw-container">
           <HomeStatsBar initialStats={initialHomeStats} />
         </div>
       </section>
 
-      <section id="integraciones" className="border-b border-white/8 bg-[rgba(5,20,40,0.92)] py-20 sm:py-24">
+      <section id="integraciones" className="border-b border-slate-300/70 bg-white/85 py-20 sm:py-24">
         <div className="pw-container">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch">
             <div className="flex h-full flex-col">
@@ -302,7 +302,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="servicios" className="border-y border-white/8 bg-[rgba(6,24,48,0.78)] py-20 backdrop-blur-sm">
+      <section id="servicios" className="border-y border-slate-300/70 bg-white/88 py-20 backdrop-blur-sm">
         <div className="pw-container">
           <div className="parallax-chip">Servicios</div>
           <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -373,7 +373,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="certificaciones" className="border-y border-white/8 bg-[rgba(5,19,39,0.92)] py-20">
+      <section id="certificaciones" className="border-y border-slate-300/70 bg-white/85 py-20">
         <div className="pw-container">
           <div className="parallax-chip">Certificaciones</div>
           <h2 className="header-strip mt-5 max-w-5xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
@@ -417,7 +417,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="descargas" className="border-y border-white/8 bg-[rgba(4,18,38,0.96)] py-20 sm:py-24">
+      <section id="descargas" className="border-y border-slate-300/70 bg-white/88 py-20 sm:py-24">
         <div className="pw-container">
           <div className="parallax-chip mb-5">Descargas</div>
           <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
@@ -544,7 +544,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="sayintentions" className="border-y border-white/8 bg-[rgba(5,20,40,0.92)] py-20 sm:py-24">
+      <section id="sayintentions" className="border-y border-slate-300/70 bg-white/85 py-20 sm:py-24">
         <div className="pw-container">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
@@ -579,3 +579,4 @@ export default async function HomePage() {
     </main>
   );
 }
+

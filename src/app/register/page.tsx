@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -250,7 +250,7 @@ export default function RegisterPage() {
   // ── EMAIL SENT SCREEN ───────────────────────────────────────────────────────
   if (emailSent) {
     return (
-      <main className="grid-overlay">
+      <main className="grid-overlay auth-light">
         <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
           <div className="parallax-bg" />
           <div className="parallax-overlay" />
@@ -314,7 +314,7 @@ export default function RegisterPage() {
 
   // ── REGISTER FORM ───────────────────────────────────────────────────────────
   return (
-    <main className="grid-overlay">
+    <main className="grid-overlay auth-light">
       <section className="parallax-hero relative isolate min-h-screen overflow-hidden">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />
@@ -558,3 +558,5 @@ export default function RegisterPage() {
     </main>
   );
 }
+
+
