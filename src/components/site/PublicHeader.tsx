@@ -7,13 +7,10 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/browser";
 
 const navItems = [
-  { href: "/#inicio",    label: "Inicio" },
-  { href: "/#nosotros",  label: "Nosotros" },
-  { href: "/#servicios", label: "Servicios" },
-  { href: "/#flota",     label: "Flota" },
+  { href: "/#inicio", label: "Inicio" },
+  { href: "/routes", label: "Rutas" },
+  { href: "/economia", label: "Economía" },
   { href: "/#descargas", label: "Descargas" },
-  { href: "/routes",     label: "Rutas" },
-  { href: "/economia",   label: "Economia" },
 ];
 
 function isPublicNavActive(pathname: string, href: string) {
@@ -25,11 +22,11 @@ function isPublicNavActive(pathname: string, href: string) {
 
 export default function PublicHeader() {
   const pathname = usePathname();
-  const router   = useRouter();
+  const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [menuOpen, setMenuOpen]               = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Detect auth state
   useEffect(() => {
@@ -74,7 +71,7 @@ export default function PublicHeader() {
   }
 
   return (
-    <header className="public-site-header parallax-nav flex items-center justify-between gap-5 overflow-visible rounded-[30px] px-5 py-5 lg:px-8 lg:py-6">
+    <header className="public-site-header parallax-nav flex items-center justify-between gap-4 overflow-visible rounded-[30px] px-5 py-4 lg:px-8 lg:py-5">
 
       {/* Logo */}
       <Link href={isAuthenticated ? "/dashboard" : "/"} className="relative z-10 -my-4 shrink-0 py-1">
@@ -104,6 +101,23 @@ export default function PublicHeader() {
         })}
       </nav>
 
+      <div className="flex items-center gap-2 lg:hidden">
+        {isAuthenticated ? (
+          <Link href="/dashboard" className="parallax-login-button px-4 py-2.5 text-xs">
+            Dashboard
+          </Link>
+        ) : (
+          <>
+            <Link href="/login" className="button-ghost px-3 py-2.5 text-xs">
+              Login
+            </Link>
+            <Link href="/register" className="parallax-login-button px-3 py-2.5 text-xs">
+              Registro
+            </Link>
+          </>
+        )}
+      </div>
+
       {/* Right-side buttons */}
       <div className="public-header-actions hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[220px] lg:gap-3">
 
@@ -118,7 +132,7 @@ export default function PublicHeader() {
             {/* Chevron button for extra options */}
             <button
               type="button"
-              aria-label="Mas opciones"
+              aria-label="Más opciones"
               className="parallax-account-button px-3 py-3 text-sm"
               onClick={() => setMenuOpen((v) => !v)}
             >
@@ -147,15 +161,16 @@ export default function PublicHeader() {
                   className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Economia
+                  Economía
                 </Link>
+
                 <div className="my-2 border-t border-white/[0.07]" />
                 <button
                   type="button"
                   onClick={() => void handleSignOut()}
                   className="flex w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-rose-300 transition hover:bg-rose-400/10"
                 >
-                  Cerrar sesion
+                  Cerrar sesión
                 </button>
               </div>
             )}
@@ -164,8 +179,9 @@ export default function PublicHeader() {
           /* NOT LOGGED IN: always show both buttons */
           <>
             <Link href="/login" className="button-ghost px-5 py-3 text-sm">
-              Iniciar sesion
+              Iniciar sesión
             </Link>
+
             <Link href="/register" className="parallax-login-button px-6 py-3 text-sm">
               Crear cuenta
             </Link>

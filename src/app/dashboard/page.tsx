@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -11642,11 +11642,12 @@ function DashboardContent() {
       <section className="dashboard-welcome-strip rounded-[30px] border px-6 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
+            <span className="pw-status-pill text-white">Operación activa</span>
             <h1 className="text-3xl font-extrabold leading-tight text-white sm:text-4xl">
               Bienvenido, {pilotName}
             </h1>
             <p className="mt-3 max-w-3xl text-base leading-8 text-white sm:text-[19px]">
-              Queremos ser la mejor aerolínea virtual del sur del mundo. Ayúdanos a seguir mejorando cada vuelo.
+              Revisa tu estado, prepara despacho y continúa tu progresión operacional.
             </p>
           </div>
 
@@ -11679,7 +11680,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <main className="grid-overlay">
+    <main className="grid-overlay pw-premium">
       <section className="parallax-hero relative isolate min-h-screen">
         <div className="parallax-bg" />
         <div className="parallax-overlay" />

@@ -1210,3 +1210,12 @@ Regla contable preservada:
 - UI mínima en `/flights/[reservationId]` para owner/admin en entorno dev: selector de fixture, XML manual opcional y ejecución de preview de reglaje.
 - Persistencia opcional no operativa en `acars_test_evaluations` (si existe); si la tabla no existe, la evaluación sigue funcionando y retorna warning de trazabilidad.
 
+
+## 2026-05-10 - BLOQUE MAESTRO DISENO PREMIUM + QA (Web + ACARS)
+- Se consolida refresh visual premium en Web: landing, header publico, dashboard y paneles privados con estilo coherente (`pw-premium`) sin tocar flujos ni contratos.
+- Se ajustan CTA del home (`Crear cuenta`, `Iniciar sesion`, `Descargar ACARS`, `Ver rutas`) manteniendo rutas y auth existentes.
+- Se corrigen textos visibles en Charter Dispatch para legibilidad operacional (sin cambios de payload ni de SimBrief/Route Finder).
+- Se unifica tema visual en ACARS (AppStyles/MainWindow/UpdateWindow/InFlight visual) manteniendo arquitectura y navegacion vertical compacta.
+- Validaciones ejecutadas: `npm run build` OK, `npx tsc --noEmit` OK, MSBuild ACARS Debug x64 OK, MSBuild ACARS Release x64 OK.
+- No se tocaron APIs, Supabase, scoring, economia funcional, wallet/salary/ledger, telemetry, PIREP/XML ni ViewModels.
+- Gate de release final: no ejecutado en este bloque (sin cambios de version/manifests/installer/autoupdate/storage).

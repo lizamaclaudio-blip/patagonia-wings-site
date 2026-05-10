@@ -30,20 +30,34 @@ const services = [
 ];
 
 const integrationPoints = [
-  "Patagonia Wings abre el flujo OFP con origen, destino, aeronave y número de vuelo ya preparados.",
-  "Para utilizar la integración debes contar con una suscripción activa de Navigraph, ya que SimBrief forma parte de ese ecosistema.",
-  "Durante tu registro podrás dejar tu usuario Navigraph / SimBrief para acelerar el despacho desde la web.",
-  "Luego podrás iniciar sesión, generar tu OFP y volver a Patagonia Wings para validar la operación antes de ACARS.",
+  "El despacho abre SimBrief con origen, destino, aeronave y vuelo preconfigurados.",
+  "Necesitas suscripción activa de Navigraph para operar el flujo OFP completo.",
+  "Tras generar el OFP, vuelves a Patagonia Wings para validarlo y enviarlo a ACARS.",
 ];
 
 const heroPoints = [
   {
     title: "Suscripción requerida",
-    text: "Para utilizar el flujo integrado de planificación y OFP debes contar con una suscripción activa de Navigraph.",
+    text: "El flujo OFP integrado requiere Navigraph activo.",
   },
   {
     title: "Usuario vinculado",
-    text: "Al crear tu cuenta podrás registrar tu usuario Navigraph / SimBrief para acelerar el despacho en Patagonia Wings.",
+    text: "Registra tu usuario Navigraph/SimBrief al crear cuenta para acelerar despacho.",
+  },
+];
+
+const faqItems = [
+  {
+    q: "¿Necesito Navigraph para volar?",
+    a: "Para usar el flujo OFP integrado sí. Si no, puedes operar con el flujo web estándar según disponibilidad.",
+  },
+  {
+    q: "¿Qué pasa después de generar el OFP?",
+    a: "Patagonia Wings valida el plan y lo deja listo para ACARS sin cambiar tu flujo operativo actual.",
+  },
+  {
+    q: "¿ACARS se descarga desde aquí?",
+    a: "Sí. En la sección Descargas está el instalador oficial estable para MSFS 2020/2024.",
   },
 ];
 
@@ -164,6 +178,15 @@ export default async function HomePage() {
                 <Link href="/register" className="button-primary px-8 py-4 text-base">
                   Crear cuenta
                 </Link>
+                <Link href="/login" className="button-secondary px-8 py-4 text-base">
+                  Iniciar sesión
+                </Link>
+                <Link href="/routes" className="button-secondary px-8 py-4 text-base">
+                  Ver rutas
+                </Link>
+                <a href="#descargas" className="button-secondary px-8 py-4 text-base">
+                  Descargar ACARS
+                </a>
                 <a href="#integraciones" className="parallax-outline-button px-8 py-4 text-base">
                   Ver integración
                   <span aria-hidden>→</span>
@@ -188,11 +211,10 @@ export default async function HomePage() {
             <div className="flex h-full flex-col">
               <div className="parallax-chip">Integración oficial</div>
               <h2 className="header-strip mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-                Patagonia Wings se conecta con Navigraph y SimBrief antes del login operacional
+                Integración operativa con Navigraph y SimBrief
               </h2>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-200/84">
-                Esta información se muestra ahora en la portada pública, donde corresponde. Así el piloto entiende desde
-                el inicio que el flujo web está pensado para trabajar con cartas, planificación y OFP integrados.
+                Un flujo claro: preparar OFP, validar en web y continuar a ACARS con el vuelo listo.
               </p>
 
               <div className="mt-8 grid gap-4">
@@ -266,16 +288,11 @@ export default async function HomePage() {
             <h2 className="header-strip mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
               Una comunidad que crece con objetivos, inmersión y rol real
             </h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200/88">
-              En Patagonia Wings queremos construir una comunidad viva, cercana y ambiciosa: un lugar donde cada
-              piloto tenga un objetivo, una ruta por seguir y una razón real para volver a cabina. Diseñamos
-              operaciones realistas para darte inmersión completa en simuladores de vuelo, desde la planificación
-              hasta el cierre de cada operación.
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/88">
+              Patagonia Wings une comunidad, operación y progresión real del piloto en una experiencia enfocada en cabina.
             </p>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/78">
-              Aquí puedes tomar el rol que quieras vivir dentro de la aerolínea y sentirte piloto de verdad. En
-              Patagonia Wings asumimos el role play de simulación completa incluso en conversaciones y operaciones,
-              y muy pronto habilitaremos Discord para nuestros canales operativos e informativos.
+              El objetivo es simple: volar mejor, con reglas claras y una operación coherente de punta a punta.
             </p>
             <div className="mt-8 inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-5 py-2 text-sm font-semibold text-emerald-100">
               Sé el piloto que quieres ser en Patagonia Wings
@@ -576,7 +593,21 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section id="faq" className="pw-container py-16 sm:py-20">
+        <div className="parallax-chip">FAQ</div>
+        <h2 className="header-strip mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+          Dudas frecuentes
+        </h2>
+        <div className="mt-8 space-y-4">
+          {faqItems.map((item) => (
+            <details key={item.q} className="pw-accordion glass-panel rounded-[24px] px-5 py-4">
+              <summary className="cursor-pointer list-none text-base font-semibold text-white">{item.q}</summary>
+              <p className="mt-3 text-sm leading-7 text-white/78">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
     </main>
   );
 }
-

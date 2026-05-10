@@ -1514,9 +1514,141 @@ a.parallax-login-button {
 .home-light .text-white\/80,
 .home-light .text-white\/76,
 .home-light .text-white\/72,
-.home-light .text-white\/70,
-.home-light .text-white\/60,
 .home-light .text-slate-200\/84,
 .home-light .text-slate-200\/82 {
   color: #334155 !important;
+}
+
+.pw-premium-card {
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
+    rgba(4, 20, 40, 0.72);
+  box-shadow: 0 18px 56px rgba(2, 12, 27, 0.24);
+  backdrop-filter: blur(14px);
+}
+
+.pw-compact-card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.pw-operational-section {
+  border: 1px solid rgba(103, 232, 249, 0.18);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.10), transparent 32%),
+    linear-gradient(180deg, rgba(8, 24, 48, 0.86), rgba(3, 14, 31, 0.82));
+}
+
+.pw-info-block {
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 22px;
+  background: rgba(56, 189, 248, 0.075);
+}
+
+.pw-soft-alert {
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 22px;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.pw-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  background: rgba(15, 23, 42, 0.34);
+  padding: 0.42rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pw-status-pill::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #34d399;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.55);
+}
+
+.home-light .pw-premium-card,
+.home-light .pw-compact-card,
+.home-light .pw-operational-section,
+.home-light .pw-info-block {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.90);
+  color: #0f172a;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.10);
+}
+/* -------------------------------------------------------------------------- */
+/* Patagonia Wings Premium System                                              */
+/* -------------------------------------------------------------------------- */
+.pw-premium {
+  color: #e6eef8;
+}
+
+.pw-premium .glass-panel {
+  background: linear-gradient(180deg, rgba(10, 26, 47, 0.94) 0%, rgba(8, 22, 40, 0.92) 100%);
+  border: 1px solid rgba(141, 181, 217, 0.28);
+  box-shadow: 0 14px 36px rgba(2, 10, 22, 0.28);
+}
+
+.pw-premium .header-strip {
+  background: linear-gradient(90deg, #2f8fd2 0%, #90c4e6 100%);
+  border-color: rgba(32, 88, 139, 0.52);
+  color: #ffffff;
+}
+
+.pw-premium .section-chip,
+.pw-premium .parallax-chip {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.24) 0%, rgba(103, 215, 255, 0.26) 100%);
+  border-color: rgba(103, 215, 255, 0.42);
+  color: #d8f4ff;
+}
+
+.pw-premium .button-primary {
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.28);
+}
+
+.pw-premium .button-secondary,
+.pw-premium .button-ghost {
+  border-color: rgba(148, 197, 236, 0.42);
+  color: #d9ecff;
+}
+
+.pw-premium table th {
+  color: rgba(198, 222, 246, 0.88);
+}
+
+.pw-premium table td {
+  color: rgba(232, 241, 251, 0.92);
+}
+
+/* Header premium clean */
+.public-site-header {
+  background: linear-gradient(90deg, rgba(9, 25, 43, 0.92) 0%, rgba(12, 34, 58, 0.90) 50%, rgba(9, 25, 43, 0.92) 100%);
+  border: 1px solid rgba(122, 169, 210, 0.28);
+  box-shadow: 0 10px 28px rgba(6, 16, 30, 0.28);
+}
+
+.public-header-nav a {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 1024px) {
+  .public-site-header {
+    border-radius: 22px;
+  }
+
+  .public-header-nav {
+    display: none !important;
+  }
 }

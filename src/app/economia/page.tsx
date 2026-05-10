@@ -160,10 +160,12 @@ const SECTIONS: Section[] = [
 ];
 function SectionCard({ section }: { section: Section }) {
   return (
-    <div className={`rounded-[24px] border border-white/10 bg-gradient-to-br ${section.color} bg-white/[0.03] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl`}>
-      <div className="flex items-center gap-3">
+    <details className={`pw-accordion pw-premium-card bg-gradient-to-br ${section.color} p-6`}>
+      <summary className="flex cursor-pointer list-none items-center gap-3">
         <span className="text-3xl">{section.icon}</span>
         <h2 className="header-strip text-xl font-black text-white">{section.title}</h2>
+      </summary>
+      <div className="flex items-center gap-3">
       </div>
       <div className="mt-5 space-y-4">
         {section.items.map((item, i) => (
@@ -178,7 +180,7 @@ function SectionCard({ section }: { section: Section }) {
           </div>
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
