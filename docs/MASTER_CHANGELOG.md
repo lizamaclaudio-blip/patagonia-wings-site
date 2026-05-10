@@ -1219,3 +1219,10 @@ Regla contable preservada:
 - Validaciones ejecutadas: `npm run build` OK, `npx tsc --noEmit` OK, MSBuild ACARS Debug x64 OK, MSBuild ACARS Release x64 OK.
 - No se tocaron APIs, Supabase, scoring, economia funcional, wallet/salary/ledger, telemetry, PIREP/XML ni ViewModels.
 - Gate de release final: no ejecutado en este bloque (sin cambios de version/manifests/installer/autoupdate/storage).
+
+## 2026-05-10 - BLOQUE FINAL MOJIBAKE + QA VISUAL
+- Limpieza final de mojibake en `src/app/flights/[reservationId]/page.tsx` y `src/app/profile/audit/page.tsx` sin tocar lógica ni payloads.
+- Ajuste de textos owner en resumen de vuelo para presentación pública (`test` -> `preview` en etiquetas visibles).
+- QA visual por pantalla completado a nivel de estructura/código: sin bloqueos críticos detectados.
+- Validaciones: `npm run build` OK y `npx tsc --noEmit` OK.
+- Gate de release final queda condicionado al flujo de publicación de versión/installer en bloque separado.

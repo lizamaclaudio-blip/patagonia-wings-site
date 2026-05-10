@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -186,9 +186,9 @@ function formatDetailValue(value: unknown) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("es-CL", {
     year: "numeric",
     month: "short",
@@ -200,7 +200,7 @@ function formatDateTime(value?: string | null) {
 
 function formatMinutes(value?: number | null) {
   const total = asNumber(value);
-  if (total <= 0) return "â€”";
+  if (total <= 0) return "—";
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
   return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
@@ -213,7 +213,7 @@ function formatStatus(value?: string | null) {
     pending_server_closeout: "Cierre pendiente servidor",
     incomplete_closeout: "Cierre incompleto",
     no_evaluable: "Cierre no evaluable",
-    manual_review: "RevisiÃ³n manual",
+    manual_review: "Revisión manual",
     cancelled: "Cancelado",
     interrupted: "Interrumpido",
     crashed: "Accidentado",
@@ -224,7 +224,7 @@ function formatStatus(value?: string | null) {
     dispatched: "Despachado",
     reserved: "Reservado",
   };
-  return labels[normalized] ?? (normalized ? normalized.toUpperCase() : "â€”");
+  return labels[normalized] ?? (normalized ? normalized.toUpperCase() : "—");
 }
 
 function statusTone(value?: string | null) {
@@ -246,27 +246,27 @@ function statusTone(value?: string | null) {
 
 
 function formatTimeOnly(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatMoney(value: unknown, options?: { signed?: boolean; zeroLabel?: string }) {
   const number = asNumber(value);
-  if (number === 0) return options?.zeroLabel ?? "â€”";
+  if (number === 0) return options?.zeroLabel ?? "—";
   const prefix = options?.signed && number > 0 ? "+" : "";
   return `${prefix}$${number.toFixed(0)}`;
 }
 
 function formatKg(value: unknown) {
   const number = asNumber(value);
-  return number > 0 ? `${Math.round(number)} kg` : "â€”";
+  return number > 0 ? `${Math.round(number)} kg` : "—";
 }
 
 function formatNm(value: unknown) {
   const number = asNumber(value);
-  return number > 0 ? `${Math.round(number)} NM` : "â€”";
+  return number > 0 ? `${Math.round(number)} NM` : "—";
 }
 
 function formatPts(value: unknown) {
@@ -293,12 +293,12 @@ function scoreLabel(value: unknown, noEvaluable = false) {
 }
 
 function scoreStars(value: unknown, noEvaluable = false) {
-  if (noEvaluable) return "â€”";
+  if (noEvaluable) return "—";
   const number = asNumber(value);
   if (number >= 110) return "â˜…â˜…â˜…";
   if (number >= 85) return "â˜…â˜…";
   if (number > 0) return "â˜…";
-  return "â€”";
+  return "—";
 }
 
 function getRecordText(item: Record<string, unknown>, keys: string[]) {
@@ -329,7 +329,7 @@ function itemTitle(item: Record<string, unknown>) {
 }
 
 function itemDescription(item: Record<string, unknown>) {
-  return getRecordText(item, ["description", "detail", "message", "reason", "explanation", "summary"]) || "Registro generado por ACARS/Web segÃºn reglaje vigente.";
+  return getRecordText(item, ["description", "detail", "message", "reason", "explanation", "summary"]) || "Registro generado por ACARS/Web según reglaje vigente.";
 }
 
 function itemStage(item: Record<string, unknown>) {
@@ -340,7 +340,7 @@ function itemStage(item: Record<string, unknown>) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function payloadText(payload: Record<string, unknown>, keys: string[], fallback = "â€”") {
+function payloadText(payload: Record<string, unknown>, keys: string[], fallback = "—") {
   for (const key of keys) {
     const value = asText(payload[key]);
     if (value) return value;
@@ -358,7 +358,7 @@ function payloadNumber(payload: Record<string, unknown>, keys: string[]) {
 
 function formatClockValue(value?: string | null) {
   const raw = asText(value);
-  if (!raw) return "â€”";
+  if (!raw) return "—";
   if (/^\d{1,2}:\d{2}/.test(raw)) return raw.slice(0, 5);
   return formatTimeOnly(raw);
 }
@@ -415,26 +415,26 @@ function InfoTable({ columns, rows }: { columns: string[]; rows: InfoCell[][] })
 
 function formatFt(value: unknown) {
   const number = asNumber(value);
-  return number !== 0 ? `${Math.round(number)} ft` : "â€”";
+  return number !== 0 ? `${Math.round(number)} ft` : "—";
 }
 
 function formatFpm(value: unknown) {
   const number = asNumber(value);
-  return number !== 0 ? `${Math.round(number)} ft/min` : "â€”";
+  return number !== 0 ? `${Math.round(number)} ft/min` : "—";
 }
 
 function formatKts(value: unknown) {
   const number = asNumber(value);
-  return number !== 0 ? `${Math.round(number)} kt` : "â€”";
+  return number !== 0 ? `${Math.round(number)} kt` : "—";
 }
 
 function formatBool(value: unknown) {
-  if (value === true) return "SÃ­";
+  if (value === true) return "Sí";
   if (value === false) return "No";
   const text = asText(value);
-  if (!text) return "â€”";
+  if (!text) return "—";
   const normalized = text.toLowerCase();
-  if (["true", "1", "yes", "si", "sÃ­", "ok", "ready"].includes(normalized)) return "SÃ­";
+  if (["true", "1", "yes", "si", "sí", "ok", "ready"].includes(normalized)) return "Sí";
   if (["false", "0", "no"].includes(normalized)) return "No";
   return text;
 }
@@ -463,7 +463,7 @@ function EvidenceGrid({ record, empty = "Sin evidencia declarada", limit = 12 }:
       {entries.map(([key, value]) => (
         <div key={key} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/42">{key.replace(/_/g, " ")}</p>
-          <p className="mt-2 break-words text-sm font-semibold text-white">{formatDetailValue(value) || "â€”"}</p>
+          <p className="mt-2 break-words text-sm font-semibold text-white">{formatDetailValue(value) || "—"}</p>
         </div>
       ))}
     </div>
@@ -481,14 +481,14 @@ function EvaluationBlock({ title, score, label, stars, description, groups, noEv
 }) {
   return (
     <section className="glass-panel rounded-[30px] p-7">
-      <SurHeading icon={title.toLowerCase().includes("performance") ? "ðŸ“¶" : "ðŸ“‹"} label="EvaluaciÃ³n de" strong={title} />
+      <SurHeading icon={title.toLowerCase().includes("performance") ? "📶" : "📋"} label="Evaluación de" strong={title} />
       <div className="grid gap-4 lg:grid-cols-[0.8fr_0.45fr_1.75fr]">
         <div className="surface-outline rounded-[22px] px-5 py-5 text-center">
           <p className="text-2xl text-amber-200">{stars}</p>
           <p className="mt-2 text-base font-semibold text-white">{label}</p>
         </div>
         <div className="surface-outline rounded-[22px] px-5 py-5 text-center">
-          <p className={`text-3xl font-bold ${scoreTextTone(score)}`}>{noEvaluable ? "â€”" : Math.round(score)}</p>
+          <p className={`text-3xl font-bold ${scoreTextTone(score)}`}>{noEvaluable ? "—" : Math.round(score)}</p>
         </div>
         <div className="surface-outline rounded-[22px] px-5 py-5">
           <p className="text-sm leading-7 text-white/78">{description}</p>
@@ -548,7 +548,7 @@ function FlightResultContent() {
   const [testToolError, setTestToolError] = useState("");
 
   useEffect(() => {
-    // session === undefined means still resolving â€” wait
+    // session === undefined means still resolving — wait
     if (session === undefined) return;
 
     let cancelled = false;
@@ -594,7 +594,7 @@ function FlightResultContent() {
       if (cancelled) return;
 
       if (reservationRes.error || !reservationRes.data) {
-        setError(reservationRes.error?.message ?? "No se encontrÃ³ el resultado del vuelo.");
+        setError(reservationRes.error?.message ?? "No se encontró el resultado del vuelo.");
         setLoading(false);
         return;
       }
@@ -709,7 +709,7 @@ function FlightResultContent() {
   const c0c8Detected =
     mergedScorePayload.pirepPerfectC0C8Detected === true ||
     asText(mergedScorePayload.pirepPerfectC0C8Detected).toLowerCase() === "true" ||
-    Object.values(parserVersionsDetected).some((value) => formatBool(value) === "SÃ­") ||
+    Object.values(parserVersionsDetected).some((value) => formatBool(value) === "Sí") ||
     pirepPerfect.phaseAcceptanceMatrix.length > 0 ||
     Object.keys(pirepPerfect.phaseAuditReport).length > 0 ||
     Object.keys(pirepPerfect.phasePrevalidationPackage).length > 0 ||
@@ -718,11 +718,11 @@ function FlightResultContent() {
   const altitudeReliable =
     mergedScorePayload.altitudeReliable === true ||
     pirepPerfect.altitudeEvidence.isReliable ||
-    formatBool(pirepPerfectFlags.altitudeReliable ?? altitudeSummaryPayload.is_reliable) === "SÃ­";
+    formatBool(pirepPerfectFlags.altitudeReliable ?? altitudeSummaryPayload.is_reliable) === "Sí";
 
   const phaseAuditReady =
     mergedScorePayload.phaseAuditReady === true ||
-    formatBool(pirepPerfectFlags.phaseAuditReady) === "SÃ­" ||
+    formatBool(pirepPerfectFlags.phaseAuditReady) === "Sí" ||
     Object.keys(phaseAuditPayload).length > 0 ||
     Object.keys(phasePrevalidationPayload).length > 0 ||
     phaseAcceptancePayload.length > 0 ||
@@ -730,18 +730,18 @@ function FlightResultContent() {
 
   const phaseScoreEligible =
     mergedScorePayload.phaseScoreEligible === true ||
-    formatBool(pirepPerfectFlags.phaseScoreEligible) === "SÃ­";
+    formatBool(pirepPerfectFlags.phaseScoreEligible) === "Sí";
 
   const d5ParserBlocks = [
-    { label: "C0 Altitud", ready: formatBool(parserVersionsDetected.c0_altitude_resolver) === "SÃ­" || Boolean(pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.lastAltitudeMslFt) },
-    { label: "C1 Fases", ready: formatBool(parserVersionsDetected.c1_phase_state_machine) === "SÃ­" || pirepPerfect.phases.length > 0 },
-    { label: "C2 Checklist", ready: formatBool(parserVersionsDetected.c2_operational_checklist) === "SÃ­" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseMeasuredMetrics || phase.phaseExpectedActions)) },
-    { label: "C3 Transiciones", ready: formatBool(parserVersionsDetected.c3_transition_matrix) === "SÃ­" || pirepPerfect.eventTimeline.some((event) => Boolean((event as Record<string, unknown>).phaseAuditStatus)) },
-    { label: "C4 AuditorÃ­a", ready: formatBool(parserVersionsDetected.c4_audit_report) === "SÃ­" || Object.keys(pirepPerfect.phaseAuditReport).length > 0 || Object.keys(phaseAuditPayload).length > 0 },
-    { label: "C5 Contrato", ready: formatBool(parserVersionsDetected.c5_review_contract) === "SÃ­" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseReviewQuestion)) },
-    { label: "C6 PrevalidaciÃ³n", ready: formatBool(parserVersionsDetected.c6_prevalidation_package) === "SÃ­" || Object.keys(pirepPerfect.phasePrevalidationPackage).length > 0 || Object.keys(phasePrevalidationPayload).length > 0 },
-    { label: "C7 Matriz", ready: formatBool(parserVersionsDetected.c7_acceptance_matrix) === "SÃ­" || pirepPerfect.phaseAcceptanceMatrix.length > 0 || phaseAcceptancePayload.length > 0 },
-    { label: "C8 Manifest", ready: formatBool(parserVersionsDetected.c8_pretest_manifest) === "SÃ­" || Object.keys(pirepPerfect.phaseTestRunManifest).length > 0 || Object.keys(phaseTestRunPayload).length > 0 },
+    { label: "C0 Altitud", ready: formatBool(parserVersionsDetected.c0_altitude_resolver) === "Sí" || Boolean(pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.lastAltitudeMslFt) },
+    { label: "C1 Fases", ready: formatBool(parserVersionsDetected.c1_phase_state_machine) === "Sí" || pirepPerfect.phases.length > 0 },
+    { label: "C2 Checklist", ready: formatBool(parserVersionsDetected.c2_operational_checklist) === "Sí" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseMeasuredMetrics || phase.phaseExpectedActions)) },
+    { label: "C3 Transiciones", ready: formatBool(parserVersionsDetected.c3_transition_matrix) === "Sí" || pirepPerfect.eventTimeline.some((event) => Boolean((event as Record<string, unknown>).phaseAuditStatus)) },
+    { label: "C4 Auditoría", ready: formatBool(parserVersionsDetected.c4_audit_report) === "Sí" || Object.keys(pirepPerfect.phaseAuditReport).length > 0 || Object.keys(phaseAuditPayload).length > 0 },
+    { label: "C5 Contrato", ready: formatBool(parserVersionsDetected.c5_review_contract) === "Sí" || pirepPerfect.phases.some((phase) => Boolean(phase.phaseReviewQuestion)) },
+    { label: "C6 Prevalidación", ready: formatBool(parserVersionsDetected.c6_prevalidation_package) === "Sí" || Object.keys(pirepPerfect.phasePrevalidationPackage).length > 0 || Object.keys(phasePrevalidationPayload).length > 0 },
+    { label: "C7 Matriz", ready: formatBool(parserVersionsDetected.c7_acceptance_matrix) === "Sí" || pirepPerfect.phaseAcceptanceMatrix.length > 0 || phaseAcceptancePayload.length > 0 },
+    { label: "C8 Manifest", ready: formatBool(parserVersionsDetected.c8_pretest_manifest) === "Sí" || Object.keys(pirepPerfect.phaseTestRunManifest).length > 0 || Object.keys(phaseTestRunPayload).length > 0 },
   ];
 
   const d5MissingBlocks = d5ParserBlocks.filter((block) => !block.ready).map((block) => block.label);
@@ -761,9 +761,9 @@ function FlightResultContent() {
   const d5ActionItems = [
     !pirepPerfect.hasRawXml ? "Esperar cierre ACARS con raw_pirep_xml." : "XML PIREP recibido.",
     !altitudeReliable ? "Revisar bloque Altitude C0: MSL/AGL/fuente/confiabilidad." : "Altitud C0 legible.",
-    !phaseAuditReady ? "Revisar PhaseAudit/Prevalidation/Acceptance antes de activar score por fases." : "AuditorÃ­a de fases disponible.",
-    phaseScoreEligible ? "Score por fases activo." : "Score por fases aÃºn bloqueado intencionalmente hasta prueba real.",
-    d5MissingBlocks.length ? `Faltan bloques: ${d5MissingBlocks.join(", ")}.` : "C0-C8 completos segÃºn parser.",
+    !phaseAuditReady ? "Revisar PhaseAudit/Prevalidation/Acceptance antes de activar score por fases." : "Auditoría de fases disponible.",
+    phaseScoreEligible ? "Score por fases activo." : "Score por fases aún bloqueado intencionalmente hasta prueba real.",
+    d5MissingBlocks.length ? `Faltan bloques: ${d5MissingBlocks.join(", ")}.` : "C0-C8 completos según parser.",
   ];
 
   const currentAppeal = useMemo(
@@ -865,18 +865,18 @@ function FlightResultContent() {
   const totalScoreValue = noEvaluableCloseout ? 0 : (surScore || procedureScoreValue + performanceScoreValue + missionScoreValue);
   const originIdent = pirepPerfect.originIdent || asText(reservation?.origin_ident) || "---";
   const destinationIdent = pirepPerfect.destinationIdent || asText(reservation?.destination_ident) || "---";
-  const aircraftCode = pirepPerfect.aircraftCode || asText(reservation?.aircraft_type_code) || "â€”";
+  const aircraftCode = pirepPerfect.aircraftCode || asText(reservation?.aircraft_type_code) || "—";
   const aircraftVariant = asText(reservation?.aircraft_variant_code);
-  const aircraftRegistration = pirepPerfect.aircraftRegistration || asText(reservation?.aircraft_registration) || "â€”";
+  const aircraftRegistration = pirepPerfect.aircraftRegistration || asText(reservation?.aircraft_registration) || "—";
   const aircraftName = pirepPerfect.aircraftDisplayName || normalizeAircraftDisplayName(aircraftVariant || aircraftCode);
   const aircraftDisplayHasRegistration =
-    Boolean(aircraftRegistration && aircraftRegistration !== "â€”") &&
+    Boolean(aircraftRegistration && aircraftRegistration !== "—") &&
     aircraftName.toUpperCase().includes(aircraftRegistration.toUpperCase());
   const aircraftDisplay = [
     aircraftName,
     aircraftDisplayHasRegistration ? "" : aircraftRegistration,
-  ].filter((item) => item && item !== "â€”").join(" Â· ") || aircraftName || aircraftCode || "â€”";
-  const flightTypeLabel = pirepPerfect.flightType || payloadText(mergedScorePayload, ["flight_type", "operation_type", "route_band", "mission_type"], "â€”");
+  ].filter((item) => item && item !== "—").join(" · ") || aircraftName || aircraftCode || "—";
+  const flightTypeLabel = pirepPerfect.flightType || payloadText(mergedScorePayload, ["flight_type", "operation_type", "route_band", "mission_type"], "—");
   const rankLabel = payloadText(mergedScorePayload, ["pilot_rank", "rank_name", "career_rank"], "Piloto Patagonia Wings");
   const pilotHours = payloadNumber(mergedScorePayload, ["pilot_hours", "pilot_total_hours", "total_hours"]);
   const scheduledDeparture = formatClockValue(pirepPerfect.scheduledDeparture || payloadText(mergedScorePayload, ["scheduled_departure", "scheduled_etd", "etd", "std"], ""));
@@ -891,21 +891,21 @@ function FlightResultContent() {
   const arrivalWind = pirepPerfect.arrivalWind || payloadText(mergedScorePayload, ["arrival_wind_summary", "arrival_wind", "landing_wind", "arr_wind"], "Sin datos recibidos");
   const departureRunway = pirepPerfect.departureRunway || payloadText(mergedScorePayload, ["departure_runway", "takeoff_runway", "dep_runway"], "RWY N/D");
   const arrivalRunway = pirepPerfect.arrivalRunway || payloadText(mergedScorePayload, ["arrival_runway", "landing_runway", "arr_runway"], "RWY N/D");
-  const cruiseLevel = pirepPerfect.flightLevel || payloadText(mergedScorePayload, ["cruise_level", "flight_level", "planned_flight_level", "fl"], "â€”");
+  const cruiseLevel = pirepPerfect.flightLevel || payloadText(mergedScorePayload, ["cruise_level", "flight_level", "planned_flight_level", "fl"], "—");
   const routeText = pirepPerfect.routeText || payloadText(mergedScorePayload, ["route", "route_string", "ofp_route", "filed_route"], "Sin ruta cargada");
-  const simName = [pirepPerfect.simulator, pirepPerfect.simAircraftRaw].filter(Boolean).join(" Â· ") || payloadText(mergedScorePayload, ["simulator", "sim", "sim_name"], "Microsoft Flight Simulator / ACARS Patagonia Wings");
-  const acarsVersion = pirepPerfect.schemaVersion || payloadText(mergedScorePayload, ["acars_version", "client_version", "version"], "â€”");
+  const simName = [pirepPerfect.simulator, pirepPerfect.simAircraftRaw].filter(Boolean).join(" · ") || payloadText(mergedScorePayload, ["simulator", "sim", "sim_name"], "Microsoft Flight Simulator / ACARS Patagonia Wings");
+  const acarsVersion = pirepPerfect.schemaVersion || payloadText(mergedScorePayload, ["acars_version", "client_version", "version"], "—");
   const procedureGroups: EvaluationGroup[] = [
     {
       title: "Procedimientos observados",
       score: penalties.length ? `${penalties.length} registros` : "Sin descuentos",
       items: penalties,
-      fallback: noEvaluableCloseout ? "No se aplicÃ³ evaluaciÃ³n de procedimientos porque el cierre no tiene evidencia mÃ­nima." : "Sin penalizaciones de procedimiento registradas.",
+      fallback: noEvaluableCloseout ? "No se aplicó evaluación de procedimientos porque el cierre no tiene evidencia mínima." : "Sin penalizaciones de procedimiento registradas.",
     },
   ];
   const performanceGroups: EvaluationGroup[] = [
     {
-      title: "PlanificaciÃ³n",
+      title: "Planificación",
       score: plannedSnapshot ? "Datos SimBrief cargados" : "Sin OFP consolidado",
       positive: true,
       items: [],
@@ -923,19 +923,19 @@ function FlightResultContent() {
       score: landingVs ? `${Math.round(landingVs)} fpm` : "Sin touchdown",
       positive: true,
       items: damageEvents,
-      fallback: landingVs ? "Touchdown registrado sin eventos de daÃ±o asociados." : "Sin dato de touchdown disponible.",
+      fallback: landingVs ? "Touchdown registrado sin eventos de daño asociados." : "Sin dato de touchdown disponible.",
     },
     {
       title: "Condiciones adicionales",
-      score: economyEligible ? "Computa economÃ­a" : "No computa economÃ­a",
+      score: economyEligible ? "Computa economía" : "No computa economía",
       positive: true,
       items: [],
-      fallback: economyEligible ? "El vuelo es elegible para devengo operacional y trazabilidad econÃ³mica." : "No se generÃ³ devengo ni ledger por falta de cierre evaluable.",
+      fallback: economyEligible ? "El vuelo es elegible para devengo operacional y trazabilidad económica." : "No se generó devengo ni ledger por falta de cierre evaluable.",
     },
   ];
   const jefeFlotaFeedback = observations || (noEvaluableCloseout
-    ? "El cierre fue recibido, pero no contiene evidencia mÃ­nima de vuelo para evaluar procedimientos, performance ni economÃ­a. Se recomienda repetir la prueba verificando inicio ACARS, telemetrÃ­a viva y cierre con caja negra completa."
-    : `El vuelo ${originIdent}-${destinationIdent} con la aeronave ${aircraftDisplay} fue procesado por ACARS y evaluado por el servidor. Revisa los apartados de procedimientos, performance, combustible y economÃ­a para identificar oportunidades de mejora.`);
+    ? "El cierre fue recibido, pero no contiene evidencia mínima de vuelo para evaluar procedimientos, performance ni economía. Se recomienda repetir la prueba verificando inicio ACARS, telemetría viva y cierre con caja negra completa."
+    : `El vuelo ${originIdent}-${destinationIdent} con la aeronave ${aircraftDisplay} fue procesado por ACARS y evaluado por el servidor. Revisa los apartados de procedimientos, performance, combustible y economía para identificar oportunidades de mejora.`);
 
   async function handleAppealSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -990,7 +990,7 @@ function FlightResultContent() {
     }
 
     setReservation((data ?? reservation) as FlightReservationResultRow);
-    setSaveMessage("ApelaciÃ³n guardada. Queda pendiente por 48 horas.");
+    setSaveMessage("Apelación guardada. Queda pendiente por 48 horas.");
     setSaving(false);
   }
   async function handleAppealDecision(nextStatus: "resolved" | "rejected") {
@@ -1045,7 +1045,7 @@ function FlightResultContent() {
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-      if (!token) throw new Error("Debes iniciar sesiÃ³n como owner/admin para probar PIREP XML.");
+      if (!token) throw new Error("Debes iniciar sesión como owner/admin para probar PIREP XML.");
 
       const response = await fetch("/api/acars/finalize/test", {
         method: "POST",
@@ -1105,7 +1105,7 @@ function FlightResultContent() {
                 Cierre recibido, pero no evaluable por falta de evidencia de vuelo.
               </p>
               <p className="mt-2 text-sm text-rose-100/80">
-                No se generÃ³ devengo, wallet, salary real ni ledger aerolÃ­nea. La informaciÃ³n queda solo como trazabilidad.
+                No se generó devengo, wallet, salary real ni ledger aerolínea. La información queda solo como trazabilidad.
               </p>
             </section>
           ) : null}
@@ -1148,20 +1148,20 @@ function FlightResultContent() {
               </span>
             </div>
 
-            <SurHeading icon="ðŸ‘¨â€âœˆï¸" label="Piloto al" strong="Mando" />
+            <SurHeading icon="👨‍✈️" label="Piloto al" strong="Mando" />
             <InfoTable
               columns={["Piloto al mando", "Rango", "Horas", "Tipo de vuelo"]}
               rows={[[
-                { label: "Piloto al mando", value: `${asText(reservation.pilot_callsign) || "â€”"}` },
+                { label: "Piloto al mando", value: `${asText(reservation.pilot_callsign) || "—"}` },
                 { label: "Rango", value: rankLabel },
                 { label: "Horas", value: pilotHours > 0 ? pilotHours.toFixed(1) : formatMinutes(reservation.actual_block_minutes) },
                 { label: "Tipo de vuelo", value: flightTypeLabel },
               ]]}
             />
 
-            <SurHeading icon="ðŸ“‹" label="Vuelo" strong="Programado" />
+            <SurHeading icon="📋" label="Vuelo" strong="Programado" />
             <InfoTable
-              columns={["Nro. vuelo", "Origen", "ETD", "Destino", "ETA", "Equipo", "MatrÃ­cula"]}
+              columns={["Nro. vuelo", "Origen", "ETD", "Destino", "ETA", "Equipo", "Matrícula"]}
               rows={[[
                 { label: "Nro. vuelo", value: flightNumber, tone: "text-emerald-200" },
                 { label: "Origen", value: originIdent },
@@ -1169,7 +1169,7 @@ function FlightResultContent() {
                 { label: "Destino", value: destinationIdent },
                 { label: "ETA", value: scheduledArrival },
                 { label: "Equipo", value: aircraftCode },
-                { label: "MatrÃ­cula", value: aircraftRegistration },
+                { label: "Matrícula", value: aircraftRegistration },
               ]]}
             />
           </details>
@@ -1183,20 +1183,20 @@ function FlightResultContent() {
               </span>
             </div>
 
-            <SurHeading icon="ðŸ‘¨â€âœˆï¸" label="Piloto al" strong="Mando" />
+            <SurHeading icon="👨‍✈️" label="Piloto al" strong="Mando" />
             <InfoTable
               columns={["Piloto al mando", "Rango", "Horas", "Tipo de vuelo"]}
               rows={[[
-                { label: "Piloto al mando", value: `${asText(reservation.pilot_callsign) || "â€”"}` },
+                { label: "Piloto al mando", value: `${asText(reservation.pilot_callsign) || "—"}` },
                 { label: "Rango", value: rankLabel },
                 { label: "Horas", value: pilotHours > 0 ? pilotHours.toFixed(1) : formatMinutes(reservation.actual_block_minutes) },
                 { label: "Tipo de vuelo", value: flightTypeLabel },
               ]]}
             />
 
-            <SurHeading icon="ðŸ“…" label="Vuelo" strong="Programado" />
+            <SurHeading icon="📝" label="Vuelo" strong="Programado" />
             <InfoTable
-              columns={["Nro. vuelo", "Origen", "ETD", "Destino", "ETA", "Equipo", "MatrÃ­cula"]}
+              columns={["Nro. vuelo", "Origen", "ETD", "Destino", "ETA", "Equipo", "Matrícula"]}
               rows={[[
                 { label: "Nro. vuelo", value: flightNumber, tone: "text-emerald-200" },
                 { label: "Origen", value: originIdent },
@@ -1204,15 +1204,15 @@ function FlightResultContent() {
                 { label: "Destino", value: destinationIdent },
                 { label: "ETA", value: scheduledArrival },
                 { label: "Equipo", value: aircraftCode },
-                { label: "MatrÃ­cula", value: aircraftRegistration },
+                { label: "Matrícula", value: aircraftRegistration },
               ]]}
             />
 
-            <SurHeading icon="âœˆï¸" label="Vuelo" strong="Realizado" />
+            <SurHeading icon="✈️" label="Vuelo" strong="Realizado" />
             <InfoTable
-              columns={["DuraciÃ³n", "Origen", "Comienzo", "Destino", "Fin", "Equipo", "Estado"]}
+              columns={["Duración", "Origen", "Comienzo", "Destino", "Fin", "Equipo", "Estado"]}
               rows={[[
-                { label: "DuraciÃ³n", value: pirepPerfect.blockDuration || formatMinutes(reservation.actual_block_minutes) },
+                { label: "Duración", value: pirepPerfect.blockDuration || formatMinutes(reservation.actual_block_minutes) },
                 { label: "Origen", value: originIdent },
                 { label: "Comienzo", value: actualStart, tone: "text-emerald-300" },
                 { label: "Destino", value: destinationIdent },
@@ -1225,34 +1225,34 @@ function FlightResultContent() {
 
           {pirepPerfect.hasRawXml ? (
             <section className="glass-panel rounded-[30px] p-7">
-              <SurHeading icon="ðŸ§¾" label="PIREP Perfect" strong="D2 Â· C0-C8 Web" />
+              <SurHeading icon="🧾" label="PIREP Perfect" strong="D2 · C0-C8 Web" />
               <InfoTable
-                columns={["XML", "Schema", "Ruta", "AviÃ³n", "MatrÃ­cula", "Perfil/Add-on", "Evidencia"]}
+                columns={["XML", "Schema", "Ruta", "Avión", "Matrícula", "Perfil/Add-on", "Evidencia"]}
                 rows={[[
                   { label: "XML", value: `${pirepPerfect.rawXmlLength} chars`, tone: "text-emerald-200" },
                   { label: "Schema", value: pirepPerfect.schemaVersion || "PIREP legacy" },
                   { label: "Ruta", value: `${originIdent} â†’ ${destinationIdent}` },
-                  { label: "AviÃ³n", value: aircraftDisplay },
-                  { label: "MatrÃ­cula", value: aircraftRegistration },
+                  { label: "Avión", value: aircraftDisplay },
+                  { label: "Matrícula", value: aircraftRegistration },
                   { label: "Perfil/Add-on", value: pirepPerfect.addonProvider || "N/D" },
-                  { label: "Evidencia", value: pirepPerfect.hasAnyEvidence ? "LeÃ­da" : "Insuficiente", tone: pirepPerfect.hasAnyEvidence ? "text-emerald-300" : "text-rose-200" },
+                  { label: "Evidencia", value: pirepPerfect.hasAnyEvidence ? "Leída" : "Insuficiente", tone: pirepPerfect.hasAnyEvidence ? "text-emerald-300" : "text-rose-200" },
                 ]]}
               />
 
-              <SurHeading icon="ðŸ©º" label="DiagnÃ³stico operativo" strong="D5" />
+              <SurHeading icon="🩺" label="Diagnóstico operativo" strong="D5" />
               <div className={`mb-6 rounded-[24px] border px-5 py-4 ${phaseStatusTone(d5ReadinessStatus)}`}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">Estado D5</p>
                     <p className="mt-1 text-2xl font-semibold text-white">{d5ReadinessStatus}</p>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
-                      Este panel no cambia el score. Solo confirma si la Web leyÃ³ la evidencia C0-C8 que ACARS enviarÃ¡ para auditar altitud, fases, touchdown y gate antes de activar evaluaciÃ³n por fases.
+                      Este panel no cambia el score. Solo confirma si la Web leyó la evidencia C0-C8 que ACARS enviará para auditar altitud, fases, touchdown y gate antes de activar evaluación por fases.
                     </p>
                   </div>
                   <div className="grid min-w-[260px] gap-2 text-sm text-white/72">
                     <span>C0-C8 detectado: <strong className="text-white">{formatBool(c0c8Detected)}</strong></span>
                     <span>Altitud confiable: <strong className="text-white">{formatBool(altitudeReliable)}</strong></span>
-                    <span>AuditorÃ­a lista: <strong className="text-white">{formatBool(phaseAuditReady)}</strong></span>
+                    <span>Auditoría lista: <strong className="text-white">{formatBool(phaseAuditReady)}</strong></span>
                     <span>Score por fases: <strong className="text-white">{phaseScoreEligible ? "Activo" : "Bloqueado"}</strong></span>
                   </div>
                 </div>
@@ -1269,15 +1269,15 @@ function FlightResultContent() {
               </div>
 
               <InfoTable
-                columns={["Fases observadas", "Acceptance", "Eventos", "Unsupported", "MSL mÃ¡x", "AGL mÃ¡x", "AcciÃ³n"]}
+                columns={["Fases observadas", "Acceptance", "Eventos", "Unsupported", "MSL máx", "AGL máx", "Acción"]}
                 rows={[[
                   { label: "Fases observadas", value: d5ObservedPhases.length ? d5ObservedPhases.join(" â†’ ") : "N/D", tone: d5ObservedPhases.length ? "text-emerald-200" : "text-amber-200" },
                   { label: "Acceptance", value: `${pirepPerfect.phaseAcceptanceMatrix.length || phaseAcceptancePayload.length} fases` },
                   { label: "Eventos", value: `${pirepPerfect.eventTimeline.length}` },
                   { label: "Unsupported", value: `${pirepPerfect.unsupportedEvents.length}`, tone: pirepPerfect.unsupportedEvents.length ? "text-amber-200" : "text-emerald-200" },
-                  { label: "MSL mÃ¡x", value: formatFt(pirepPerfect.maxAltitudeMslFt || altitudeSummaryPayload.altitude_msl_ft_max) },
-                  { label: "AGL mÃ¡x", value: formatFt(pirepPerfect.maxAglFt || altitudeSummaryPayload.altitude_agl_ft_max) },
-                  { label: "AcciÃ³n", value: phaseScoreEligible ? "Evaluar" : "Auditar", tone: phaseScoreEligible ? "text-emerald-200" : "text-amber-200" },
+                  { label: "MSL máx", value: formatFt(pirepPerfect.maxAltitudeMslFt || altitudeSummaryPayload.altitude_msl_ft_max) },
+                  { label: "AGL máx", value: formatFt(pirepPerfect.maxAglFt || altitudeSummaryPayload.altitude_agl_ft_max) },
+                  { label: "Acción", value: phaseScoreEligible ? "Evaluar" : "Auditar", tone: phaseScoreEligible ? "text-emerald-200" : "text-amber-200" },
                 ]]}
               />
 
@@ -1288,7 +1288,7 @@ function FlightResultContent() {
                 </ul>
               </div>
 
-              <SurHeading icon="ðŸ§©" label="Capacidades por" strong="Aeronave" />
+              <SurHeading icon="🧩" label="Capacidades por" strong="Aeronave" />
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {(pirepPerfect.capabilities.length ? pirepPerfect.capabilities : [
                   { name: "Capabilities", supported: false, source: "xml_legacy", reliability: "not_declared", penaltyEligible: false, reason: "Bloque Capabilities no disponible en este PIREP" },
@@ -1298,17 +1298,17 @@ function FlightResultContent() {
                     <p className={`mt-1 text-xs font-semibold ${metric.supported ? "text-emerald-300" : "text-amber-200"}`}>
                       {metric.supported ? "Soportado" : "N/D no penalizable"}
                     </p>
-                    <p className="mt-2 text-xs leading-5 text-white/60">{metric.source} Â· {metric.reason}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/60">{metric.source} · {metric.reason}</p>
                   </div>
                 ))}
               </div>
 
-              <SurHeading icon="ðŸ›°ï¸" label="Altitud C0" strong="MSL Â· AGL Â· FL" />
+              <SurHeading icon="🛰️" label="Altitud C0" strong="MSL · AGL · FL" />
               <InfoTable
-                columns={["ALT MSL mÃ¡x", "AGL mÃ¡x", "MSL inicial", "MSL final", "AGL final", "FL", "Fuente", "Confiable"]}
+                columns={["ALT MSL máx", "AGL máx", "MSL inicial", "MSL final", "AGL final", "FL", "Fuente", "Confiable"]}
                 rows={[[
-                  { label: "ALT MSL mÃ¡x", value: formatFt(pirepPerfect.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.cruiseAltitude) },
-                  { label: "AGL mÃ¡x", value: formatFt(pirepPerfect.maxAglFt || pirepPerfect.altitudeEvidence.maxAglFt) },
+                  { label: "ALT MSL máx", value: formatFt(pirepPerfect.maxAltitudeMslFt || pirepPerfect.altitudeEvidence.maxAltitudeMslFt || pirepPerfect.cruiseAltitude) },
+                  { label: "AGL máx", value: formatFt(pirepPerfect.maxAglFt || pirepPerfect.altitudeEvidence.maxAglFt) },
                   { label: "MSL inicial", value: formatFt(pirepPerfect.altitudeEvidence.firstAltitudeMslFt) },
                   { label: "MSL final", value: formatFt(pirepPerfect.altitudeEvidence.lastAltitudeMslFt) },
                   { label: "AGL final", value: formatFt(pirepPerfect.altitudeEvidence.lastAltitudeAglFt) },
@@ -1318,7 +1318,7 @@ function FlightResultContent() {
                 ]]}
               />
 
-              <SurHeading icon="ðŸ›¬" label="MÃ©tricas reales" strong="del XML" />
+              <SurHeading icon="🛬" label="Métricas reales" strong="del XML" />
               <InfoTable
                 columns={["Distancia", "Max IAS", "Fuel usado", "Touchdown VS", "Touchdown G", "XPDR", "Doors", "Gear"]}
                 rows={[[
@@ -1326,14 +1326,14 @@ function FlightResultContent() {
                   { label: "Max IAS", value: formatKts(pirepPerfect.maxIas) },
                   { label: "Fuel usado", value: formatKg(fuelUsedKg || actualSnapshot?.fuel_kg_actual) },
                   { label: "Touchdown VS", value: formatFpm(landingVs), tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
-                  { label: "Touchdown G", value: pirepPerfect.touchdownG ? `${pirepPerfect.touchdownG.toFixed(2)}g` : "â€”" },
+                  { label: "Touchdown G", value: pirepPerfect.touchdownG ? `${pirepPerfect.touchdownG.toFixed(2)}g` : "—" },
                   { label: "XPDR", value: pirepPerfect.transponderState || pirepPerfect.transponder || "N/D", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("XPDR")) ? "text-amber-200" : "text-emerald-200" },
                   { label: "Doors", value: pirepPerfect.doorOpen || "N/D", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("DOORS")) ? "text-amber-200" : "text-white" },
-                  { label: "Gear", value: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "N/D" : "SegÃºn perfil", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "text-amber-200" : "text-white" },
+                  { label: "Gear", value: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "N/D" : "Según perfil", tone: pirepPerfect.unsupportedEvents.some((event) => event.code.includes("GEAR")) ? "text-amber-200" : "text-white" },
                 ]]}
               />
 
-              <SurHeading icon="ðŸ§­" label="Resumen por" strong="Fases" />
+              <SurHeading icon="🧭" label="Resumen por" strong="Fases" />
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {pirepPerfect.phases.length ? pirepPerfect.phases.map((phase) => (
                   <div key={phase.name} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
@@ -1341,17 +1341,17 @@ function FlightResultContent() {
                       <p className="text-sm font-semibold text-white">{phase.name}</p>
                       <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/48">{phase.samples} muestras</span>
                     </div>
-                    <p className="mt-1 text-xs text-white/52">{phase.duration || "sin duraciÃ³n"}</p>
-                    <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt Â· GS {Math.round(phase.maxGs)} kt Â· MSL {Math.round(phase.maxAltitudeMslFt || phase.maxAltitude)} ft Â· AGL {Math.round(phase.maxAglFt)} ft</p>
-                    <p className="mt-1 text-xs leading-5 text-white/56">VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)} Â· Dist {Math.round(phase.distanceNm)} NM</p>
+                    <p className="mt-1 text-xs text-white/52">{phase.duration || "sin duración"}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt || phase.maxAltitude)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
+                    <p className="mt-1 text-xs leading-5 text-white/56">VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)} · Dist {Math.round(phase.distanceNm)} NM</p>
                     {phase.phaseReviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-emerald-100/70">{phase.phaseReviewQuestion}</p> : null}
                   </div>
                 )) : (
-                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran mÃ©tricas legacy desde Resumen/Indicadores.</p>
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran métricas legacy desde Resumen/Indicadores.</p>
                 )}
               </div>
 
-              <SurHeading icon="âœ…" label="Matriz de aceptaciÃ³n" strong="C7" />
+              <SurHeading icon="✅" label="Matriz de aceptación" strong="C7" />
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 {pirepPerfect.phaseAcceptanceMatrix.length ? pirepPerfect.phaseAcceptanceMatrix.map((phase) => (
                   <div key={`${phase.phase}-${phase.name}`} className={`rounded-[18px] border px-4 py-3 ${phaseStatusTone(phase.status)}`}>
@@ -1360,16 +1360,16 @@ function FlightResultContent() {
                       <span className="rounded-full border border-current/20 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em]">{phase.status || "N/D"}</span>
                     </div>
                     <p className="mt-1 text-xs text-white/60">{phase.name}</p>
-                    <p className="mt-2 text-xs leading-5 text-white/70">Muestras {phase.samples} Â· GS {Math.round(phase.maxGs)} kt Â· MSL {Math.round(phase.maxAltitudeMslFt)} ft Â· AGL {Math.round(phase.maxAglFt)} ft</p>
+                    <p className="mt-2 text-xs leading-5 text-white/70">Muestras {phase.samples} · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
                     {phase.flags ? <p className="mt-1 text-xs leading-5 text-amber-100/80">Flags: {phase.flags}</p> : null}
                     {phase.reviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-white/64">{phase.reviewQuestion}</p> : null}
                   </div>
                 )) : (
-                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-5">Este XML no trae PhaseAcceptanceMatrix C7. Se validarÃ¡ con FlightPhaseSummary/EventTimeline.</p>
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-5">Este XML no trae PhaseAcceptanceMatrix C7. Se validará con FlightPhaseSummary/EventTimeline.</p>
                 )}
               </div>
 
-              <SurHeading icon="ðŸ§ª" label="AuditorÃ­a y prevalidaciÃ³n" strong="C4-C8" />
+              <SurHeading icon="🧪" label="Auditoría y prevalidación" strong="C4-C8" />
               <div className="space-y-4">
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhaseAuditReport C4</p>
@@ -1400,8 +1400,8 @@ function FlightResultContent() {
             <section className="glass-panel rounded-[30px] p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Herramienta owner Â· Probar PIREP XML</p>
-                  <p className="mt-2 text-sm text-white/70">Modo test/dryRun: evalÃºa reglaje y resumen sin mover wallet ni generar ledger real.</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Herramienta owner · Validar PIREP XML</p>
+                  <p className="mt-2 text-sm text-white/70">Modo preview/dryRun: evalúa reglaje y resumen sin mover wallet ni generar ledger real.</p>
                 </div>
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
                   OWNER
@@ -1429,14 +1429,14 @@ function FlightResultContent() {
                     onChange={(event) => setTestRawXml(event.target.value)}
                     rows={6}
                     className="w-full rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white outline-none"
-                    placeholder="Si lo dejas vacÃ­o, el endpoint usa el fixture seleccionado."
+                    placeholder="Si lo dejas vacío, el endpoint usa el fixture seleccionado."
                   />
                 </label>
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={() => void handleRunPirepTest()} disabled={testRunning} className="button-primary disabled:cursor-not-allowed disabled:opacity-60">
-                  {testRunning ? "Ejecutando preview..." : "Ejecutar evaluaciÃ³n test"}
+                  {testRunning ? "Ejecutando preview..." : "Ejecutar evaluación preview"}
                 </button>
                 <p className="text-xs text-white/60">Sin cierre pagable, sin salary ledger real, sin airline ledger real.</p>
               </div>
@@ -1446,15 +1446,15 @@ function FlightResultContent() {
                 <div className="mt-5 grid gap-4 lg:grid-cols-3">
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
                     <p className="text-xs uppercase tracking-[0.18em] text-white/50">Estado</p>
-                    <p className="mt-1 font-semibold text-white">{testResult.resultStatus || "â€”"}</p>
+                    <p className="mt-1 font-semibold text-white">{testResult.resultStatus || "—"}</p>
                   </div>
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">EvaluaciÃ³n</p>
-                    <p className="mt-1 font-semibold text-white">{testResult.evaluationStatus || "â€”"} Â· {testResult.scoringStatus || "â€”"}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Evaluación</p>
+                    <p className="mt-1 font-semibold text-white">{testResult.evaluationStatus || "—"} · {testResult.scoringStatus || "—"}</p>
                   </div>
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">EconomÃ­a</p>
-                    <p className="mt-1 font-semibold text-white">{testResult.economyMode || "preview"} Â· salary={String(asBoolean(testResult.salaryAccrued))} Â· ledger={String(asBoolean(testResult.ledgerWritten))}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Economía</p>
+                    <p className="mt-1 font-semibold text-white">{testResult.economyMode || "preview"} · salary={String(asBoolean(testResult.salaryAccrued))} · ledger={String(asBoolean(testResult.ledgerWritten))}</p>
                   </div>
                 </div>
               ) : null}
@@ -1462,7 +1462,7 @@ function FlightResultContent() {
           ) : null}
 
           <section className="glass-panel rounded-[30px] p-7">
-            <SurHeading icon="ðŸ“Š" label="Puntaje del" strong="Vuelo" />
+            <SurHeading icon="📊" label="Puntaje del" strong="Vuelo" />
             <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
               <div className="grid grid-cols-5 text-center">
                 <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">Procedimientos</div>
@@ -1485,8 +1485,8 @@ function FlightResultContent() {
                   { label: "PIC False", value: `${picFalseCount}`, tone: picFalseCount > 0 ? "text-rose-200" : "text-emerald-200" },
                   { label: "Stall", value: `${stallSeconds} seg`, tone: stallSeconds > 0 ? "text-rose-200" : "text-emerald-200" },
                   { label: "Overspeed", value: `${overspeedSeconds} seg`, tone: overspeedSeconds > 0 ? "text-rose-200" : "text-emerald-200" },
-                  { label: "G-Force", value: maxGForce > 0 ? `${maxGForce.toFixed(2)}g` : "â€”", tone: maxGForce > 1.6 ? "text-rose-200" : "text-emerald-200" },
-                  { label: "Touchdown", value: landingVs ? `${Math.round(landingVs)} ft/min` : "â€”", tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
+                  { label: "G-Force", value: maxGForce > 0 ? `${maxGForce.toFixed(2)}g` : "—", tone: maxGForce > 1.6 ? "text-rose-200" : "text-emerald-200" },
+                  { label: "Touchdown", value: landingVs ? `${Math.round(landingVs)} ft/min` : "—", tone: landingVs && Math.abs(landingVs) > 700 ? "text-rose-200" : "text-emerald-200" },
                   { label: "Vientos llegada", value: `${arrivalRunway}\n${arrivalWind}`, tone: "text-emerald-200" },
                 ].map((item) => (
                   <div key={item.label} className="border-b border-white/10 px-3 py-4 text-center md:border-b-0 md:border-r md:border-white/10 md:last:border-r-0">
@@ -1503,7 +1503,7 @@ function FlightResultContent() {
             score={procedureScoreValue}
             label={scoreLabel(procedureScoreValue, noEvaluableCloseout)}
             stars={scoreStars(procedureScoreValue, noEvaluableCloseout)}
-            description={noEvaluableCloseout ? "La operaciÃ³n no tiene evidencia mÃ­nima suficiente para aplicar reglaje de procedimientos." : "Detalle de descuentos, advertencias y observaciones de procedimiento detectadas por ACARS/Web."}
+            description={noEvaluableCloseout ? "La operación no tiene evidencia mínima suficiente para aplicar reglaje de procedimientos." : "Detalle de descuentos, advertencias y observaciones de procedimiento detectadas por ACARS/Web."}
             groups={procedureGroups}
             noEvaluable={noEvaluableCloseout}
           />
@@ -1513,20 +1513,20 @@ function FlightResultContent() {
             score={performanceScoreValue}
             label={scoreLabel(performanceScoreValue, noEvaluableCloseout)}
             stars={scoreStars(performanceScoreValue, noEvaluableCloseout)}
-            description={noEvaluableCloseout ? "La performance no se evalÃºa si no hay caja negra o telemetrÃ­a mÃ­nima confiable." : "Detalle de mÃ©tricas de performance, planificaciÃ³n, maniobras, aterrizaje y condiciones adicionales."}
+            description={noEvaluableCloseout ? "La performance no se evalúa si no hay caja negra o telemetría mínima confiable." : "Detalle de métricas de performance, planificación, maniobras, aterrizaje y condiciones adicionales."}
             groups={performanceGroups}
             noEvaluable={noEvaluableCloseout}
           />
 
           <section className="glass-panel rounded-[30px] p-7">
-            <SurHeading icon="ðŸ§‘â€âœˆï¸" label="Feedback del" strong="Jefe de Flota" />
+            <SurHeading icon="🧑‍✈️" label="Feedback del" strong="Jefe de Flota" />
             <div className="rounded-[22px] border-l-4 border-emerald-300/60 bg-emerald-300/8 px-5 py-5">
               <p className="text-sm italic leading-8 text-white/80">â€œ{jefeFlotaFeedback}â€</p>
             </div>
           </section>
 
           <section className="glass-panel rounded-[30px] p-7">
-            <SurHeading icon="ðŸ’°" label="EconomÃ­a / Coins del" strong="Vuelo" />
+            <SurHeading icon="💰" label="Economía / Coins del" strong="Vuelo" />
             <InfoTable
               columns={["Vuelo", "Tiempo", "Consumo", "Performance", "Procedimiento", "Adicional", "Total"]}
               rows={[[
@@ -1542,10 +1542,10 @@ function FlightResultContent() {
 
             <SurHeading icon="⚖️" label="Despacho de Peso y" strong="Combustible" />
             <InfoTable
-              columns={["TOW despachado", "TOW del aviÃ³n", "Fuel despachado", "Fuel al iniciar", "Fuel consumido"]}
+              columns={["TOW despachado", "TOW del avión", "Fuel despachado", "Fuel al iniciar", "Fuel consumido"]}
               rows={[[
                 { label: "TOW despachado", value: formatKg(payloadNumber(mergedScorePayload, ["tow_dispatched_kg", "planned_tow_kg", "tow_kg"])) },
-                { label: "TOW del aviÃ³n", value: formatKg(payloadNumber(mergedScorePayload, ["actual_tow_kg", "aircraft_tow_kg"])) },
+                { label: "TOW del avión", value: formatKg(payloadNumber(mergedScorePayload, ["actual_tow_kg", "aircraft_tow_kg"])) },
                 { label: "Fuel despachado", value: formatKg(plannedSnapshot?.fuel_kg_estimated) },
                 { label: "Fuel al iniciar", value: formatKg(fuelStartKg) },
                 { label: "Fuel consumido", value: formatKg(fuelUsedKg || actualSnapshot?.fuel_kg_actual) },
@@ -1554,24 +1554,24 @@ function FlightResultContent() {
           </section>
 
           <section className="glass-panel rounded-[30px] p-7">
-            <SurHeading icon="ðŸ—ºï¸" label="Plan de" strong="Vuelo" />
+            <SurHeading icon="🗺️" label="Plan de" strong="Vuelo" />
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] px-5 py-5 text-center">
               <p className="text-sm font-semibold leading-7 text-white">{routeText}</p>
             </div>
 
-            <SurHeading icon="âš™ï¸" label="ParÃ¡metros de" strong="Vuelo" />
+            <SurHeading icon="⚙️" label="Parámetros de" strong="Vuelo" />
             <InfoTable
               columns={["Nivel de vuelo", "Combustible utilizado", "Distancia recorrida", "Pista y condiciones de salida", "Pista y condiciones de llegada"]}
               rows={[[
                 { label: "Nivel de vuelo", value: cruiseLevel },
                 { label: "Combustible utilizado", value: formatKg(fuelUsedKg || actualSnapshot?.fuel_kg_actual) },
                 { label: "Distancia recorrida", value: formatNm(distanceNmEvidence || reservation.distance_nm) },
-                { label: "Pista y condiciones de salida", value: `${departureRunway} Â· ${departureWind}` },
-                { label: "Pista y condiciones de llegada", value: `${arrivalRunway} Â· ${arrivalWind}` },
+                { label: "Pista y condiciones de salida", value: `${departureRunway} · ${departureWind}` },
+                { label: "Pista y condiciones de llegada", value: `${arrivalRunway} · ${arrivalWind}` },
               ]]}
             />
 
-            <SurHeading icon="ðŸ’»" label="Detalles del" strong="Simulador" />
+            <SurHeading icon="💻" label="Detalles del" strong="Simulador" />
             <InfoTable
               columns={["Simulador", "ACARS", "PIREP XML", "Muestras", "Elapsed", "Estado server"]}
               rows={[[
@@ -1579,27 +1579,27 @@ function FlightResultContent() {
                 { label: "ACARS", value: acarsVersion },
                 { label: "PIREP XML", value: rawPirepFileName || "score_payload" },
                 { label: "Muestras", value: String(telemetrySamples) },
-                { label: "Elapsed", value: elapsedSeconds > 0 ? `${elapsedSeconds}s` : "â€”" },
+                { label: "Elapsed", value: elapsedSeconds > 0 ? `${elapsedSeconds}s` : "—" },
                 { label: "Estado server", value: scoringStatus || "scored" },
               ]]}
             />
 
-            <SurHeading icon="ðŸ“ˆ" label="Planificado vs" strong="Real" />
+            <SurHeading icon="📈" label="Planificado vs" strong="Real" />
             <InfoTable
-              columns={["Fuel", "Block", "Ingresos USD", "Costos USD", "Utilidad USD", "ComisiÃ³n USD"]}
+              columns={["Fuel", "Block", "Ingresos USD", "Costos USD", "Utilidad USD", "Comisión USD"]}
               rows={[[
                 { label: "Fuel", value: `${formatKg(plannedSnapshot?.fuel_kg_estimated)} / ${formatKg(actualSnapshot?.fuel_kg_actual)}` },
                 { label: "Block", value: `${formatMinutes(asNumber(plannedSnapshot?.block_minutes_estimated))} / ${formatMinutes(asNumber(actualSnapshot?.block_minutes_actual) || reservation.actual_block_minutes)}` },
                 { label: "Ingresos USD", value: `${formatMoney(plannedRevenue, { zeroLabel: "Sin datos" })} / ${formatMoney(actualRevenue, { zeroLabel: "Sin datos" })}` },
                 { label: "Costos USD", value: `${formatMoney(plannedSnapshot?.total_cost_usd, { zeroLabel: "Sin datos" })} / ${formatMoney(actualSnapshot?.total_cost_usd, { zeroLabel: "Sin datos" })}` },
                 { label: "Utilidad USD", value: noEvaluableCloseout ? "No aplicable" : `${formatMoney(plannedSnapshot?.net_profit_usd, { zeroLabel: "Sin datos" })} / ${formatMoney(actualSnapshot?.net_profit_usd, { zeroLabel: "Sin datos" })}` },
-                { label: "ComisiÃ³n USD", value: noEvaluableCloseout ? "$0 / $0" : `${formatMoney(plannedSnapshot?.pilot_payment_usd, { zeroLabel: "Sin datos" })} / ${formatMoney(actualSnapshot?.pilot_payment_usd || reservation.commission_usd, { zeroLabel: "Sin datos" })}` },
+                { label: "Comisión USD", value: noEvaluableCloseout ? "$0 / $0" : `${formatMoney(plannedSnapshot?.pilot_payment_usd, { zeroLabel: "Sin datos" })} / ${formatMoney(actualSnapshot?.pilot_payment_usd || reservation.commission_usd, { zeroLabel: "Sin datos" })}` },
               ]]}
             />
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Snapshot: {actualSnapshot ? "Creado" : "Sin datos recibidos"}</p>
               <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Ledger: {hasLedgerEntry ? "Creado" : "Sin datos recibidos"}</p>
-              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary mensual: {hasSalaryEntry ? "SÃ­" : "No devengado"}</p>
+              <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary mensual: {hasSalaryEntry ? "Sí" : "No devengado"}</p>
             </div>
             <p className="mt-3 text-sm text-white/66">
               {asText(actualMeta.onboard_quality_reason) || "Sin motivo operacional adicional para ajuste de ventas/servicio."}
@@ -1607,7 +1607,7 @@ function FlightResultContent() {
           </section>
 
           <section className="glass-panel rounded-[30px] p-7">
-            <SurHeading icon="âš ï¸" label="Trazabilidad de" strong="Cierre" />
+            <SurHeading icon="⚠️" label="Trazabilidad de" strong="Cierre" />
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-[24px] border border-rose-400/15 bg-rose-400/5 p-5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-200/80">Detalle penalizaciones</p>
@@ -1615,7 +1615,7 @@ function FlightResultContent() {
                   {penalties.length ? penalties.slice(0, 10).map((item, index) => (
                     <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
                       <p className="text-sm font-semibold text-white">{itemTitle(item)}</p>
-                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} Â· {asText(item.severity) || "reglaje"}</p>
+                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "reglaje"}</p>
                       <p className="mt-2 text-sm text-white/78">{itemDescription(item)}</p>
                     </div>
                   )) : <p className="text-sm text-white/64">Sin penalizaciones registradas.</p>}
@@ -1628,7 +1628,7 @@ function FlightResultContent() {
                   {displayTimelineEvents.length ? displayTimelineEvents.slice(0, 14).map((item, index) => (
                     <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
                       <p className="text-sm font-semibold text-white">{itemTitle(item)}</p>
-                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} Â· {asText(item.severity) || "evento"} Â· {asText(item.source) || "ACARS"}</p>
+                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "evento"} · {asText(item.source) || "ACARS"}</p>
                       <p className="mt-2 text-sm text-white/78">{itemDescription(item)}</p>
                     </div>
                   )) : <p className="text-sm text-white/64">Sin eventos oficiales registrados.</p>}
@@ -1638,13 +1638,13 @@ function FlightResultContent() {
 
             {(closeoutWarnings.length > 0 || noEvaluableCloseout) ? (
               <div className="mt-4 rounded-[18px] border border-rose-400/20 bg-rose-500/8 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-100/90">Motivo de no evaluaciÃ³n</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-100/90">Motivo de no evaluación</p>
                 {closeoutWarnings.length ? (
                   <ul className="mt-2 space-y-1 text-sm text-rose-100/85">
                     {closeoutWarnings.map((warning) => <li key={warning}>â€¢ {warning}</li>)}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-rose-100/85">No hay evidencia mÃ­nima de vuelo suficiente para aplicar reglaje/economÃ­a.</p>
+                  <p className="mt-2 text-sm text-rose-100/85">No hay evidencia mínima de vuelo suficiente para aplicar reglaje/economía.</p>
                 )}
               </div>
             ) : null}
@@ -1654,13 +1654,13 @@ function FlightResultContent() {
             <section className="glass-panel rounded-[30px] p-7">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Derecho a rÃ©plica</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Derecho a réplica</p>
                   <p className="mt-2 text-sm text-white/70">
                     {currentAppeal.status === "pending"
-                      ? `ApelaciÃ³n pendiente hasta ${formatDateTime(asText(currentAppeal.deadline_at))}.`
+                      ? `Apelación pendiente hasta ${formatDateTime(asText(currentAppeal.deadline_at))}.`
                       : currentAppeal.status
-                        ? `ApelaciÃ³n ${asText(currentAppeal.status)}${asText(currentAppeal.resolved_at) ? ` el ${formatDateTime(asText(currentAppeal.resolved_at))}` : ""}.`
-                        : "Si este cierre requiere revisiÃ³n manual, dÃ©jalo aquÃ­ dentro de 48 horas."}
+                        ? `Apelación ${asText(currentAppeal.status)}${asText(currentAppeal.resolved_at) ? ` el ${formatDateTime(asText(currentAppeal.resolved_at))}` : ""}.`
+                        : "Si este cierre requiere revisión manual, déjalo aquí dentro de 48 horas."}
                   </p>
                 </div>
                 <Link href="/dashboard" className="button-ghost">Volver</Link>
@@ -1669,8 +1669,8 @@ function FlightResultContent() {
               {currentAppeal.status === "pending" ? (
                 <div className="mt-5 space-y-4">
                   <div className="rounded-[22px] border border-amber-400/20 bg-amber-400/10 px-5 py-4 text-sm text-amber-100">
-                    {asText(currentAppeal.category).toUpperCase()} Â· {asText(currentAppeal.reason) || "Sin motivo"}
-                    {asText(currentAppeal.comment) ? ` Â· ${asText(currentAppeal.comment)}` : ""}
+                    {asText(currentAppeal.category).toUpperCase()} · {asText(currentAppeal.reason) || "Sin motivo"}
+                    {asText(currentAppeal.comment) ? ` · ${asText(currentAppeal.comment)}` : ""}
                   </div>
                   {isAdminReviewer ? (
                     <div className="flex flex-wrap justify-end gap-3">
@@ -1687,10 +1687,10 @@ function FlightResultContent() {
                 <form onSubmit={handleAppealSubmit} className="mt-5 grid gap-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">CategorÃ­a</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Categoría</span>
                       <select value={appealCategory} onChange={(event) => setAppealCategory(event.target.value as AppealCategory)} className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none">
                         <option value="score">Score</option>
-                        <option value="damage">DaÃ±o</option>
+                        <option value="damage">Daño</option>
                         <option value="dispatch">Despacho</option>
                         <option value="system">Sistema / addon</option>
                         <option value="other">Otro</option>
@@ -1704,7 +1704,7 @@ function FlightResultContent() {
 
                   <label className="flex flex-col gap-2">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Comentario</span>
-                    <textarea value={appealComment} onChange={(event) => setAppealComment(event.target.value)} required rows={4} className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Explica quÃ© revisar manualmente" />
+                    <textarea value={appealComment} onChange={(event) => setAppealComment(event.target.value)} required rows={4} className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Explica qué revisar manualmente" />
                   </label>
 
                   {saveMessage ? <p className="text-sm text-emerald-300">{saveMessage}</p> : null}
@@ -1733,3 +1733,5 @@ export default function FlightResultPage() {
     </OptionalAuthPage>
   );
 }
+
+
