@@ -199,19 +199,19 @@ function AuditContent() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/8">
-                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Vuelo</th>
-                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Piloto</th>
-                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Estado</th>
-                      <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Detalle</th>
+                    <tr className="border-b border-[var(--pw-border)]">
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Vuelo</th>
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Piloto</th>
+                      <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Estado</th>
+                      <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Detalle</th>
                     </tr>
                   </thead>
                   <tbody>
                     {appeals.map((row) => (
                       <tr key={row.id} className="border-b border-white/5 last:border-0">
-                        <td className="py-3 font-medium text-white"><div className="flex items-center gap-2"><IcaoFlagBadge icao={row.origin_ident ?? "---"} size="sm" /><span className="text-white/45">→</span><IcaoFlagBadge icao={row.destination_ident ?? "---"} size="sm" /></div></td>
+                        <td className="py-3 font-medium text-white"><div className="flex items-center gap-2"><IcaoFlagBadge icao={row.origin_ident ?? "---"} size="sm" /><span className="text-[var(--pw-text-soft)]">→</span><IcaoFlagBadge icao={row.destination_ident ?? "---"} size="sm" /></div></td>
                         <td className="py-3 text-white/70">{row.pilot_callsign ?? "—"}</td>
-                        <td className="py-3 text-white/54">{row.status ?? "—"}</td>
+                        <td className="py-3 text-[var(--pw-text-soft)]">{row.status ?? "—"}</td>
                         <td className="py-3 text-right">
                           <Link href={`/flights/${row.id}`} className="text-sm font-semibold text-[#67d7ff] transition hover:text-white">
                             Ver vuelo
@@ -230,7 +230,7 @@ function AuditContent() {
               <span className="section-chip">{section.title}</span>
               <div className="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                 <div className="surface-outline rounded-[24px] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">Reglas vigentes</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Reglas vigentes</p>
                   <div className="mt-4 space-y-3 text-sm leading-7 text-white/82">
                     {section.rules.map((rule) => (
                       <p key={rule}>- {rule}</p>
@@ -238,7 +238,7 @@ function AuditContent() {
                   </div>
                 </div>
                 <div className="surface-outline rounded-[24px] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">Chequeos Supabase</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Chequeos Supabase</p>
                   <div className="mt-4 space-y-4">
                     {section.checks.map((check) => {
                       const result = results[check.key];
@@ -247,12 +247,12 @@ function AuditContent() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold text-white">{check.label}</p>
-                              <p className="mt-1 text-xs text-white/56">{check.description}</p>
+                              <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{check.description}</p>
                             </div>
                             <StatusBadge status={result?.status ?? (loading ? "warn" : "off")} />
                           </div>
                           <p className="mt-3 text-sm text-white/82">{loading ? "Comprobando..." : result?.value ?? check.expected}</p>
-                          <p className="mt-2 text-xs text-white/50">Esperado: {check.expected}</p>
+                          <p className="mt-2 text-xs text-[var(--pw-text-soft)]">Esperado: {check.expected}</p>
                         </div>
                       );
                     })}

@@ -193,7 +193,7 @@ function getStatusClasses(status: unknown) {
     return "border-rose-300/30 bg-rose-400/12 text-rose-100";
   }
 
-  return "border-white/10 bg-white/[0.055] text-white/62";
+  return "border-white/10 bg-white/[0.055] text-[var(--pw-text-soft)]";
 }
 
 function StatusPill({ status }: { status: unknown }) {
@@ -225,7 +225,7 @@ function SurfaceCard({
   className?: string;
 }) {
   return (
-    <div className={`surface-outline rounded-[24px] border border-white/8 bg-white/[0.035] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.18)] ${className}`}>
+    <div className={`surface-outline rounded-[24px] border border-[var(--pw-border)] bg-white/[0.035] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.18)] ${className}`}>
       {children}
     </div>
   );
@@ -242,9 +242,9 @@ function SectionTitle({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">{eyebrow}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">{eyebrow}</p>
       <h2 className="header-strip mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">{title}</h2>
-      {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">{description}</p> : null}
+      {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">{description}</p> : null}
     </div>
   );
 }
@@ -292,7 +292,7 @@ function RouteIcaoPair({ origin, destination }: { origin?: string | null; destin
   return (
     <span className="inline-flex items-center gap-2">
       <IcaoFlagBadge icao={origin ?? "---"} size="sm" />
-      <span className="text-white/45">→</span>
+      <span className="text-[var(--pw-text-soft)]">→</span>
       <IcaoFlagBadge icao={destination ?? "---"} size="sm" />
     </span>
   );
@@ -594,7 +594,7 @@ export default function PilotOfficePanel({
             </div>
 
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/48">Oficina del piloto</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Oficina del piloto</p>
               <h2 className="header-strip mt-1 text-2xl font-semibold tracking-[-0.03em] text-white">{getDisplayName(profile)}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-100">
@@ -611,23 +611,23 @@ export default function PilotOfficePanel({
           </div>
 
           <div className="grid grid-cols-3 gap-3 sm:min-w-[430px]">
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Horas</p>
+            <div className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Horas</p>
               <p className="mt-2 text-2xl font-semibold text-white">{formatNumber(totalHours, 1)}</p>
             </div>
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Vuelos</p>
+            <div className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Vuelos</p>
               <p className="mt-2 text-2xl font-semibold text-white">{formatNumber(validFlights)}</p>
             </div>
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Score</p>
+            <div className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Score</p>
               <p className="mt-2 text-2xl font-semibold text-[#67d7ff]">{formatNumber(averageScore, 1)}</p>
             </div>
           </div>
         </div>
       </SurfaceCard>
 
-      <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/8 bg-white/[0.035] p-2">
+      <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-2">
         {OFFICE_TABS.map((tab) => {
           const active = activeOfficeTab === tab.key;
           return (
@@ -638,7 +638,7 @@ export default function PilotOfficePanel({
               className={`shrink-0 rounded-[16px] px-4 py-2.5 text-sm font-semibold transition ${
                 active
                   ? "bg-[#67d7ff] text-[#04162a] shadow-[0_10px_30px_rgba(103,215,255,0.24)]"
-                  : "text-white/62 hover:bg-white/[0.06] hover:text-white"
+                  : "text-[var(--pw-text-soft)] hover:bg-white/[0.06] hover:text-white"
               }`}
             >
               {tab.label}
@@ -695,9 +695,9 @@ export default function PilotOfficePanel({
                 const progress = required <= 0 ? 100 : Math.max(0, Math.min(100, Math.round((current / required) * 100)));
 
                 return (
-                  <div key={asString(item.key, asString(item.label))} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                  <div key={asString(item.key, asString(item.label))} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/42">{asString(item.label)}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">{asString(item.label)}</p>
                       <StatusPill status={item.met ? "PASSED" : "PENDING"} />
                     </div>
                     <p className="mt-3 text-xl font-semibold text-white">
@@ -715,24 +715,24 @@ export default function PilotOfficePanel({
           <SurfaceCard>
             <SectionTitle eyebrow="Estado operacional" title="Resumen actual" />
             <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
-                <span className="text-sm text-white/50">Rango actual</span>
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--pw-border)] pb-3">
+                <span className="text-sm text-[var(--pw-text-soft)]">Rango actual</span>
                 <span className="text-sm font-semibold text-white">{currentRankName}</span>
               </div>
-              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
-                <span className="text-sm text-white/50">Siguiente rango</span>
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--pw-border)] pb-3">
+                <span className="text-sm text-[var(--pw-text-soft)]">Siguiente rango</span>
                 <span className="text-sm font-semibold text-[#67d7ff]">{nextRankName}</span>
               </div>
-              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
-                <span className="text-sm text-white/50">Score últimos 10</span>
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--pw-border)] pb-3">
+                <span className="text-sm text-[var(--pw-text-soft)]">Score últimos 10</span>
                 <span className="text-sm font-semibold text-white">{formatNumber(last10Score, 1)}</span>
               </div>
-              <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
-                <span className="text-sm text-white/50">Licencias vigentes</span>
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--pw-border)] pb-3">
+                <span className="text-sm text-[var(--pw-text-soft)]">Licencias vigentes</span>
                 <span className="text-sm font-semibold text-emerald-200">{validLicenses.length}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-white/50">Disponibles ahora</span>
+                <span className="text-sm text-[var(--pw-text-soft)]">Disponibles ahora</span>
                 <span className="text-sm font-semibold text-cyan-100">{availableLicenses.length}</span>
               </div>
             </div>
@@ -749,16 +749,16 @@ export default function PilotOfficePanel({
           />
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Escalón actual</p>
+            <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Escalón actual</p>
               <p className="mt-3 text-3xl font-semibold text-white">{currentRankName}</p>
-              <p className="mt-3 text-sm leading-6 text-white/55">{rpcCurrentRank?.description ?? localProgress.currentRank.description}</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--pw-text-soft)]">{rpcCurrentRank?.description ?? localProgress.currentRank.description}</p>
             </div>
 
             <div className="rounded-[22px] border border-cyan-300/14 bg-cyan-300/[0.045] p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60">Siguiente paso</p>
               <p className="mt-3 text-3xl font-semibold text-white">{nextRankName}</p>
-              <p className="mt-3 text-sm leading-6 text-white/58">{localProgress.nextRecommendedAction}</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--pw-text-soft)]">{localProgress.nextRecommendedAction}</p>
             </div>
           </div>
 
@@ -769,7 +769,7 @@ export default function PilotOfficePanel({
               const progress = required <= 0 ? 100 : Math.max(0, Math.min(100, Math.round((current / required) * 100)));
 
               return (
-                <div key={asString(item.key, asString(item.label))} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                <div key={asString(item.key, asString(item.label))} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                   <div className="grid gap-4 md:grid-cols-[1fr_180px_120px] md:items-center">
                     <div>
                       <p className="text-sm font-semibold text-white">{asString(item.label)}</p>
@@ -802,7 +802,7 @@ export default function PilotOfficePanel({
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[1120px] text-sm">
               <thead>
-                <tr className="border-b border-white/8 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
+                <tr className="border-b border-[var(--pw-border)] text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">
                   <th className="pb-3">Avion</th>
                   <th className="pb-3">Familia</th>
                   <th className="pb-3">Rango mínimo</th>
@@ -835,10 +835,10 @@ export default function PilotOfficePanel({
                   <tr key={aircraftCode} className="border-b border-white/6 last:border-0">
                     <td className="py-3">
                       <p className="font-semibold text-white">{asString(item.display_name, asString(item.aircraft_type_code))}</p>
-                      <p className="text-xs text-white/38">{asString(item.aircraft_type_code)}</p>
+                      <p className="text-xs text-[var(--pw-text-soft)]">{asString(item.aircraft_type_code)}</p>
                     </td>
-                    <td className="py-3 text-white/62">{asString(item.family_code)}</td>
-                    <td className="py-3 text-white/62">{asString(item.min_rank_name, asString(item.min_rank_code))}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{asString(item.family_code)}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{asString(item.min_rank_name, asString(item.min_rank_code))}</td>
                     <td className="py-3"><StatusPill status={item.status as AircraftLicenseStatus} /></td>
                     <td className="py-3 text-right text-white/70">
                       {formatNumber(item.training_hours, 1)} / {formatNumber(item.training_hours_required, 1)}
@@ -846,8 +846,8 @@ export default function PilotOfficePanel({
                     <td className="py-3 text-right text-white/70">
                       {formatNumber(item.training_flights)} / {formatNumber(item.training_flights_required)}
                     </td>
-                    <td className="py-3 text-white/62">{item.checkride_required ? asString(item.checkride_template_code, "Requerido") : "No inicial"}</td>
-                    <td className="py-3 text-white/45">{formatDate(item.granted_at)}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{item.checkride_required ? asString(item.checkride_template_code, "Requerido") : "No inicial"}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{formatDate(item.granted_at)}</td>
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
                         {!isValid ? (
@@ -855,7 +855,7 @@ export default function PilotOfficePanel({
                             type="button"
                             disabled={isLocked || busyStart}
                             onClick={() => startAircraftTraining(aircraftCode)}
-                            className="rounded-[10px] border border-white/10 bg-white/[0.055] px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-[10px] border border-white/10 bg-white/[0.055] px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             {busyStart ? "Iniciando..." : status === "TRAINING" ? "Entrenando" : "Iniciar"}
                           </button>
@@ -865,7 +865,7 @@ export default function PilotOfficePanel({
                             type="button"
                             disabled={busyRefresh}
                             onClick={() => refreshAircraftTraining(aircraftCode)}
-                            className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             {busyRefresh ? "Actualizando..." : "Actualizar"}
                           </button>
@@ -875,7 +875,7 @@ export default function PilotOfficePanel({
                             type="button"
                             disabled={busyCheckride}
                             onClick={() => requestAircraftCheckride(aircraftCode)}
-                            className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             {busyCheckride ? "Solicitando..." : "Checkride"}
                           </button>
@@ -902,11 +902,11 @@ export default function PilotOfficePanel({
             <div className="mt-5 space-y-3">
               {currentTrainingLicenses.length > 0 ? (
                 currentTrainingLicenses.map((item) => (
-                  <div key={asString(item.aircraft_type_code)} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                  <div key={asString(item.aircraft_type_code)} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-white">{asString(item.display_name)}</p>
-                        <p className="mt-1 text-xs text-white/42">{asString(item.aircraft_type_code)} - {asString(item.family_code)}</p>
+                        <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{asString(item.aircraft_type_code)} - {asString(item.family_code)}</p>
                       </div>
                       <StatusPill status={item.status} />
                     </div>
@@ -915,7 +915,7 @@ export default function PilotOfficePanel({
                         type="button"
                         disabled={actionBusy === `refresh-${asString(item.aircraft_type_code).toUpperCase()}`}
                         onClick={() => refreshAircraftTraining(item.aircraft_type_code)}
-                        className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-[10px] border border-cyan-300/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.12] disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {actionBusy === `refresh-${asString(item.aircraft_type_code).toUpperCase()}` ? "Actualizando..." : "Actualizar progreso"}
                       </button>
@@ -923,25 +923,25 @@ export default function PilotOfficePanel({
                         type="button"
                         disabled={actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}`}
                         onClick={() => requestAircraftCheckride(item.aircraft_type_code)}
-                        className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-[10px] border border-emerald-300/20 bg-emerald-300/[0.10] px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/[0.16] disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {actionBusy === `checkride-${asString(item.aircraft_type_code).toUpperCase()}` ? "Solicitando..." : "Solicitar checkride"}
                       </button>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Horas</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Horas</p>
                         <p className="mt-1 text-sm font-semibold text-white">{formatNumber(item.training_hours, 1)} / {formatNumber(item.training_hours_required, 1)}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Vuelos</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Vuelos</p>
                         <p className="mt-1 text-sm font-semibold text-white">{formatNumber(item.training_flights)} / {formatNumber(item.training_flights_required)}</p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+                <p className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4 text-sm text-[var(--pw-text-soft)]">
                   No hay entrenamientos activos registrados. Selecciona una aeronave disponible y reserva un vuelo de entrenamiento.
                 </p>
               )}
@@ -950,7 +950,7 @@ export default function PilotOfficePanel({
 
           <SurfaceCard>
             <SectionTitle eyebrow="Reserva" title="Entrenar ahora" />
-            <p className="mt-3 text-sm leading-6 text-white/58">
+            <p className="mt-3 text-sm leading-6 text-[var(--pw-text-soft)]">
               Usa el despacho en modo entrenamiento para comenzar a sumar horas por aeronave. Luego se habilitará el checkride correspondiente.
             </p>
             {activeReservation ? (
@@ -959,7 +959,7 @@ export default function PilotOfficePanel({
                 <div className="mt-2 text-lg font-semibold text-white">
                   <RouteIcaoPair origin={activeReservation.origin_ident} destination={activeReservation.destination_ident} />
                 </div>
-                <p className="mt-1 text-sm text-white/55">{activeReservation.aircraft_type_code ?? "Aeronave pendiente"} {activeReservation.aircraft_registration ? `- ${activeReservation.aircraft_registration}` : ""}</p>
+                <p className="mt-1 text-sm text-[var(--pw-text-soft)]">{activeReservation.aircraft_type_code ?? "Aeronave pendiente"} {activeReservation.aircraft_registration ? `- ${activeReservation.aircraft_registration}` : ""}</p>
               </div>
             ) : null}
             <button
@@ -994,21 +994,21 @@ export default function PilotOfficePanel({
           <div className="mt-6 grid gap-3 lg:grid-cols-2">
             {theoryCourses.length > 0 ? (
               theoryCourses.map((course) => (
-                <div key={asString(course.code)} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                <div key={asString(course.code)} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-white">{asString(course.title, asString(course.code))}</p>
-                      <p className="mt-1 text-xs text-white/42">Aprobación mínima: {formatNumber(course.passing_score)}%</p>
+                      <p className="mt-1 text-xs text-[var(--pw-text-soft)]">Aprobación mínima: {formatNumber(course.passing_score)}%</p>
                     </div>
                     <StatusPill status={course.status} />
                   </div>
-                  <p className="mt-3 text-sm text-white/50">
+                  <p className="mt-3 text-sm text-[var(--pw-text-soft)]">
                     Requerido para: {asString(course.required_for_rank_code, "Progresion")}
                   </p>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/55">No hay cursos teóricos cargados o disponibles para este piloto.</p>
+              <p className="text-sm text-[var(--pw-text-soft)]">No hay cursos teóricos cargados o disponibles para este piloto.</p>
             )}
           </div>
         </SurfaceCard>
@@ -1023,10 +1023,10 @@ export default function PilotOfficePanel({
           />
 
           <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr]">
-            <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
+            <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Solicitados</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Solicitados</p>
                   <h3 className="header-strip mt-2 text-xl font-semibold text-white">Estado actual</h3>
                 </div>
                 <button
@@ -1042,11 +1042,11 @@ export default function PilotOfficePanel({
               <div className="mt-5 space-y-3">
                 {pilotCheckrides.length > 0 ? (
                   pilotCheckrides.map((checkride, index) => (
-                    <div key={asString(checkride.id, `${asString(checkride.checkride_code)}-${index}`)} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                    <div key={asString(checkride.id, `${asString(checkride.checkride_code)}-${index}`)} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold text-white">{asString(checkride.template_name, asString(checkride.checkride_code, "Checkride"))}</p>
-                          <p className="mt-1 text-xs text-white/42">
+                          <p className="mt-1 text-xs text-[var(--pw-text-soft)]">
                             {asString(checkride.aircraft_type_code, "Ascenso")} {checkride.origin_icao || checkride.destination_icao ? `- ${asString(checkride.origin_icao)} / ${asString(checkride.destination_icao)}` : ""}
                           </p>
                         </div>
@@ -1055,30 +1055,30 @@ export default function PilotOfficePanel({
 
                       <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                         <div>
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Score</p>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Score</p>
                           <p className="mt-1 font-semibold text-white">{checkride.score != null ? formatNumber(checkride.score, 1) : "-"}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Solicitado</p>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Solicitado</p>
                           <p className="mt-1 font-semibold text-white">{formatDate(checkride.requested_at ?? checkride.created_at)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Cierre</p>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Cierre</p>
                           <p className="mt-1 font-semibold text-white">{formatDate(checkride.completed_at)}</p>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+                  <p className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4 text-sm text-[var(--pw-text-soft)]">
                     No hay checkrides solicitados todavía.
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Elegibles</p>
+            <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Elegibles</p>
               <h3 className="header-strip mt-2 text-xl font-semibold text-white">Listos para solicitar</h3>
 
               <div className="mt-5 space-y-3">
@@ -1086,7 +1086,7 @@ export default function PilotOfficePanel({
                   checkrideCandidates.map((item) => (
                     <div key={asString(item.aircraft_type_code)} className="rounded-[18px] border border-cyan-300/16 bg-cyan-300/[0.045] p-4">
                       <p className="font-semibold text-white">{asString(item.display_name)}</p>
-                      <p className="mt-1 text-sm text-white/55">{asString(item.checkride_template_code, "Checkride requerido")}</p>
+                      <p className="mt-1 text-sm text-[var(--pw-text-soft)]">{asString(item.checkride_template_code, "Checkride requerido")}</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <StatusPill status={item.status} />
                         <button
@@ -1101,7 +1101,7 @@ export default function PilotOfficePanel({
                     </div>
                   ))
                 ) : (
-                  <p className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+                  <p className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4 text-sm text-[var(--pw-text-soft)]">
                     Todavía no hay checkrides elegibles. Completa las horas y vuelos de entrenamiento requeridos.
                   </p>
                 )}
@@ -1121,28 +1121,28 @@ export default function PilotOfficePanel({
           <div className="mt-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {certifications.length > 0 ? (
               certifications.map((cert) => (
-                <div key={asString(cert.code)} className="rounded-[18px] border border-white/8 bg-white/[0.035] p-4">
+                <div key={asString(cert.code)} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-white">{asString(cert.title, asString(cert.code))}</p>
-                      <p className="mt-1 text-xs text-white/42">Desde {asString(cert.min_rank_code)}</p>
+                      <p className="mt-1 text-xs text-[var(--pw-text-soft)]">Desde {asString(cert.min_rank_code)}</p>
                     </div>
                     <StatusPill status={cert.status} />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Horas</p>
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Horas</p>
                       <p className="mt-1 font-semibold text-white">{formatNumber(cert.min_hours, 0)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">Score</p>
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Score</p>
                       <p className="mt-1 font-semibold text-white">{formatNumber(cert.min_average_score, 1)}</p>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/55">No hay certificaciones cargadas o disponibles.</p>
+              <p className="text-sm text-[var(--pw-text-soft)]">No hay certificaciones cargadas o disponibles.</p>
             )}
           </div>
         </SurfaceCard>
@@ -1154,7 +1154,7 @@ export default function PilotOfficePanel({
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="border-b border-white/8 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
+                <tr className="border-b border-[var(--pw-border)] text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">
                   <th className="pb-3">Ruta</th>
                   <th className="pb-3">Aeronave</th>
                   <th className="pb-3">Modo</th>
@@ -1174,8 +1174,8 @@ export default function PilotOfficePanel({
                         <RouteIcaoPair origin={flight.origin_ident} destination={flight.destination_ident} />
                       )}
                     </td>
-                    <td className="py-3 text-white/65">{flight.aircraft_type_code ?? "Pendiente"}</td>
-                    <td className="py-3 text-white/45">{flight.flight_mode_code ?? flight.status ?? "Vuelo"}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{flight.aircraft_type_code ?? "Pendiente"}</td>
+                    <td className="py-3 text-[var(--pw-text-soft)]">{flight.flight_mode_code ?? flight.status ?? "Vuelo"}</td>
                     <td className="py-3 text-right font-semibold text-[#67d7ff]">
                       {flight.procedure_score != null
                         ? formatNumber(flight.procedure_score, 1)
@@ -1185,14 +1185,14 @@ export default function PilotOfficePanel({
                             ? formatNumber(flight.mission_score, 1)
                             : "-"}
                     </td>
-                    <td className="py-3 text-right text-white/38">{formatDate(flight.completed_at ?? flight.created_at)}</td>
+                    <td className="py-3 text-right text-[var(--pw-text-soft)]">{formatDate(flight.completed_at ?? flight.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="mt-4 text-sm text-white/48">Sin vuelos recientes registrados.</p>
+          <p className="mt-4 text-sm text-[var(--pw-text-soft)]">Sin vuelos recientes registrados.</p>
         )}
       </SurfaceCard>
     </div>

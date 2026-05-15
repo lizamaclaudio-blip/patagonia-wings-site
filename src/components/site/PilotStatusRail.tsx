@@ -263,7 +263,7 @@ export default function PilotStatusRail() {
             {pilotInitials}
           </div>
 
-          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/56">
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--pw-text-soft)]">
             {profile?.callsign ?? "PWG000"}
           </p>
           <h3 className="header-strip mt-2 text-2xl font-semibold leading-tight text-white">
@@ -295,7 +295,7 @@ export default function PilotStatusRail() {
               key={item.label}
               className="surface-outline rounded-[20px] px-4 py-4"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/54">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">
                 {item.label}
               </p>
               <p className="mt-2 text-base font-semibold text-white">{loading ? "…" : item.value}</p>
@@ -312,7 +312,7 @@ export default function PilotStatusRail() {
               key={item.label}
               className="surface-outline rounded-[20px] px-4 py-4 text-center"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/54">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">
                 {item.label}
               </p>
               <p className="mt-2 text-lg font-semibold text-white">{loading ? "…" : item.value}</p>
@@ -321,7 +321,7 @@ export default function PilotStatusRail() {
         </div>
 
         <div className="mt-5 surface-outline rounded-[22px] px-4 py-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">
             Horas totales
           </p>
           <p className="mt-2 text-3xl font-semibold text-white">

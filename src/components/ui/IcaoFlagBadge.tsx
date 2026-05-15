@@ -87,7 +87,7 @@ export default function IcaoFlagBadge({
 
   return (
     <span
-      className={`icao-flag-badge inline-flex items-center gap-2 rounded-[7px] border border-[#314f89] bg-[#2f4a83] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] ${compact ? "px-2.5 py-[4px] text-[13px]" : "px-3 py-[5px] text-[14px]"} ${className}`}
+      className={`icao-flag-badge inline-flex items-center gap-2 rounded-[9px] border border-[var(--pw-border)] bg-white text-[var(--pw-text)] shadow-[var(--pw-shadow-xs)] ${compact ? "px-2.5 py-[4px] text-[13px]" : "px-3 py-[5px] text-[14px]"} ${className}`}
     >
       {flagUrl ? (
         <img

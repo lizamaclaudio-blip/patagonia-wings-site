@@ -281,7 +281,7 @@ export default function RegisterPage() {
                 </p>
 
                 <div
-                  className="mt-6 rounded-[16px] px-5 py-4 text-[13px] leading-6 text-white/60"
+                  className="mt-6 rounded-[16px] px-5 py-4 text-[13px] leading-6 text-[var(--pw-text-soft)]"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   Una vez confirmado tu correo, podrás iniciar sesión y tu
@@ -299,7 +299,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setEmailSent(false)}
-                    className="button-ghost text-sm text-white/50"
+                    className="button-ghost text-sm text-[var(--pw-text-soft)]"
                   >
                     Volver al registro
                   </button>
@@ -341,7 +341,7 @@ export default function RegisterPage() {
                   }}
                 />
                 <div
-                  className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-20 blur-3xl"
+                  className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-70 blur-3xl"
                   style={{ background: "radial-gradient(circle, #11b56e 0%, transparent 70%)" }}
                 />
 
@@ -500,7 +500,7 @@ export default function RegisterPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-2 text-[11px] leading-5 text-white/45">
+                      <p className="mt-2 text-[11px] leading-5 text-[var(--pw-text-soft)]">
                         {loadingSignupHubs
                           ? "Cargando bases escuela disponibles..."
                           : selectedSignupHub?.preferred_operation_note || "Solo se muestran bases escuela/regionales habilitadas para pilotos nuevos."}
@@ -529,7 +529,7 @@ export default function RegisterPage() {
                       value={simbriefUsername}
                       onChange={(e) => setSimbriefUsername(e.target.value)}
                     />
-                    <p className="mt-2 text-[11px] leading-5 text-white/45">
+                    <p className="mt-2 text-[11px] leading-5 text-[var(--pw-text-soft)]">
                       Recomendado para usar el despacho integrado de Patagonia Wings. Para generar OFP y aprovechar la integración web debes contar con suscripción activa de Navigraph.
                     </p>
                   </div>

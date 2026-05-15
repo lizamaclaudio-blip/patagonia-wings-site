@@ -58,21 +58,21 @@ function CertificationsContent() {
   return (
     <AuthPageFrame>
       <div className="space-y-6">
-        <section className="glass-panel rounded-[34px] p-7 sm:p-9">
+        <section className="pw-card rounded-[34px] p-7 sm:p-9">
         <span className="parallax-chip mb-6">CERTIFICACIONES</span>
 
-        <h1 className="header-strip text-4xl font-semibold leading-tight text-white sm:text-5xl">
+        <h1 className="header-strip text-4xl font-semibold leading-tight sm:text-5xl">
           Habilitaciones y control operacional
         </h1>
 
-        <p className="mt-5 max-w-3xl text-base leading-8 text-white/80">
+        <p className="mt-5 max-w-3xl text-base leading-8 text-[var(--pw-text-soft)]">
           {pilotName}, aquí quedará la visión completa de certificaciones, ratings y permisos
           del piloto antes de liberar la reserva y el despacho hacia ACARS.
         </p>
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="glass-panel rounded-[30px] p-7">
+        <div className="pw-card rounded-[30px] p-7">
           <span className="section-chip">Certificaciones</span>
 
           <div className="mt-6 space-y-4">
@@ -80,8 +80,8 @@ function CertificationsContent() {
               <div key={item.code} className="surface-outline rounded-[24px] p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-lg font-semibold text-white">{item.name}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.22em] text-white/54">
+                    <p className="text-lg font-semibold text-[var(--pw-heading)]">{item.name}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[var(--pw-muted)]">
                       {item.code} / {item.category}
                     </p>
                   </div>
@@ -99,17 +99,17 @@ function CertificationsContent() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="surface-outline rounded-[18px] px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/52">
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--pw-muted)]">
                       Emitida
                     </p>
-                    <p className="mt-1 text-sm text-white/82">{item.issuedAt}</p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--pw-text)]">{item.issuedAt}</p>
                   </div>
 
                   <div className="surface-outline rounded-[18px] px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/52">
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--pw-muted)]">
                       Vigencia
                     </p>
-                    <p className="mt-1 text-sm text-white/82">{item.expiresAt}</p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--pw-text)]">{item.expiresAt}</p>
                   </div>
                 </div>
               </div>
@@ -117,7 +117,7 @@ function CertificationsContent() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-[30px] p-7">
+        <div className="pw-card rounded-[30px] p-7">
           <span className="section-chip">Ratings</span>
 
           <div className="mt-6 space-y-4">
@@ -125,8 +125,8 @@ function CertificationsContent() {
               <div key={item.code} className="surface-outline rounded-[22px] p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-semibold text-white">{item.name}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.22em] text-white/54">
+                    <p className="text-base font-semibold text-[var(--pw-heading)]">{item.name}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[var(--pw-muted)]">
                       {item.code} / {item.family}
                     </p>
                   </div>

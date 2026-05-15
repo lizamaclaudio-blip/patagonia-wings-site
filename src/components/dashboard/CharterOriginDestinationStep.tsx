@@ -216,8 +216,8 @@ function AirportSearchBox({
   }, [locked, query]);
 
   return (
-    <div className="relative rounded-[22px] border border-white/8 bg-white/[0.035] p-4">
-      <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">{label}</label>
+    <div className="relative rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
+      <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">{label}</label>
       <input
         value={query}
         onChange={(event) => {
@@ -234,7 +234,7 @@ function AirportSearchBox({
         }`}
       />
 
-      <div className="mt-2 min-h-[18px] text-xs text-white/42">
+      <div className="mt-2 min-h-[18px] text-xs text-[var(--pw-text-soft)]">
         {locked ? (
           exactAirport ? (
             <span className="font-semibold text-emerald-200">
@@ -272,7 +272,7 @@ function AirportSearchBox({
             >
               <span>
                 <span className="block text-sm font-semibold text-white">{airport.icao} · {airport.name ?? "Aeropuerto"}</span>
-                <span className="block text-xs text-white/42">{airport.city ?? "Ciudad"} · {airport.country ?? "País"}</span>
+                <span className="block text-xs text-[var(--pw-text-soft)]">{airport.city ?? "Ciudad"} · {airport.country ?? "País"}</span>
               </span>
             </button>
           ))}
@@ -308,7 +308,7 @@ function DarkDropdown({
 
   return (
     <div className="relative">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">{label}</span>
       <button
         type="button"
         disabled={disabled}
@@ -316,7 +316,7 @@ function DarkDropdown({
         className="mt-3 flex w-full items-center justify-between gap-3 rounded-[16px] border border-white/10 bg-[#061427] px-4 py-3 text-left text-sm font-semibold text-white outline-none transition hover:border-cyan-300/28 disabled:cursor-not-allowed disabled:opacity-45"
       >
         <span className="min-w-0 truncate">{selected?.label ?? placeholder}</span>
-        <span className="text-white/45">⌄</span>
+        <span className="text-[var(--pw-text-soft)]">⌄</span>
       </button>
 
       {open && !disabled ? (
@@ -327,7 +327,7 @@ function DarkDropdown({
               onChange("");
               setOpen(false);
             }}
-            className="w-full rounded-[13px] px-3 py-2 text-left text-sm font-semibold text-white/55 transition hover:bg-white/[0.06] hover:text-white"
+            className="w-full rounded-[13px] px-3 py-2 text-left text-sm font-semibold text-[var(--pw-text-soft)] transition hover:bg-white/[0.06] hover:text-white"
           >
             {placeholder}
           </button>
@@ -346,7 +346,7 @@ function DarkDropdown({
             >
               <span className="block truncate text-sm font-semibold text-white">{item.label}</span>
               {item.description ? (
-                <span className="mt-0.5 block truncate text-xs text-white/42">{item.description}</span>
+                <span className="mt-0.5 block truncate text-xs text-[var(--pw-text-soft)]">{item.description}</span>
               ) : null}
             </button>
           ))}
@@ -603,7 +603,7 @@ export default function CharterOriginDestinationStep({
       <div className="rounded-[24px] border border-cyan-300/14 bg-cyan-300/[0.045] p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">Chárter</p>
         <h3 className="header-strip mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">Origen / Destino libre</h3>
-        <p className="mt-2 text-sm leading-6 text-white/58">
+        <p className="mt-2 text-sm leading-6 text-[var(--pw-text-soft)]">
           El origen queda bloqueado según la ubicación actual del piloto. Elige destino, tipo de aeronave, matrícula y hora local.
         </p>
       </div>
@@ -613,15 +613,15 @@ export default function CharterOriginDestinationStep({
         <AirportSearchBox label="Destino" value={destinationIcao} onChange={onDestinationChange} />
       </div>
 
-      <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-4">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Hora local</label>
+      <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-4">
+        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Hora local</label>
         <input
           type="time"
           value={scheduledDeparture}
           onChange={(event) => onScheduledDepartureChange(event.target.value)}
           className="mt-3 w-full rounded-[16px] border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-300/45"
         />
-        <p className="mt-2 text-xs text-white/42">La meteorología real queda obligatoria para este tipo de vuelo.</p>
+        <p className="mt-2 text-xs text-[var(--pw-text-soft)]">La meteorología real queda obligatoria para este tipo de vuelo.</p>
       </div>
 
       <div className="rounded-[22px] border border-emerald-300/14 bg-emerald-300/[0.045] p-5">
@@ -630,17 +630,17 @@ export default function CharterOriginDestinationStep({
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/55">Estimación económica del chárter</p>
             <div className="header-strip mt-2 inline-flex items-center gap-2 text-xl font-semibold text-white">
               <IcaoFlagBadge icao={normalizedOrigin || "---"} />
-              <span className="text-white/45">→</span>
+              <span className="text-[var(--pw-text-soft)]">→</span>
               <IcaoFlagBadge icao={normalizedDestination || "---"} />
             </div>
           </div>
           {loadingEconomy ? (
-            <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/55">Calculando...</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-[var(--pw-text-soft)]">Calculando...</span>
           ) : null}
         </div>
 
         {!routeReady || !selectedType ? (
-          <p className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-white/55">
+          <p className="mt-3 rounded-[16px] border border-[var(--pw-border)] bg-white/[0.035] px-4 py-3 text-sm text-[var(--pw-text-soft)]">
             Completa origen, destino y aeronave para calcular.
           </p>
         ) : economyEstimate ? (
@@ -656,12 +656,12 @@ export default function CharterOriginDestinationStep({
               ["Ventas/servicio", formatUsd((economyEstimate.onboardServiceRevenueUsd ?? 0) + (economyEstimate.onboardSalesRevenueUsd ?? 0)), "text-cyan-100"],
               ["Utilidad estimada", formatUsd(economyEstimate.netProfitUsd), economyEstimate.netProfitUsd >= 0 ? "text-emerald-100" : "text-rose-100"],
             ].map(([label, value, tone]) => (
-              <div key={label} className="rounded-[16px] border border-white/8 bg-white/[0.035] px-3 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">{label}</p>
+              <div key={label} className="rounded-[16px] border border-[var(--pw-border)] bg-white/[0.035] px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--pw-text-soft)]">{label}</p>
                 <p className={`mt-1 text-sm font-black ${tone}`}>{value}</p>
               </div>
             ))}
-            <div className="sm:col-span-2 lg:col-span-5 text-xs text-white/44">
+            <div className="sm:col-span-2 lg:col-span-5 text-xs text-[var(--pw-text-soft)]">
               Distancia {Math.round(economyEstimate.distanceNm).toLocaleString("es-CL")} NM · Block {formatMinutes(economyEstimate.blockMinutes)} · Fuel {Math.round(economyEstimate.fuelKg).toLocaleString("es-CL")} kg
             </div>
             {economyEstimate.aircraftCompatible === false ? (
@@ -671,25 +671,25 @@ export default function CharterOriginDestinationStep({
             ) : null}
           </div>
         ) : (
-          <p className="mt-3 rounded-[16px] border border-white/8 bg-white/[0.035] px-4 py-3 text-sm text-white/55">
+          <p className="mt-3 rounded-[16px] border border-[var(--pw-border)] bg-white/[0.035] px-4 py-3 text-sm text-[var(--pw-text-soft)]">
             Economía estimada no disponible para esta combinación.
           </p>
         )}
       </div>
 
 
-      <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
+      <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Aeronaves disponibles</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Aeronaves disponibles</p>
             <h3 className="header-strip mt-2 text-xl font-semibold text-white">Selección de aeronave</h3>
           </div>
-          <span className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-semibold text-white/55">
+          <span className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-semibold text-[var(--pw-text-soft)]">
             {loadingAircraft || loadingCompatibility ? "Cargando" : `${aircraft.length} disponibles`}
           </span>
         </div>
 
-        <p className="mt-2 text-sm text-white/55">
+        <p className="mt-2 text-sm text-[var(--pw-text-soft)]">
           Solo aparecen aeronaves compatibles con el rango/licencia del piloto, ubicadas en {normalizedOrigin || "el origen"} y con autonomía suficiente para el destino.
         </p>
 
@@ -725,12 +725,12 @@ export default function CharterOriginDestinationStep({
           />
         </div>
 
-        <p className="mt-3 text-xs text-white/54">
+        <p className="mt-3 text-xs text-[var(--pw-text-soft)]">
           Aeronave seleccionada: {getAircraftSummaryLabel(selectedAircraft)}
         </p>
 
         {!loadingAircraft && aircraft.length === 0 ? (
-          <p className="mt-5 rounded-[18px] border border-white/8 bg-white/[0.035] p-4 text-sm text-white/55">
+          <p className="mt-5 rounded-[18px] border border-[var(--pw-border)] bg-white/[0.035] p-4 text-sm text-[var(--pw-text-soft)]">
             No tienes aeronaves habilitadas para este tipo de vuelo con tu rango actual.
           </p>
         ) : null}

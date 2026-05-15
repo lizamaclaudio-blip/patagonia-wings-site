@@ -390,10 +390,10 @@ function SurHeading({ icon, label, strong }: { icon: string; label: string; stro
 
 function InfoTable({ columns, rows }: { columns: string[]; rows: InfoCell[][] }) {
   return (
-    <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
+    <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white">
       <div className="grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
         {columns.map((column) => (
-          <div key={column} className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">
+          <div key={column} className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">
             {column}
           </div>
         ))}
@@ -403,7 +403,7 @@ function InfoTable({ columns, rows }: { columns: string[]; rows: InfoCell[][] })
               key={`${rowIndex}-${cell.label}-${cellIndex}`}
               className="min-h-[70px] border-b border-white/5 px-3 py-4 text-center last:border-b-0"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 md:hidden">{cell.label}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--pw-text-soft)] md:hidden">{cell.label}</p>
               <p className={`mt-1 text-base font-semibold ${cell.tone ?? "text-white"}`}>{cell.value}</p>
             </div>
           ))
@@ -456,13 +456,13 @@ function shortRecordEntries(record: Record<string, string | number | boolean>, l
 function EvidenceGrid({ record, empty = "Sin evidencia declarada", limit = 12 }: { record: Record<string, string | number | boolean>; empty?: string; limit?: number }) {
   const entries = shortRecordEntries(record, limit);
   if (!entries.length) {
-    return <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64">{empty}</p>;
+    return <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--pw-text-soft)]">{empty}</p>;
   }
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {entries.map(([key, value]) => (
         <div key={key} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/42">{key.replace(/_/g, " ")}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">{key.replace(/_/g, " ")}</p>
           <p className="mt-2 break-words text-sm font-semibold text-white">{formatDetailValue(value) || "—"}</p>
         </div>
       ))}
@@ -498,19 +498,19 @@ function EvaluationBlock({ title, score, label, stars, description, groups, noEv
         {groups.map((group) => (
           <details key={group.title} className="rounded-[20px] border border-white/10 bg-black/15 px-5 py-4">
             <summary className="cursor-pointer list-none text-sm font-semibold text-white">
-              <span className="mr-2 text-white/45">+</span>{group.title} <strong className={group.positive ? "text-emerald-300" : "text-sky-200"}>{group.score}</strong>
+              <span className="mr-2 text-[var(--pw-text-soft)]">+</span>{group.title} <strong className={group.positive ? "text-emerald-300" : "text-sky-200"}>{group.score}</strong>
             </summary>
             <div className="mt-4 space-y-4">
               {group.items.length ? group.items.slice(0, 12).map((item, index) => (
-                <div key={`${group.title}-${itemTitle(item)}-${index}`} className="grid gap-2 border-t border-white/8 pt-3 md:grid-cols-[1fr_96px]">
+                <div key={`${group.title}-${itemTitle(item)}-${index}`} className="grid gap-2 border-t border-[var(--pw-border)] pt-3 md:grid-cols-[1fr_96px]">
                   <div>
                     <p className="text-sm font-semibold text-white">- {itemTitle(item)}</p>
-                    <p className="mt-1 text-xs italic leading-6 text-white/58">{itemDescription(item)}</p>
+                    <p className="mt-1 text-xs italic leading-6 text-[var(--pw-text-soft)]">{itemDescription(item)}</p>
                   </div>
                   <p className={`text-sm font-semibold ${group.positive ? "text-emerald-300" : "text-sky-200"}`}>{itemPoints(item, group.positive ? "positive" : "negative")}</p>
                 </div>
               )) : (
-                <p className="border-t border-white/8 pt-3 text-sm leading-7 text-white/62">{group.fallback}</p>
+                <p className="border-t border-[var(--pw-border)] pt-3 text-sm leading-7 text-[var(--pw-text-soft)]">{group.fallback}</p>
               )}
             </div>
           </details>
@@ -1085,7 +1085,7 @@ function FlightResultContent() {
             <h1 className="header-strip text-4xl font-semibold leading-tight text-white sm:text-5xl">
               Pirep <strong className="text-emerald-200">#{flightNumber}</strong>
             </h1>
-            <p className="mt-3 inline-flex items-center gap-2 text-base leading-8 text-white/78"><IcaoFlagBadge icao={originIdent} size="sm" /><span className="text-white/45">→</span><IcaoFlagBadge icao={destinationIdent} size="sm" /><span>· Evaluación Patagonia Wings ACARS/Web</span></p>
+            <p className="mt-3 inline-flex items-center gap-2 text-base leading-8 text-white/78"><IcaoFlagBadge icao={originIdent} size="sm" /><span className="text-[var(--pw-text-soft)]">→</span><IcaoFlagBadge icao={destinationIdent} size="sm" /><span>· Evaluación Patagonia Wings ACARS/Web</span></p>
           </div>
           <div className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold ${statusTone(noEvaluableCloseout ? "no_evaluable" : reservation?.status)}`}>
             {formatStatus(noEvaluableCloseout ? "no_evaluable" : reservation?.status)}
@@ -1143,7 +1143,7 @@ function FlightResultContent() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/dashboard" className="button-ghost">Volver al dashboard</Link>
               <Link href={`/flights/${reservationId}`} className="button-ghost">Resumen del vuelo</Link>
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">
                 Log ACARS: {rawPirepFileName || "score_payload"}
               </span>
             </div>
@@ -1178,7 +1178,7 @@ function FlightResultContent() {
             <div className="flex flex-wrap gap-3">
               <Link href="/dashboard" className="button-ghost">Volver al dashboard</Link>
               <Link href={`/flights/${reservationId}`} className="button-ghost">Resumen del vuelo</Link>
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">
                 Log ACARS: {rawPirepFileName || "score_payload"}
               </span>
             </div>
@@ -1261,7 +1261,7 @@ function FlightResultContent() {
               <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
                 {d5ParserBlocks.map((block) => (
                   <div key={block.label} className={`rounded-[18px] border px-4 py-3 ${block.ready ? "border-emerald-400/20 bg-emerald-400/10" : "border-amber-400/20 bg-amber-400/10"}`}>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">Bloque</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">Bloque</p>
                     <p className="mt-1 text-sm font-semibold text-white">{block.label}</p>
                     <p className={`mt-2 text-xs font-semibold ${block.ready ? "text-emerald-200" : "text-amber-200"}`}>{block.ready ? "Detectado" : "Pendiente"}</p>
                   </div>
@@ -1282,7 +1282,7 @@ function FlightResultContent() {
               />
 
               <div className="mt-4 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Checklist D5 para prueba final</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Checklist D5 para prueba final</p>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
                   {d5ActionItems.map((item) => <li key={item}>- {item}</li>)}
                 </ul>
@@ -1298,7 +1298,7 @@ function FlightResultContent() {
                     <p className={`mt-1 text-xs font-semibold ${metric.supported ? "text-emerald-300" : "text-amber-200"}`}>
                       {metric.supported ? "Soportado" : "N/D no penalizable"}
                     </p>
-                    <p className="mt-2 text-xs leading-5 text-white/60">{metric.source} · {metric.reason}</p>
+                    <p className="mt-2 text-xs leading-5 text-[var(--pw-text-soft)]">{metric.source} · {metric.reason}</p>
                   </div>
                 ))}
               </div>
@@ -1339,15 +1339,15 @@ function FlightResultContent() {
                   <div key={phase.name} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold text-white">{phase.name}</p>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/48">{phase.samples} muestras</span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--pw-text-soft)]">{phase.samples} muestras</span>
                     </div>
-                    <p className="mt-1 text-xs text-white/52">{phase.duration || "sin duración"}</p>
+                    <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{phase.duration || "sin duración"}</p>
                     <p className="mt-2 text-xs leading-5 text-white/70">IAS {Math.round(phase.maxIas)} kt · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt || phase.maxAltitude)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
-                    <p className="mt-1 text-xs leading-5 text-white/56">VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)} · Dist {Math.round(phase.distanceNm)} NM</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--pw-text-soft)]">VS {Math.round(phase.minVs)} / {Math.round(phase.maxVs)} · Dist {Math.round(phase.distanceNm)} NM</p>
                     {phase.phaseReviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-emerald-100/70">{phase.phaseReviewQuestion}</p> : null}
                   </div>
                 )) : (
-                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran métricas legacy desde Resumen/Indicadores.</p>
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--pw-text-soft)] md:col-span-2 xl:col-span-4">Este XML no trae FlightPhaseSummary. Se muestran métricas legacy desde Resumen/Indicadores.</p>
                 )}
               </div>
 
@@ -1359,35 +1359,35 @@ function FlightResultContent() {
                       <p className="text-sm font-semibold text-white">{phase.phase}</p>
                       <span className="rounded-full border border-current/20 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em]">{phase.status || "N/D"}</span>
                     </div>
-                    <p className="mt-1 text-xs text-white/60">{phase.name}</p>
+                    <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{phase.name}</p>
                     <p className="mt-2 text-xs leading-5 text-white/70">Muestras {phase.samples} · GS {Math.round(phase.maxGs)} kt · MSL {Math.round(phase.maxAltitudeMslFt)} ft · AGL {Math.round(phase.maxAglFt)} ft</p>
                     {phase.flags ? <p className="mt-1 text-xs leading-5 text-amber-100/80">Flags: {phase.flags}</p> : null}
-                    {phase.reviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-white/64">{phase.reviewQuestion}</p> : null}
+                    {phase.reviewQuestion ? <p className="mt-2 text-xs italic leading-5 text-[var(--pw-text-soft)]">{phase.reviewQuestion}</p> : null}
                   </div>
                 )) : (
-                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/64 md:col-span-2 xl:col-span-5">Este XML no trae PhaseAcceptanceMatrix C7. Se validará con FlightPhaseSummary/EventTimeline.</p>
+                  <p className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--pw-text-soft)] md:col-span-2 xl:col-span-5">Este XML no trae PhaseAcceptanceMatrix C7. Se validará con FlightPhaseSummary/EventTimeline.</p>
                 )}
               </div>
 
               <SurHeading icon="🧪" label="Auditoría y prevalidación" strong="C4-C8" />
               <div className="space-y-4">
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhaseAuditReport C4</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">PhaseAuditReport C4</p>
                   <EvidenceGrid record={pirepPerfect.phaseAuditReport} empty="Sin PhaseAuditReport C4 en este XML" />
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhasePrevalidationPackage C6</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">PhasePrevalidationPackage C6</p>
                   <EvidenceGrid record={pirepPerfect.phasePrevalidationPackage} empty="Sin PhasePrevalidationPackage C6 en este XML" />
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">PhaseTestRunManifest C8</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">PhaseTestRunManifest C8</p>
                   <EvidenceGrid record={pirepPerfect.phaseTestRunManifest} empty="Sin PhaseTestRunManifest C8 en este XML" />
                 </div>
               </div>
 
               {pirepPerfect.notes.length ? (
                 <div className="mt-6 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Notas del parser</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Notas del parser</p>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
                     {pirepPerfect.notes.map((note) => <li key={note}>- {note}</li>)}
                   </ul>
@@ -1400,7 +1400,7 @@ function FlightResultContent() {
             <section className="glass-panel rounded-[30px] p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Herramienta owner · Validar PIREP XML</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Herramienta owner · Validar PIREP XML</p>
                   <p className="mt-2 text-sm text-white/70">Modo preview/dryRun: evalúa reglaje y resumen sin mover wallet ni generar ledger real.</p>
                 </div>
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
@@ -1410,7 +1410,7 @@ function FlightResultContent() {
 
               <div className="mt-5 grid gap-4 md:grid-cols-[280px_1fr]">
                 <label className="space-y-2 text-sm text-white/80">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Fixture</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Fixture</span>
                   <select
                     value={testFixture}
                     onChange={(event) => setTestFixture(event.target.value as (typeof TEST_FIXTURE_NAMES)[number])}
@@ -1423,7 +1423,7 @@ function FlightResultContent() {
                 </label>
 
                 <label className="space-y-2 text-sm text-white/80">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">XML manual opcional</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">XML manual opcional</span>
                   <textarea
                     value={testRawXml}
                     onChange={(event) => setTestRawXml(event.target.value)}
@@ -1438,22 +1438,22 @@ function FlightResultContent() {
                 <button type="button" onClick={() => void handleRunPirepTest()} disabled={testRunning} className="button-primary disabled:cursor-not-allowed disabled:opacity-60">
                   {testRunning ? "Ejecutando preview..." : "Ejecutar evaluación preview"}
                 </button>
-                <p className="text-xs text-white/60">Sin cierre pagable, sin salary ledger real, sin airline ledger real.</p>
+                <p className="text-xs text-[var(--pw-text-soft)]">Sin cierre pagable, sin salary ledger real, sin airline ledger real.</p>
               </div>
 
               {testToolError ? <p className="mt-4 text-sm text-rose-300">{testToolError}</p> : null}
               {testResult?.ok ? (
                 <div className="mt-5 grid gap-4 lg:grid-cols-3">
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Estado</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Estado</p>
                     <p className="mt-1 font-semibold text-white">{testResult.resultStatus || "—"}</p>
                   </div>
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Evaluación</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Evaluación</p>
                     <p className="mt-1 font-semibold text-white">{testResult.evaluationStatus || "—"} · {testResult.scoringStatus || "—"}</p>
                   </div>
                   <div className="rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Economía</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Economía</p>
                     <p className="mt-1 font-semibold text-white">{testResult.economyMode || "preview"} · salary={String(asBoolean(testResult.salaryAccrued))} · ledger={String(asBoolean(testResult.ledgerWritten))}</p>
                   </div>
                 </div>
@@ -1463,22 +1463,22 @@ function FlightResultContent() {
 
           <section className="glass-panel rounded-[30px] p-7">
             <SurHeading icon="📊" label="Puntaje del" strong="Vuelo" />
-            <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
+            <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white">
               <div className="grid grid-cols-5 text-center">
-                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">Procedimientos</div>
-                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">+ o -</div>
-                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">Performance</div>
-                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">=</div>
-                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/52">Puntaje</div>
+                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">Procedimientos</div>
+                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">+ o -</div>
+                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">Performance</div>
+                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">=</div>
+                <div className="border-b border-white/10 bg-white/[0.06] px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">Puntaje</div>
                 <div className="px-3 py-5"><h3 className={`text-2xl font-bold ${scoreTextTone(procedureScoreValue)}`}>{formatPts(procedureScoreValue)}</h3></div>
-                <div className="px-3 py-5"><h3 className="text-2xl font-bold text-white/60">+</h3></div>
+                <div className="px-3 py-5"><h3 className="text-2xl font-bold text-[var(--pw-text-soft)]">+</h3></div>
                 <div className="px-3 py-5"><h3 className={`text-2xl font-bold ${scoreTextTone(performanceScoreValue)}`}>{formatPts(performanceScoreValue)}</h3></div>
-                <div className="px-3 py-5"><h3 className="text-2xl font-bold text-white/60">=</h3></div>
+                <div className="px-3 py-5"><h3 className="text-2xl font-bold text-[var(--pw-text-soft)]">=</h3></div>
                 <div className="px-3 py-5"><h3 className={`text-2xl font-bold ${scoreTextTone(totalScoreValue)}`}>{formatPts(totalScoreValue)}</h3></div>
               </div>
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
+            <div className="mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white">
               <div className="grid gap-0 md:grid-cols-7">
                 {[
                   { label: "Vientos salida", value: `${departureRunway}\n${departureWind}`, tone: "text-emerald-200" },
@@ -1490,7 +1490,7 @@ function FlightResultContent() {
                   { label: "Vientos llegada", value: `${arrivalRunway}\n${arrivalWind}`, tone: "text-emerald-200" },
                 ].map((item) => (
                   <div key={item.label} className="border-b border-white/10 px-3 py-4 text-center md:border-b-0 md:border-r md:border-white/10 md:last:border-r-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/42">{item.label}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--pw-text-soft)]">{item.label}</p>
                     <p className={`mt-2 whitespace-pre-line text-sm font-semibold ${item.tone}`}>{item.value}</p>
                   </div>
                 ))}
@@ -1530,13 +1530,13 @@ function FlightResultContent() {
             <InfoTable
               columns={["Vuelo", "Tiempo", "Consumo", "Performance", "Procedimiento", "Adicional", "Total"]}
               rows={[[
-                { label: "Vuelo", value: economyEligible ? formatMoney(reservation.commission_usd, { signed: true, zeroLabel: "$0" }) : "$0", tone: economyEligible ? "text-emerald-300" : "text-white/50" },
+                { label: "Vuelo", value: economyEligible ? formatMoney(reservation.commission_usd, { signed: true, zeroLabel: "$0" }) : "$0", tone: economyEligible ? "text-emerald-300" : "text-[var(--pw-text-soft)]" },
                 { label: "Tiempo", value: formatMinutes(reservation.actual_block_minutes) },
                 { label: "Consumo", value: formatKg(fuelUsedKg) },
                 { label: "Performance", value: formatPts(performanceScoreValue) },
                 { label: "Procedimiento", value: formatPts(procedureScoreValue) },
                 { label: "Adicional", value: economyEligible ? "Computa" : "No computa", tone: economyEligible ? "text-emerald-300" : "text-rose-200" },
-                { label: "Total", value: economyEligible ? formatMoney(actualSnapshot?.pilot_payment_usd || reservation.commission_usd, { signed: true, zeroLabel: "$0" }) : "$0", tone: economyEligible ? "text-emerald-300" : "text-white/50" },
+                { label: "Total", value: economyEligible ? formatMoney(actualSnapshot?.pilot_payment_usd || reservation.commission_usd, { signed: true, zeroLabel: "$0" }) : "$0", tone: economyEligible ? "text-emerald-300" : "text-[var(--pw-text-soft)]" },
               ]]}
             />
 
@@ -1555,7 +1555,7 @@ function FlightResultContent() {
 
           <section className="glass-panel rounded-[30px] p-7">
             <SurHeading icon="🗺️" label="Plan de" strong="Vuelo" />
-            <div className="rounded-[22px] border border-white/10 bg-white/[0.03] px-5 py-5 text-center">
+            <div className="rounded-[22px] border border-white/10 bg-white px-5 py-5 text-center">
               <p className="text-sm font-semibold leading-7 text-white">{routeText}</p>
             </div>
 
@@ -1601,7 +1601,7 @@ function FlightResultContent() {
               <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Ledger: {hasLedgerEntry ? "Creado" : "Sin datos recibidos"}</p>
               <p className="rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">Salary mensual: {hasSalaryEntry ? "Sí" : "No devengado"}</p>
             </div>
-            <p className="mt-3 text-sm text-white/66">
+            <p className="mt-3 text-sm text-[var(--pw-text-soft)]">
               {asText(actualMeta.onboard_quality_reason) || "Sin motivo operacional adicional para ajuste de ventas/servicio."}
             </p>
           </section>
@@ -1615,10 +1615,10 @@ function FlightResultContent() {
                   {penalties.length ? penalties.slice(0, 10).map((item, index) => (
                     <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
                       <p className="text-sm font-semibold text-white">{itemTitle(item)}</p>
-                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "reglaje"}</p>
+                      <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{itemStage(item)} · {asText(item.severity) || "reglaje"}</p>
                       <p className="mt-2 text-sm text-white/78">{itemDescription(item)}</p>
                     </div>
-                  )) : <p className="text-sm text-white/64">Sin penalizaciones registradas.</p>}
+                  )) : <p className="text-sm text-[var(--pw-text-soft)]">Sin penalizaciones registradas.</p>}
                 </div>
               </div>
 
@@ -1628,10 +1628,10 @@ function FlightResultContent() {
                   {displayTimelineEvents.length ? displayTimelineEvents.slice(0, 14).map((item, index) => (
                     <div key={`${asText(item.code)}-${index}`} className="rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
                       <p className="text-sm font-semibold text-white">{itemTitle(item)}</p>
-                      <p className="mt-1 text-xs text-white/54">{itemStage(item)} · {asText(item.severity) || "evento"} · {asText(item.source) || "ACARS"}</p>
+                      <p className="mt-1 text-xs text-[var(--pw-text-soft)]">{itemStage(item)} · {asText(item.severity) || "evento"} · {asText(item.source) || "ACARS"}</p>
                       <p className="mt-2 text-sm text-white/78">{itemDescription(item)}</p>
                     </div>
-                  )) : <p className="text-sm text-white/64">Sin eventos oficiales registrados.</p>}
+                  )) : <p className="text-sm text-[var(--pw-text-soft)]">Sin eventos oficiales registrados.</p>}
                 </div>
               </div>
             </div>
@@ -1654,7 +1654,7 @@ function FlightResultContent() {
             <section className="glass-panel rounded-[30px] p-7">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/54">Derecho a réplica</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Derecho a réplica</p>
                   <p className="mt-2 text-sm text-white/70">
                     {currentAppeal.status === "pending"
                       ? `Apelación pendiente hasta ${formatDateTime(asText(currentAppeal.deadline_at))}.`
@@ -1687,8 +1687,8 @@ function FlightResultContent() {
                 <form onSubmit={handleAppealSubmit} className="mt-5 grid gap-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Categoría</span>
-                      <select value={appealCategory} onChange={(event) => setAppealCategory(event.target.value as AppealCategory)} className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Categoría</span>
+                      <select value={appealCategory} onChange={(event) => setAppealCategory(event.target.value as AppealCategory)} className="rounded-[14px] border border-white/12 bg-white px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none">
                         <option value="score">Score</option>
                         <option value="damage">Daño</option>
                         <option value="dispatch">Despacho</option>
@@ -1697,14 +1697,14 @@ function FlightResultContent() {
                       </select>
                     </label>
                     <label className="flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Motivo breve</span>
-                      <input value={appealReason} onChange={(event) => setAppealReason(event.target.value)} required className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Describe el punto a revisar" />
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Motivo breve</span>
+                      <input value={appealReason} onChange={(event) => setAppealReason(event.target.value)} required className="rounded-[14px] border border-white/12 bg-white px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Describe el punto a revisar" />
                     </label>
                   </div>
 
                   <label className="flex flex-col gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/50">Comentario</span>
-                    <textarea value={appealComment} onChange={(event) => setAppealComment(event.target.value)} required rows={4} className="rounded-[14px] border border-white/12 bg-[#031428] px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Explica qué revisar manualmente" />
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Comentario</span>
+                    <textarea value={appealComment} onChange={(event) => setAppealComment(event.target.value)} required rows={4} className="rounded-[14px] border border-white/12 bg-white px-4 py-3 text-sm text-white focus:border-sky-400/60 focus:outline-none" placeholder="Explica qué revisar manualmente" />
                   </label>
 
                   {saveMessage ? <p className="text-sm text-emerald-300">{saveMessage}</p> : null}

@@ -171,11 +171,11 @@ function SectionCard({ section }: { section: Section }) {
         {section.items.map((item, i) => (
           <div key={i} className="flex gap-3">
             <div className="mt-1 h-5 w-5 shrink-0 rounded-full border border-white/15 bg-white/[0.06] flex items-center justify-center">
-              <span className="text-[9px] font-black text-white/50">{i + 1}</span>
+              <span className="text-[9px] font-black text-[var(--pw-text-soft)]">{i + 1}</span>
             </div>
             <div>
               <p className="text-sm font-bold text-white/90">{item.heading}</p>
-              <p className="mt-1 text-sm leading-6 text-white/60">{item.text}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--pw-text-soft)]">{item.text}</p>
             </div>
           </div>
         ))}
@@ -195,10 +195,10 @@ function CommissionTable() {
   ];
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/8">
+    <div className="overflow-x-auto rounded-2xl border border-[var(--pw-border)]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/8 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/36">
+          <tr className="border-b border-[var(--pw-border)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">
             <th className="px-4 py-3 text-left">Ruta ejemplo</th>
             <th className="px-4 py-3 text-right">NM</th>
             <th className="px-4 py-3 text-right">Block</th>
@@ -210,11 +210,11 @@ function CommissionTable() {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className={`border-b border-white/6 ${i % 2 === 0 ? "bg-white/[0.015]" : ""}`}>
-              <td className="px-4 py-3 font-medium text-white/80">{r.ruta}<p className="mt-1 text-[10px] text-white/35">{r.nota}</p></td>
-              <td className="px-4 py-3 text-right text-white/60">{r.nm.toLocaleString("es-CL")}</td>
-              <td className="px-4 py-3 text-right text-white/60">{r.block} min</td>
-              <td className="px-4 py-3 text-white/60">{r.banda}</td>
-              <td className="px-4 py-3 text-white/60">{r.avion}</td>
+              <td className="px-4 py-3 font-medium text-white/80">{r.ruta}<p className="mt-1 text-[10px] text-[var(--pw-text-soft)]">{r.nota}</p></td>
+              <td className="px-4 py-3 text-right text-[var(--pw-text-soft)]">{r.nm.toLocaleString("es-CL")}</td>
+              <td className="px-4 py-3 text-right text-[var(--pw-text-soft)]">{r.block} min</td>
+              <td className="px-4 py-3 text-[var(--pw-text-soft)]">{r.banda}</td>
+              <td className="px-4 py-3 text-[var(--pw-text-soft)]">{r.avion}</td>
               <td className="px-4 py-3 text-right font-black text-emerald-300">{r.pago} USD</td>
             </tr>
           ))}
@@ -364,7 +364,7 @@ function AirlineFinancePanel() {
   }, []);
 
   if (loading) return (
-    <div className="mb-10 rounded-[28px] border border-white/10 bg-white/[0.03] p-7 text-sm text-white/40">
+    <div className="mb-10 rounded-[28px] border border-white/10 bg-white p-7 text-sm text-[var(--pw-text-soft)]">
       Cargando estadísticas de la aerolínea...
     </div>
   );
@@ -426,20 +426,20 @@ function AirlineFinancePanel() {
   return (
     <div className="mb-10 space-y-5">
       {/* Summary cards */}
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 sm:p-7">
+      <div className="rounded-[28px] border border-white/10 bg-white p-6 sm:p-7">
         <div className="flex items-center gap-2 mb-5">
           <span className="text-2xl">🏢</span>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">Aerolínea virtual</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Aerolínea virtual</p>
             <p className="text-base font-bold text-white">{airline.name}</p>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {summaryCards.map((card) => (
-            <div key={card.label} className={`rounded-[20px] border border-white/8 bg-gradient-to-br ${card.bg} to-transparent px-5 py-5`}>
+            <div key={card.label} className={`rounded-[20px] border border-[var(--pw-border)] bg-gradient-to-br ${card.bg} to-transparent px-5 py-5`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl">{card.emoji}</span>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40">{card.label}</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">{card.label}</p>
               </div>
               <p className={`text-xl font-black ${card.tone}`}>{card.value}</p>
             </div>
@@ -451,7 +451,7 @@ function AirlineFinancePanel() {
           {breakdownCards.map((card) => (
             <div key={card.label} className="flex items-center gap-3 rounded-[14px] border border-white/6 bg-white/[0.02] px-4 py-3">
               <span className="text-base">{card.emoji}</span>
-              <span className="flex-1 text-[11px] text-white/54">{card.label}</span>
+              <span className="flex-1 text-[11px] text-[var(--pw-text-soft)]">{card.label}</span>
               <span className={`text-sm font-bold ${card.tone}`}>{card.value}</span>
             </div>
           ))}
@@ -460,8 +460,8 @@ function AirlineFinancePanel() {
 
       {/* Monthly trend chart */}
       {hasChart && (
-        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-1">Tendencia mensual</p>
+        <div className="rounded-[24px] border border-white/10 bg-white p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)] mb-1">Tendencia mensual</p>
           <h3 className="text-base font-bold text-white mb-4">Ingresos · Costos · Neto por piloto</h3>
           <MiniLineChart
             labels={chartLabels}
@@ -479,7 +479,7 @@ function AirlineFinancePanel() {
             ].map((l) => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <span className="inline-block h-2 w-5 rounded-full" style={{ backgroundColor: l.color }} />
-                <span className="text-[11px] text-white/50">{l.label}</span>
+                <span className="text-[11px] text-[var(--pw-text-soft)]">{l.label}</span>
               </div>
             ))}
           </div>
@@ -490,21 +490,21 @@ function AirlineFinancePanel() {
       {(payroll.length > 0 || topPilots.length > 0) && (
         <div className="grid gap-5 lg:grid-cols-2">
           {payroll.length > 0 && (
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+            <div className="rounded-[24px] border border-white/10 bg-white p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">📋</span>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Nómina mensual</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Nómina mensual</p>
               </div>
               <div className="space-y-2">
                 {payroll.slice(0, 6).map((row) => (
                   <div key={`${row.year}-${row.month}`} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
                     <div>
                       <p className="text-xs font-bold text-white">{MONTH_NAMES[row.month - 1]} {row.year}</p>
-                      <p className="text-[10px] text-white/44">{row.flights} vuelos · {row.callsigns.length} piloto{row.callsigns.length !== 1 ? "s" : ""}</p>
+                      <p className="text-[10px] text-[var(--pw-text-soft)]">{row.flights} vuelos · {row.callsigns.length} piloto{row.callsigns.length !== 1 ? "s" : ""}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-emerald-300">{fmtUsd(row.net)}</p>
-                      <p className="text-[10px] text-white/40">comisión {fmtUsd(row.commission)}</p>
+                      <p className="text-[10px] text-[var(--pw-text-soft)]">comisión {fmtUsd(row.commission)}</p>
                     </div>
                   </div>
                 ))}
@@ -513,16 +513,16 @@ function AirlineFinancePanel() {
           )}
 
           {topPilots.length > 0 && (
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+            <div className="rounded-[24px] border border-white/10 bg-white p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">🏆</span>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Top pilotos por comisión</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Top pilotos por comisión</p>
               </div>
               <div className="space-y-2">
                 {topPilots.map((p, i) => (
                   <div key={p.callsign} className="flex items-center justify-between rounded-[14px] border border-white/6 bg-black/10 px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm font-black ${i === 0 ? "text-amber-300" : i === 1 ? "text-white/60" : i === 2 ? "text-amber-600" : "text-white/30"}`}>
+                      <span className={`text-sm font-black ${i === 0 ? "text-amber-300" : i === 1 ? "text-[var(--pw-text-soft)]" : i === 2 ? "text-amber-600" : "text-[var(--pw-text-soft)]"}`}>
                         {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
                       </span>
                       <span className="text-sm font-bold text-white">{p.callsign}</span>
@@ -538,10 +538,10 @@ function AirlineFinancePanel() {
 
       {/* Recent ledger */}
       {recentLedger.length > 0 && (
-        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+        <div className="rounded-[24px] border border-white/10 bg-white p-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">🧾</span>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Últimas transacciones</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Últimas transacciones</p>
           </div>
           <div className="space-y-1.5">
             {recentLedger.map((row, i) => {
@@ -553,14 +553,14 @@ function AirlineFinancePanel() {
                     <span className="text-base shrink-0">{isIncome ? "💚" : "🔴"}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-white/80 truncate">{entryTypeLabel(row.entry_type)}</p>
-                      {row.pilot_callsign && <p className="text-[10px] text-white/36">{row.pilot_callsign}</p>}
+                      {row.pilot_callsign && <p className="text-[10px] text-[var(--pw-text-soft)]">{row.pilot_callsign}</p>}
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-3">
                     <p className={`text-sm font-bold ${entryTypeColor(row.entry_type)}`}>
                       {isIncome ? "+" : "−"}{fmtUsd(row.amount_usd)}
                     </p>
-                    <p className="text-[10px] text-white/30">{dateStr}</p>
+                    <p className="text-[10px] text-[var(--pw-text-soft)]">{dateStr}</p>
                   </div>
                 </div>
               );
@@ -570,10 +570,10 @@ function AirlineFinancePanel() {
       )}
 
       {movementHistory.length > 0 && (
-        <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+        <div className="rounded-[24px] border border-white/10 bg-white p-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📚</span>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Historial movimientos aerolínea</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Historial movimientos aerolínea</p>
           </div>
 
           <div className="mb-4 grid gap-2 md:grid-cols-5">
@@ -589,7 +589,7 @@ function AirlineFinancePanel() {
               <option value="all">Estado: todos</option>
               {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
-            <input value={flightFilter} onChange={(e) => setFlightFilter(e.target.value)} placeholder="Filtrar reserva/vuelo" className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white placeholder:text-white/40 md:col-span-2" />
+            <input value={flightFilter} onChange={(e) => setFlightFilter(e.target.value)} placeholder="Filtrar reserva/vuelo" className="rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-xs text-white placeholder:text-[var(--pw-text-soft)] md:col-span-2" />
           </div>
 
           <div className="mb-4 grid gap-2 md:grid-cols-5">
@@ -603,7 +603,7 @@ function AirlineFinancePanel() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/8 text-white/45">
+                <tr className="border-b border-[var(--pw-border)] text-[var(--pw-text-soft)]">
                   <th className="px-2 py-2 text-left">Fecha</th>
                   <th className="px-2 py-2 text-left">Piloto</th>
                   <th className="px-2 py-2 text-left">Reserva</th>
@@ -692,7 +692,7 @@ function PilotExpensePlanPanel() {
 
   if (loading) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/42">
+      <div className="rounded-[28px] border border-white/10 bg-white p-6 text-sm text-[var(--pw-text-soft)]">
         Cargando plan de gastos del piloto...
       </div>
     );
@@ -709,15 +709,15 @@ function PilotExpensePlanPanel() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Plan económico del piloto</p>
           <h2 className="header-strip mt-1 text-2xl font-black text-white">🎓 Gastos, licencias y pruebas</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
             La billetera del piloto no solo recibe pagos por vuelos: también financia traslados, licencias, habilitaciones, entrenamientos y pruebas teóricas.
             Estos valores quedan en catálogo para descontarlos después en forma trazable desde la cuenta del piloto.
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Catálogo activo</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Catálogo activo</p>
           <p className="text-xl font-black text-emerald-300">{fmtUsd(grandTotal)}</p>
-          <p className="text-[10px] text-white/38">suma referencial</p>
+          <p className="text-[10px] text-[var(--pw-text-soft)]">suma referencial</p>
         </div>
       </div>
 
@@ -727,7 +727,7 @@ function PilotExpensePlanPanel() {
             <span className="text-2xl">📝</span>
             <div>
               <p className="text-sm font-black text-amber-100">Pruebas teóricas incluidas</p>
-              <p className="text-xs leading-5 text-white/56">
+              <p className="text-xs leading-5 text-[var(--pw-text-soft)]">
                 IFR/IMC, regional, narrowbody, widebody y recurrente. Cada examen tiene costo propio antes de liberar la habilitación o certificación correspondiente.
               </p>
             </div>
@@ -738,7 +738,7 @@ function PilotExpensePlanPanel() {
 
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {groups.map((group) => (
-          <div key={group.category} className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <div key={group.category} className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl">{EXPENSE_CATEGORY_EMOJI[group.category] ?? "💳"}</span>
@@ -754,7 +754,7 @@ function PilotExpensePlanPanel() {
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white/82">{item.label}</p>
                     {(item.requiredFor || item.description) && (
-                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/40">
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[var(--pw-text-soft)]">
                         {item.requiredFor ? `Requerido para ${item.requiredFor}. ` : ""}{item.description ?? ""}
                       </p>
                     )}
@@ -855,7 +855,7 @@ function FleetAssetsPanel() {
 
   if (loading) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/42">
+      <div className="rounded-[28px] border border-white/10 bg-white p-6 text-sm text-[var(--pw-text-soft)]">
         Calculando inversión de flota...
       </div>
     );
@@ -889,14 +889,14 @@ function FleetAssetsPanel() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Activos de aerolínea</p>
           <h2 className="header-strip mt-1 text-2xl font-black text-white">🏦 Flota, inversión y crecimiento</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
             Cada aeronave tiene valor patrimonial, costo fijo mensual y costo técnico por hora. Las nuevas aeronaves deberán comprarse con caja de la aerolínea y serán entregadas al hub asignado desde fábrica.
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Fuente</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Fuente</p>
           <p className="text-sm font-black text-emerald-300">{sourceLabel}</p>
-          <p className="text-[10px] text-white/38">{typeHealthLabel}</p>
+          <p className="text-[10px] text-[var(--pw-text-soft)]">{typeHealthLabel}</p>
         </div>
       </div>
 
@@ -907,10 +907,10 @@ function FleetAssetsPanel() {
           { emoji: "🏷️", label: "Valor flota", value: fmtUsd(summary.totalFleetValueUsd) },
           { emoji: "📅", label: "Costo fijo mensual", value: fmtUsd(summary.totalMonthlyFixedCostUsd) },
         ].map((card) => (
-          <div key={card.label} className="rounded-[18px] border border-white/8 bg-black/15 px-4 py-4">
+          <div key={card.label} className="rounded-[18px] border border-[var(--pw-border)] bg-black/15 px-4 py-4">
             <div className="flex items-center gap-2">
               <span className="text-lg">{card.emoji}</span>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/36">{card.label}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">{card.label}</p>
             </div>
             <p className="mt-2 text-lg font-black text-white">{card.value}</p>
           </div>
@@ -924,8 +924,8 @@ function FleetAssetsPanel() {
           { label: "Duplicados matrícula", value: summary.duplicateAircraftRows ?? 0 },
           { label: "Tipos con economía", value: summary.economyProfileTypeCount ?? 0 },
         ].map((item) => (
-          <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/32">{item.label}</p>
+          <div key={item.label} className="rounded-2xl border border-[var(--pw-border)] bg-white/[0.018] px-3 py-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">{item.label}</p>
             <p className="mt-1 text-lg font-black text-white">{item.value}</p>
           </div>
         ))}
@@ -945,10 +945,10 @@ function FleetAssetsPanel() {
       )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+        <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-sm font-black text-white">Valor por tipo de aeronave</p>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Top valores</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Top valores</span>
           </div>
           <div className="space-y-2">
             {visibleRows.map((item) => (
@@ -956,36 +956,36 @@ function FleetAssetsPanel() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-black text-white">{item.aircraftType}</p>
-                    <p className="text-[10px] text-white/40">
+                    <p className="text-[10px] text-[var(--pw-text-soft)]">
                       {item.count > 0 ? `${item.count} aeronave${item.count !== 1 ? "s" : ""}` : "valor referencial"}
                       {item.hubs.length > 0 ? ` · Hub ${item.hubs.join(", ")}` : ""}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-emerald-300">{fmtUsd(item.totalValueUsd)}</p>
-                    <p className="text-[10px] text-white/36">mes {fmtUsd(item.monthlyFixedCostUsd)}</p>
+                    <p className="text-[10px] text-[var(--pw-text-soft)]">mes {fmtUsd(item.monthlyFixedCostUsd)}</p>
                   </div>
                 </div>
                 {item.registrations.length > 0 && (
-                  <p className="mt-2 truncate text-[10px] text-white/32">Matrículas: {item.registrations.join(", ")}</p>
+                  <p className="mt-2 truncate text-[10px] text-[var(--pw-text-soft)]">Matrículas: {item.registrations.join(", ")}</p>
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+        <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
           <p className="text-sm font-black text-white">Reglas de crecimiento</p>
-          <div className="mt-3 space-y-3 text-xs leading-5 text-white/58">
+          <div className="mt-3 space-y-3 text-xs leading-5 text-[var(--pw-text-soft)]">
             <p><span className="font-bold text-emerald-200">Compra:</span> cada aeronave nueva descuenta caja y queda registrada como inversión de flota.</p>
             <p><span className="font-bold text-emerald-200">Entrega:</span> se trae desde fábrica al hub asignado, no aparece mágicamente en cualquier aeropuerto.</p>
             <p><span className="font-bold text-emerald-200">Reserva:</span> mantener 6 meses de costos fijos + reserva técnica antes de compras grandes.</p>
             <p><span className="font-bold text-emerald-200">Métricas:</span> el valor de flota, costos fijos y mantenimiento alimentarán la economía mensual.</p>
           </div>
-          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.025] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Reserva recomendada</p>
+          <div className="mt-4 rounded-2xl border border-[var(--pw-border)] bg-white/[0.025] p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Reserva recomendada</p>
             <p className="mt-1 text-xl font-black text-amber-200">{fmtUsd(airline?.recommendedReserveUsd ?? 0)}</p>
-            <p className="mt-1 text-[10px] leading-4 text-white/42">Caja aerolínea: {fmtUsd(airline?.balanceUsd ?? 0)} · Compras registradas: {fmtUsd(summary.aircraftPurchaseLedgerUsd)}</p>
+            <p className="mt-1 text-[10px] leading-4 text-[var(--pw-text-soft)]">Caja aerolínea: {fmtUsd(airline?.balanceUsd ?? 0)} · Compras registradas: {fmtUsd(summary.aircraftPurchaseLedgerUsd)}</p>
           </div>
         </div>
       </div>
@@ -1104,34 +1104,34 @@ function FleetPurchasePanel() {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
             <h2 className="header-strip mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
               Los pilotos pueden revisar cómo Patagonia Wings compra aeronaves, conserva reserva operacional y entrega cada unidad al hub asignado.
               La compra real queda reservada para la dirección de la aerolínea.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Usuario</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Usuario</p>
             <p className="text-sm font-black text-sky-200">{viewerLabel}</p>
-            <p className="text-[10px] text-white/38">Modo informativo</p>
+            <p className="text-[10px] text-[var(--pw-text-soft)]">Modo informativo</p>
           </div>
         </div>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
             <p className="text-sm font-black text-white">Reglas para pilotos</p>
-            <div className="mt-3 space-y-3 text-xs leading-5 text-white/58">
+            <div className="mt-3 space-y-3 text-xs leading-5 text-[var(--pw-text-soft)]">
               <p><span className="font-bold text-sky-200">Caja:</span> cada compra usa dinero real de la aerolínea acumulado por operaciones.</p>
               <p><span className="font-bold text-sky-200">Entrega:</span> las aeronaves llegan desde fábrica al hub asignado y no aparecen en cualquier aeropuerto.</p>
               <p><span className="font-bold text-sky-200">Control:</span> solo PWG001/dirección puede registrar compras para evitar cambios accidentales de flota.</p>
             </div>
           </div>
-          <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+          <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
             <p className="text-sm font-black text-white">Opciones referenciales</p>
             <div className="mt-3 space-y-2">
               {options.slice(0, 5).map((item) => (
                 <div key={item.aircraftType} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.018] px-3 py-2">
                   <div>
                     <p className="text-xs font-black text-white">{item.aircraftType}</p>
-                    <p className="text-[10px] text-white/36">Costo fijo mensual {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
+                    <p className="text-[10px] text-[var(--pw-text-soft)]">Costo fijo mensual {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
                   </div>
                   <p className="text-xs font-black text-emerald-300">{fmtUsd(item.estimatedPurchasePriceUsd)}</p>
                 </div>
@@ -1149,23 +1149,23 @@ function FleetPurchasePanel() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-300/70">Compra de aeronaves</p>
           <h2 className="header-strip mt-1 text-2xl font-black text-white">🛫 Crecimiento real de flota</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
             La aerolínea compra aeronaves con su caja operacional. Cada compra descuenta el ledger, crea la aeronave en flota y la deja entregada en el hub asignado desde fábrica.
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Caja disponible</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Caja disponible</p>
           <p className="text-lg font-black text-emerald-300">{fmtUsd(data.airline.balanceUsd)}</p>
-          <p className="text-[10px] text-white/38">Poder compra: {fmtUsd(data.airline.purchasingPowerUsd)}</p>
+          <p className="text-[10px] text-[var(--pw-text-soft)]">Poder compra: {fmtUsd(data.airline.purchasingPowerUsd)}</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+        <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
           <p className="text-sm font-black text-white">Registrar compra</p>
           <div className="mt-4 space-y-3">
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Aeronave</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Aeronave</span>
               <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white outline-none">
                 {options.map((item) => (
                   <option key={item.aircraftType} value={item.aircraftType}>{item.aircraftType} · {fmtUsd(item.estimatedPurchasePriceUsd)}</option>
@@ -1173,42 +1173,42 @@ function FleetPurchasePanel() {
               </select>
             </label>
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Hub destino</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Hub destino</span>
               <input value={targetHub} onChange={(e) => setTargetHub(e.target.value.toUpperCase().slice(0, 4))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm font-black uppercase tracking-[0.12em] text-white outline-none" />
             </label>
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/36">Cantidad</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Cantidad</span>
               <input type="number" min={1} max={5} value={quantity} onChange={(e) => setQuantity(Math.min(5, Math.max(1, Number(e.target.value) || 1)))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white outline-none" />
             </label>
-            <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-white/36">Total compra</p>
+            <div className="rounded-2xl border border-[var(--pw-border)] bg-white/[0.025] p-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Total compra</p>
               <p className="text-xl font-black text-white">{fmtUsd(totalPrice)}</p>
               <p className={`mt-1 text-[11px] ${canBuy ? "text-emerald-300" : "text-amber-300"}`}>{canBuy ? "Caja suficiente para compra operacional." : "Caja insuficiente o bajo reserva recomendada."}</p>
             </div>
-            <button type="button" disabled={!canBuy || busy} onClick={submitPurchase} className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35">
+            <button type="button" disabled={!canBuy || busy} onClick={submitPurchase} className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[var(--pw-text-soft)]">
               {busy ? "Registrando compra..." : "Comprar aeronave"}
             </button>
-            {message && <p className="rounded-2xl border border-white/8 bg-black/20 p-3 text-xs leading-5 text-white/70">{message}</p>}
+            {message && <p className="rounded-2xl border border-[var(--pw-border)] bg-black/20 p-3 text-xs leading-5 text-white/70">{message}</p>}
           </div>
         </div>
 
-        <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+        <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
           <p className="text-sm font-black text-white">Opciones recomendadas</p>
           <div className="mt-3 space-y-2">
             {options.slice(0, 7).map((item: PurchaseOption) => (
               <div key={item.aircraftType} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.018] px-3 py-3">
                 <div>
                   <p className="text-sm font-black text-white">{item.aircraftType}</p>
-                  <p className="text-[10px] text-white/40">{item.factory ?? "Fábrica fabricante"} · fijo mes {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
+                  <p className="text-[10px] text-[var(--pw-text-soft)]">{item.factory ?? "Fábrica fabricante"} · fijo mes {fmtUsd(item.estimatedMonthlyFixedCostUsd)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-black text-emerald-300">{fmtUsd(item.estimatedPurchasePriceUsd)}</p>
-                  <p className="text-[10px] text-white/36">{item.canBuyWithReserve ? "dentro de reserva" : `faltan ${fmtUsd(item.reserveGapUsd ?? 0)}`}</p>
+                  <p className="text-[10px] text-[var(--pw-text-soft)]">{item.canBuyWithReserve ? "dentro de reserva" : `faltan ${fmtUsd(item.reserveGapUsd ?? 0)}`}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.025] p-3 text-xs leading-5 text-white/56">
+          <div className="mt-4 rounded-2xl border border-[var(--pw-border)] bg-white/[0.025] p-3 text-xs leading-5 text-[var(--pw-text-soft)]">
             <p><span className="font-bold text-sky-200">Ledger:</span> la compra se registra como <code>aircraft_purchase</code> y descuenta caja.</p>
             <p><span className="font-bold text-sky-200">Entrega:</span> se genera matrícula PWG según país del hub y la aeronave queda en el hub destino.</p>
             <p><span className="font-bold text-sky-200">Control:</span> no comprar si deja la caja bajo reserva operacional salvo decisión administrativa.</p>
@@ -1334,7 +1334,7 @@ function MonthlyFixedCostsPanel() {
 
   if (loading) {
     return (
-      <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.03] p-7 text-sm text-white/40">
+      <div className="mt-8 rounded-[28px] border border-white/10 bg-white p-7 text-sm text-[var(--pw-text-soft)]">
         Cargando costos fijos mensuales...
       </div>
     );
@@ -1352,15 +1352,15 @@ function MonthlyFixedCostsPanel() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/70">Operación mensual</p>
           <h2 className="header-strip mt-1 text-2xl font-black text-white">🏢 Costos fijos de aerolínea</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/64">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
             Estos costos representan la operación mensual de Patagonia Wings: staff, hubs, flota, seguros, sistemas,
             administración y reserva técnica. Solo la dirección puede aplicar el cierre mensual al ledger.
           </p>
         </div>
         <div className="rounded-[20px] border border-white/10 bg-black/20 px-5 py-4 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">Período</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Período</p>
           <p className="mt-1 text-xl font-black text-cyan-200">{data?.period?.code ?? "Actual"}</p>
-          <p className="mt-1 text-[11px] text-white/45">{data?.alreadyApplied ? "Cierre ya aplicado" : "Pendiente de cierre"}</p>
+          <p className="mt-1 text-[11px] text-[var(--pw-text-soft)]">{data?.alreadyApplied ? "Cierre ya aplicado" : "Pendiente de cierre"}</p>
         </div>
       </div>
 
@@ -1378,7 +1378,7 @@ function MonthlyFixedCostsPanel() {
           { label: "Caja post cierre", value: fmtUsd(remainingAfterClose), tone: remainingAfterClose >= 0 ? "text-emerald-300" : "text-rose-300" },
         ].map((card) => (
           <div key={card.label} className="rounded-[18px] border border-white/10 bg-black/18 px-5 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">{card.label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">{card.label}</p>
             <p className={`mt-2 text-xl font-black ${card.tone}`}>{card.value}</p>
           </div>
         ))}
@@ -1386,11 +1386,11 @@ function MonthlyFixedCostsPanel() {
 
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
         {items.map((item) => (
-          <div key={item.code} className="rounded-[18px] border border-white/8 bg-white/[0.025] px-4 py-4">
+          <div key={item.code} className="rounded-[18px] border border-[var(--pw-border)] bg-white/[0.025] px-4 py-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-black text-white">{item.label}</p>
-                <p className="mt-1 text-xs leading-5 text-white/52">{item.description}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--pw-text-soft)]">{item.description}</p>
               </div>
               <p className="shrink-0 text-sm font-black text-amber-200">{fmtUsd(item.amountUsd)}</p>
             </div>
@@ -1400,7 +1400,7 @@ function MonthlyFixedCostsPanel() {
 
       <div className="mt-5 rounded-[20px] border border-white/10 bg-black/20 p-5">
         <p className="text-sm font-black text-white">Regla de cierre mensual</p>
-        <p className="mt-2 text-xs leading-6 text-white/58">
+        <p className="mt-2 text-xs leading-6 text-[var(--pw-text-soft)]">
           El cierre mensual descuenta movimientos separados en airline_ledger para poder reconstruir el balance por categoría.
           No se duplica si el período ya fue aplicado. Los pilotos pueden ver la explicación; solo owner/dirección puede ejecutar el cargo.
         </p>
@@ -1514,14 +1514,14 @@ function MonthlyPilotPayoutPanel() {
     <section className="mb-10 rounded-[30px] border border-cyan-400/14 bg-gradient-to-br from-cyan-400/[0.08] to-white/[0.025] p-6 sm:p-7">
       <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Liquidación mensual piloto</p>
       <h2 className="header-strip mt-1 text-xl font-black text-white">Cierre manual owner/admin</h2>
-      <p className="mt-2 text-sm leading-6 text-white/58">
+      <p className="mt-2 text-sm leading-6 text-[var(--pw-text-soft)]">
         La comisión se devenga por vuelo y se paga solo aquí en cierre mensual. Futuro cron sugerido: último día hábil.
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
-        <label className="text-xs text-white/60">Año
+        <label className="text-xs text-[var(--pw-text-soft)]">Año
           <input value={year} onChange={(e) => setYear(Number(e.target.value) || year)} className="mt-1 block w-28 rounded-xl border border-white/12 bg-black/20 px-3 py-2 text-sm text-white" />
         </label>
-        <label className="text-xs text-white/60">Mes
+        <label className="text-xs text-[var(--pw-text-soft)]">Mes
           <input value={month} onChange={(e) => setMonth(Math.min(12, Math.max(1, Number(e.target.value) || month)))} className="mt-1 block w-20 rounded-xl border border-white/12 bg-black/20 px-3 py-2 text-sm text-white" />
         </label>
         <button type="button" onClick={runPreview} disabled={loading || running} className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white">
@@ -1598,7 +1598,7 @@ function EconomyHistoricalMetricsPanel() {
 
   if (loading) {
     return (
-      <section className="mb-8 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45">
+      <section className="mb-8 rounded-[28px] border border-white/10 bg-white p-6 text-sm text-[var(--pw-text-soft)]">
         Cargando métricas históricas...
       </section>
     );
@@ -1609,7 +1609,7 @@ function EconomyHistoricalMetricsPanel() {
       <section className="mb-8 rounded-[28px] border border-cyan-400/12 bg-cyan-400/[0.04] p-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Métricas históricas</p>
         <h2 className="header-strip mt-1 text-xl font-black text-white">📈 Centro de métricas listo</h2>
-        <p className="mt-2 text-sm leading-6 text-white/58">
+        <p className="mt-2 text-sm leading-6 text-[var(--pw-text-soft)]">
           Cuando existan cierres ACARS y snapshots económicos, esta sección mostrará pasajeros, carga, combustible, rutas rentables, aeronaves y pilotos productivos.
         </p>
       </section>
@@ -1639,25 +1639,25 @@ function EconomyHistoricalMetricsPanel() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/70">Métricas históricas</p>
           <h2 className="header-strip mt-1 text-2xl font-black text-white">📊 Operación acumulada Patagonia Wings</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--pw-text-soft)]">
             Lectura consolidada desde snapshots económicos, ledger, nómina y gastos piloto. Permite auditar pasajeros, carga, combustible, utilidad, rutas, aeronaves y pilotos.
           </p>
         </div>
         {data.dataHealth && (
           <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/36">Fuente</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)]">Fuente</p>
             <p className="text-sm font-black text-emerald-300">Supabase</p>
-            <p className="text-[10px] text-white/38">{data.dataHealth.snapshotRows} snapshots · {data.dataHealth.ledgerRows} ledger</p>
+            <p className="text-[10px] text-[var(--pw-text-soft)]">{data.dataHealth.snapshotRows} snapshots · {data.dataHealth.ledgerRows} ledger</p>
           </div>
         )}
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((item) => (
-          <div key={item.label} className="rounded-[18px] border border-white/8 bg-black/15 p-4">
+          <div key={item.label} className="rounded-[18px] border border-[var(--pw-border)] bg-black/15 p-4">
             <div className="flex items-center gap-2">
               <span>{item.icon}</span>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/38">{item.label}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">{item.label}</p>
             </div>
             <p className={`mt-2 text-lg font-black ${item.tone}`}>{item.value}</p>
           </div>
@@ -1665,8 +1665,8 @@ function EconomyHistoricalMetricsPanel() {
       </div>
 
       {hasTrend && (
-        <div className="mt-5 rounded-[22px] border border-white/8 bg-black/15 p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Tendencia mensual</p>
+        <div className="mt-5 rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Tendencia mensual</p>
           <h3 className="mt-1 text-base font-bold text-white">Ingresos · Costos · Utilidad</h3>
           <div className="mt-4">
             <MiniLineChart
@@ -1689,14 +1689,14 @@ function EconomyHistoricalMetricsPanel() {
       </div>
 
       {(data.pilotExpenses ?? []).length > 0 && (
-        <div className="mt-5 rounded-[22px] border border-white/8 bg-black/15 p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Gastos de pilotos</p>
+        <div className="mt-5 rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Gastos de pilotos</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {(data.pilotExpenses ?? []).slice(0, 8).map((row) => (
               <div key={row.category} className="rounded-2xl border border-white/7 bg-white/[0.025] p-3">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-white/38">{row.category}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">{row.category}</p>
                 <p className="mt-1 text-base font-black text-amber-300">{fmtUsd(row.amountUsd)}</p>
-                <p className="text-[10px] text-white/38">{row.count} movimiento{row.count !== 1 ? "s" : ""}</p>
+                <p className="text-[10px] text-[var(--pw-text-soft)]">{row.count} movimiento{row.count !== 1 ? "s" : ""}</p>
               </div>
             ))}
           </div>
@@ -1708,17 +1708,17 @@ function EconomyHistoricalMetricsPanel() {
 
 function MetricList({ title, rows, empty = "Sin datos suficientes todavía." }: { title: string; rows: Array<{ main: string; sub: string; value: string; tone: string }>; empty?: string }) {
   return (
-    <div className="rounded-[22px] border border-white/8 bg-black/15 p-4">
+    <div className="rounded-[22px] border border-[var(--pw-border)] bg-black/15 p-4">
       <p className="text-sm font-black text-white">{title}</p>
       {rows.length === 0 ? (
-        <p className="mt-3 text-xs leading-5 text-white/42">{empty}</p>
+        <p className="mt-3 text-xs leading-5 text-[var(--pw-text-soft)]">{empty}</p>
       ) : (
         <div className="mt-3 space-y-2">
           {rows.map((row, index) => (
             <div key={`${row.main}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl border border-white/6 bg-white/[0.025] px-3 py-3">
               <div>
                 <p className="text-sm font-black text-white">{row.main}</p>
-                <p className="text-[10px] text-white/42">{row.sub}</p>
+                <p className="text-[10px] text-[var(--pw-text-soft)]">{row.sub}</p>
               </div>
               <p className={`shrink-0 text-sm font-black ${row.tone}`}>{row.value}</p>
             </div>
@@ -1739,7 +1739,7 @@ export default function EconomiaPage() {
         <div className="mb-10">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/60 transition hover:border-white/20 hover:text-white/90"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-[var(--pw-text-soft)] transition hover:border-white/20 hover:text-white/90"
           >
             ← Volver al dashboard
           </Link>
@@ -1749,7 +1749,7 @@ export default function EconomiaPage() {
               Patagonia Wings
             </p>
             <h1 className="header-strip mt-2 text-4xl font-black text-white">💰 Sistema económico</h1>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-white/60">
+            <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--pw-text-soft)]">
               Cómo se calculan tus ingresos, comisiones, sueldo mensual y deducciones dentro de la simulación de aerolínea virtual.
             </p>
           </div>
@@ -1798,16 +1798,16 @@ export default function EconomiaPage() {
         {/* Commission examples table */}
         <div className="mt-8">
           <div className="mb-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Referencia rápida</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Referencia rápida</p>
             <h2 className="header-strip mt-1 text-xl font-bold text-white">📊 Ejemplos de comisión por ruta</h2>
-            <p className="mt-1 text-sm text-white/48">Los valores se calculan por banda de ruta, aeronave y operación; long haul e intercontinental tienen topes superiores a rutas regionales.</p>
+            <p className="mt-1 text-sm text-[var(--pw-text-soft)]">Los valores se calculan por banda de ruta, aeronave y operación; long haul e intercontinental tienen topes superiores a rutas regionales.</p>
           </div>
           <CommissionTable />
         </div>
 
         {/* Monthly timeline */}
-        <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">Ciclo mensual</p>
+        <div className="mt-8 rounded-[24px] border border-white/10 bg-white p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)]">Ciclo mensual</p>
           <h2 className="header-strip mt-1 text-xl font-bold text-white">🗓 ¿Qué pasa cada mes?</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -1821,7 +1821,7 @@ export default function EconomiaPage() {
                 <div className="absolute left-[-4px] top-1 h-2 w-2 rounded-full bg-emerald-400" />
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">{step.day}</p>
                 <p className="mt-1 text-sm font-bold text-white">{step.title}</p>
-                <p className="mt-1 text-xs leading-5 text-white/52">{step.desc}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--pw-text-soft)]">{step.desc}</p>
               </div>
             ))}
           </div>

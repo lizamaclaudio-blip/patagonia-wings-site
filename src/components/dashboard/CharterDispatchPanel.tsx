@@ -130,8 +130,8 @@ export default function CharterDispatchPanel({
         onAircraftChange={setSelectedAircraft}
       />
 
-      <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Observaciones</label>
+      <div className="rounded-[22px] border border-[var(--pw-border)] bg-white/[0.035] p-5">
+        <label className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Observaciones</label>
         <textarea
           value={remarks}
           onChange={(event) => setRemarks(event.target.value)}
@@ -143,8 +143,8 @@ export default function CharterDispatchPanel({
       {operationDraft ? (
         <div className="rounded-[22px] border border-cyan-300/16 bg-cyan-300/[0.045] p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60">Resumen Chárter</p>
-          <div className="header-strip mt-2 inline-flex items-center gap-2 text-xl font-semibold text-white"><IcaoFlagBadge icao={operationDraft.origin} /><span className="text-white/45">→</span><IcaoFlagBadge icao={operationDraft.destination} /></div>
-          <p className="mt-2 text-sm text-white/58">
+          <div className="header-strip mt-2 inline-flex items-center gap-2 text-xl font-semibold text-white"><IcaoFlagBadge icao={operationDraft.origin} /><span className="text-[var(--pw-text-soft)]">→</span><IcaoFlagBadge icao={operationDraft.destination} /></div>
+          <p className="mt-2 text-sm text-[var(--pw-text-soft)]">
             {operationDraft.aircraftTailNumber} · {operationDraft.aircraftTypeCode} · Meteo real obligatoria · Mueve piloto y aeronave al destino.
           </p>
         </div>

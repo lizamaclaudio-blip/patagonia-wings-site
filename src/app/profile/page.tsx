@@ -306,12 +306,12 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
   const recommendedGroups = groups.filter((group) => ["theory_exam", "license", "certification", "type_rating", "training"].includes(group.category));
 
   return (
-    <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:hidden">
+    <div className="rounded-[20px] border border-[var(--pw-border)] bg-white/[0.02] px-5 py-5 print:hidden">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Billetera operacional</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Billetera operacional</p>
           <h3 className="header-strip mt-1 text-lg font-black text-white">Licencias, pruebas y habilitaciones</h3>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-white/50">
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-[var(--pw-text-soft)]">
             Usa tu saldo virtual para pagar pruebas teóricas, checkrides, licencias y habilitaciones. Cada movimiento queda registrado para historial y métricas.
           </p>
         </div>
@@ -321,17 +321,17 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
         </div>
       </div>
 
-      {loading ? <div className="mt-5 text-sm text-white/40">Cargando catálogo operacional...</div> : null}
+      {loading ? <div className="mt-5 text-sm text-[var(--pw-text-soft)]">Cargando catálogo operacional...</div> : null}
       {error ? <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
       {message ? <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div> : null}
 
       {!loading && recommendedGroups.length > 0 ? (
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           {recommendedGroups.map((group) => (
-            <div key={group.category} className="rounded-[18px] border border-white/8 bg-black/10 p-4">
+            <div key={group.category} className="rounded-[18px] border border-[var(--pw-border)] bg-black/10 p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-bold text-white">{group.label}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/36">Total {fmtUsd(group.totalUsd)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--pw-text-soft)]">Total {fmtUsd(group.totalUsd)}</p>
               </div>
               <div className="mt-3 space-y-2">
                 {group.items.slice(0, 4).map((item) => {
@@ -342,7 +342,7 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-white/88">{item.label}</p>
-                          <p className="mt-0.5 text-[11px] leading-4 text-white/44">{item.requiredFor ? `${item.requiredFor} · ` : ""}{item.phase ?? "Operación"}</p>
+                          <p className="mt-0.5 text-[11px] leading-4 text-[var(--pw-text-soft)]">{item.requiredFor ? `${item.requiredFor} · ` : ""}{item.phase ?? "Operación"}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-black text-cyan-200">{fmtUsd(item.amountUsd)}</span>
@@ -353,7 +353,7 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
                             className={`rounded-xl border px-3 py-1.5 text-[11px] font-bold transition ${
                               canPay
                                 ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/40"
-                                : "border-white/8 bg-white/[0.025] text-white/28"
+                                : "border-[var(--pw-border)] bg-white/[0.025] text-white/28"
                             }`}
                           >
                             {busy ? "Procesando..." : canPay ? "Pagar" : "Saldo insuf."}
@@ -370,14 +370,14 @@ function PilotExpenseWalletPanel({ session, initialWalletUsd }: { session: impor
       ) : null}
 
       {ledger.length > 0 ? (
-        <div className="mt-5 rounded-[18px] border border-white/8 bg-black/10 p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Últimos gastos registrados</p>
+        <div className="mt-5 rounded-[18px] border border-[var(--pw-border)] bg-black/10 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">Últimos gastos registrados</p>
           <div className="mt-3 space-y-2">
             {ledger.slice(0, 6).map((row) => (
               <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.015] px-3 py-2 text-xs">
                 <div>
                   <p className="font-semibold text-white/78">{row.label || row.description}</p>
-                  <p className="text-white/34">{row.createdAt ? new Date(row.createdAt).toLocaleDateString("es-CL") : "Sin fecha"} · {row.category}</p>
+                  <p className="text-[var(--pw-text-soft)]">{row.createdAt ? new Date(row.createdAt).toLocaleDateString("es-CL") : "Sin fecha"} · {row.category}</p>
                 </div>
                 <p className="font-black text-rose-200">−{fmtUsd(Math.abs(row.amountUsd))}</p>
               </div>
@@ -490,7 +490,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
 
   if (loadingEco) {
     return (
-      <div className="py-10 text-center text-sm text-white/40">Cargando datos económicos...</div>
+      <div className="py-10 text-center text-sm text-[var(--pw-text-soft)]">Cargando datos económicos...</div>
     );
   }
 
@@ -528,9 +528,9 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
     { emoji: "✈️", label: "Vuelos completados", value: String(data.flightsCount), tone: "text-white", bg: "from-sky-500/10" },
     { emoji: "⏱️", label: "Horas bloque", value: `${formatDecimal(toNumber(data.blockHoursTotal))} h`, tone: "text-white", bg: "from-indigo-500/10" },
     { emoji: "💵", label: "Comisiones del mes", value: fmtUsd(data.commissionTotalUsd), tone: "text-cyan-300", bg: "from-cyan-500/10" },
-    { emoji: "📅", label: "Sueldo base", value: data.qualifiesForBase ? fmtUsd(data.baseSalaryUsd) : "No califica (< 5 vuelos)", tone: data.qualifiesForBase ? "text-violet-300" : "text-white/40", bg: "from-violet-500/10" },
-    { emoji: "🎓", label: "Gastos piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "Sin gastos", tone: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-white/40", bg: "from-amber-500/10" },
-    { emoji: "🔧", label: "Deducciones daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "Sin deducciones", tone: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40", bg: "from-rose-500/10" },
+    { emoji: "📅", label: "Sueldo base", value: data.qualifiesForBase ? fmtUsd(data.baseSalaryUsd) : "No califica (< 5 vuelos)", tone: data.qualifiesForBase ? "text-violet-300" : "text-[var(--pw-text-soft)]", bg: "from-violet-500/10" },
+    { emoji: "🎓", label: "Gastos piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "Sin gastos", tone: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-[var(--pw-text-soft)]", bg: "from-amber-500/10" },
+    { emoji: "🔧", label: "Deducciones daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "Sin deducciones", tone: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-[var(--pw-text-soft)]", bg: "from-rose-500/10" },
     { emoji: "🏦", label: "Neto del período", value: fmtUsd(data.netPaidUsd), tone: "text-emerald-300", bg: "from-emerald-500/10" },
   ];
 
@@ -546,14 +546,14 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
       {/* Period header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40 print:text-gray-500">Período actual</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--pw-text-soft)] print:text-gray-500">Período actual</p>
           <h3 className="header-strip mt-1 text-xl font-bold text-white print:text-black">{monthName} {data.period.year}</h3>
-          <p className="mt-1 text-xs text-white/48 print:text-gray-600">Fecha de pago estimada: {data.paymentDate}</p>
+          <p className="mt-1 text-xs text-[var(--pw-text-soft)] print:text-gray-600">Fecha de pago estimada: {data.paymentDate}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${
             isPaid ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-200"
-            : isSkipped ? "border-white/10 bg-white/[0.04] text-white/40"
+            : isSkipped ? "border-white/10 bg-white/[0.04] text-[var(--pw-text-soft)]"
             : "border-amber-300/20 bg-amber-400/10 text-amber-200"
           }`}>
             {isPaid ? "✅ Pagado" : isSkipped ? "Sin actividad" : "🕐 Pendiente"}
@@ -571,10 +571,10 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
       {/* Economy cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {econCards.map((card) => (
-          <div key={card.label} className={`rounded-[20px] border border-white/8 bg-gradient-to-br ${card.bg} to-transparent px-5 py-5 print:border print:border-gray-200 print:bg-white`}>
+          <div key={card.label} className={`rounded-[20px] border border-[var(--pw-border)] bg-gradient-to-br ${card.bg} to-transparent px-5 py-5 print:border print:border-gray-200 print:bg-white`}>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl print:hidden">{card.emoji}</span>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/40 print:text-gray-500">{card.label}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--pw-text-soft)] print:text-gray-500">{card.label}</p>
             </div>
             <p className={`text-xl font-black ${card.tone} print:text-black`}>{card.value}</p>
           </div>
@@ -582,21 +582,21 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
       </div>
 
       {/* Payment info */}
-      <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Resumen del período</p>
+      <div className="rounded-[20px] border border-[var(--pw-border)] bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)] print:text-gray-500 mb-3">Resumen del período</p>
         <div className="space-y-2">
           {[
             { label: "Comisiones", value: `+${fmtUsd(data.commissionTotalUsd)}`, color: "text-emerald-300" },
-            { label: `Sueldo base (${data.qualifiesForBase ? "5+ vuelos ✓" : "< 5 vuelos ✗"})`, value: data.qualifiesForBase ? `+${fmtUsd(data.baseSalaryUsd)}` : "$0 USD", color: data.qualifiesForBase ? "text-violet-300" : "text-white/40" },
-            { label: "Gastos pagados por el piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "$0 USD", color: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-white/40" },
-            { label: "Deducciones por daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "$0 USD", color: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-white/40" },
+            { label: `Sueldo base (${data.qualifiesForBase ? "5+ vuelos ✓" : "< 5 vuelos ✗"})`, value: data.qualifiesForBase ? `+${fmtUsd(data.baseSalaryUsd)}` : "$0 USD", color: data.qualifiesForBase ? "text-violet-300" : "text-[var(--pw-text-soft)]" },
+            { label: "Gastos pagados por el piloto", value: toNumber(data.expensesTotalUsd) > 0 ? `−${fmtUsd(toNumber(data.expensesTotalUsd))}` : "$0 USD", color: toNumber(data.expensesTotalUsd) > 0 ? "text-amber-300" : "text-[var(--pw-text-soft)]" },
+            { label: "Deducciones por daño", value: data.damageDeductionsUsd > 0 ? `−${fmtUsd(data.damageDeductionsUsd)}` : "$0 USD", color: data.damageDeductionsUsd > 0 ? "text-rose-300" : "text-[var(--pw-text-soft)]" },
           ].map((row) => (
             <div key={row.label} className="flex justify-between text-sm">
-              <span className="text-white/60 print:text-gray-600">{row.label}</span>
+              <span className="text-[var(--pw-text-soft)] print:text-gray-600">{row.label}</span>
               <span className={`font-bold ${row.color} print:text-black`}>{row.value}</span>
             </div>
           ))}
-          <div className="mt-2 border-t border-white/8 pt-2 flex justify-between text-sm print:border-t print:border-gray-200">
+          <div className="mt-2 border-t border-[var(--pw-border)] pt-2 flex justify-between text-sm print:border-t print:border-gray-200">
             <span className="font-bold text-white print:text-black">Total neto</span>
             <span className="font-black text-emerald-300 print:text-black">{fmtUsd(data.netPaidUsd)}</span>
           </div>
@@ -607,16 +607,16 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
 
       {/* Recent flights */}
       {data.recentFlights.length > 0 && (
-        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Vuelos del período ({data.recentFlights.length})</p>
+        <div className="rounded-[20px] border border-[var(--pw-border)] bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)] print:text-gray-500 mb-3">Vuelos del período ({data.recentFlights.length})</p>
           <div className="space-y-1.5">
             {data.recentFlights.slice(0, 10).map((f, i) => {
               const dateStr = f.completedAt ? new Date(f.completedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "—";
               return (
                 <div key={i} className="flex items-center justify-between rounded-[10px] border border-white/5 bg-white/[0.015] px-3 py-2 print:border print:border-gray-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/30 print:text-gray-400">✈</span>
-                    <span className="text-xs text-white/60 print:text-gray-600">{dateStr} · {f.flightNumber ?? "Vuelo"} · {f.origin ?? "---"}-{f.destination ?? "---"}</span>
+                    <span className="text-xs text-[var(--pw-text-soft)] print:text-gray-400">✈</span>
+                    <span className="text-xs text-[var(--pw-text-soft)] print:text-gray-600">{dateStr} · {f.flightNumber ?? "Vuelo"} · {f.origin ?? "---"}-{f.destination ?? "---"}</span>
                   </div>
                   <div className="flex gap-4 text-xs">
                     <span className="text-emerald-300 font-semibold print:text-black">+{fmtUsd(f.commissionUsd)}</span>
@@ -633,17 +633,17 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
 
       {/* Salary history */}
       {data.monthlyHistory && data.monthlyHistory.length > 0 ? (
-        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Historial mensual</p>
+        <div className="rounded-[20px] border border-[var(--pw-border)] bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)] print:text-gray-500 mb-3">Historial mensual</p>
           <div className="space-y-1.5">
             {data.monthlyHistory.slice(0, 8).map((row) => {
               const label = `${MONTH_NAMES_ES[(row.periodMonth - 1)] ?? "Mes"} ${row.periodYear}`;
               return (
                 <div key={`${row.periodYear}-${row.periodMonth}`} className="grid gap-2 rounded-[12px] border border-white/5 bg-white/[0.015] px-3 py-2 text-xs sm:grid-cols-[1fr_auto_auto_auto] print:border print:border-gray-100">
                   <span className="font-semibold text-white/72 print:text-black">{label}</span>
-                  <span className="text-white/46 print:text-gray-600">{row.flightsCount} vuelos · {formatDecimal(toNumber(row.blockHoursTotal))} h</span>
+                  <span className="text-[var(--pw-text-soft)] print:text-gray-600">{row.flightsCount} vuelos · {formatDecimal(toNumber(row.blockHoursTotal))} h</span>
                   <span className="text-emerald-300 font-bold print:text-black">{fmtUsd(row.netPaidUsd)}</span>
-                  <span className="text-white/36 print:text-gray-500">{row.status === "paid" ? "Pagado" : row.status === "skipped" ? "Sin actividad" : "Pendiente"}</span>
+                  <span className="text-[var(--pw-text-soft)] print:text-gray-500">{row.status === "paid" ? "Pagado" : row.status === "skipped" ? "Sin actividad" : "Pendiente"}</span>
                 </div>
               );
             })}
@@ -652,8 +652,8 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
       ) : null}
 
       {movementRows.length > 0 ? (
-        <div className="rounded-[20px] border border-white/8 bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 print:text-gray-500 mb-3">Historial mensual del piloto</p>
+        <div className="rounded-[20px] border border-[var(--pw-border)] bg-white/[0.02] px-5 py-5 print:border print:border-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)] print:text-gray-500 mb-3">Historial mensual del piloto</p>
           <div className="mb-3 grid gap-2 md:grid-cols-5">
             <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Devengado: {fmtUsd(movementTotals.income)}</p>
             <p className="rounded-[12px] border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">Gastos: {fmtUsd(movementTotals.expense)}</p>
@@ -664,7 +664,7 @@ ${flightRows ? `<hr><h2 style="font-size:15px;font-weight:700;margin:16px 0 8px"
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/8 text-white/45">
+                <tr className="border-b border-[var(--pw-border)] text-[var(--pw-text-soft)]">
                   <th className="px-2 py-2 text-left">Fecha</th>
                   <th className="px-2 py-2 text-left">Tipo</th>
                   <th className="px-2 py-2 text-left">Reserva</th>
@@ -999,7 +999,7 @@ function ProfileContent() {
                   {(form.first_name.charAt(0) + form.last_name.charAt(0) || form.callsign.slice(0, 2) || "PW").toUpperCase()}
                 </div>
 
-                <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/56">
+                <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--pw-text-soft)]">
                   {form.callsign || "PWG000"}
                 </p>
                 <h2 className="header-strip mt-3 text-3xl font-semibold leading-tight text-white">
@@ -1018,7 +1018,7 @@ function ProfileContent() {
 
                 <p className="mt-3 text-sm font-semibold text-cyan-100">{rankInsignia.name}</p>
 
-                <p className="mt-3 text-sm text-white/66">Foto de piloto pendiente por cargar</p>
+                <p className="mt-3 text-sm text-[var(--pw-text-soft)]">Foto de piloto pendiente por cargar</p>
               </div>
 
               <div className="space-y-5">
@@ -1038,7 +1038,7 @@ function ProfileContent() {
                     { label: "Simulador", value: "MSFS 2020" },
                   ].map((item) => (
                     <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">
                         {item.label}
                       </p>
                       <p className="mt-2 text-xl font-semibold text-white">{loading ? "…" : item.value}</p>
@@ -1050,7 +1050,7 @@ function ProfileContent() {
                 <div className="surface-outline rounded-[24px] px-5 py-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">
                         Integración Navigraph
                       </p>
                       <p className="mt-2 text-xl font-semibold text-white">
@@ -1074,16 +1074,16 @@ function ProfileContent() {
                   </div>
 
                   <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Subject</p>
+                    <div className="rounded-[18px] border border-[var(--pw-border)] bg-white px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Subject</p>
                       <p className="mt-2 text-sm font-medium text-white">{navigraphStatus?.subject || "Sin enlazar"}</p>
                     </div>
-                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Expira</p>
+                    <div className="rounded-[18px] border border-[var(--pw-border)] bg-white px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Expira</p>
                       <p className="mt-2 text-sm font-medium text-white">{formatNavigraphExpiry(navigraphStatus?.expiresAt)}</p>
                     </div>
-                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/54">Scopes</p>
+                    <div className="rounded-[18px] border border-[var(--pw-border)] bg-white px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--pw-text-soft)]">Scopes</p>
                       <p className="mt-2 text-sm font-medium text-white">
                         {navigraphStatus?.scopes?.length ? navigraphStatus.scopes.join(", ") : "Pendiente"}
                       </p>
@@ -1105,7 +1105,7 @@ function ProfileContent() {
                     ) : null}
                   </div>
 
-                  <p className="mt-4 text-sm leading-7 text-white/68">
+                  <p className="mt-4 text-sm leading-7 text-[var(--pw-text-soft)]">
                     La conexión web de Navigraph se usará para abrir y validar el flujo OFP / SimBrief desde el despacho de Patagonia Wings.
                   </p>
                 </div>
@@ -1115,7 +1115,7 @@ function ProfileContent() {
                     { label: "Patagonia Score", value: formatDecimal(surScore) },
                   ].map((item) => (
                     <div key={item.label} className="surface-outline rounded-[22px] px-5 py-5 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/54">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--pw-text-soft)]">
                         {item.label}
                       </p>
                       <p className="mt-2 text-[28px] font-semibold text-white">{loading ? "…" : item.value}</p>

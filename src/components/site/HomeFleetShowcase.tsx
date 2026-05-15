@@ -216,7 +216,7 @@ export default function HomeFleetShowcase() {
           {!loaded ? (
             <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="border-b border-white/8 pb-3 pt-1">
+                <div key={i} className="border-b border-[var(--pw-border)] pb-3 pt-1">
                   <div className="h-3.5 w-36 animate-pulse rounded-full bg-white/10" />
                   <div className="mt-2 h-2.5 w-20 animate-pulse rounded-full bg-white/6" />
                 </div>
@@ -230,7 +230,7 @@ export default function HomeFleetShowcase() {
                 return (
                   <div
                     key={entry.modelCode || entry.aircraftName}
-                    className="border-b border-white/8 pb-3 pt-1 last:border-b-0 xl:[&:nth-last-child(-n+3)]:border-b-0"
+                    className="border-b border-[var(--pw-border)] pb-3 pt-1 last:border-b-0 xl:[&:nth-last-child(-n+3)]:border-b-0"
                   >
                     <p className="text-[14px] font-semibold leading-5 text-white/94">
                       {entry.aircraftName || entry.modelCode || "Aeronave certificada"}

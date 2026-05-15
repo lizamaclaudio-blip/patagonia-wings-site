@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   /* Patagonia Sky Premium 2.0 */
@@ -344,7 +344,7 @@ canvas {
 }
 
 .pw-accordion > summary::after {
-  content: "⌄";
+  content: "âŒ„";
   font-size: 1.2rem;
   line-height: 1;
   color: rgba(186, 230, 253, 0.9);
@@ -861,7 +861,7 @@ canvas {
   border-radius: inherit;
 }
 
-/* ── CLASES DE PÁGINAS INTERNAS (login, register, profile, certifications) ── */
+/* â”€â”€ CLASES DE PÃGINAS INTERNAS (login, register, profile, certifications) â”€â”€ */
 
 .glass-panel {
   background: linear-gradient(180deg, rgba(8, 23, 46, 0.82), rgba(5, 17, 33, 0.78));
@@ -938,9 +938,7 @@ canvas {
 }
 
 .ui-light-windows [class*="text-white/7"],
-.ui-light-windows [class*="text-white/6"],
-.ui-light-windows [class*="text-white/5"],
-.ui-light-windows [class*="text-white/4"],
+
 .ui-light-windows [class*="text-slate-4"],
 .ui-light-windows [class*="text-slate-5"] {
   color: var(--window-text-muted) !important;
@@ -986,7 +984,7 @@ canvas {
   padding: 7px 11px;
 }
 
-/* Texto general más marcado dentro de los cuadros */
+/* Texto general mÃ¡s marcado dentro de los cuadros */
 .ui-light-windows [class*="rounded"][class*="border"] {
   font-weight: 500;
 }
@@ -1139,7 +1137,7 @@ canvas {
   color: #ffffff !important;
 }
 
-/* Despacho debe mantener contraste operacional (evita que la capa clara lave tarjetas e imágenes) */
+/* Despacho debe mantener contraste operacional (evita que la capa clara lave tarjetas e imÃ¡genes) */
 .ui-light-windows .dispatch-workspace [class*="bg-[#03"],
 .ui-light-windows .dispatch-workspace [class*="bg-[#04"],
 .ui-light-windows .dispatch-workspace [class*="bg-[#05"],
@@ -1323,7 +1321,7 @@ canvas {
   El navegador no permite controlar correctamente el zoom del usuario sin
   romper accesibilidad. Estas reglas compensan viewports CSS muy anchos
   (por ejemplo, navegador con zoom out o monitores ultra-wide) para que la UI
-  no quede microscópica ni perdida al centro.
+  no quede microscÃ³pica ni perdida al centro.
 */
 @media (min-width: 1680px) {
   html {
@@ -1429,7 +1427,7 @@ canvas {
 /*
   Ajuste global no destructivo: evita que textos como "Registrarme ahora",
   "Confirmar traslado" o "Generar OFP SimBrief" queden pegados a los bordes.
-  Respeta botones w-full y estados disabled; solo mejora padding, ancho mínimo
+  Respeta botones w-full y estados disabled; solo mejora padding, ancho mÃ­nimo
   y legibilidad general.
 */
 .parallax-outline-button,
@@ -2010,7 +2008,7 @@ a.parallax-login-button {
 }
 
 .pw-step-card:not(:last-child)::after {
-  content: "→";
+  content: "â†’";
   position: absolute;
   right: -1.05rem;
   top: 50%;
@@ -2148,7 +2146,7 @@ a.parallax-login-button {
 }
 
 .pw-check-list li::before {
-  content: "✓";
+  content: "âœ“";
   color: var(--pw-success);
   font-weight: 900;
 }
@@ -3218,4 +3216,249 @@ tbody tr:hover {
 .pw-sky-site.ui-light-windows :where(.acars-live-log, .pw-console, [data-console="true"]) [class*="text-slate-"],
 .pw-sky-site.ui-light-windows :where(.acars-live-log, .pw-console, [data-console="true"]) [class*="text-gray-"] {
   color: #DFF8F4 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Internal App Readability Pass                                                */
+/* -------------------------------------------------------------------------- */
+.pw-page-shell {
+  width: min(100% - 32px, 1560px);
+  margin-inline: auto;
+  padding: 28px 0 48px;
+}
+
+.pw-internal-dashboard .parallax-hero {
+  padding-bottom: 48px;
+}
+
+.pw-internal-dashboard .pw-container:has(.pw-navbar) {
+  width: min(100% - 32px, 1560px);
+}
+
+.pw-dashboard-workspace {
+  background: rgba(255, 255, 255, .94) !important;
+  border-color: var(--pw-border) !important;
+  box-shadow: var(--pw-shadow-md) !important;
+  color: var(--pw-text) !important;
+}
+
+.pw-internal-dashboard .dashboard-tab-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px !important;
+  border: 1px solid var(--pw-border) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .84) !important;
+  box-shadow: var(--pw-shadow-xs) !important;
+}
+
+.pw-internal-dashboard .dashboard-tab-nav button {
+  min-height: 44px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  padding: 0 18px !important;
+  color: var(--pw-text) !important;
+  background: transparent !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+}
+
+.pw-internal-dashboard .dashboard-tab-nav button[class*="text-[#1f5c99]"] {
+  background: var(--pw-gradient-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(0, 166, 184, .24) !important;
+}
+
+.pw-internal-dashboard .dashboard-tab-nav button:disabled {
+  background: var(--pw-neutral-bg) !important;
+  color: var(--pw-muted) !important;
+  opacity: 1 !important;
+}
+
+.pw-central-hero,
+.pw-dispatch-panel,
+.pw-dispatch-stage {
+  background: var(--pw-gradient-card) !important;
+  border-color: var(--pw-border) !important;
+  box-shadow: var(--pw-shadow-sm) !important;
+  color: var(--pw-text) !important;
+}
+
+.pw-central-hero {
+  background:
+    radial-gradient(circle at 90% 4%, rgba(56, 189, 248, .14), transparent 28%),
+    var(--pw-gradient-card) !important;
+}
+
+.pw-airport-image {
+  min-height: clamp(220px, 25vw, 290px) !important;
+  box-shadow: var(--pw-shadow-sm), inset 0 0 0 1px rgba(255, 255, 255, .16) !important;
+}
+
+.pw-airport-image img {
+  opacity: 1 !important;
+  filter: saturate(1.05) contrast(1.02) !important;
+}
+
+.pw-airport-image :is(p, span, a),
+.pw-airport-image [class*="text-white"] {
+  color: #ffffff !important;
+}
+
+.pw-metric-card {
+  background: #ffffff !important;
+  border: 1px solid var(--pw-border) !important;
+  box-shadow: var(--pw-shadow-xs) !important;
+  color: var(--pw-text) !important;
+}
+
+.pw-alert-warning {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #FFF7D6 !important;
+  border: 1px solid #F2C94C !important;
+  border-radius: 18px !important;
+  padding: 16px 18px !important;
+  color: #5C4200 !important;
+  box-shadow: var(--pw-shadow-xs);
+}
+
+.pw-alert-warning :is(p, span, div) {
+  color: #5C4200 !important;
+}
+
+.pw-internal-dashboard .dispatch-steps-nav {
+  border-bottom: 0 !important;
+  gap: 10px !important;
+  padding-bottom: 0 !important;
+}
+
+.pw-internal-dashboard .dispatch-step-link {
+  min-height: 48px !important;
+  border: 1px solid var(--pw-border) !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: var(--pw-text) !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+
+.pw-internal-dashboard .dispatch-step-link[data-active="true"] {
+  background: var(--pw-gradient-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(0, 166, 184, .24) !important;
+}
+
+.pw-internal-dashboard .dispatch-step-link[data-disabled="true"] {
+  background: var(--pw-neutral-bg) !important;
+  color: var(--pw-muted) !important;
+}
+
+.pw-flight-type-card {
+  background: #ffffff !important;
+  border-color: var(--pw-border) !important;
+  color: var(--pw-text) !important;
+  box-shadow: var(--pw-shadow-xs) !important;
+}
+
+.pw-flight-type-card img {
+  opacity: .96 !important;
+  filter: saturate(1.08) contrast(1.04) !important;
+}
+
+.pw-flight-type-card:disabled {
+  opacity: 1 !important;
+}
+
+.pw-flight-type-card:disabled img {
+  opacity: .68 !important;
+}
+
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-white"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-slate-300"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-cyan-200"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-blue-200"] {
+  color: var(--pw-text) !important;
+}
+
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-white/"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-slate-400"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="text-slate-500"] {
+  color: var(--pw-text-soft) !important;
+}
+
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="border-white/"] {
+  border-color: var(--pw-border) !important;
+}
+
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="bg-white/[0."],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="bg-[#031428"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="bg-[#071"],
+.pw-internal-dashboard :where(.dispatch-workspace, .office-workspace, .training-workspace, .dashboard-boxes-sky-strip, .pw-card, .pw-dispatch-panel, .pw-dispatch-stage) [class*="bg-black/"] {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+.pw-internal-dashboard table {
+  background: #ffffff !important;
+  color: var(--pw-text) !important;
+}
+
+.pw-internal-dashboard table thead tr,
+.pw-internal-dashboard table th {
+  background: var(--pw-ice) !important;
+  color: var(--pw-text-soft) !important;
+}
+
+.pw-internal-dashboard table td {
+  color: var(--pw-text) !important;
+}
+
+.pw-internal-dashboard :where(.pw-airport-image, .pw-btn-primary, .button-primary, .dashboard-tab-nav button[class*="text-[#1f5c99]"], .dispatch-step-link[data-active="true"]) [class*="text-white"] {
+  color: #ffffff !important;
+}
+
+.pw-internal-dashboard :where(input, select, textarea) {
+  min-height: 44px !important;
+  border-color: var(--pw-border) !important;
+  background: #ffffff !important;
+  color: var(--pw-text) !important;
+  font-size: 14px !important;
+}
+
+.pw-console,
+.acars-live-log {
+  background: #071A2F !important;
+  border: 1px solid #123A63 !important;
+  color: #DFF8F4 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.pw-console :is(p, span, div, code, pre),
+.acars-live-log :is(p, span, div, code, pre),
+.pw-console [class*="text-white"],
+.acars-live-log [class*="text-white"] {
+  color: #DFF8F4 !important;
+}
+
+@media (max-width: 640px) {
+  .pw-page-shell {
+    width: min(100% - 24px, 100%);
+    padding: 18px 0 36px;
+  }
+
+  .pw-internal-dashboard .dashboard-tab-nav {
+    display: flex !important;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .pw-internal-dashboard .dashboard-tab-nav button {
+    flex: 0 0 auto;
+  }
 }

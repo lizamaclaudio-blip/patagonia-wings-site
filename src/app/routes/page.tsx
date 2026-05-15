@@ -282,17 +282,17 @@ export default function RoutesPage() {
         <div className="pw-container relative z-[3] py-6 sm:py-8">
           <PublicHeader />
 
-          <div className="glass-panel mt-6 rounded-[30px] p-6 sm:p-8">
+          <div className="pw-card mt-6 rounded-[30px] p-6 sm:p-8">
             <p className="section-chip">Catálogo de rutas</p>
-            <h1 className="header-strip mt-4 text-3xl font-bold text-white sm:text-4xl">Panel operativo de rutas</h1>
-            <p className="mt-2 text-sm text-white/70">Vista compacta con bloques cerrados por defecto.</p>
+            <h1 className="header-strip mt-4 text-3xl font-bold sm:text-4xl">Panel operativo de rutas</h1>
+            <p className="mt-2 text-sm text-[var(--pw-text-soft)]">Vista compacta con bloques cerrados por defecto.</p>
 
             <div className="mt-5 flex flex-wrap gap-3">
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar vuelo, ICAO o ruta..."
-                className="min-w-[280px] flex-1 rounded-xl border border-white/12 bg-[#06172a] px-4 py-2 text-sm text-white outline-none focus:border-cyan-300/60"
+                className="pw-input min-w-[280px] flex-1"
               />
               <Link href="/dashboard?tab=dispatch" className="button-primary px-4 py-2">
                 Ir a despacho
@@ -302,11 +302,11 @@ export default function RoutesPage() {
 
           <div className="mt-6 space-y-4">
             {loading ? (
-              <div className="glass-panel rounded-[24px] p-5 text-sm text-white/70">Cargando rutas...</div>
+              <div className="pw-card rounded-[24px] p-5 text-sm text-[var(--pw-text-soft)]">Cargando rutas...</div>
             ) : null}
 
             {error ? (
-              <div className="glass-panel rounded-[24px] border border-rose-400/30 p-5 text-sm text-rose-200">{error}</div>
+              <div className="pw-card rounded-[24px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">{error}</div>
             ) : null}
 
             {!loading && !error
@@ -314,30 +314,30 @@ export default function RoutesPage() {
                   const list = grouped.get(cat.id) || [];
 
                   return (
-                    <details key={cat.id} className="glass-panel overflow-hidden rounded-[24px] border border-white/10">
+                    <details key={cat.id} className="pw-card overflow-hidden rounded-[24px] border">
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/55">{cat.label}</p>
-                          <p className="mt-1 text-sm text-white/70">{cat.desc}</p>
+                          <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--pw-muted)]">{cat.label}</p>
+                          <p className="mt-1 text-sm text-[var(--pw-text-soft)]">{cat.desc}</p>
                         </div>
-                        <span className="rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                        <span className="pw-status-badge pw-status-info">
                           {list.length} rutas
                         </span>
                       </summary>
 
-                      <div className="border-t border-white/10 px-4 pb-4 pt-3">
+                      <div className="border-t border-[var(--pw-border)] px-4 pb-4 pt-3">
                         {list.length === 0 ? (
-                          <p className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white/60">Sin rutas para esta categoría.</p>
+                          <p className="rounded-xl border border-[var(--pw-border)] bg-[var(--pw-ice)] px-4 py-3 text-sm text-[var(--pw-text-soft)]">Sin rutas para esta categoría.</p>
                         ) : (
                           <div className="space-y-2">
                             {list.map((r) => (
-                              <div key={r.route_id} className="grid gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white/85 md:grid-cols-[120px_1fr_120px_140px]">
+                              <div key={r.route_id} className="grid gap-2 rounded-xl border border-[var(--pw-border)] bg-white px-4 py-3 text-sm text-[var(--pw-text)] shadow-[var(--pw-shadow-xs)] md:grid-cols-[120px_1fr_120px_140px]">
                                 <div className="font-semibold">{toCleanText(r.flight_number) || "PWG"}</div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <IcaoFlagBadge icao={toCleanText(r.origin_ident) || "----"} size="sm" />
-                                  <span className="text-white/45">→</span>
+                                  <span className="text-[var(--pw-muted)]">→</span>
                                   <IcaoFlagBadge icao={toCleanText(r.destination_ident) || "----"} size="sm" />
-                                  <span className="text-white/55">{toCleanText(r.route_name) || "Ruta operativa"}</span>
+                                  <span className="text-[var(--pw-text-soft)]">{toCleanText(r.route_name) || "Ruta operativa"}</span>
                                 </div>
                                 <div>{Math.round(toNumber(r.distance_nm)) || 0} NM</div>
                                 <div>{formatBlock(toNumber(r.block_minutes))}</div>
