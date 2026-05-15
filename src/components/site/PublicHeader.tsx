@@ -117,7 +117,7 @@ export default function PublicHeader() {
           </span>
         </Link>
 
-        <nav className="pw-navbar-nav" aria-label="Navegacion principal">
+        <nav className="pw-navbar-nav" aria-label="Navegación principal">
           {navItems.map((item) => {
             const active = isPublicNavActive(pathname, item);
             if (item.items?.length) {
@@ -125,7 +125,7 @@ export default function PublicHeader() {
                 <div key={item.label} className="pw-navbar-menu">
                   <button type="button" className="pw-navbar-link" aria-haspopup="true">
                     {item.label}
-                    <span aria-hidden>v</span>
+                    <span aria-hidden>⌄</span>
                   </button>
                   <div className="pw-navbar-dropdown">
                     {item.items.map((subitem) => (
@@ -158,12 +158,12 @@ export default function PublicHeader() {
               </Link>
               <button
                 type="button"
-                aria-label="Mas opciones"
+                aria-label="Más opciones"
                 className="pw-btn-secondary pw-navbar-more"
                 onClick={() => setMenuOpen((value) => !value)}
               >
                 <span className={menuOpen ? "rotate-180" : ""} aria-hidden>
-                  v
+                  ⌄
                 </span>
               </button>
               {menuOpen ? (
@@ -175,10 +175,10 @@ export default function PublicHeader() {
                     Despacho
                   </Link>
                   <Link href="/economia" onClick={() => setMenuOpen(false)}>
-                    Economia
+                    Economía
                   </Link>
                   <button type="button" onClick={() => void handleSignOut()}>
-                    Cerrar sesion
+                    Cerrar sesión
                   </button>
                 </div>
               ) : null}
@@ -186,7 +186,7 @@ export default function PublicHeader() {
           ) : (
             <>
               <Link href="/login" className="pw-btn-secondary pw-navbar-action">
-                Iniciar sesion
+                Iniciar sesión
               </Link>
               <Link href="/register" className="pw-btn-primary pw-navbar-action">
                 Crear cuenta
@@ -197,7 +197,7 @@ export default function PublicHeader() {
 
         <div className="pw-navbar-mobile-actions">
           <Link href={isAuthenticated ? "/dashboard" : "/login"} className="pw-btn-secondary">
-            {isAuthenticated ? "Dashboard" : "Sesion"}
+            {isAuthenticated ? "Dashboard" : "Sesión"}
           </Link>
           {!isAuthenticated ? (
             <Link href="/register" className="pw-btn-primary">

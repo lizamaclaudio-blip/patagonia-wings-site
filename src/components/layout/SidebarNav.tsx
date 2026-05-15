@@ -9,7 +9,7 @@ const navItems = [
   { href: "/dashboard?tab=dispatch", label: "Despacho", tag: "OFP" },
   { href: "/profile", label: "Perfil piloto", tag: "DATA" },
   { href: "/certifications", label: "Habilitaciones", tag: "QUAL" },
-  { href: "/economia", label: "Economia", tag: "FIN" },
+  { href: "/economia", label: "Economía", tag: "FIN" },
   { href: "/routes", label: "Rutas", tag: "NET" },
 ];
 
@@ -25,7 +25,7 @@ export function SidebarNav() {
           <div className="panel-chip">Patagonia Sky Premium</div>
           <h2 className="header-strip mt-4 text-2xl font-semibold">Operations Center</h2>
           <p className="mt-3 text-sm leading-6">
-            Oficina clara para despacho, rutas, perfil, economia y progreso operacional.
+            Oficina clara para despacho, rutas, perfil, economía y progreso operacional.
           </p>
         </div>
       </div>
@@ -67,7 +67,7 @@ export function SidebarNav() {
           </span>
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          Navegacion unificada para la operacion diaria de Patagonia Wings.
+          Navegación unificada para la operación diaria de Patagonia Wings.
         </p>
       </div>
     </aside>

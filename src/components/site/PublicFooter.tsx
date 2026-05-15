@@ -53,8 +53,8 @@ export default function PublicFooter() {
               className="h-auto w-[178px] object-contain"
             />
             <p>
-              Aerolinea virtual con base en la Patagonia, creada para pilotos que buscan realismo,
-              operacion y comunidad.
+              Aerolínea virtual con base en la Patagonia, creada para pilotos que buscan realismo,
+              operación y comunidad.
             </p>
             <div className="pw-footer-social" aria-label="Canales sociales">
               <span>Discord</span>
@@ -86,7 +86,7 @@ export default function PublicFooter() {
 
         <div className="pw-footer-bottom">
           <span>(c) 2026 Patagonia Wings. Todos los derechos reservados.</span>
-          <span>Hecho para operaciones virtuales serias en Sudamerica.</span>
+          <span>Hecho para operaciones virtuales serias en Sudamérica.</span>
         </div>
       </div>
     </footer>

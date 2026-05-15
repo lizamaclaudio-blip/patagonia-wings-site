@@ -725,7 +725,7 @@ export default function PilotOfficePanel({
                 <span className="text-sm font-semibold text-[#67d7ff]">{nextRankName}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
-                <span className="text-sm text-white/50">Score ultimos 10</span>
+                <span className="text-sm text-white/50">Score últimos 10</span>
                 <span className="text-sm font-semibold text-white">{formatNumber(last10Score, 1)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-3">
@@ -751,7 +751,7 @@ export default function PilotOfficePanel({
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="rounded-[22px] border border-white/8 bg-white/[0.035] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Escalon actual</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Escalón actual</p>
               <p className="mt-3 text-3xl font-semibold text-white">{currentRankName}</p>
               <p className="mt-3 text-sm leading-6 text-white/55">{rpcCurrentRank?.description ?? localProgress.currentRank.description}</p>
             </div>
@@ -999,7 +999,7 @@ export default function PilotOfficePanel({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-white">{asString(course.title, asString(course.code))}</p>
-                      <p className="mt-1 text-xs text-white/42">Aprobacion minima: {formatNumber(course.passing_score)}%</p>
+                      <p className="mt-1 text-xs text-white/42">Aprobación mínima: {formatNumber(course.passing_score)}%</p>
                     </div>
                     <StatusPill status={course.status} />
                   </div>
@@ -1009,7 +1009,7 @@ export default function PilotOfficePanel({
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/55">No hay cursos teoricos cargados o disponibles para este piloto.</p>
+              <p className="text-sm text-white/55">No hay cursos teóricos cargados o disponibles para este piloto.</p>
             )}
           </div>
         </SurfaceCard>

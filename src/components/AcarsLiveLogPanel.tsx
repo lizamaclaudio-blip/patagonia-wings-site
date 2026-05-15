@@ -136,7 +136,7 @@ export function AcarsLiveLogPanel({ reservationId, isActive }: Props) {
   const connected = data?.hasLiveData && !stale;
 
   return (
-    <div className="mt-4 rounded-xl border border-blue-900/40 bg-[#0c1929] p-4">
+    <div className="acars-live-log mt-4 rounded-xl border border-blue-900/40 bg-[#0c1929] p-4" data-console="true">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[11px] font-bold tracking-widest text-blue-300 uppercase">
           Log ACARS en vivo

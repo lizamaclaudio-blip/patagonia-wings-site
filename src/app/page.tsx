@@ -14,8 +14,8 @@ const operationSteps = [
     icon: "☑",
   },
   {
-    title: "Despacha tu operacion",
-    text: "Genera o carga tu OFP y valida la planificacion antes del manifiesto.",
+    title: "Despacha tu operación",
+    text: "Genera o carga tu OFP y valida la planificación antes del manifiesto.",
     icon: "□",
   },
   {
@@ -25,7 +25,7 @@ const operationSteps = [
   },
   {
     title: "Vuela Patagonia Wings",
-    text: "Completa tu operacion, envia tu PIREP y revisa tu resumen de vuelo.",
+    text: "Completa tu operación, envía tu PIREP y revisa tu resumen de vuelo.",
     icon: "✈",
   },
 ];
@@ -33,7 +33,7 @@ const operationSteps = [
 const integrations = [
   {
     title: "Navigraph",
-    text: "Cartas, AIRAC y planificacion profesional.",
+    text: "Cartas, AIRAC y planificación profesional.",
     badge: "Integrado",
     badgeTone: "success",
     image: "/partners/navigraph-official-horizontal.png",
@@ -56,7 +56,7 @@ const integrations = [
   },
   {
     title: "Cobertura Regional",
-    text: "Operaciones por la Patagonia y Sudamerica.",
+    text: "Operaciones por la Patagonia y Sudamérica.",
     badge: "Activa",
     badgeTone: "success",
     flags: ["CL", "AR", "BR", "UY"],
@@ -80,9 +80,9 @@ const integrations = [
 const lowerCards = [
   {
     title: "Nuevos pilotos",
-    text: "Comienza tu aventura en la aviacion virtual con apoyo de nuestra comunidad.",
+    text: "Comienza tu aventura en la aviación virtual con apoyo de nuestra comunidad.",
     href: "/register",
-    link: "Mas informacion",
+    link: "Más información",
     icon: "◎",
   },
   {
@@ -108,14 +108,14 @@ const lowerCards = [
   },
   {
     title: "Descarga ACARS",
-    text: `Version actual ${ACARS_VERSION}, preparada para MSFS 2020/2024.`,
+    text: `Versión actual ${ACARS_VERSION}, preparada para MSFS 2020/2024.`,
     href: "#descargas",
     link: "Descargar cliente",
     icon: "⇩",
   },
   {
     title: "Estado de servicios",
-    text: "Integraciones y operacion web listas para apertura controlada.",
+    text: "Integraciones y operación web listas para apertura controlada.",
     href: "#integraciones",
     link: "Ver integraciones",
     icon: "◷",
@@ -133,7 +133,7 @@ const flagNames: Record<string, string> = {
   BO: "Bolivia",
   BR: "Brasil",
   CL: "Chile",
-  PE: "Peru",
+  PE: "Perú",
   UY: "Uruguay",
 };
 
@@ -168,11 +168,11 @@ export default async function HomePage() {
         <PublicHeader />
         <div className="pw-container pw-hero-inner">
           <div className="pw-hero-copy">
-            <Badge tone="info">Apertura proximamente</Badge>
+            <Badge tone="info">Apertura próximamente</Badge>
             <p className="pw-eyebrow">Patagonia Wings</p>
-            <h1>Tu conexion aerea en la Patagonia</h1>
+            <h1>Tu conexión aérea en la Patagonia</h1>
             <p className="pw-hero-subtitle">
-              Unete a nuestra red virtual y disfruta de vuelos realistas, operaciones profesionales y
+              Únete a nuestra red virtual y disfruta de vuelos realistas, operaciones profesionales y
               una comunidad preparada para volar.
             </p>
             <div className="pw-hero-actions">
@@ -199,7 +199,7 @@ export default async function HomePage() {
       <section id="vuela" className="pw-section">
         <div className="pw-section-title">
           <p>Vuela con nosotros</p>
-          <h2>Tu operacion en cuatro simples pasos</h2>
+          <h2>Tu operación en cuatro simples pasos</h2>
         </div>
         <div className="pw-container pw-flow-grid">
           {operationSteps.map((step, index) => (
@@ -278,8 +278,8 @@ export default async function HomePage() {
             <Badge tone="success">Instalador oficial</Badge>
             <h2>ACARS Patagonia Wings</h2>
             <p>
-              Cliente oficial para MSFS 2020/2024 con telemetria, seguimiento de vuelo, PIREP y
-              sincronizacion operacional.
+              Cliente oficial para MSFS 2020/2024 con telemetría, seguimiento de vuelo, PIREP y
+              sincronización operacional.
             </p>
             <div className="pw-download-actions">
               <a href={ACARS_DOWNLOAD_URL} className="pw-btn-primary">
