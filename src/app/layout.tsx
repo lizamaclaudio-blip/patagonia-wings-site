@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="grid-overlay ui-light-windows min-h-screen" suppressHydrationWarning>
+      <body className="pw-sky-site grid-overlay ui-light-windows min-h-screen" suppressHydrationWarning>
         {children}
       </body>
     </html>

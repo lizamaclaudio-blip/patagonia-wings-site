@@ -6,29 +6,60 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/browser";
 
-const navItems = [
+type NavItem = {
+  href?: string;
+  label: string;
+  items?: Array<{ href: string; label: string }>;
+};
+
+const navItems: NavItem[] = [
   { href: "/#inicio", label: "Inicio" },
+  { href: "/#vuela", label: "Vuela con nosotros" },
+  {
+    label: "Operaciones",
+    items: [
+      { href: "/dashboard?tab=dispatch", label: "Despacho" },
+      { href: "/dashboard", label: "Vuelos en curso" },
+      { href: "/profile?view=economia", label: "Historial" },
+      { href: "/#descargas", label: "ACARS" },
+    ],
+  },
+  { href: "/#flota", label: "Flota" },
   { href: "/routes", label: "Rutas" },
-  { href: "/economia", label: "Economía" },
-  { href: "/#descargas", label: "Descargas" },
+  {
+    label: "Recursos",
+    items: [
+      { href: "/dashboard?tab=dispatch", label: "SimBrief" },
+      { href: "/profile?view=perfil", label: "Navigraph" },
+      { href: "/dashboard?tab=dispatch", label: "Route Finder" },
+      { href: "/#descargas", label: "Descargas" },
+      { href: "/#servicios", label: "Estado de servicios" },
+    ],
+  },
+  {
+    label: "Comunidad",
+    items: [
+      { href: "/profile", label: "Pilotos" },
+      { href: "/dashboard?tab=training", label: "Eventos" },
+      { href: "/#aliados", label: "Aliados" },
+    ],
+  },
+  { href: "/#nosotros", label: "Acerca de" },
 ];
 
-function isPublicNavActive(pathname: string, href: string) {
-  if (href === "/#inicio") return pathname === "/";
-  if (href.startsWith("/#")) return false;
-  if (href.includes("#")) return pathname === href.split("#")[0];
-  return pathname === href;
+function isPublicNavActive(pathname: string, item: NavItem) {
+  if (item.href === "/#inicio") return pathname === "/";
+  if (!item.href || item.href.startsWith("/#")) return false;
+  return pathname === item.href.split("?")[0];
 }
 
 export default function PublicHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Detect auth state
   useEffect(() => {
     let isMounted = true;
 
@@ -46,13 +77,11 @@ export default function PublicHeader() {
     };
   }, []);
 
-  // Close dropdown on navigation
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setMenuOpen(false));
     return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!dropdownRef.current?.contains(event.target as Node)) {
@@ -71,122 +100,111 @@ export default function PublicHeader() {
   }
 
   return (
-    <header className="public-site-header parallax-nav flex items-center justify-between gap-4 overflow-visible rounded-[30px] px-5 py-4 lg:px-8 lg:py-5">
+    <header className="pw-navbar">
+      <div className="pw-navbar-inner">
+        <Link href={isAuthenticated ? "/dashboard" : "/"} className="pw-navbar-brand" aria-label="Patagonia Wings">
+          <Image
+            src="/branding/patagonia-logo.png"
+            alt="Patagonia Wings"
+            width={52}
+            height={52}
+            className="pw-navbar-logo"
+            priority
+          />
+          <span className="pw-navbar-wordmark">
+            <strong>Patagonia</strong>
+            <span>Wings</span>
+          </span>
+        </Link>
 
-      {/* Logo */}
-      <Link href={isAuthenticated ? "/dashboard" : "/"} className="relative z-10 -my-4 shrink-0 py-1">
-        <Image
-          src="/branding/patagonia-logo.png"
-          alt="Patagonia Wings"
-          width={96}
-          height={96}
-          className="public-header-logo h-14 w-14 object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.32)] lg:h-[72px] lg:w-[72px]"
-          priority
-        />
-      </Link>
+        <nav className="pw-navbar-nav" aria-label="Navegacion principal">
+          {navItems.map((item) => {
+            const active = isPublicNavActive(pathname, item);
+            if (item.items?.length) {
+              return (
+                <div key={item.label} className="pw-navbar-menu">
+                  <button type="button" className="pw-navbar-link" aria-haspopup="true">
+                    {item.label}
+                    <span aria-hidden>v</span>
+                  </button>
+                  <div className="pw-navbar-dropdown">
+                    {item.items.map((subitem) => (
+                      <Link key={`${item.label}-${subitem.href}-${subitem.label}`} href={subitem.href}>
+                        {subitem.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
 
-      {/* Nav links */}
-      <nav className="public-header-nav hidden items-center text-base font-semibold tracking-[0.02em] text-white/94 lg:flex xl:text-[17px]">
-        {navItems.map((item) => {
-          const active = isPublicNavActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`parallax-link transition ${active ? "active text-emerald-300" : "text-white/94"}`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+            return (
+              <Link
+                key={item.href}
+                href={item.href ?? "/"}
+                className={`pw-navbar-link ${active ? "is-active" : ""}`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      <div className="flex items-center gap-2 lg:hidden">
-        {isAuthenticated ? (
-          <Link href="/dashboard" className="parallax-login-button px-4 py-2.5 text-xs">
-            Dashboard
+        <div className="pw-navbar-actions" ref={dropdownRef}>
+          {isAuthenticated ? (
+            <>
+              <Link href="/dashboard" className="pw-btn-primary pw-navbar-action">
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                aria-label="Mas opciones"
+                className="pw-btn-secondary pw-navbar-more"
+                onClick={() => setMenuOpen((value) => !value)}
+              >
+                <span className={menuOpen ? "rotate-180" : ""} aria-hidden>
+                  v
+                </span>
+              </button>
+              {menuOpen ? (
+                <div className="pw-account-menu">
+                  <Link href="/profile?view=perfil" onClick={() => setMenuOpen(false)}>
+                    Mi perfil
+                  </Link>
+                  <Link href="/dashboard?tab=dispatch" onClick={() => setMenuOpen(false)}>
+                    Despacho
+                  </Link>
+                  <Link href="/economia" onClick={() => setMenuOpen(false)}>
+                    Economia
+                  </Link>
+                  <button type="button" onClick={() => void handleSignOut()}>
+                    Cerrar sesion
+                  </button>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="pw-btn-secondary pw-navbar-action">
+                Iniciar sesion
+              </Link>
+              <Link href="/register" className="pw-btn-primary pw-navbar-action">
+                Crear cuenta
+              </Link>
+            </>
+          )}
+        </div>
+
+        <div className="pw-navbar-mobile-actions">
+          <Link href={isAuthenticated ? "/dashboard" : "/login"} className="pw-btn-secondary">
+            {isAuthenticated ? "Dashboard" : "Sesion"}
           </Link>
-        ) : (
-          <>
-            <Link href="/login" className="button-ghost px-3 py-2.5 text-xs">
-              Login
+          {!isAuthenticated ? (
+            <Link href="/register" className="pw-btn-primary">
+              Cuenta
             </Link>
-            <Link href="/register" className="parallax-login-button px-3 py-2.5 text-xs">
-              Registro
-            </Link>
-          </>
-        )}
-      </div>
-
-      {/* Right-side buttons */}
-      <div className="public-header-actions hidden min-h-[48px] items-center justify-end lg:flex lg:min-w-[220px] lg:gap-3">
-
-        {isAuthenticated ? (
-          /* LOGGED IN: dropdown with direct "Dashboard" as primary action */
-          <div className="relative flex items-center gap-2" ref={dropdownRef}>
-            {/* Direct dashboard link */}
-            <Link href="/dashboard" className="parallax-login-button px-6 py-3 text-sm">
-              Dashboard
-            </Link>
-
-            {/* Chevron button for extra options */}
-            <button
-              type="button"
-              aria-label="Más opciones"
-              className="parallax-account-button px-3 py-3 text-sm"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <span className={`inline-block text-xs transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}>v</span>
-            </button>
-
-            {/* Dropdown */}
-            {menuOpen && (
-              <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-60 rounded-[24px] border border-white/12 bg-[linear-gradient(180deg,rgba(8,23,46,0.97),rgba(5,17,33,0.98))] p-3 shadow-[0_18px_60px_rgba(0,0,0,0.36)] backdrop-blur-xl">
-                <Link
-                  href="/profile?view=perfil"
-                  className="flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Mi perfil
-                </Link>
-                <Link
-                  href="/dashboard?tab=dispatch"
-                  className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Despacho
-                </Link>
-                <Link
-                  href="/economia"
-                  className="mt-1 flex rounded-2xl px-4 py-3 text-sm font-semibold text-white/88 transition hover:bg-white/[0.07]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Economía
-                </Link>
-
-                <div className="my-2 border-t border-white/[0.07]" />
-                <button
-                  type="button"
-                  onClick={() => void handleSignOut()}
-                  className="flex w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-rose-300 transition hover:bg-rose-400/10"
-                >
-                  Cerrar sesión
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* NOT LOGGED IN: always show both buttons */
-          <>
-            <Link href="/login" className="button-ghost px-5 py-3 text-sm">
-              Iniciar sesión
-            </Link>
-
-            <Link href="/register" className="parallax-login-button px-6 py-3 text-sm">
-              Crear cuenta
-            </Link>
-          </>
-        )}
+          ) : null}
+        </div>
       </div>
     </header>
   );

@@ -134,19 +134,25 @@ export default function HomeStatsBar({ initialStats = FALLBACK_HOME_STATS }: Hom
     };
   }, []);
 
+  const icons: Record<string, string> = {
+    routes: "⌁",
+    destinations: "⌖",
+    aircraft: "✈",
+    types: "▦",
+    todayFlights: "◷",
+  };
+
   return (
-    <div className="parallax-stats grid gap-0 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(4,21,44,0.78)] backdrop-blur-md md:grid-cols-5">
+    <div className="pw-stats-strip">
       {stats.map((item, index) => (
-        <div
-          key={item.key}
-          className={`flex min-h-[132px] flex-col items-center justify-center px-6 py-7 text-center ${
-            index !== stats.length - 1 ? "md:border-r md:border-r-white/16" : ""
-          }`}
-        >
-          <span className="text-[52px] font-semibold leading-none tracking-[-0.04em] text-emerald-300 sm:text-[58px]">
+        <div key={item.key} className={`pw-stat-item ${index !== stats.length - 1 ? "has-separator" : ""}`}>
+          <span className="pw-stat-icon" aria-hidden>
+            {icons[item.key] ?? "•"}
+          </span>
+          <span className="pw-stat-value">
             <AnimatedStatValue value={item.value} />
           </span>
-          <span className="mt-2 text-[26px] font-medium text-white/90">{item.label}</span>
+          <span className="pw-stat-label">{item.label}</span>
         </div>
       ))}
     </div>

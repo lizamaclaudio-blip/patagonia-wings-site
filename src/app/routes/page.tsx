@@ -115,22 +115,22 @@ function normalizeCategory(rawCategory: unknown, distanceNm: number, serviceProf
 
 function fixMojibake(value: string): string {
   return value
-    .replaceAll("Ã¡", "á")
-    .replaceAll("Ã©", "é")
-    .replaceAll("Ã­", "í")
-    .replaceAll("Ã³", "ó")
-    .replaceAll("Ãº", "ú")
-    .replaceAll("Ã±", "ñ")
-    .replaceAll("Ã", "Á")
-    .replaceAll("Ã‰", "É")
-    .replaceAll("Ã", "Í")
-    .replaceAll("Ã“", "Ó")
-    .replaceAll("Ãš", "Ú")
-    .replaceAll("Ã‘", "Ñ")
-    .replaceAll("Â·", "·")
-    .replaceAll("â†’", "→")
-    .replaceAll("â€“", "–")
-    .replaceAll("â€”", "—");
+    .replaceAll("\u00c3\u00a1", "á")
+    .replaceAll("\u00c3\u00a9", "é")
+    .replaceAll("\u00c3\u00ad", "í")
+    .replaceAll("\u00c3\u00b3", "ó")
+    .replaceAll("\u00c3\u00ba", "ú")
+    .replaceAll("\u00c3\u00b1", "ñ")
+    .replaceAll("\u00c3\u0081", "Á")
+    .replaceAll("\u00c3\u0089", "É")
+    .replaceAll("\u00c3\u008d", "Í")
+    .replaceAll("\u00c3\u0093", "Ó")
+    .replaceAll("\u00c3\u009a", "Ú")
+    .replaceAll("\u00c3\u0091", "Ñ")
+    .replaceAll("\u00c2\u00b7", "·")
+    .replaceAll("\u00e2\u2020\u2019", "→")
+    .replaceAll("\u00e2\u20ac\u201c", "–")
+    .replaceAll("\u00e2\u20ac\u201d", "—");
 }
 
 function toCleanText(v: unknown): string {

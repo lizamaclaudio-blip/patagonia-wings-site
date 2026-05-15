@@ -1416,7 +1416,7 @@ export function isAircraftCompatibleWithRoute(
   return allowed.includes(cat);
 }
 
-// Mapa aircraft_type_code â†’ category (sincronizado con tabla aircraft_types de Supabase)
+// Mapa aircraft_type_code -> category (sincronizado con tabla aircraft_types de Supabase)
 const AIRCRAFT_TYPE_CATEGORY: Record<string, string> = {
   C208: "single_turboprop", TBM9: "single_turboprop", TBM8: "single_turboprop",
   B350: "twin_turboprop", ATR72: "twin_turboprop",
@@ -2113,7 +2113,7 @@ export async function getActiveFlightReservation(profile: PilotProfileRecord) {
     if (!firstRow) return null;
     return mapLegacyReservationFromRpc(firstRow, profile);
   } catch (rpcError) {
-    // flight_reservations no tiene columna pilot_id â€” solo pilot_callsign.
+    // flight_reservations no tiene columna pilot_id; solo pilot_callsign.
     const attempts = [
       supabase
         .from("flight_reservations")

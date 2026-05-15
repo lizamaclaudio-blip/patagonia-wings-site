@@ -295,9 +295,9 @@ function scoreLabel(value: unknown, noEvaluable = false) {
 function scoreStars(value: unknown, noEvaluable = false) {
   if (noEvaluable) return "—";
   const number = asNumber(value);
-  if (number >= 110) return "â˜…â˜…â˜…";
-  if (number >= 85) return "â˜…â˜…";
-  if (number > 0) return "â˜…";
+  if (number >= 110) return "***";
+  if (number >= 85) return "**";
+  if (number > 0) return "*";
   return "—";
 }
 
@@ -498,13 +498,13 @@ function EvaluationBlock({ title, score, label, stars, description, groups, noEv
         {groups.map((group) => (
           <details key={group.title} className="rounded-[20px] border border-white/10 bg-black/15 px-5 py-4">
             <summary className="cursor-pointer list-none text-sm font-semibold text-white">
-              <span className="mr-2 text-white/45">ï¼‹</span>{group.title} <strong className={group.positive ? "text-emerald-300" : "text-sky-200"}>{group.score}</strong>
+              <span className="mr-2 text-white/45">+</span>{group.title} <strong className={group.positive ? "text-emerald-300" : "text-sky-200"}>{group.score}</strong>
             </summary>
             <div className="mt-4 space-y-4">
               {group.items.length ? group.items.slice(0, 12).map((item, index) => (
                 <div key={`${group.title}-${itemTitle(item)}-${index}`} className="grid gap-2 border-t border-white/8 pt-3 md:grid-cols-[1fr_96px]">
                   <div>
-                    <p className="text-sm font-semibold text-white">â€¢ {itemTitle(item)}</p>
+                    <p className="text-sm font-semibold text-white">- {itemTitle(item)}</p>
                     <p className="mt-1 text-xs italic leading-6 text-white/58">{itemDescription(item)}</p>
                   </div>
                   <p className={`text-sm font-semibold ${group.positive ? "text-emerald-300" : "text-sky-200"}`}>{itemPoints(item, group.positive ? "positive" : "negative")}</p>
@@ -1231,7 +1231,7 @@ function FlightResultContent() {
                 rows={[[
                   { label: "XML", value: `${pirepPerfect.rawXmlLength} chars`, tone: "text-emerald-200" },
                   { label: "Schema", value: pirepPerfect.schemaVersion || "PIREP legacy" },
-                  { label: "Ruta", value: `${originIdent} â†’ ${destinationIdent}` },
+                  { label: "Ruta", value: `${originIdent} -> ${destinationIdent}` },
                   { label: "Avión", value: aircraftDisplay },
                   { label: "Matrícula", value: aircraftRegistration },
                   { label: "Perfil/Add-on", value: pirepPerfect.addonProvider || "N/D" },
@@ -1271,7 +1271,7 @@ function FlightResultContent() {
               <InfoTable
                 columns={["Fases observadas", "Acceptance", "Eventos", "Unsupported", "MSL máx", "AGL máx", "Acción"]}
                 rows={[[
-                  { label: "Fases observadas", value: d5ObservedPhases.length ? d5ObservedPhases.join(" â†’ ") : "N/D", tone: d5ObservedPhases.length ? "text-emerald-200" : "text-amber-200" },
+                  { label: "Fases observadas", value: d5ObservedPhases.length ? d5ObservedPhases.join(" -> ") : "N/D", tone: d5ObservedPhases.length ? "text-emerald-200" : "text-amber-200" },
                   { label: "Acceptance", value: `${pirepPerfect.phaseAcceptanceMatrix.length || phaseAcceptancePayload.length} fases` },
                   { label: "Eventos", value: `${pirepPerfect.eventTimeline.length}` },
                   { label: "Unsupported", value: `${pirepPerfect.unsupportedEvents.length}`, tone: pirepPerfect.unsupportedEvents.length ? "text-amber-200" : "text-emerald-200" },
@@ -1284,7 +1284,7 @@ function FlightResultContent() {
               <div className="mt-4 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Checklist D5 para prueba final</p>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
-                  {d5ActionItems.map((item) => <li key={item}>â€¢ {item}</li>)}
+                  {d5ActionItems.map((item) => <li key={item}>- {item}</li>)}
                 </ul>
               </div>
 
@@ -1389,7 +1389,7 @@ function FlightResultContent() {
                 <div className="mt-6 rounded-[22px] border border-white/10 bg-black/15 px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Notas del parser</p>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-white/70">
-                    {pirepPerfect.notes.map((note) => <li key={note}>â€¢ {note}</li>)}
+                    {pirepPerfect.notes.map((note) => <li key={note}>- {note}</li>)}
                   </ul>
                 </div>
               ) : null}
@@ -1521,7 +1521,7 @@ function FlightResultContent() {
           <section className="glass-panel rounded-[30px] p-7">
             <SurHeading icon="🧑‍✈️" label="Feedback del" strong="Jefe de Flota" />
             <div className="rounded-[22px] border-l-4 border-emerald-300/60 bg-emerald-300/8 px-5 py-5">
-              <p className="text-sm italic leading-8 text-white/80">â€œ{jefeFlotaFeedback}â€</p>
+              <p className="text-sm italic leading-8 text-white/80">&quot;{jefeFlotaFeedback}&quot;</p>
             </div>
           </section>
 
@@ -1641,7 +1641,7 @@ function FlightResultContent() {
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-100/90">Motivo de no evaluación</p>
                 {closeoutWarnings.length ? (
                   <ul className="mt-2 space-y-1 text-sm text-rose-100/85">
-                    {closeoutWarnings.map((warning) => <li key={warning}>â€¢ {warning}</li>)}
+                    {closeoutWarnings.map((warning) => <li key={warning}>- {warning}</li>)}
                   </ul>
                 ) : (
                   <p className="mt-2 text-sm text-rose-100/85">No hay evidencia mínima de vuelo suficiente para aplicar reglaje/economía.</p>

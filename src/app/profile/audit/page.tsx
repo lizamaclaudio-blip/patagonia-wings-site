@@ -233,7 +233,7 @@ function AuditContent() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/56">Reglas vigentes</p>
                   <div className="mt-4 space-y-3 text-sm leading-7 text-white/82">
                     {section.rules.map((rule) => (
-                      <p key={rule}>â€¢ {rule}</p>
+                      <p key={rule}>- {rule}</p>
                     ))}
                   </div>
                 </div>

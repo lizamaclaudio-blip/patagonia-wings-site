@@ -1,132 +1,154 @@
-﻿import Link from "next/link";
-import HomeFleetShowcase from "@/components/site/HomeFleetShowcase";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import HomeStatsBar from "@/components/site/HomeStatsBar";
+import PublicFooter from "@/components/site/PublicFooter";
 import PublicHeader from "@/components/site/PublicHeader";
 import { FALLBACK_HOME_STATS, loadHomeStatsFromSupabase } from "@/lib/home-stats";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ACARS_VERSION, ACARS_BACKEND, ACARS_RELEASE_NOTES, ACARS_DOWNLOAD_URL } from "@/lib/acars-version";
 
-const services = [
+const operationSteps = [
   {
-    icon: "🛫",
-    title: "Itinerarios oficiales",
-    text: "Vuela rutas activas de la red Patagonia Wings con aeronaves compatibles, reservas y control operacional desde la web.",
+    title: "Planifica tu vuelo",
+    text: "Prepara tu ruta con herramientas profesionales y consulta clima, flota y destino.",
+    icon: "☑",
   },
   {
-    icon: "📋",
-    title: "Despacho + SimBrief",
-    text: "Prepara el OFP con datos prellenados, integración Navigraph / SimBrief y validación antes de enviar el vuelo a ACARS.",
+    title: "Despacha tu operacion",
+    text: "Genera o carga tu OFP y valida la planificacion antes del manifiesto.",
+    icon: "□",
   },
   {
-    icon: "💸",
-    title: "Economía operacional",
-    text: "Revisa ingresos, costos, combustible, comisiones y rentabilidad estimada antes de operar cada vuelo.",
+    title: "Conecta ACARS",
+    text: "Vincula tu simulador con Patagonia Wings para seguimiento en tiempo real.",
+    icon: "⌁",
   },
   {
-    icon: "👨‍✈️",
-    title: "Perfil y progresión",
-    text: "Sigue horas, rango, billetera, habilitaciones y estado del piloto en una experiencia conectada con la operación real.",
-  },
-];
-
-const integrationPoints = [
-  "El despacho abre SimBrief con origen, destino, aeronave y vuelo preconfigurados.",
-  "Necesitas suscripción activa de Navigraph para operar el flujo OFP completo.",
-  "Tras generar el OFP, vuelves a Patagonia Wings para validarlo y enviarlo a ACARS.",
-];
-
-const heroPoints = [
-  {
-    title: "Suscripción requerida",
-    text: "El flujo OFP integrado requiere Navigraph activo.",
-  },
-  {
-    title: "Usuario vinculado",
-    text: "Registra tu usuario Navigraph/SimBrief al crear cuenta para acelerar despacho.",
+    title: "Vuela Patagonia Wings",
+    text: "Completa tu operacion, envia tu PIREP y revisa tu resumen de vuelo.",
+    icon: "✈",
   },
 ];
 
-const faqItems = [
+const integrations = [
   {
-    q: "¿Necesito Navigraph para volar?",
-    a: "Para usar el flujo OFP integrado sí. Si no, puedes operar con el flujo web estándar según disponibilidad.",
+    title: "Navigraph",
+    text: "Cartas, AIRAC y planificacion profesional.",
+    badge: "Integrado",
+    badgeTone: "success",
+    image: "/partners/navigraph-official-horizontal.png",
+    featured: true,
   },
   {
-    q: "¿Qué pasa después de generar el OFP?",
-    a: "Patagonia Wings valida el plan y lo deja listo para ACARS sin cambiar tu flujo operativo actual.",
+    title: "SimBrief",
+    text: "OFP, plan de vuelo y despacho integrado.",
+    badge: "Integrado",
+    badgeTone: "success",
+    image: "/partners/simbrief-by-navigraph-official.png",
+    featured: true,
   },
   {
-    q: "¿ACARS se descarga desde aquí?",
-    a: "Sí. En la sección Descargas está el instalador oficial estable para MSFS 2020/2024.",
+    title: "Route Finder",
+    text: "Explora rutas, aprende rutas utilizadas y encuentra nuevos destinos.",
+    badge: "Activo",
+    badgeTone: "info",
+    icon: "⌖",
+  },
+  {
+    title: "Cobertura Regional",
+    text: "Operaciones por la Patagonia y Sudamerica.",
+    badge: "Activa",
+    badgeTone: "success",
+    flags: ["CL", "AR", "BR", "UY"],
+  },
+  {
+    title: "ACARS",
+    text: "Seguimiento en tiempo real y reportes automaticos.",
+    badge: "Integrado",
+    badgeTone: "success",
+    icon: "⌁",
+  },
+  {
+    title: "Banderas y paises",
+    text: "Identificacion clara de aeropuertos, paises y red regional.",
+    badge: "Activo",
+    badgeTone: "info",
+    flags: ["CL", "AR", "PE", "BO"],
   },
 ];
 
-function OfficialIntegrationLogos({ compact = false }: { compact?: boolean }) {
-  return (
-    <div
-      className={compact ? "flex w-full flex-col items-center justify-center gap-7" : "flex flex-wrap items-center justify-start gap-x-6 gap-y-4"}
-    >
-      <img
-        src="/partners/navigraph-official-horizontal.png"
-        alt="Navigraph"
-        className={compact ? "h-[72px] w-auto max-w-full object-contain sm:h-[88px] lg:h-[104px]" : "h-14 w-auto object-contain sm:h-16 lg:h-[72px]"}
-      />
+const lowerCards = [
+  {
+    title: "Nuevos pilotos",
+    text: "Comienza tu aventura en la aviacion virtual con apoyo de nuestra comunidad.",
+    href: "/register",
+    link: "Mas informacion",
+    icon: "◎",
+  },
+  {
+    title: "Vuelos en curso",
+    text: "Sigue vuelos en tiempo real de nuestros pilotos conectados.",
+    href: "/dashboard",
+    link: "Ver vuelos en curso",
+    icon: "✈",
+  },
+  {
+    title: "Destinos destacados",
+    text: "Descubre los aeropuertos mas visitados de nuestra red.",
+    href: "/routes",
+    link: "Explorar destinos",
+    icon: "⌖",
+  },
+  {
+    title: "Ranking y comunidad",
+    text: "Progresion, habilitaciones y actividad mensual en un solo perfil.",
+    href: "/profile",
+    link: "Ver perfil piloto",
+    icon: "▦",
+  },
+  {
+    title: "Descarga ACARS",
+    text: `Version actual ${ACARS_VERSION}, preparada para MSFS 2020/2024.`,
+    href: "#descargas",
+    link: "Descargar cliente",
+    icon: "⇩",
+  },
+  {
+    title: "Estado de servicios",
+    text: "Integraciones y operacion web listas para apertura controlada.",
+    href: "#integraciones",
+    link: "Ver integraciones",
+    icon: "◷",
+  },
+];
 
-      <img
-        src="/partners/simbrief-by-navigraph-official.png"
-        alt="SimBrief by Navigraph"
-        className={compact ? "h-[62px] w-auto max-w-full object-contain sm:h-[76px] lg:h-[90px]" : "h-12 w-auto object-contain sm:h-14 lg:h-16"}
-      />
-    </div>
-  );
+const partnerLogos = [
+  { src: "/partners/navigraph-official-horizontal.png", alt: "Navigraph" },
+  { src: "/partners/simbrief-by-navigraph-official.png", alt: "SimBrief by Navigraph" },
+  { src: "/partners/sayintentions-logo.png", alt: "SayIntentions.AI" },
+];
+
+const flagNames: Record<string, string> = {
+  AR: "Argentina",
+  BO: "Bolivia",
+  BR: "Brasil",
+  CL: "Chile",
+  PE: "Peru",
+  UY: "Uruguay",
+};
+
+function Badge({ tone, children }: { tone: string; children: ReactNode }) {
+  return <span className={`pw-badge pw-badge-${tone}`}>{children}</span>;
 }
 
-function HeroIntegrationCard() {
+function CountryFlagRow({ flags }: { flags: string[] }) {
   return (
-    <div className="home-integration-card w-full max-w-[520px] lg:ml-auto">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.38em] text-cyan-200/72">
-        Integración oficial
-      </p>
-
-      <div className="mt-8 space-y-7">
-        <div>
-          <img
-            src="/partners/navigraph-official-horizontal.png"
-            alt="Navigraph"
-            className="home-logo-navigraph h-16 w-auto object-contain sm:h-[74px] lg:h-[84px]"
-          />
-          <p className="mt-3 text-[15px] leading-7 text-white/72 sm:text-base">
-            Cartas, AIRAC y planificación profesional
-          </p>
-        </div>
-
-        <div className="h-px w-full bg-gradient-to-r from-white/20 via-white/8 to-transparent" />
-
-        <div>
-          <img
-            src="/partners/simbrief-by-navigraph-official.png"
-            alt="SimBrief by Navigraph"
-            className="home-logo-simbrief h-[64px] w-auto max-w-full object-contain sm:h-[76px] lg:h-[88px]"
-          />
-          <p className="mt-3 text-[15px] leading-7 text-white/72 sm:text-base">
-            OFP, plan de vuelo y despacho integrado
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-8 space-y-6">
-        {heroPoints.map((item) => (
-          <div key={item.title} className="flex items-start gap-4">
-            <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-300/28 bg-emerald-400/10 text-sm font-semibold text-emerald-200">
-              ✓
-            </span>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-cyan-100/82">{item.title}</p>
-              <p className="mt-2 text-[15px] leading-7 text-white/76 sm:text-[16px]">{item.text}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="pw-flag-row">
+      {flags.map((flag) => (
+        <span key={flag} title={flagNames[flag] ?? flag} className="pw-country-flag">
+          {flag}
+        </span>
+      ))}
     </div>
   );
 }
@@ -141,473 +163,195 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="home-light text-slate-900">
-      <section className="parallax-hero relative min-h-screen overflow-hidden">
-        <div className="parallax-bg" />
-        <div className="parallax-wing" />
-        <div className="parallax-overlay" />
-        <div className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(circle_at_16%_30%,rgba(8,108,162,0.16),transparent_26%),linear-gradient(90deg,rgba(3,14,31,0.92)_0%,rgba(3,14,31,0.86)_20%,rgba(3,14,31,0.48)_46%,rgba(3,14,31,0.10)_72%,rgba(3,14,31,0.08)_100%)]" />
-
-        <div className="relative z-20 flex min-h-screen flex-col">
-          <header className="pw-container pt-5">
-            <PublicHeader />
-          </header>
-
-          <div id="inicio" className="home-hero-grid pw-container relative grid min-h-[calc(100vh-116px)] flex-1 items-center gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(420px,560px)_minmax(360px,520px)] lg:gap-16 lg:py-16 xl:grid-cols-[minmax(460px,620px)_minmax(420px,540px)] xl:py-20">
-            <div className="home-hero-left max-w-[620px]">
-              <p className="home-hero-eyebrow text-[12px] font-semibold uppercase tracking-[0.34em] text-cyan-200/78">
-                Patagonia Wings
-              </p>
-              <p className="mt-2 text-lg font-medium text-white/84 sm:text-2xl">
-                Virtual Airline Operations
-              </p>
-
-              <h1 className="home-hero-title mt-7 max-w-[720px] font-serif text-[66px] font-medium leading-[0.9] tracking-[-0.055em] text-white drop-shadow-[0_14px_34px_rgba(0,0,0,0.40)] sm:text-[96px] lg:text-[108px] xl:text-[122px]">
-                Patagonia
-                <br />
-                Wings
-              </h1>
-
-              <p className="home-hero-slogan mt-5 max-w-[720px] text-[24px] font-medium leading-tight text-cyan-200 drop-shadow-[0_8px_18px_rgba(0,0,0,0.32)] sm:text-[32px] lg:text-[36px]">
-                Tu conexión aérea en la Patagonia
-              </p>
-
-              <div className="mt-6 h-[2px] w-40 rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-transparent sm:w-52" />
-
-              <div className="mt-9 flex flex-wrap gap-4">
-                <Link href="/register" className="button-primary px-8 py-4 text-base">
-                  Crear cuenta
-                </Link>
-                <Link href="/login" className="button-secondary px-8 py-4 text-base">
-                  Iniciar sesión
-                </Link>
-                <Link href="/routes" className="button-secondary px-8 py-4 text-base">
-                  Ver rutas
-                </Link>
-                <a href="#descargas" className="button-secondary px-8 py-4 text-base">
-                  Descargar ACARS
-                </a>
-                <a href="#integraciones" className="parallax-outline-button px-8 py-4 text-base">
-                  Ver integración
-                  <span aria-hidden>→</span>
-                </a>
-              </div>
+    <main className="pw-sky-home">
+      <section id="inicio" className="pw-hero">
+        <PublicHeader />
+        <div className="pw-container pw-hero-inner">
+          <div className="pw-hero-copy">
+            <Badge tone="info">Apertura proximamente</Badge>
+            <p className="pw-eyebrow">Patagonia Wings</p>
+            <h1>Tu conexion aerea en la Patagonia</h1>
+            <p className="pw-hero-subtitle">
+              Unete a nuestra red virtual y disfruta de vuelos realistas, operaciones profesionales y
+              una comunidad preparada para volar.
+            </p>
+            <div className="pw-hero-actions">
+              <Link href="/register" className="pw-btn-primary">
+                Crear cuenta gratis
+              </Link>
+              <Link href="/routes" className="pw-btn-secondary">
+                Ver rutas
+              </Link>
+              <a href="#descargas" className="pw-btn-ghost">
+                Descargar ACARS
+              </a>
             </div>
-
-            <HeroIntegrationCard />
           </div>
         </div>
       </section>
 
-      <section className="border-y border-slate-300/70 bg-white/85 py-8">
+      <section className="pw-stats-section">
         <div className="pw-container">
           <HomeStatsBar initialStats={initialHomeStats} />
         </div>
       </section>
 
-      <section id="integraciones" className="border-b border-slate-300/70 bg-white/85 py-20 sm:py-24">
-        <div className="pw-container">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-stretch">
-            <div className="flex h-full flex-col">
-              <div className="parallax-chip">Integración oficial</div>
-              <h2 className="header-strip mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-                Integración operativa con Navigraph y SimBrief
-              </h2>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-200/84">
-                Un flujo claro: preparar OFP, validar en web y continuar a ACARS con el vuelo listo.
-              </p>
-
-              <div className="mt-8 grid gap-4">
-                {integrationPoints.map((item) => (
-                  <div key={item} className="flex items-start gap-4 rounded-[24px] border border-white/8 bg-white/[0.04] px-5 py-4 backdrop-blur-sm">
-                    <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300/28 to-emerald-300/18 text-sm font-semibold text-cyan-100">
-                      ✓
-                    </span>
-                    <p className="text-sm leading-7 text-slate-200/82 sm:text-[15px]">{item}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/register" className="button-primary">
-                  Registrarme ahora
-                </Link>
-                <Link href="/login" className="parallax-outline-button">
-                  Ya tengo cuenta
-                  <span aria-hidden>→</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="relative flex h-full min-h-[560px] overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_36%),linear-gradient(180deg,rgba(8,30,58,0.92),rgba(3,15,28,0.92))] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:min-h-full">
-              <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cyan-300/10 to-transparent" />
-              <div className="relative z-10 flex h-full w-full flex-col justify-between">
-                <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200/72">
-                      Ecosistema operativo
-                    </p>
-                    <h3 className="header-strip mt-3 text-3xl font-semibold tracking-tight text-white">
-                      Integrado y listo para despacho
-                    </h3>
-                  </div>
-
-                  <img
-                    src="/branding/patagonia-logo.png"
-                    alt="Patagonia Wings"
-                    className="h-40 w-40 object-contain opacity-95 drop-shadow-[0_18px_42px_rgba(0,0,0,0.38)] sm:h-48 sm:w-48 lg:h-56 lg:w-56"
-                  />
-                </div>
-
-                <div className="mt-10 flex justify-center">
-                  <div className="w-full max-w-[500px]">
-                    <OfficialIntegrationLogos compact />
-                  </div>
-                </div>
-
-                <div className="mt-10 space-y-4 text-center">
-                  <p className="text-base leading-8 text-slate-200/82">
-                    <span className="font-semibold text-white">Navigraph</span> aporta la suscripción y el ecosistema.
-                    <span className="font-semibold text-white"> SimBrief</span> permite generar el OFP.
-                    <span className="font-semibold text-white"> Patagonia Wings</span> toma ese flujo, lo valida y lo integra a tu operación.
-                  </p>
-                  <p className="text-sm leading-7 text-emerald-100/78">
-                    Requisito recomendado: tener la suscripción activa y registrar el usuario correspondiente durante el alta del piloto.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+      <section id="vuela" className="pw-section">
+        <div className="pw-section-title">
+          <p>Vuela con nosotros</p>
+          <h2>Tu operacion en cuatro simples pasos</h2>
+        </div>
+        <div className="pw-container pw-flow-grid">
+          {operationSteps.map((step, index) => (
+            <article key={step.title} className="pw-card pw-step-card">
+              <div className="pw-icon-bubble">{step.icon}</div>
+              <span className="pw-step-number">{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section id="nosotros" className="pw-container py-20 sm:py-24">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <section id="integraciones" className="pw-section pw-section-compact">
+        <div className="pw-section-title">
+          <p>Herramientas e integraciones</p>
+          <h2>Ecosistema operativo listo para despacho</h2>
+        </div>
+        <div className="pw-container pw-integration-grid">
+          {integrations.map((item) => (
+            <article key={item.title} className={`pw-card pw-integration-card ${item.featured ? "is-featured" : ""}`}>
+              {item.image ? (
+                <img src={item.image} alt={item.title} className="pw-integration-logo" />
+              ) : (
+                <div className="pw-icon-bubble">{item.icon}</div>
+              )}
+              {item.flags ? <CountryFlagRow flags={item.flags} /> : null}
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </div>
+              <Badge tone={item.badgeTone}>{item.badge}</Badge>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="servicios" className="pw-section pw-page-band">
+        <div className="pw-container pw-feature-grid">
+          {lowerCards.map((card) => (
+            <article key={card.title} className="pw-card pw-feature-card">
+              <div className="pw-icon-bubble">{card.icon}</div>
+              <div>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+                <Link href={card.href}>{card.link} →</Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="flota" className="pw-section">
+        <div className="pw-container pw-showcase">
           <div>
-            <div className="parallax-chip">Nosotros</div>
-            <h2 className="header-strip mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Una comunidad que crece con objetivos, inmersión y rol real
-            </h2>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/88">
-              Patagonia Wings une comunidad, operación y progresión real del piloto en una experiencia enfocada en cabina.
+            <p className="pw-eyebrow">Flota Patagonia Wings</p>
+            <h2>Una identidad propia para volar la red austral</h2>
+            <p>
+              Flota, rutas, habilitaciones y disponibilidad se conectan para que cada vuelo tenga
+              contexto operacional antes de llegar al ACARS.
             </p>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/78">
-              El objetivo es simple: volar mejor, con reglas claras y una operación coherente de punta a punta.
+            <div className="pw-showcase-actions">
+              <Link href="/routes" className="pw-btn-primary">Explorar rutas</Link>
+              <Link href="/dashboard?tab=dispatch" className="pw-btn-secondary">Abrir despacho</Link>
+            </div>
+          </div>
+          <div className="pw-showcase-media">
+            <img src="/branding/hero-banner.png" alt="Aeronave Patagonia Wings sobre la Patagonia" />
+          </div>
+        </div>
+      </section>
+
+      <section id="descargas" className="pw-section pw-page-band">
+        <div className="pw-container pw-download-panel">
+          <div>
+            <Badge tone="success">Instalador oficial</Badge>
+            <h2>ACARS Patagonia Wings</h2>
+            <p>
+              Cliente oficial para MSFS 2020/2024 con telemetria, seguimiento de vuelo, PIREP y
+              sincronizacion operacional.
             </p>
-            <div className="mt-8 inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-5 py-2 text-sm font-semibold text-emerald-100">
-              Sé el piloto que quieres ser en Patagonia Wings
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-[34px] border border-white/10 bg-white/5 p-3 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-sm">
-            <div className="relative aspect-video overflow-hidden rounded-[26px]">
-              <img
-                src="/branding/nosotros-ops-room-photo.png"
-                alt="Centro de operaciones de Patagonia Wings con pilotos y despachadores monitoreando vuelos frente a la plataforma"
-                className="h-full w-full object-cover"
-              />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f] via-[#03162f]/78 to-transparent px-7 pb-6 pt-14">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
-                  Comunidad Patagonia Wings
-                </p>
-                <p className="mt-2 text-lg font-semibold text-white sm:text-xl">
-                  Briefing, inmersión y operación compartida
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="servicios" className="border-y border-slate-300/70 bg-white/88 py-20 backdrop-blur-sm">
-        <div className="pw-container">
-          <div className="parallax-chip">Servicios</div>
-          <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h2 className="header-strip max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-                Operación web, economía y despacho en una sola plataforma
-              </h2>
-              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/78">
-                Patagonia Wings conecta la reserva, el OFP, la economía del vuelo y la progresión del piloto en un flujo simple para operar con más realismo.
-              </p>
-            </div>
-</div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {services.map((item) => (
-              <article key={item.title} className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] p-7 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200/16 bg-cyan-300/10 text-2xl">
-                  {item.icon}
-                </div>
-                <div className="mt-5 h-1.5 w-16 rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300" />
-                <h3 className="header-strip mt-5 text-2xl font-semibold text-white">{item.title}</h3>
-                <p className="mt-4 text-base leading-7 text-slate-200/82">{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="flota" className="pw-container py-20 sm:py-24">
-        <div className="parallax-chip">Flota</div>
-        <div className="mt-6 grid gap-9 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-stretch">
-          <div className="flex h-full flex-col">
-            <h2 className="header-strip max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-              Flota Patagonia Wings en preparación operacional
-            </h2>
-
-            <div className="mt-7 overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_22px_80px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-[26px]">
-                <img
-                  src="/branding/hero-banner.png"
-                  alt="Aeronave con livery Patagonia Wings en vuelo"
-                  className="h-full w-full object-cover"
-                />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#03162f]/72 via-[#03162f]/24 to-transparent px-6 pb-5 pt-16">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200/82">
-                    Liveries oficiales
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-white">
-                    Identidad propia para cada aeronave certificada
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-7 space-y-4 text-lg leading-8 text-slate-200/82">
-              <p>
-                Estamos preparando una flota conectada a la operación real de Patagonia Wings: aeronaves compatibles,
-                addons definidos, liveries oficiales y disponibilidad actualizada desde la base de datos.
-              </p>
-              <p>
-                La idea es que cada avión tenga identidad, rol operativo y presencia visual dentro de la aerolínea,
-                desde la planificación web hasta el cierre del vuelo en ACARS.
-              </p>
-            </div>
-          </div>
-
-          <HomeFleetShowcase />
-        </div>
-      </section>
-
-      <section id="certificaciones" className="border-y border-slate-300/70 bg-white/85 py-20">
-        <div className="pw-container">
-          <div className="parallax-chip">Certificaciones</div>
-          <h2 className="header-strip mt-5 max-w-5xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-            Checkrides, habilitaciones y teoría para volar con estándar Patagonia Wings
-          </h2>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">
-            El ingreso a la operación se apoya en formación teórica, evaluación práctica y habilitaciones progresivas,
-            para que cada piloto avance con criterio operacional y una base sólida antes de despegar.
-          </p>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {[
-              {
-                icon: "🛫",
-                title: "Checkride práctico",
-                text: "Evaluaciones de cabina y vuelo para validar SOP, maniobras, criterios operacionales y dominio básico de la aeronave.",
-              },
-              {
-                icon: "📘",
-                title: "Teóricas y habilitaciones",
-                text: "Módulos teóricos, ratings IFR y habilitaciones por aeronave para avanzar por etapas con reglas claras y progresión real.",
-              },
-              {
-                icon: "✅",
-                title: "Previo al vuelo",
-                text: "Reserva, despacho, briefing final y revisión operacional listos para llegar al ACARS con la operación bien preparada.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.04] px-6 py-7 shadow-[0_18px_46px_rgba(0,0,0,0.18)]"
-              >
-                <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/18 bg-gradient-to-br from-cyan-300/24 to-emerald-300/16 text-2xl shadow-[0_10px_30px_rgba(25,186,200,0.12)]">
-                  <span aria-hidden>{item.icon}</span>
-                </div>
-                <p className="text-lg font-semibold text-white">{item.title}</p>
-                <p className="mt-3 text-[15px] leading-7 text-slate-200/78">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="descargas" className="border-y border-slate-300/70 bg-white/88 py-20 sm:py-24">
-        <div className="pw-container">
-          <div className="parallax-chip mb-5">Descargas</div>
-          <div className="grid gap-10 lg:grid-cols-[1fr_420px] lg:items-start">
-            <div>
-              <h2 className="header-strip text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-                ACARS Patagonia Wings
-              </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-200/82">
-                El cliente oficial de ACARS para vuelos en MSFS 2020/2024. Sincronización
-                automática con Supabase, telemetría en tiempo real, panel de luces LED y
-                copiloto de voz integrado.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a
-                  href={ACARS_DOWNLOAD_URL}
-                  className="inline-flex items-center gap-3 rounded-2xl px-8 py-4 text-base font-semibold text-white transition duration-200 hover:-translate-y-0.5"
-                  style={{
-                    background: "linear-gradient(135deg, #1a6fb5 0%, #0ca789 100%)",
-                    boxShadow: "0 14px 40px rgba(12, 167, 137, 0.25)",
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 2v10m0 0l-3-3m3 3l3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
-                      stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Descargar ACARS v{ACARS_VERSION}
-                </a>
-                <span className="text-sm text-slate-400">
-                  Windows 10/11 · MSFS 2020/2024 · ~48 MB
-                </span>
-              </div>
-
-              <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 backdrop-blur-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                <span className="text-sm text-white/80">
-                  Versión <span className="font-semibold text-white">{ACARS_VERSION}</span>
-                  <span className="mx-2 text-white/30">·</span>
-                  {ACARS_BACKEND}
-                </span>
-              </div>
-
-              <div className="mt-5 rounded-[18px] border border-emerald-400/15 bg-emerald-400/5 px-5 py-4">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300/70">
-                  Novedades v{ACARS_VERSION}
-                </p>
-                <ul className="flex flex-col gap-1">
-                  {ACARS_RELEASE_NOTES.map((note) => (
-                    <li key={note} className="flex items-start gap-2 text-sm text-slate-300/85">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {[
-                {
-                  icon: "✈",
-                  title: "SimConnect nativo",
-                  desc: "Conecta directamente con MSFS 2020 y 2024 vía SimConnect. Sin apps intermedias.",
-                  color: "#2D9CDB",
-                },
-                {
-                  icon: "📡",
-                  title: "Telemetría completa",
-                  desc: "Luces, tren, APU, bleed air, transponder, presurización y más de 30 variables en tiempo real.",
-                  color: "#0CA789",
-                },
-                {
-                  icon: "🔊",
-                  title: "Copiloto de voz",
-                  desc: "Anuncios automáticos al cruzar 10.000 ft, aproximación, luces y llegada. Voz ES/CL/BR.",
-                  color: "#FFD700",
-                },
-                {
-                  icon: "☁",
-                  title: "Sincronización Supabase",
-                  desc: "PIREPs automáticos con score, landing rate, g-force y penalizaciones según reglas operacionales.",
-                  color: "#3FB950",
-                },
-              ].map((f) => (
-                <div
-                  key={f.title}
-                  className="flex items-start gap-4 rounded-[22px] border border-white/8 bg-white/[0.04] px-5 py-4 backdrop-blur-sm"
-                >
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
-                    style={{ background: `${f.color}22`, border: `1px solid ${f.color}44` }}
-                  >
-                    {f.icon}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{f.title}</p>
-                    <p className="mt-0.5 text-sm leading-6 text-slate-300/80">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-12 rounded-[28px] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
-            <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Requisitos del sistema
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: "Sistema operativo", value: "Windows 10/11 (64-bit)" },
-                { label: "Simulador", value: "MSFS 2020 o 2024" },
-                { label: "Runtime", value: ".NET Framework 4.8.1" },
-                { label: "Conexión", value: "Internet (Supabase sync)" },
-              ].map((r) => (
-                <div key={r.label}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    {r.label}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-white/90">{r.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="sayintentions" className="border-y border-slate-300/70 bg-white/85 py-20 sm:py-24">
-        <div className="pw-container">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div>
-              <div className="parallax-chip">Integracion recomendada</div>
-              <h2 className="header-strip mt-5 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-                SayIntentions.AI
-              </h2>
-              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200/82">
-                Integracion recomendada para operaciones inmersivas con ATC, copiloto, cabina y despacho virtual.
-                Patagonia Wings prepara contexto operacional del vuelo para asistir al piloto durante toda la operacion.
-              </p>
-              <a
-                href="https://sayintentions.ai"
-                target="_blank"
-                rel="noreferrer"
-                className="button-primary mt-8 inline-flex"
-              >
-                Conocer SayIntentions
+            <div className="pw-download-actions">
+              <a href={ACARS_DOWNLOAD_URL} className="pw-btn-primary">
+                Descargar ACARS v{ACARS_VERSION}
               </a>
+              <span>{ACARS_BACKEND}</span>
             </div>
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 shadow-[0_20px_70px_rgba(0,0,0,0.28)]">
-              <img
-                src="/partners/sayintentions-logo.png"
-                alt="SayIntentions.AI"
-                className="mx-auto h-auto w-full max-w-[380px] object-contain"
-              />
+          </div>
+          <div className="pw-card">
+            <h3>Changelog corto</h3>
+            <ul className="pw-check-list">
+              {ACARS_RELEASE_NOTES.slice(0, 4).map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+            <div className="pw-requirements">
+              <span>Windows 10/11</span>
+              <span>MSFS 2020/2024</span>
+              <span>.NET Framework 4.8.1</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="faq" className="pw-container py-16 sm:py-20">
-        <div className="parallax-chip">FAQ</div>
-        <h2 className="header-strip mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
-          Dudas frecuentes
-        </h2>
-        <div className="mt-8 space-y-4">
-          {faqItems.map((item) => (
-            <details key={item.q} className="pw-accordion glass-panel rounded-[24px] px-5 py-4">
-              <summary className="cursor-pointer list-none text-base font-semibold text-white">{item.q}</summary>
-              <p className="mt-3 text-sm leading-7 text-white/78">{item.a}</p>
+      <section id="aliados" className="pw-allies">
+        <div className="pw-container">
+          <p className="pw-eyebrow">Nuestros aliados</p>
+          <div className="pw-allies-row">
+            {partnerLogos.map((logo) => (
+              <img key={logo.alt} src={logo.src} alt={logo.alt} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="nosotros" className="pw-section">
+        <div className="pw-container pw-about">
+          <div>
+            <p className="pw-eyebrow">Acerca de</p>
+            <h2>Patagonia Wings nace para operar con realismo, claridad y comunidad</h2>
+            <p>
+              Una aerolinea virtual enfocada en rutas regionales y sudamericanas, con despacho,
+              progresion, economia mensual y herramientas integradas para pilotos que quieren volar mejor.
+            </p>
+          </div>
+          <div className="pw-card">
+            <h3>Estado de apertura</h3>
+            <p>
+              La plataforma esta preparada para una apertura controlada: pilotos, ACARS, despacho,
+              rutas, integraciones y datos operacionales en una experiencia unificada.
+            </p>
+            <Badge tone="warning">En validacion</Badge>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" className="pw-section pw-section-compact">
+        <div className="pw-container pw-faq-grid">
+          {[
+            ["Necesito Navigraph?", "Para el flujo OFP integrado se recomienda una cuenta activa de Navigraph/SimBrief."],
+            ["ACARS se descarga desde aqui?", "Si. La seccion de descargas mantiene el instalador oficial visible."],
+            ["Puedo ver rutas antes de registrarme?", "Si. El catalogo publico de rutas queda disponible para explorar la red."],
+          ].map(([question, answer]) => (
+            <details key={question} className="pw-card pw-accordion">
+              <summary>{question}</summary>
+              <p>{answer}</p>
             </details>
           ))}
         </div>
       </section>
 
+      <PublicFooter />
     </main>
   );
 }
