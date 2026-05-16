@@ -77,8 +77,6 @@ const integrations = [
   },
 ];
 
-const heroIntegrations = integrations.filter((item) => item.featured).slice(0, 2);
-
 const lowerCards = [
   {
     title: "Nuevos pilotos",
@@ -172,12 +170,12 @@ export default async function HomePage() {
           <div className="pw-hero-copy">
             <Badge tone="info">Apertura próximamente</Badge>
             <p className="pw-eyebrow">Patagonia Wings</p>
-            <h1 className="hero-title">Tu conexión aérea en la Patagonia</h1>
+            <h1>Tu conexión aérea en la Patagonia</h1>
             <p className="pw-hero-subtitle">
               Únete a nuestra red virtual y disfruta de vuelos realistas, operaciones profesionales y
               una comunidad preparada para volar.
             </p>
-            <div className="pw-actions pw-hero-actions">
+            <div className="pw-hero-actions">
               <Link href="/register" className="pw-btn-primary">
                 Crear cuenta gratis
               </Link>
@@ -189,20 +187,6 @@ export default async function HomePage() {
               </a>
             </div>
           </div>
-          <aside className="pw-hero-integrations">
-            {heroIntegrations.map((item) => (
-              <article key={`hero-${item.title}`} className="pw-card pw-integration-card is-featured">
-                {item.image ? (
-                  <img src={item.image} alt={item.title} className="pw-integration-logo" />
-                ) : null}
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                </div>
-                <Badge tone={item.badgeTone}>{item.badge}</Badge>
-              </article>
-            ))}
-          </aside>
         </div>
       </section>
 
